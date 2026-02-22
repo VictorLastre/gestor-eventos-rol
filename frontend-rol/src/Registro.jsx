@@ -9,11 +9,13 @@ function Registro() {
   const manejarRegistro = async (e) => {
     e.preventDefault();
     try {
-      const res = await fetch('https://gestor-eventos-rol.onrender.com', {
+      // AGREGAMOS /api/registro AL FINAL DE LA URL
+      const res = await fetch('https://gestor-eventos-rol.onrender.com/api/registro', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ nombre, email, password })
       });
+      
       const texto = await res.text();
       if (res.ok) {
         setMensaje(`✅ ${texto}`);
