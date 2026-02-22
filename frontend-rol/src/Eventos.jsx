@@ -17,7 +17,7 @@ function Eventos() {
   const esAdmin = usuarioGuardado && usuarioGuardado.rol === 'admin';
 
   const cargarEventos = () => {
-    fetch('http://localhost:3001/api/eventos')
+    fetch('https://gestor-eventos-rol.onrender.com/api/eventos')
       .then(res => res.json())
       .then(datos => setEventos(datos))
       .catch(err => console.error("Error:", err));
@@ -31,7 +31,7 @@ function Eventos() {
     e.stopPropagation();
     if (!window.confirm("⚠️ ¿Estás seguro? Se perderán todos los datos de este evento.")) return;
     const token = localStorage.getItem('token');
-    await fetch(`http://localhost:3001/api/eventos/${id}`, {
+    await fetch(`https://gestor-eventos-rol.onrender.com/api/eventos/${id}`, {
       method: 'DELETE',
       headers: { 'authorization': token }
     });
@@ -41,7 +41,7 @@ function Eventos() {
   const entrarAlEvento = (evento) => {
     setEventoSeleccionado(evento);
     const token = localStorage.getItem('token'); 
-    fetch(`http://localhost:3001/api/eventos/${evento.id}/partidas`, {
+    fetch(`https://gestor-eventos-rol.onrender.com/api/eventos/${evento.id}/partidas`, {
       headers: { 'authorization': token }
     })
       .then(res => res.json())

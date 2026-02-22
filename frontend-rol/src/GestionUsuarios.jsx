@@ -5,7 +5,7 @@ function GestionUsuarios() {
 
   const cargarSolicitudes = () => {
     const token = localStorage.getItem('token');
-    fetch('http://localhost:3001/api/usuarios/solicitudes-dm', {
+    fetch('https://gestor-eventos-rol.onrender.com/api/usuarios/solicitudes-dm', {
       headers: { 'authorization': token }
     })
       .then(res => res.json())
@@ -22,7 +22,7 @@ function GestionUsuarios() {
     if(!window.confirm(`¿Estás seguro de otorgar el rango de Dungeon Master a ${nombre.toUpperCase()}?`)) return;
 
     try {
-      const res = await fetch(`http://localhost:3001/api/usuarios/${id}/promover`, {
+      const res = await fetch(`https://gestor-eventos-rol.onrender.com/api/usuarios/${id}/promover`, {
         method: 'PUT',
         headers: { 'authorization': token }
       });

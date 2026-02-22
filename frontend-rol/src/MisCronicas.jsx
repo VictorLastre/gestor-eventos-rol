@@ -16,7 +16,7 @@ function MisCronicas({ alActualizarUsuario }) { // Recibimos la función para av
 
   useEffect(() => {
     const token = localStorage.getItem('token');
-    fetch('http://localhost:3001/api/mis-cronicas', {
+    fetch('https://gestor-eventos-rol.onrender.com/api/mis-cronicas', {
       headers: { 'authorization': token }
     })
       .then(res => res.json())
@@ -34,7 +34,7 @@ function MisCronicas({ alActualizarUsuario }) { // Recibimos la función para av
   const guardarPerfil = async () => {
     const token = localStorage.getItem('token');
     try {
-      const res = await fetch('http://localhost:3001/api/usuarios/perfil', {
+      const res = await fetch('https://gestor-eventos-rol.onrender.com/api/usuarios/perfil', {
         method: 'PUT',
         headers: { 
           'Content-Type': 'application/json', 
@@ -64,7 +64,7 @@ function MisCronicas({ alActualizarUsuario }) { // Recibimos la función para av
   const solicitarDM = async () => {
     const token = localStorage.getItem('token');
     try {
-      const res = await fetch('http://localhost:3001/api/usuarios/solicitar-dm', {
+      const res = await fetch('https://gestor-eventos-rol.onrender.com/api/usuarios/solicitar-dm', {
         method: 'POST',
         headers: { 'authorization': token }
       });

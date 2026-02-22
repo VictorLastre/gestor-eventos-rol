@@ -9,7 +9,7 @@ function Registro() {
   const manejarRegistro = async (e) => {
     e.preventDefault();
     try {
-      const res = await fetch('http://localhost:3001/api/registro', {
+      const res = await fetch('https://gestor-eventos-rol.onrender.com', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ nombre, email, password })

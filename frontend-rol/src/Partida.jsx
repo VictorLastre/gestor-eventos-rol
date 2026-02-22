@@ -23,7 +23,7 @@ function Partida(props) {
 
     const token = localStorage.getItem('token');
     try {
-      const res = await fetch(`http://localhost:3001/api/partidas/${props.id}`, {
+      const res = await fetch(`https://gestor-eventos-rol.onrender.com/api/partidas/${props.id}`, {
         method: 'DELETE',
         headers: { 'authorization': token }
       });
@@ -45,7 +45,7 @@ function Partida(props) {
     const metodo = anotado ? 'DELETE' : 'POST';
 
     try {
-      const res = await fetch(`http://localhost:3001/api/partidas/${props.id}/inscripciones`, {
+      const res = await fetch(`https://gestor-eventos-rol.onrender.com/api/partidas/${props.id}/inscripciones`, {
         method: metodo,
         headers: { 'authorization': token }
       });
@@ -65,7 +65,7 @@ function Partida(props) {
   // Obtener lista de nombres de jugadores (Solo DM/Admin)
   const obtenerListaJugadores = () => {
     const token = localStorage.getItem('token');
-    fetch(`http://localhost:3001/api/partidas/${props.id}/jugadores`, {
+    fetch(`https://gestor-eventos-rol.onrender.com/api/partidas/${props.id}/jugadores`, {
       headers: { 'authorization': token }
     })
       .then(res => res.json())

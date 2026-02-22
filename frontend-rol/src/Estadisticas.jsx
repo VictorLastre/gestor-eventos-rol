@@ -5,7 +5,7 @@ function Estadisticas() {
 
   useEffect(() => {
     const token = localStorage.getItem('token');
-    fetch('http://localhost:3001/api/admin/estadisticas', {
+    fetch('https://gestor-eventos-rol.onrender.com/api/admin/estadisticas', {
       headers: { 'authorization': token }
     })
       .then(res => res.json())
