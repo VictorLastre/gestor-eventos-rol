@@ -1,0 +1,6 @@
+@import "tailwindcss";
+
+/* Esto pintará de negro azulado el fondo de toda la app */
+body {
+  @apply bg-zinc-950 text-zinc-100 min-h-screen;
+}

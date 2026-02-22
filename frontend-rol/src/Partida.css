@@ -1,0 +1,58 @@
+/* Le damos forma de tarjeta a nuestro contenedor principal */
+.tarjeta-partida {
+  background-color: #242424;
+  color: #e0e0e0;
+  border: 1px solid #4a4a4a;
+  border-radius: 12px; /* Bordes redondeados */
+  padding: 20px;
+  margin-bottom: 20px;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3); /* Sombra para darle profundidad */
+  transition: transform 0.2s; /* Animación suave */
+}
+
+/* Efecto al pasar el mouse por encima */
+.tarjeta-partida:hover {
+  transform: translateY(-5px);
+  border-color: #646cff;
+}
+
+.tarjeta-partida h2 {
+  color: #ffffff;
+  margin-top: 0;
+  border-bottom: 2px solid #333;
+  padding-bottom: 10px;
+}
+
+/* Estilos para agrupar los botones */
+.botones-partida {
+  margin-top: 15px;
+  display: flex;
+  gap: 10px; /* Espacio automático entre los botones */
+}
+
+/* Estilo general para los botones dentro de la tarjeta */
+.tarjeta-partida button {
+  padding: 8px 16px;
+  border-radius: 6px;
+  font-weight: bold;
+  cursor: pointer;
+  border: none;
+}
+
+/* Colores específicos para cada acción */
+.btn-anotar {
+  background-color: #4CAF50; /* Verde */
+  color: white;
+}
+
+.btn-baja {
+  background-color: #f44336; /* Rojo */
+  color: white;
+}
+
+/* Cómo se ven los botones cuando están deshabilitados */
+.tarjeta-partida button:disabled {
+  background-color: #555555;
+  color: #888888;
+  cursor: not-allowed;
+}
