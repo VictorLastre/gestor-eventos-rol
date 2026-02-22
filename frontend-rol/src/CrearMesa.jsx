@@ -16,7 +16,7 @@ function CrearMesa({ idEvento, alCrearMesa }) {
     const nuevaMesa = { titulo, descripcion, requisitos, sistema, cupo, turno };
 
     try {
-      const respuesta = await fetch(`http://localhost:3001/api/eventos/${idEvento}/partidas`, {
+      const respuesta = await fetch(`https://gestor-eventos-rol.onrender.com/api/eventos/${idEvento}/partidas`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

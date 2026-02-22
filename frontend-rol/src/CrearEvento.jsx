@@ -13,7 +13,7 @@ function CrearEvento({ alCrearEvento }) {
     const nuevoEvento = { nombre, descripcion, fecha };
 
     try {
-      const respuesta = await fetch('http://localhost:3001/api/eventos', {
+      const respuesta = await fetch('https://gestor-eventos-rol.onrender.com/api/eventos', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
