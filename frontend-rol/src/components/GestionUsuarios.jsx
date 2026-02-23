@@ -3,12 +3,14 @@ import { useState, useEffect } from 'react';
 function GestionUsuarios() {
   const [solicitudes, setSolicitudes] = useState([]);
   const [todosLosUsuarios, setTodosLosUsuarios] = useState([]);
-  const [pestanaActiva, setPestanaActiva] = useState('peticiones'); // Controla qué vista se muestra
+  const [pestanaActiva, setPestanaActiva] = useState('peticiones');
+  
+  // NUEVO: Estado para controlar qué rango estamos filtrando en el censo
+  const [filtroRol, setFiltroRol] = useState('todos'); 
 
   const cargarDatos = () => {
     const token = localStorage.getItem('token');
     
-    // 1. Cargar peticiones de ascenso
     fetch('https://gestor-eventos-rol.onrender.com/api/usuarios/solicitudes-dm', {
       headers: { 'authorization': token }
     })
@@ -16,7 +18,6 @@ function GestionUsuarios() {
       .then(datos => setSolicitudes(datos))
       .catch(err => console.error(err));
 
-    // 2. Cargar el censo completo de usuarios
     fetch('https://gestor-eventos-rol.onrender.com/api/usuarios', {
       headers: { 'authorization': token }
     })
@@ -41,12 +42,17 @@ function GestionUsuarios() {
       const texto = await res.text();
       if(res.ok) {
         alert(`✨ ${nombre} ha sido ascendido.`);
-        cargarDatos(); // Recargamos ambas listas para que el cambio se refleje al instante
+        cargarDatos(); 
       } else {
         alert(`❌ ${texto}`);
       }
     } catch(e) { console.error(e); }
   };
+
+  // NUEVO: Filtramos la lista antes de dibujarla en la tabla
+  const usuariosFiltrados = todosLosUsuarios.filter(user => 
+    filtroRol === 'todos' || user.rol === filtroRol
+  );
 
   return (
     <div className="animate-in fade-in slide-in-from-top-2 duration-500">
@@ -119,12 +125,23 @@ function GestionUsuarios() {
       {/* === VISTA 2: LISTADO DE TODOS LOS USUARIOS === */}
       {pestanaActiva === 'censo' && (
         <div className="animate-in fade-in duration-300">
-          <div className="flex items-center gap-3 mb-6">
-            <div className="w-10 h-10 bg-emerald-500/20 text-emerald-400 flex items-center justify-center rounded-xl border border-emerald-500/30">
-              📜
+          
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 bg-emerald-500/20 text-emerald-400 flex items-center justify-center rounded-xl border border-emerald-500/30">
+                📜
+              </div>
+              <div>
+                <h3 className="text-xl font-black text-white uppercase tracking-tighter">Censo Total</h3>
+              </div>
             </div>
-            <div>
-              <h3 className="text-xl font-black text-white uppercase tracking-tighter">Censo Total</h3>
+
+            {/* NUEVO: BOTONES DE FILTRO */}
+            <div className="flex gap-2 bg-zinc-900 p-1.5 rounded-xl border border-zinc-800">
+              <button onClick={() => setFiltroRol('todos')} className={`px-3 py-1.5 text-[10px] font-black uppercase tracking-widest rounded-lg transition-all ${filtroRol === 'todos' ? 'bg-zinc-700 text-white' : 'text-zinc-500 hover:text-zinc-300'}`}>Todos</button>
+              <button onClick={() => setFiltroRol('admin')} className={`px-3 py-1.5 text-[10px] font-black uppercase tracking-widest rounded-lg transition-all ${filtroRol === 'admin' ? 'bg-amber-500/20 text-amber-500' : 'text-zinc-500 hover:text-amber-500/50'}`}>👑 Admins</button>
+              <button onClick={() => setFiltroRol('dm')} className={`px-3 py-1.5 text-[10px] font-black uppercase tracking-widest rounded-lg transition-all ${filtroRol === 'dm' ? 'bg-purple-500/20 text-purple-400' : 'text-zinc-500 hover:text-purple-400/50'}`}>🛡️ DMs</button>
+              <button onClick={() => setFiltroRol('jugador')} className={`px-3 py-1.5 text-[10px] font-black uppercase tracking-widest rounded-lg transition-all ${filtroRol === 'jugador' ? 'bg-zinc-700 text-white' : 'text-zinc-500 hover:text-zinc-300'}`}>⚔️ Jugadores</button>
             </div>
           </div>
 
@@ -138,34 +155,43 @@ function GestionUsuarios() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-zinc-800/50">
-                {todosLosUsuarios.map(user => (
-                  <tr key={user.id} className="hover:bg-zinc-800/30 transition-colors">
-                    <td className="p-4 pl-6 flex items-center gap-3">
-                      <span className="text-xl bg-zinc-950 w-8 h-8 flex items-center justify-center rounded-full border border-zinc-800">
-                        {user.avatar === 'guerrero' && '⚔️'}
-                        {user.avatar === 'mago' && '🧙'}
-                        {user.avatar === 'esqueleto' && '💀'}
-                        {user.avatar === 'goblin' && '👺'}
-                        {!user.avatar && '👤'}
-                      </span>
-                      <span className="font-bold text-zinc-200">{user.nombre}</span>
-                    </td>
-                    <td className="p-4 text-xs text-zinc-400 font-mono">
-                      {user.email}
-                    </td>
-                    <td className="p-4 text-center">
-                      <span className={`text-[10px] font-black uppercase tracking-widest px-3 py-1 rounded-full border ${
-                        user.rol === 'admin' ? 'bg-amber-500/10 text-amber-500 border-amber-500/30' :
-                        user.rol === 'dm' ? 'bg-purple-500/10 text-purple-400 border-purple-500/30' :
-                        'bg-zinc-800 text-zinc-400 border-zinc-700'
-                      }`}>
-                        {user.rol === 'admin' && '👑 Admin'}
-                        {user.rol === 'dm' && '🛡️ DM'}
-                        {user.rol === 'jugador' && 'Jugador'}
-                      </span>
+                {/* AHORA MAPEAMOS 'usuariosFiltrados' EN LUGAR DE 'todosLosUsuarios' */}
+                {usuariosFiltrados.length === 0 ? (
+                  <tr>
+                    <td colSpan="3" className="p-8 text-center text-zinc-500 italic font-bold">
+                      No hay registros para este filtro.
                     </td>
                   </tr>
-                ))}
+                ) : (
+                  usuariosFiltrados.map(user => (
+                    <tr key={user.id} className="hover:bg-zinc-800/30 transition-colors">
+                      <td className="p-4 pl-6 flex items-center gap-3">
+                        <span className="text-xl bg-zinc-950 w-8 h-8 flex items-center justify-center rounded-full border border-zinc-800">
+                          {user.avatar === 'guerrero' && '⚔️'}
+                          {user.avatar === 'mago' && '🧙'}
+                          {user.avatar === 'esqueleto' && '💀'}
+                          {user.avatar === 'goblin' && '👺'}
+                          {!user.avatar && '👤'}
+                        </span>
+                        <span className="font-bold text-zinc-200">{user.nombre}</span>
+                      </td>
+                      <td className="p-4 text-xs text-zinc-400 font-mono">
+                        {user.email}
+                      </td>
+                      <td className="p-4 text-center">
+                        <span className={`text-[10px] font-black uppercase tracking-widest px-3 py-1 rounded-full border ${
+                          user.rol === 'admin' ? 'bg-amber-500/10 text-amber-500 border-amber-500/30' :
+                          user.rol === 'dm' ? 'bg-purple-500/10 text-purple-400 border-purple-500/30' :
+                          'bg-zinc-800 text-zinc-400 border-zinc-700'
+                        }`}>
+                          {user.rol === 'admin' && '👑 Admin'}
+                          {user.rol === 'dm' && '🛡️ DM'}
+                          {user.rol === 'jugador' && 'Jugador'}
+                        </span>
+                      </td>
+                    </tr>
+                  ))
+                )}
               </tbody>
             </table>
           </div>
