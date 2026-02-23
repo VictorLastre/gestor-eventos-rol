@@ -1,17 +1,21 @@
 import { useState, useEffect } from 'react';
 
 function Partida(props) {
-  // Sincronización de estados con las propiedades que vienen del servidor
-  const [jugadoresAnotados, setJugadoresAnotados] = useState(props.jugadoresIniciales || 0);
-  const [anotado, setAnotado] = useState(props.anotadoInicialmente || false);
+  // 1. CAPTURAMOS LOS DATOS (Leemos el nombre nuevo o el viejo por si acaso, y ponemos 0 si no llega nada)
+  const cantJugadores = props.jugadoresIniciales ?? props.jugadores_anotados ?? 0;
+  const yaEstaAnotado = Boolean(props.anotadoInicialmente || props.estoy_anotado || false);
+
+  // 2. INICIALIZAMOS LOS ESTADOS
+  const [jugadoresAnotados, setJugadoresAnotados] = useState(cantJugadores);
+  const [anotado, setAnotado] = useState(yaEstaAnotado);
   const [verJugadores, setVerJugadores] = useState(false);
   const [listaJugadores, setListaJugadores] = useState([]);
 
-  // Este Efecto es vital: actualiza el contador si los datos del padre cambian
+  // 3. EFECTO BLINDADO: Se actualiza solo si los valores reales cambian
   useEffect(() => {
-    setJugadoresAnotados(props.jugadoresIniciales);
-    setAnotado(props.anotadoInicialmente);
-  }, [props.jugadoresIniciales, props.anotadoInicialmente]);
+    setJugadoresAnotados(cantJugadores);
+    setAnotado(yaEstaAnotado);
+  }, [cantJugadores, yaEstaAnotado]);
 
   const usuarioActivo = JSON.parse(localStorage.getItem('usuario'));
   const soyElMaster = props.esMiMesa; 
@@ -51,18 +55,19 @@ function Partida(props) {
       });
 
       if (res.ok) {
+        // Solo si el servidor responde OK, cambiamos la interfaz
         setAnotado(!anotado);
         setJugadoresAnotados(anotado ? jugadoresAnotados - 1 : jugadoresAnotados + 1);
       } else {
         const mensaje = await res.text();
-        alert(mensaje);
+        alert(`Aviso del Gremio: ${mensaje}`);
       }
     } catch (err) {
       console.error("Error en la inscripción:", err);
     }
   };
 
-  // Obtener lista de nombres de jugadores (Solo DM/Admin)
+  // Obtener lista de nombres de jugadores
   const obtenerListaJugadores = () => {
     const token = localStorage.getItem('token');
     fetch(`https://gestor-eventos-rol.onrender.com/api/partidas/${props.id}/jugadores`, {
@@ -83,14 +88,12 @@ function Partida(props) {
       : 'border-zinc-800 bg-zinc-900/40 hover:border-zinc-700'
     }`}>
       
-      {/* Etiqueta distintiva de 'Tu Mesa' */}
       {soyElMaster && (
         <span className="absolute -top-3 right-6 bg-amber-500 text-black text-[10px] font-black px-3 py-1 rounded-full uppercase tracking-widest shadow-lg">
           Tu Mesa
         </span>
       )}
 
-      {/* Encabezado: Título y Contador */}
       <div className="flex justify-between items-start mb-4">
         <div className="max-w-[70%]">
           <span className="text-[10px] font-black text-emerald-500 uppercase tracking-widest bg-emerald-500/10 px-2 py-1 rounded">
@@ -102,6 +105,7 @@ function Partida(props) {
         </div>
         
         <div className="text-right">
+          {/* El fallback a 0 asegura que nunca más se vea vacío */}
           <p className={`text-3xl font-mono font-black leading-none ${jugadoresAnotados >= props.cupo ? 'text-red-500' : 'text-emerald-500'}`}>
             {jugadoresAnotados}/{props.cupo}
           </p>
@@ -109,16 +113,14 @@ function Partida(props) {
         </div>
       </div>
 
-      {/* Descripción de la aventura */}
       <p className="text-zinc-400 text-sm leading-relaxed mb-6 border-l-2 border-zinc-800 pl-4 py-1 italic">
         {props.descripcion}
       </p>
 
-      {/* Información técnica */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-6">
         <div className="bg-black/30 p-3 rounded-xl border border-white/5">
           <p className="text-[9px] font-bold text-zinc-500 uppercase mb-1 tracking-tighter">Director de Juego</p>
-          <p className="text-sm text-zinc-200 font-bold">🛡️ {props.dmNombre}</p>
+          <p className="text-sm text-zinc-200 font-bold">🛡️ {props.dmNombre || props.dungeon_master_nombre || 'Desconocido'}</p>
         </div>
         <div className="bg-black/30 p-3 rounded-xl border border-white/5">
           <p className="text-[9px] font-bold text-zinc-500 uppercase mb-1 tracking-tighter">Requisitos del Gremio</p>
@@ -126,7 +128,6 @@ function Partida(props) {
         </div>
       </div>
 
-      {/* Acciones */}
       <div className="flex gap-2">
         {!soyElMaster && !props.eventoEsPasado && (
           <button 
@@ -161,7 +162,6 @@ function Partida(props) {
         )}
       </div>
 
-      {/* Lista Desplegable de Jugadores */}
       {verJugadores && (
         <div className="mt-4 p-4 bg-black/40 rounded-xl border border-zinc-800 animate-fadeIn">
           <h4 className="text-[10px] font-black text-zinc-500 uppercase mb-3 tracking-widest border-b border-zinc-800 pb-2">
