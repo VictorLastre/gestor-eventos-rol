@@ -16,7 +16,7 @@ function MisCronicas({ alActualizarUsuario }) { // Recibimos la función para av
 
   useEffect(() => {
     const token = localStorage.getItem('token');
-    fetch('https://gestor-eventos-rol.onrender.com/api/mis-cronicas', {
+    fetch('https://gestor-eventos-rol.onrender.com/api/usuarios/mis-cronicas', {
       headers: { 'authorization': token }
     })
       .then(res => res.json())
