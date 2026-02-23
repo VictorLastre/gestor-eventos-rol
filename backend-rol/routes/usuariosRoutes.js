@@ -96,5 +96,18 @@ router.post('/solicitar-dm', verificarToken, (req, res) => {
     res.status(200).send('¡Tu solicitud ha sido enviada al gremio!');
   });
 });
+// === NUEVA RUTA: OBTENER TODOS LOS USUARIOS (Solo Admin) ===
+router.get('/', verificarToken, (req, res) => {
+  // Verificamos que solo el Admin supremo pueda ver esta lista
+  if (req.usuario.rol !== 'admin') return res.status(403).json({ error: 'Acceso denegado a los archivos secretos.' });
+  
+  // Traemos todos los usuarios ordenados alfabéticamente
+  const sql = "SELECT id, nombre, email, rol, avatar, solicita_dm FROM usuarios ORDER BY nombre ASC";
+  
+  db.query(sql, (err, resultados) => {
+    if (err) return res.status(500).json({ error: 'Error al consultar el censo del gremio.' });
+    res.json(resultados);
+  });
+});
 
 module.exports = router;
