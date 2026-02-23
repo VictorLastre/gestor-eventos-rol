@@ -143,11 +143,25 @@ app.post('/api/partidas/:id/inscripciones', verificarToken, (req, res) => {
   });
 });
 
+// Abandonar una partida (Darse de baja)
 app.delete('/api/partidas/:id/inscripciones', verificarToken, (req, res) => {
+  const idPartida = req.params.id;
+  const idUsuario = req.usuario.id; // Extraído del Token del jugador logueado
+
+  // Usamos ambos IDs para asegurarnos de borrar la fila correcta
   const sql = "DELETE FROM inscripciones WHERE usuario_id = ? AND partida_id = ?";
-  db.query(sql, [req.usuario.id, req.params.id], (err) => {
-    if (err) return res.status(500).send('Error al abandonar.');
-    res.send('Has abandonado la misión.');
+  
+  db.query(sql, [idUsuario, idPartida], (err, resultado) => {
+    if (err) {
+      console.error("Error al dar de baja:", err);
+      return res.status(500).send('Error en los anales del gremio.');
+    }
+    
+    if (resultado.affectedRows === 0) {
+      return res.status(404).send('No se encontró tu inscripción en esta mesa.');
+    }
+
+    res.send('Has abandonado la misión correctamente.');
   });
 });
 
