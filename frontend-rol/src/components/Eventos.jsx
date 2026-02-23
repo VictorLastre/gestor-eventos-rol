@@ -60,6 +60,9 @@ function Eventos() {
   // === VISTA DETALLADA DEL EVENTO ===
   if (eventoSeleccionado) {
     const eventoEsPasado = new Date(eventoSeleccionado.fecha) < hoy;
+    
+    // VERIFICACIÓN CLAVE: Buscamos si el usuario actual ya está dirigiendo en las partidas listadas
+    const yaDirigeEnEsteEvento = partidasDelEvento.some(p => p.dungeon_master_id === usuarioGuardado?.id);
 
     return (
       <div className="max-w-4xl mx-auto p-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
@@ -79,7 +82,8 @@ function Eventos() {
           </div>
         </header>
 
-        {esDungeonMaster && !eventoEsPasado && (
+        {/* CERRADURA APLICADA: Solo muestra el botón si NO dirige ya una mesa aquí */}
+        {esDungeonMaster && !eventoEsPasado && !yaDirigeEnEsteEvento && (
           <div className="mb-10">
             <button 
               onClick={() => setMostrarFormularioMesa(!mostrarFormularioMesa)}
@@ -110,7 +114,7 @@ function Eventos() {
             partidasDelEvento.map(p => (
               <Partida 
                 key={p.id} 
-                {...p}  // Esto envía TODOS los datos del servidor (id, titulo, dmNombre, cupo, etc.) automáticamente
+                {...p}  // Esto envía TODOS los datos del servidor automáticamente
                 eventoEsPasado={eventoEsPasado}
                 esAdmin={esAdmin} 
                 esMiMesa={usuarioGuardado?.id === p.dungeon_master_id} 

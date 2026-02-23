@@ -35,13 +35,32 @@ router.get('/:id/partidas', verificarToken, (req, res) => {
   });
 });
 
+// NUEVA LÓGICA: Candado para evitar DMs duplicados en el mismo evento
 router.post('/:id/partidas', verificarToken, (req, res) => {
   if (req.usuario.rol === 'jugador') return res.status(403).json({ error: 'Solo DMs y Admins pueden crear mesas.' });
-  const { titulo, descripcion, requisitos, sistema, cupo, turno } = req.body;
-  const sql = `INSERT INTO partidas (evento_id, dungeon_master_id, titulo, descripcion, requisitos, sistema, cupo, turno, estado) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'abierta')`;
-  db.query(sql, [req.params.id, req.usuario.id, titulo, descripcion, requisitos, sistema, cupo, turno], (err) => {
-    if (err) return res.status(500).json({ error: 'Error al crear la mesa.' });
-    res.status(201).json({ mensaje: '¡Mesa creada con éxito!' });
+  
+  const eventoId = req.params.id;
+  const dmId = req.usuario.id;
+
+  // 1. Verificamos si el DM ya tiene una mesa en este evento específico
+  const sqlCheck = "SELECT id FROM partidas WHERE evento_id = ? AND dungeon_master_id = ?";
+  
+  db.query(sqlCheck, [eventoId, dmId], (err, resultados) => {
+    if (err) return res.status(500).json({ error: 'Error al consultar los registros del gremio.' });
+    
+    // Si ya existe un registro, bloqueamos la creación
+    if (resultados.length > 0) {
+      return res.status(400).json({ error: 'Ya estás dirigiendo una mesa en este evento. No puedes desdoblarte.' });
+    }
+
+    // 2. Si pasa la prueba, insertamos la nueva mesa
+    const { titulo, descripcion, requisitos, sistema, cupo, turno } = req.body;
+    const sqlInsert = `INSERT INTO partidas (evento_id, dungeon_master_id, titulo, descripcion, requisitos, sistema, cupo, turno, estado) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'abierta')`;
+    
+    db.query(sqlInsert, [eventoId, dmId, titulo, descripcion, requisitos, sistema, cupo, turno], (err) => {
+      if (err) return res.status(500).json({ error: 'Error al crear la mesa.' });
+      res.status(201).json({ mensaje: '¡Mesa creada con éxito!' });
+    });
   });
 });
 
