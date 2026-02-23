@@ -26,7 +26,19 @@ router.post('/login', (req, res) => {
     if (!valida) return res.status(401).json({ error: 'Credenciales incorrectas' });
 
     const token = jwt.sign({ id: usuario.id, rol: usuario.rol }, JWT_SECRET, { expiresIn: '2h' });
-    res.json({ token, usuario: { id: usuario.id, nombre: usuario.nombre, rol: usuario.rol, email: usuario.email } });
+    
+    // === EL CAMBIO ESTÁ AQUÍ ===
+    // Ahora le enviamos el avatar de la base de datos al Frontend
+    res.json({ 
+      token, 
+      usuario: { 
+        id: usuario.id, 
+        nombre: usuario.nombre, 
+        rol: usuario.rol, 
+        email: usuario.email,
+        avatar: usuario.avatar || 'guerrero' // Fallback seguro por si acaso
+      } 
+    });
   });
 });
 

@@ -26,29 +26,35 @@ router.get('/solicitudes-dm', verificarToken, (req, res) => {
   });
 });
 
-// === NUEVA RUTA: ACTUALIZAR PERFIL (Debe ir antes de /:id/promover) ===
+// === RUTA ACTUALIZADA: PERFIL Y AVATAR ===
 router.put('/perfil', verificarToken, async (req, res) => {
-  const { nombre, email, password } = req.body;
+  // Extraemos el avatar que nos manda el frontend
+  const { nombre, email, password, avatar } = req.body;
   const idUsuario = req.usuario.id;
 
   try {
     // Si el aventurero forjó una nueva contraseña
     if (password && password.trim() !== '') {
       const hash = await bcrypt.hash(password, 10);
-      const sql = "UPDATE usuarios SET nombre = ?, email = ?, password = ? WHERE id = ?";
+      // Agregamos el avatar al UPDATE
+      const sql = "UPDATE usuarios SET nombre = ?, email = ?, password = ?, avatar = ? WHERE id = ?";
       
-      db.query(sql, [nombre, email, hash, idUsuario], (err) => {
+      db.query(sql, [nombre, email, hash, avatar, idUsuario], (err) => {
         if (err) return res.status(500).json({ error: 'Error al actualizar tu ficha en el gremio.' });
-        res.json({ mensaje: '¡Perfil y contraseña actualizados con éxito!' });
+        res.json({ mensaje: '¡Perfil, avatar y contraseña actualizados con éxito!' });
       });
     } 
-    // Si solo está actualizando su nombre o correo
+    // Si solo está actualizando datos o avatar (sin tocar la contraseña)
     else {
-      const sql = "UPDATE usuarios SET nombre = ?, email = ? WHERE id = ?";
+      // Agregamos el avatar al UPDATE
+      const sql = "UPDATE usuarios SET nombre = ?, email = ?, avatar = ? WHERE id = ?";
       
-      db.query(sql, [nombre, email, idUsuario], (err) => {
-        if (err) return res.status(500).json({ error: 'Error al actualizar tu ficha en el gremio.' });
-        res.json({ mensaje: '¡Perfil actualizado con éxito!' });
+      db.query(sql, [nombre, email, avatar, idUsuario], (err) => {
+        if (err) {
+            console.error(err);
+            return res.status(500).json({ error: 'Error al actualizar tu ficha en el gremio.' });
+        }
+        res.json({ mensaje: '¡Perfil y avatar actualizados con éxito!' });
       });
     }
   } catch (error) {
