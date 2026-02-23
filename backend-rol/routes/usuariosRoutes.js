@@ -45,4 +45,20 @@ router.get('/estadisticas', verificarToken, (req, res) => {
   });
 });
 
+// Ruta para que un jugador pida ser DM
+router.post('/solicitar-dm', verificarToken, (req, res) => {
+  // Verificamos que sea un jugador
+  if (req.usuario.rol !== 'jugador') {
+    return res.status(400).json({ error: 'Ya tienes rango o no puedes solicitarlo.' });
+  }
+
+  // Actualizamos su ficha en la base de datos (solicita_dm = 1)
+  const sql = "UPDATE usuarios SET solicita_dm = 1 WHERE id = ?";
+  
+  db.query(sql, [req.usuario.id], (err) => {
+    if (err) return res.status(500).json({ error: 'Error al enviar la petición.' });
+    res.status(200).send('¡Tu solicitud ha sido enviada al gremio!');
+  });
+});
+
 module.exports = router;

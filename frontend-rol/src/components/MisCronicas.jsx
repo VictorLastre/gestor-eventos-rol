@@ -60,18 +60,27 @@ function MisCronicas({ alActualizarUsuario }) { // Recibimos la función para av
     }
   };
 
-  // ... (solicitarDM y formatearFecha igual que antes)
-  const solicitarDM = async () => {
-    const token = localStorage.getItem('token');
-    try {
-      const res = await fetch('https://gestor-eventos-rol.onrender.com/api/usuarios/solicitar-dm', {
-        method: 'POST',
-        headers: { 'authorization': token }
-      });
-      const texto = await res.text();
-      alert(res.ok ? `✅ ${texto}` : `❌ ${texto}`);
-    } catch (error) { console.error(error); }
-  };
+  const enviarPeticionDM = async () => {
+  const token = localStorage.getItem('token');
+  
+  if(!window.confirm("¿Sientes el llamado? ¿Quieres enviar tu petición para convertirte en Dungeon Master?")) return;
+
+  try {
+    const res = await fetch('https://gestor-eventos-rol.onrender.com/api/usuarios/solicitar-dm', {
+      method: 'POST',
+      headers: { 'authorization': token }
+    });
+    
+    if (res.ok) {
+      alert('✨ ¡Tu petición para ser Dungeon Master ha sido enviada a los altos mandos!');
+    } else {
+      const error = await res.json();
+      alert(`❌ ${error.error}`);
+    }
+  } catch (e) { 
+    console.error(e); 
+  }
+};
 
   const formatearFecha = (fechaString) => {
     return new Date(fechaString).toLocaleDateString('es-ES', { day: 'numeric', month: 'long', year: 'numeric' });
@@ -116,6 +125,13 @@ function MisCronicas({ alActualizarUsuario }) { // Recibimos la función para av
                 ))}
               </div>
             </div>
+            {/* Solo mostramos el botón si NO es admin ni dm (esto requiere tener el usuario en el componente) */}
+            <button 
+              onClick={enviarPeticionDM}
+              className="mt-6 bg-purple-600 hover:bg-purple-500 text-white font-black px-6 py-3 rounded-xl shadow-lg transition-all transform active:scale-95 text-xs uppercase tracking-widest"
+            >
+              🧙‍♂️ Solicitar rango de Dungeon Master
+            </button>
             <div className="space-y-2">
               <label className="text-[10px] font-bold text-zinc-600 uppercase ml-2">Nombre</label>
               <input name="nombre" className="w-full bg-zinc-950 border border-zinc-800 rounded-xl py-3 px-4 text-white focus:border-emerald-500 outline-none" value={perfil.nombre} onChange={manejarCambioPerfil} />
