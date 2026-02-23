@@ -51,17 +51,20 @@ function Eventos() {
   const hoy = new Date();
   hoy.setHours(0, 0, 0, 0);
 
+  // SEPARACIÓN DE EVENTOS: Próximos vs Pasados
   const eventosProximos = eventos
     .filter(e => new Date(e.fecha) >= hoy)
     .sort((a, b) => new Date(a.fecha) - new Date(b.fecha));
+    
+  const eventosPasados = eventos
+    .filter(e => new Date(e.fecha) < hoy)
+    .sort((a, b) => new Date(b.fecha) - new Date(a.fecha)); // Ordenamos del más reciente al más antiguo
 
   const formatearFecha = (f) => new Date(f).toLocaleDateString('es-ES', { day: 'numeric', month: 'long', year: 'numeric' });
 
   // === VISTA DETALLADA DEL EVENTO ===
   if (eventoSeleccionado) {
     const eventoEsPasado = new Date(eventoSeleccionado.fecha) < hoy;
-    
-    // VERIFICACIÓN CLAVE: Buscamos si el usuario actual ya está dirigiendo en las partidas listadas
     const yaDirigeEnEsteEvento = partidasDelEvento.some(p => p.dungeon_master_id === usuarioGuardado?.id);
 
     return (
@@ -73,16 +76,20 @@ function Eventos() {
           <span className="group-hover:-translate-x-1 transition-transform">←</span> Volver al Tablón
         </button>
 
-        <header className="bg-zinc-900/50 border border-zinc-800 p-8 rounded-3xl backdrop-blur-xl mb-8 relative overflow-hidden">
-          <div className="absolute top-0 right-0 w-32 h-32 bg-emerald-500/5 blur-3xl rounded-full"></div>
+        <header className={`bg-zinc-900/50 border ${eventoEsPasado ? 'border-zinc-800 opacity-80' : 'border-zinc-800'} p-8 rounded-3xl backdrop-blur-xl mb-8 relative overflow-hidden`}>
+          {eventoEsPasado && (
+             <div className="absolute -top-6 -right-10 bg-zinc-800 text-zinc-400 text-xs font-black px-12 py-2 rotate-45 uppercase tracking-widest shadow-lg">
+               FINALIZADO
+             </div>
+          )}
+          <div className={`absolute top-0 right-0 w-32 h-32 ${eventoEsPasado ? 'bg-zinc-500/5' : 'bg-emerald-500/5'} blur-3xl rounded-full`}></div>
           <h2 className="text-4xl font-black text-white mb-3 tracking-tighter">{eventoSeleccionado.nombre}</h2>
           <p className="text-zinc-400 text-lg leading-relaxed mb-6 italic">"{eventoSeleccionado.descripcion}"</p>
-          <div className="flex items-center gap-2 text-emerald-500 font-bold bg-emerald-500/10 w-fit px-4 py-1.5 rounded-full border border-emerald-500/20 shadow-[0_0_15px_rgba(16,185,129,0.1)]">
+          <div className={`flex items-center gap-2 font-bold w-fit px-4 py-1.5 rounded-full border shadow-[0_0_15px_rgba(16,185,129,0.1)] ${eventoEsPasado ? 'text-zinc-500 bg-zinc-500/10 border-zinc-500/20' : 'text-emerald-500 bg-emerald-500/10 border-emerald-500/20'}`}>
             <span>📅</span> {formatearFecha(eventoSeleccionado.fecha)}
           </div>
         </header>
 
-        {/* CERRADURA APLICADA: Solo muestra el botón si NO dirige ya una mesa aquí */}
         {esDungeonMaster && !eventoEsPasado && !yaDirigeEnEsteEvento && (
           <div className="mb-10">
             <button 
@@ -105,7 +112,7 @@ function Eventos() {
         )}
 
         <div className="flex items-center gap-4 mb-8">
-          <h3 className="text-2xl font-black text-white uppercase tracking-tighter">Mesas Disponibles</h3>
+          <h3 className="text-2xl font-black text-white uppercase tracking-tighter">Mesas de la jornada</h3>
           <div className="h-px bg-zinc-800 flex-1"></div>
         </div>
 
@@ -114,7 +121,7 @@ function Eventos() {
             partidasDelEvento.map(p => (
               <Partida 
                 key={p.id} 
-                {...p}  // Esto envía TODOS los datos del servidor automáticamente
+                {...p} 
                 eventoEsPasado={eventoEsPasado}
                 esAdmin={esAdmin} 
                 esMiMesa={usuarioGuardado?.id === p.dungeon_master_id} 
@@ -122,7 +129,7 @@ function Eventos() {
             ))
           ) : (
             <div className="text-center py-20 bg-zinc-900/20 border-2 border-dashed border-zinc-800 rounded-3xl">
-              <p className="text-zinc-500 font-bold italic">Aún no hay expediciones planeadas para este evento...</p>
+              <p className="text-zinc-500 font-bold italic">No hubo expediciones en este evento.</p>
             </div>
           )}
         </div>
@@ -134,7 +141,6 @@ function Eventos() {
   return (
     <div className="max-w-6xl mx-auto p-6 md:p-12 animate-in fade-in duration-700">
       
-      {/* PANEL DE ADMINISTRACIÓN */}
       {esAdmin && (
         <section className="mb-16 bg-zinc-900 rounded-[2.5rem] border border-purple-500/20 overflow-hidden shadow-2xl shadow-purple-500/5">
           <header className="bg-zinc-800/50 p-2 flex gap-2">
@@ -160,8 +166,8 @@ function Eventos() {
         </section>
       )}
 
-      {/* LISTADO DE EVENTOS PRÓXIMOS */}
-      <section>
+      {/* EVENTOS PRÓXIMOS */}
+      <section className="mb-20">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-10">
           <h2 className="text-4xl font-black text-white tracking-tighter flex items-center gap-4 italic uppercase">
             <span className="w-12 h-12 bg-emerald-500 text-black flex items-center justify-center rounded-2xl shadow-lg shadow-emerald-500/20 not-italic">⚔️</span>
@@ -180,7 +186,6 @@ function Eventos() {
                 onClick={() => entrarAlEvento(evento)}
                 className="group relative bg-zinc-900/40 hover:bg-zinc-900 border border-zinc-800 hover:border-emerald-500/50 p-8 rounded-[2rem] transition-all duration-300 cursor-pointer shadow-xl hover:shadow-emerald-500/10 hover:-translate-y-2 overflow-hidden"
               >
-                {/* Glow efecto hover */}
                 <div className="absolute -bottom-10 -right-10 w-32 h-32 bg-emerald-500/5 group-hover:bg-emerald-500/10 blur-3xl rounded-full transition-colors"></div>
 
                 <div className="relative z-10">
@@ -219,6 +224,55 @@ function Eventos() {
           )}
         </div>
       </section>
+
+      {/* EVENTOS PASADOS (HISTORIAL) */}
+      <section>
+        <div className="flex items-center gap-4 mb-8">
+          <h3 className="text-2xl font-black text-zinc-600 uppercase tracking-tighter italic">Historial de Misiones</h3>
+          <div className="h-px bg-zinc-800 flex-1"></div>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 opacity-70 hover:opacity-100 transition-opacity duration-300">
+          {eventosPasados.length > 0 ? (
+            eventosPasados.map(evento => (
+              <div 
+                key={evento.id} 
+                onClick={() => entrarAlEvento(evento)}
+                className="group relative bg-zinc-900/20 border border-zinc-800 p-6 rounded-3xl transition-all duration-300 cursor-pointer hover:bg-zinc-900/50"
+              >
+                <div className="relative z-10 flex flex-col h-full">
+                  <h4 className="text-lg font-black text-zinc-400 mb-2 uppercase italic tracking-tight line-clamp-1 group-hover:text-zinc-300">
+                    {evento.nombre}
+                  </h4>
+                  <p className="text-zinc-600 text-xs mb-4 line-clamp-2 italic">
+                    {evento.descripcion}
+                  </p>
+                  <div className="mt-auto">
+                    <span className="text-zinc-500 font-black text-[10px] bg-zinc-800/50 px-3 py-1 rounded-lg uppercase tracking-tighter">
+                      {formatearFecha(evento.fecha)}
+                    </span>
+                  </div>
+                </div>
+                
+                {esAdmin && (
+                  <button 
+                    onClick={(e) => borrarEvento(evento.id, e)}
+                    className="absolute top-4 right-4 p-1 text-zinc-700 hover:text-red-500 transition-colors"
+                    title="Borrar Evento del Historial"
+                  >
+                    ✕
+                  </button>
+                )}
+              </div>
+            ))
+          ) : (
+            <p className="col-span-full text-center text-zinc-700 font-bold uppercase tracking-widest text-xs italic">
+              Aún no hay registros en los anales del gremio.
+            </p>
+          )}
+        </div>
+      </section>
+
     </div>
   );
 }
