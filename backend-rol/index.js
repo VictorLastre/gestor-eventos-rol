@@ -186,6 +186,119 @@ app.get('/api/admin/estadisticas', verificarToken, (req, res) => {
 });
 
 // ==========================================
+// GESTIÓN DE INSCRIPCIONES (UNIRSE/ABANDONAR)
+// ==========================================
+
+// Anotarse en una partida
+app.post('/api/partidas/:id/inscripciones', verificarToken, (req, res) => {
+  const idPartida = req.params.id;
+  const idUsuario = req.usuario.id;
+
+  // Primero verificamos si hay cupo
+  const sqlCupo = `
+    SELECT p.cupo, COUNT(i.id) as anotados 
+    FROM partidas p 
+    LEFT JOIN inscripciones i ON p.id = i.partida_id 
+    WHERE p.id = ? GROUP BY p.id`;
+
+  db.query(sqlCupo, [idPartida], (err, resultados) => {
+    if (err) return res.status(500).send('Error al verificar cupo.');
+    if (resultados.length > 0 && resultados[0].anotados >= resultados[0].cupo) {
+      return res.status(400).send('❌ ¡Mesa llena! No quedan lugares.');
+    }
+
+    const sqlIns = "INSERT INTO inscripciones (usuario_id, partida_id) VALUES (?, ?)";
+    db.query(sqlIns, [idUsuario, idPartida], (err) => {
+      if (err) return res.status(400).send('Ya estás anotado en esta partida.');
+      res.status(201).send('¡Te has unido a la aventura!');
+    });
+  });
+});
+
+// Abandonar una partida
+app.delete('/api/partidas/:id/inscripciones', verificarToken, (req, res) => {
+  const sql = "DELETE FROM inscripciones WHERE usuario_id = ? AND partida_id = ?";
+  db.query(sql, [req.usuario.id, req.params.id], (err) => {
+    if (err) return res.status(500).send('Error al abandonar.');
+    res.send('Has abandonado la misión.');
+  });
+});
+
+// ==========================================
+// GESTIÓN DE MESA (VER JUGADORES / BORRAR)
+// ==========================================
+
+// Ver lista de nombres de jugadores anotados
+app.get('/api/partidas/:id/jugadores', verificarToken, (req, res) => {
+  const sql = `
+    SELECT u.id, u.nombre, u.email 
+    FROM usuarios u 
+    JOIN inscripciones i ON u.id = i.usuario_id 
+    WHERE i.partida_id = ?`;
+    
+  db.query(sql, [req.params.id], (err, resultados) => {
+    if (err) return res.status(500).json({ error: 'Error al obtener lista.' });
+    res.json(resultados);
+  });
+});
+
+// Borrar (disolver) una mesa
+app.delete('/api/partidas/:id', verificarToken, (req, res) => {
+  const idPartida = req.params.id;
+  const idUsuario = req.usuario.id;
+  const rol = req.usuario.rol;
+
+  // Solo el DM de la mesa o un Admin puede borrarla
+  const sqlCheck = "SELECT dungeon_master_id FROM partidas WHERE id = ?";
+  db.query(sqlCheck, [idPartida], (err, resultados) => {
+    if (err || resultados.length === 0) return res.status(404).send('Mesa no encontrada.');
+    
+    if (resultados[0].dungeon_master_id !== idUsuario && rol !== 'admin') {
+      return res.status(403).send('No tienes permiso para disolver esta mesa.');
+    }
+
+    db.query("DELETE FROM partidas WHERE id = ?", [idPartida], (err) => {
+      if (err) return res.status(500).send('Error al borrar la mesa.');
+      res.send('Mesa disuelta correctamente.');
+    });
+  });
+});
+
+// ==========================================
+// GESTIÓN DE RANGOS Y SOLICITUDES
+// ==========================================
+
+// Obtener usuarios que solicitan ser DM
+app.get('/api/usuarios/solicitudes-dm', verificarToken, (req, res) => {
+  if (req.usuario.rol !== 'admin') return res.status(403).json({ error: 'Acceso denegado.' });
+
+  const sql = "SELECT id, nombre, email FROM usuarios WHERE solicita_dm = 1 AND rol = 'jugador'";
+  
+  db.query(sql, (err, resultados) => {
+    if (err) return res.status(500).json({ error: 'Error al consultar aspirantes.' });
+    res.json(resultados);
+  });
+});
+
+// Promover a un usuario a rango DM
+app.put('/api/usuarios/:id/promover', verificarToken, (req, res) => {
+  if (req.usuario.rol !== 'admin') return res.status(403).json({ error: 'Solo los Admins otorgan rangos.' });
+
+  const idUsuario = req.params.id;
+  const sql = "UPDATE usuarios SET rol = 'dm', solicita_dm = 0 WHERE id = ?";
+
+  db.query(sql, [idUsuario], (err, resultado) => {
+    if (err) return res.status(500).json({ error: 'Error en el ritual de ascenso.' });
+    
+    if (resultado.affectedRows === 0) {
+      return res.status(404).json({ error: 'El aventurero no fue encontrado.' });
+    }
+    
+    res.send('¡Ascenso completado!'); // Enviamos texto plano porque tu frontend usa res.text()
+  });
+});
+
+// ==========================================
 // 9. ENCENDER EL SERVIDOR
 // ==========================================
 const PUERTO = process.env.PORT || 3001;
