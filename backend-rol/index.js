@@ -88,6 +88,7 @@ app.post('/api/eventos', verificarToken, (req, res) => {
 
 app.get('/api/eventos/:id/partidas', verificarToken, (req, res) => {
   // Ajustamos los alias (AS) para que coincidan con los props del componente Partida.jsx
+  // dmNombre, jugadoresIniciales y anotadoInicialmente son los que espera el Frontend
   const sql = `
     SELECT p.*, u.nombre AS dmNombre, 
     (SELECT COUNT(*) FROM inscripciones WHERE partida_id = p.id) as jugadoresIniciales,
@@ -116,27 +117,27 @@ app.post('/api/eventos/:id/partidas', verificarToken, (req, res) => {
 });
 
 // ==========================================
-// 7. GESTIÓN DE INSCRIPCIONES (UNIRSE/ABANDONAR)
+// 7. GESTIÓN DE INSCRIPCIONES (SOLUCIÓN ERROR 400)
 // ==========================================
 
 app.post('/api/partidas/:id/inscripciones', verificarToken, (req, res) => {
   const idPartida = req.params.id;
   const idUsuario = req.usuario.id;
 
-  const sqlCupo = `
-    SELECT p.cupo, (SELECT COUNT(*) FROM inscripciones WHERE partida_id = p.id) as anotados 
-    FROM partidas p 
-    WHERE p.id = ?`;
+  // Verificamos si la partida existe y tiene cupo
+  const sqlCupo = `SELECT cupo, (SELECT COUNT(*) FROM inscripciones WHERE partida_id = ?) as anotados FROM partidas WHERE id = ?`;
 
-  db.query(sqlCupo, [idPartida], (err, resultados) => {
-    if (err) return res.status(500).send('Error al verificar cupo.');
-    if (resultados.length > 0 && resultados[0].anotados >= resultados[0].cupo) {
+  db.query(sqlCupo, [idPartida, idPartida], (err, resultados) => {
+    if (err) return res.status(500).send('Error de servidor.');
+    if (resultados.length === 0) return res.status(404).send('La mesa ya no existe.');
+    
+    if (resultados[0].anotados >= resultados[0].cupo) {
       return res.status(400).send('❌ ¡Mesa llena! No quedan lugares.');
     }
 
     const sqlIns = "INSERT INTO inscripciones (usuario_id, partida_id) VALUES (?, ?)";
     db.query(sqlIns, [idUsuario, idPartida], (err) => {
-      if (err) return res.status(400).send('Ya estás anotado o error en DB.');
+      if (err) return res.status(400).send('Ya estás anotado o hubo un error en los anales.');
       res.status(201).send('¡Te has unido a la aventura!');
     });
   });
@@ -151,7 +152,7 @@ app.delete('/api/partidas/:id/inscripciones', verificarToken, (req, res) => {
 });
 
 // ==========================================
-// 8. MIS CRÓNICAS (Ruta para el perfil)
+// 8. MIS CRÓNICAS (SOLUCIÓN ERROR 404)
 // ==========================================
 
 app.get('/api/mis-cronicas', verificarToken, (req, res) => {
@@ -181,7 +182,7 @@ app.get('/api/admin/estadisticas', verificarToken, (req, res) => {
     LEFT JOIN inscripciones i ON p.id = i.partida_id
     GROUP BY e.id ORDER BY e.fecha DESC`;
   db.query(sql, (err, resultados) => {
-    if (err) return res.status(500).json({ error: 'Error en estadísticas.' });
+    if (err) return res.status(500).json({ error: 'Error.' });
     res.json(resultados);
   });
 });
@@ -190,7 +191,7 @@ app.get('/api/usuarios/solicitudes-dm', verificarToken, (req, res) => {
   if (req.usuario.rol !== 'admin') return res.status(403).json({ error: 'Acceso denegado.' });
   const sql = "SELECT id, nombre, email FROM usuarios WHERE solicita_dm = 1 AND rol = 'jugador'";
   db.query(sql, (err, resultados) => {
-    if (err) return res.status(500).json({ error: 'Error en solicitudes.' });
+    if (err) return res.status(500).json({ error: 'Error.' });
     res.json(resultados || []);
   });
 });
@@ -198,7 +199,7 @@ app.get('/api/usuarios/solicitudes-dm', verificarToken, (req, res) => {
 app.put('/api/usuarios/:id/promover', verificarToken, (req, res) => {
   if (req.usuario.rol !== 'admin') return res.status(403).json({ error: 'Denegado.' });
   db.query("UPDATE usuarios SET rol = 'dm', solicita_dm = 0 WHERE id = ?", [req.params.id], (err) => {
-    if (err) return res.status(500).send('Error en ascenso.');
+    if (err) return res.status(500).send('Error.');
     res.send('¡Ascenso completado!');
   });
 });
@@ -234,7 +235,7 @@ app.post('/api/login', (req, res) => {
   });
 });
 
-// --- RUTA EXTRA PARA VER JUGADORES DE UNA MESA ---
+// Rutas extras necesarias para el componente Partida.jsx
 app.get('/api/partidas/:id/jugadores', verificarToken, (req, res) => {
   const sql = "SELECT u.id, u.nombre, u.email FROM usuarios u JOIN inscripciones i ON u.id = i.usuario_id WHERE i.partida_id = ?";
   db.query(sql, [req.params.id], (err, resultados) => {
@@ -243,7 +244,6 @@ app.get('/api/partidas/:id/jugadores', verificarToken, (req, res) => {
   });
 });
 
-// --- RUTA EXTRA PARA BORRAR MESA ---
 app.delete('/api/partidas/:id', verificarToken, (req, res) => {
   db.query("DELETE FROM partidas WHERE id = ?", [req.params.id], (err) => {
     if (err) return res.status(500).send('Error.');
