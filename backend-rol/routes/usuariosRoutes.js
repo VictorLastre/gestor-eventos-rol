@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const db = require('../config/db');
 const verificarToken = require('../middlewares/auth');
+const bcrypt = require('bcrypt'); // ¡Vital para encriptar la nueva contraseña!
 
 router.get('/mis-cronicas', verificarToken, (req, res) => {
   const idUsuario = req.usuario.id;
@@ -23,6 +24,37 @@ router.get('/solicitudes-dm', verificarToken, (req, res) => {
     if (err) return res.status(500).json({ error: 'Error.' });
     res.json(resultados || []);
   });
+});
+
+// === NUEVA RUTA: ACTUALIZAR PERFIL (Debe ir antes de /:id/promover) ===
+router.put('/perfil', verificarToken, async (req, res) => {
+  const { nombre, email, password } = req.body;
+  const idUsuario = req.usuario.id;
+
+  try {
+    // Si el aventurero forjó una nueva contraseña
+    if (password && password.trim() !== '') {
+      const hash = await bcrypt.hash(password, 10);
+      const sql = "UPDATE usuarios SET nombre = ?, email = ?, password = ? WHERE id = ?";
+      
+      db.query(sql, [nombre, email, hash, idUsuario], (err) => {
+        if (err) return res.status(500).json({ error: 'Error al actualizar tu ficha en el gremio.' });
+        res.json({ mensaje: '¡Perfil y contraseña actualizados con éxito!' });
+      });
+    } 
+    // Si solo está actualizando su nombre o correo
+    else {
+      const sql = "UPDATE usuarios SET nombre = ?, email = ? WHERE id = ?";
+      
+      db.query(sql, [nombre, email, idUsuario], (err) => {
+        if (err) return res.status(500).json({ error: 'Error al actualizar tu ficha en el gremio.' });
+        res.json({ mensaje: '¡Perfil actualizado con éxito!' });
+      });
+    }
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: 'Error interno en la magia del servidor.' });
+  }
 });
 
 router.put('/:id/promover', verificarToken, (req, res) => {
@@ -47,12 +79,10 @@ router.get('/estadisticas', verificarToken, (req, res) => {
 
 // Ruta para que un jugador pida ser DM
 router.post('/solicitar-dm', verificarToken, (req, res) => {
-  // Verificamos que sea un jugador
   if (req.usuario.rol !== 'jugador') {
     return res.status(400).json({ error: 'Ya tienes rango o no puedes solicitarlo.' });
   }
 
-  // Actualizamos su ficha en la base de datos (solicita_dm = 1)
   const sql = "UPDATE usuarios SET solicita_dm = 1 WHERE id = ?";
   
   db.query(sql, [req.usuario.id], (err) => {
