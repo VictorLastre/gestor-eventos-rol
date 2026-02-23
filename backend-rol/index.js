@@ -87,18 +87,35 @@ app.post('/api/eventos', verificarToken, (req, res) => {
 // ==========================================
 
 app.get('/api/eventos/:id/partidas', verificarToken, (req, res) => {
-  // Ajustamos los alias (AS) para que coincidan con los props del componente Partida.jsx
-  // dmNombre, jugadoresIniciales y anotadoInicialmente son los que espera el Frontend
+  // Ajustamos el SQL para usar tus columnas reales:
+  // p.cupo es la columna que me pasaste para evitar el NaN
+  // u.nombre es el nombre del DM
   const sql = `
-    SELECT p.*, u.nombre AS dmNombre, 
-    (SELECT COUNT(*) FROM inscripciones WHERE partida_id = p.id) as jugadoresIniciales,
-    (SELECT COUNT(*) FROM inscripciones WHERE partida_id = p.id AND usuario_id = ?) as anotadoInicialmente
+    SELECT 
+      p.id, 
+      p.evento_id, 
+      p.dungeon_master_id, 
+      p.titulo, 
+      p.descripcion, 
+      p.requisitos, 
+      p.sistema, 
+      p.cupo, 
+      p.turno, 
+      p.estado,
+      u.nombre AS dmNombre, 
+      (SELECT COUNT(*) FROM inscripciones WHERE partida_id = p.id) AS jugadoresIniciales,
+      (SELECT COUNT(*) FROM inscripciones WHERE partida_id = p.id AND usuario_id = ?) AS anotadoInicialmente
     FROM partidas p
     JOIN usuarios u ON p.dungeon_master_id = u.id
     WHERE p.evento_id = ?
+    GROUP BY p.id
   `;
+
   db.query(sql, [req.usuario.id, req.params.id], (err, resultados) => {
-    if (err) return res.status(500).json({ error: 'Error en partidas.' });
+    if (err) {
+      console.error("Error en partidas:", err);
+      return res.status(500).json({ error: 'Error al consultar las mesas.' });
+    }
     res.json(resultados);
   });
 });
