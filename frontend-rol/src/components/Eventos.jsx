@@ -110,15 +110,7 @@ function Eventos() {
             partidasDelEvento.map(p => (
               <Partida 
                 key={p.id} 
-                id={p.id}
-                titulo={p.titulo}
-                descripcion={p.descripcion}
-                sistema={p.sistema}
-                cupo={p.cupo}
-                requisitos={p.requisitos}
-                dmNombre={p.dungeon_master_nombre}
-                jugadoresIniciales={p.jugadores_anotados} 
-                anotadoInicialmente={p.estoy_anotado === 1}
+                {...p}  // Esto envía TODOS los datos del servidor (id, titulo, dmNombre, cupo, etc.) automáticamente
                 eventoEsPasado={eventoEsPasado}
                 esAdmin={esAdmin} 
                 esMiMesa={usuarioGuardado?.id === p.dungeon_master_id} 
