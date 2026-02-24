@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import Swal from 'sweetalert2'; // ✨ IMPORTAMOS LA MAGIA DE SWEETALERT
+import Swal from 'sweetalert2'; 
 
 function GestionUsuarios() {
   const [solicitudes, setSolicitudes] = useState([]);
@@ -32,16 +32,15 @@ function GestionUsuarios() {
   const promoverUsuario = async (id, nombre) => {
     const token = localStorage.getItem('token');
     
-    // ✨ REEMPLAZO DEL WINDOW.CONFIRM POR UNA ALERTA ÉPICA
     const result = await Swal.fire({
       title: 'Forjar un nuevo Director',
       text: `¿Estás seguro de otorgar el manto de Dungeon Master a ${nombre.toUpperCase()}? Este poder es permanente.`,
       icon: 'warning',
       showCancelButton: true,
-      background: '#18181b', // zinc-900
+      background: '#18181b', 
       color: '#fff',
-      confirmButtonColor: '#f59e0b', // amber-500
-      cancelButtonColor: '#3f3f46', // zinc-700
+      confirmButtonColor: '#f59e0b', 
+      cancelButtonColor: '#3f3f46', 
       confirmButtonText: '🪄 Ascender Aventurero',
       cancelButtonText: 'Cancelar'
     });
@@ -56,25 +55,84 @@ function GestionUsuarios() {
         const texto = await res.text();
         
         if (res.ok) {
-          // ✨ NOTIFICACIÓN DE ÉXITO
           Swal.fire({
             title: '¡Ascenso Concedido!',
             text: `✨ ${nombre} ahora posee el rango de Dungeon Master.`,
             icon: 'success',
             background: '#18181b',
             color: '#fff',
-            confirmButtonColor: '#10b981' // emerald-500
+            confirmButtonColor: '#10b981' 
           });
           cargarDatos(); 
         } else {
-          // ✨ NOTIFICACIÓN DE ERROR
           Swal.fire({
             title: 'Interferencia Mágica',
             text: `❌ ${texto}`,
             icon: 'error',
             background: '#18181b',
             color: '#fff',
-            confirmButtonColor: '#ef4444' // red-500
+            confirmButtonColor: '#ef4444' 
+          });
+        }
+      } catch (e) { 
+        console.error(e); 
+        Swal.fire({
+          title: 'Error de Red',
+          text: 'Los pergaminos no pudieron llegar al servidor.',
+          icon: 'error',
+          background: '#18181b',
+          color: '#fff',
+          confirmButtonColor: '#ef4444'
+        });
+      }
+    }
+  };
+
+  // ✨ NUEVA FUNCIÓN PARA RECHAZAR LA SOLICITUD
+  const rechazarUsuario = async (id, nombre) => {
+    const token = localStorage.getItem('token');
+    
+    const result = await Swal.fire({
+      title: 'Denegar Petición',
+      text: `¿Estás seguro de rechazar la solicitud de ${nombre.toUpperCase()}? La marca de petición será borrada.`,
+      icon: 'error',
+      showCancelButton: true,
+      background: '#18181b', 
+      color: '#fff',
+      confirmButtonColor: '#ef4444', // red-500
+      cancelButtonColor: '#3f3f46', 
+      confirmButtonText: '❌ Rechazar Petición',
+      cancelButtonText: 'Cancelar'
+    });
+
+    if (result.isConfirmed) {
+      try {
+        // Asumimos que crearás esta ruta en el backend usando DELETE o PUT
+        const res = await fetch(`https://gestor-eventos-rol.onrender.com/api/usuarios/${id}/rechazar-dm`, {
+          method: 'PUT', 
+          headers: { 'authorization': token }
+        });
+        
+        const texto = await res.text();
+        
+        if (res.ok) {
+          Swal.fire({
+            title: 'Petición Rechazada',
+            text: `La solicitud de ${nombre} ha sido borrada de los registros.`,
+            icon: 'success',
+            background: '#18181b',
+            color: '#fff',
+            confirmButtonColor: '#10b981' 
+          });
+          cargarDatos(); 
+        } else {
+          Swal.fire({
+            title: 'Interferencia Mágica',
+            text: `❌ ${texto}`,
+            icon: 'error',
+            background: '#18181b',
+            color: '#fff',
+            confirmButtonColor: '#ef4444' 
           });
         }
       } catch (e) { 
@@ -153,9 +211,23 @@ function GestionUsuarios() {
                       <p className="text-xs text-zinc-500 font-mono">{user.email}</p>
                     </div>
                   </div>
-                  <button onClick={() => promoverUsuario(user.id, user.nombre)} className="w-full md:w-auto bg-amber-500 hover:bg-amber-400 text-black font-black px-6 py-3 rounded-xl shadow-lg shadow-amber-900/20 transition-all transform active:scale-95 text-[10px] uppercase tracking-widest">
-                    🪄 Otorgar Rango de DM
-                  </button>
+                  
+                  {/* ✨ AQUÍ AGREGAMOS EL BOTÓN DE RECHAZAR JUNTO AL DE ASCENDER */}
+                  <div className="flex gap-2 w-full md:w-auto mt-2 md:mt-0">
+                    <button 
+                      onClick={() => rechazarUsuario(user.id, user.nombre)} 
+                      className="flex-1 md:flex-none bg-zinc-800 hover:bg-red-500/10 text-zinc-400 hover:text-red-500 border border-transparent hover:border-red-500/50 font-black px-4 py-3 rounded-xl transition-all text-[10px] uppercase tracking-widest"
+                    >
+                      ✕ Denegar
+                    </button>
+                    <button 
+                      onClick={() => promoverUsuario(user.id, user.nombre)} 
+                      className="flex-1 md:flex-none bg-amber-500 hover:bg-amber-400 text-black font-black px-6 py-3 rounded-xl shadow-lg shadow-amber-900/20 transition-all transform active:scale-95 text-[10px] uppercase tracking-widest"
+                    >
+                      🪄 Ascender
+                    </button>
+                  </div>
+
                 </div>
               ))}
             </div>
