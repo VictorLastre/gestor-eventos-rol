@@ -3,6 +3,7 @@ const router = express.Router();
 const db = require('../config/db');
 const verificarToken = require('../middlewares/auth');
 
+// 1. Obtener todos los eventos
 router.get('/', (req, res) => {
   db.query('SELECT * FROM eventos ORDER BY fecha DESC', (err, resultados) => {
     if (err) return res.status(500).json({ error: 'Error leyendo los eventos' });
@@ -10,6 +11,7 @@ router.get('/', (req, res) => {
   });
 });
 
+// 2. Crear un nuevo evento (Solo Admins)
 router.post('/', verificarToken, (req, res) => {
   if (req.usuario.rol !== 'admin') return res.status(403).json({ error: 'Solo Admins.' });
   const { nombre, descripcion, fecha } = req.body;
@@ -19,6 +21,7 @@ router.post('/', verificarToken, (req, res) => {
   });
 });
 
+// 3. Obtener partidas de un evento específico
 router.get('/:id/partidas', verificarToken, (req, res) => {
   const sql = `
     SELECT 
@@ -35,29 +38,46 @@ router.get('/:id/partidas', verificarToken, (req, res) => {
   });
 });
 
-// NUEVA LÓGICA: Candado para evitar DMs duplicados en el mismo evento
+// 4. Crear una mesa en un evento (Con candado de participación única)
 router.post('/:id/partidas', verificarToken, (req, res) => {
+  // Los jugadores base no pueden crear mesas
   if (req.usuario.rol === 'jugador') return res.status(403).json({ error: 'Solo DMs y Admins pueden crear mesas.' });
   
   const eventoId = req.params.id;
-  const dmId = req.usuario.id;
+  const usuarioId = req.usuario.id;
 
-  // 1. Verificamos si el DM ya tiene una mesa en este evento específico
-  const sqlCheck = "SELECT id FROM partidas WHERE evento_id = ? AND dungeon_master_id = ?";
+  // LÓGICA DE VALIDACIÓN:
+  // Verificamos si el usuario ya es DM de una mesa O si ya es jugador en alguna mesa de ESTE evento.
+  const sqlCheck = `
+    SELECT 
+      (SELECT COUNT(*) FROM partidas WHERE evento_id = ? AND dungeon_master_id = ?) as es_dm,
+      (SELECT COUNT(*) FROM inscripciones i JOIN partidas p ON i.partida_id = p.id WHERE p.evento_id = ? AND i.usuario_id = ?) as es_jugador
+  `;
   
-  db.query(sqlCheck, [eventoId, dmId], (err, resultados) => {
+  db.query(sqlCheck, [eventoId, usuarioId, eventoId, usuarioId], (err, resultados) => {
     if (err) return res.status(500).json({ error: 'Error al consultar los registros del gremio.' });
     
-    // Si ya existe un registro, bloqueamos la creación
-    if (resultados.length > 0) {
-      return res.status(400).json({ error: 'Ya estás dirigiendo una mesa en este evento. No puedes desdoblarte.' });
+    const { es_dm, es_jugador } = resultados[0];
+
+    // Si ya tiene una mesa como DM
+    if (es_dm > 0) {
+      return res.status(400).json({ error: 'Ya estás dirigiendo una mesa en este evento.' });
     }
 
-    // 2. Si pasa la prueba, insertamos la nueva mesa
+    // Si ya está anotado como jugador en otra mesa
+    if (es_jugador > 0) {
+      return res.status(400).json({ error: 'No puedes crear una mesa porque ya estás anotado como jugador en este evento.' });
+    }
+
+    // Si el camino está libre, procedemos a insertar la mesa
     const { titulo, descripcion, requisitos, sistema, cupo, turno } = req.body;
-    const sqlInsert = `INSERT INTO partidas (evento_id, dungeon_master_id, titulo, descripcion, requisitos, sistema, cupo, turno, estado) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'abierta')`;
+    const sqlInsert = `
+        INSERT INTO partidas 
+        (evento_id, dungeon_master_id, titulo, descripcion, requisitos, sistema, cupo, turno, estado) 
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'abierta')
+    `;
     
-    db.query(sqlInsert, [eventoId, dmId, titulo, descripcion, requisitos, sistema, cupo, turno], (err) => {
+    db.query(sqlInsert, [eventoId, usuarioId, titulo, descripcion, requisitos, sistema, cupo, turno], (err) => {
       if (err) return res.status(500).json({ error: 'Error al crear la mesa.' });
       res.status(201).json({ mensaje: '¡Mesa creada con éxito!' });
     });
