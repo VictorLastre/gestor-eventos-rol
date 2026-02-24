@@ -6,30 +6,43 @@ function Partida(props) {
 
   const [jugadoresAnotados, setJugadoresAnotados] = useState(cantJugadores);
   const [anotado, setAnotado] = useState(yaEstaAnotado);
-  const [verJugadores, setVerJugadores] = useState(false);
   const [listaJugadores, setListaJugadores] = useState([]);
   const [modalAbierto, setModalAbierto] = useState(false);
+  const [cargandoJugadores, setCargandoJugadores] = useState(false);
 
-  // === EFECTO PARA QUITAR EL SCROLL DEL BODY ===
+  // === BLOQUEO DE SCROLL ===
   useEffect(() => {
     if (modalAbierto) {
-      // Cuando el modal se abre, bloqueamos el scroll del sitio
       document.body.style.overflow = 'hidden';
+      // Aprovechamos que se abre el modal para cargar los jugadores automáticamente
+      cargarListaJugadores();
     } else {
-      // Cuando se cierra, devolvemos el scroll a la normalidad
       document.body.style.overflow = 'unset';
     }
-
-    // Limpieza por si el componente se desmonta inesperadamente
-    return () => {
-      document.body.style.overflow = 'unset';
-    };
+    return () => { document.body.style.overflow = 'unset'; };
   }, [modalAbierto]);
 
   useEffect(() => {
     setJugadoresAnotados(cantJugadores);
     setAnotado(yaEstaAnotado);
   }, [cantJugadores, yaEstaAnotado]);
+
+  const cargarListaJugadores = () => {
+    const token = localStorage.getItem('token');
+    setCargandoJugadores(true);
+    fetch(`https://gestor-eventos-rol.onrender.com/api/partidas/${props.id}/jugadores`, {
+      headers: { 'authorization': token }
+    })
+      .then(res => res.json())
+      .then(datos => {
+        setListaJugadores(datos);
+        setCargandoJugadores(false);
+      })
+      .catch(err => {
+        console.error(err);
+        setCargandoJugadores(false);
+      });
+  };
 
   const soyElMaster = props.esMiMesa; 
   const soyAdmin = props.esAdmin;
@@ -48,6 +61,7 @@ function Partida(props) {
       if (res.ok) {
         setAnotado(!anotado);
         setJugadoresAnotados(anotado ? jugadoresAnotados - 1 : jugadoresAnotados + 1);
+        cargarListaJugadores(); // Refrescamos la lista si se une/va
       } else {
         const mensaje = await res.text();
         alert(`Aviso del Gremio: ${mensaje}`);
@@ -55,23 +69,9 @@ function Partida(props) {
     } catch (err) { console.error(err); }
   };
 
-  const obtenerListaJugadores = (e) => {
-    e.stopPropagation();
-    const token = localStorage.getItem('token');
-    fetch(`https://gestor-eventos-rol.onrender.com/api/partidas/${props.id}/jugadores`, {
-      headers: { 'authorization': token }
-    })
-      .then(res => res.json())
-      .then(datos => {
-        setListaJugadores(datos);
-        setVerJugadores(!verJugadores);
-      })
-      .catch(err => console.error(err));
-  };
-
   return (
     <>
-      {/* CARD DEL CARRUSEL (Tamaño Fijo) */}
+      {/* CARD DEL CARRUSEL */}
       <div 
         onClick={() => setModalAbierto(true)}
         className={`relative p-6 rounded-2xl border-2 transition-all duration-300 shadow-xl flex flex-col h-[420px] cursor-pointer group ${
@@ -126,20 +126,18 @@ function Partida(props) {
               {anotado ? 'Abandonar' : 'Unirse'}
             </button>
           )}
-          {(soyElMaster || soyAdmin) && (
-            <button onClick={obtenerListaJugadores} className="px-4 py-3 bg-zinc-800 text-white rounded-xl hover:bg-zinc-700 border border-white/10">
-              👥
-            </button>
-          )}
+          <div className="px-4 py-3 bg-zinc-800 text-zinc-400 rounded-xl border border-white/10 text-xs flex items-center gap-1 font-bold">
+             🔍 Info
+          </div>
         </div>
       </div>
 
-      {/* MODAL DE INFORMACIÓN COMPLETA */}
+      {/* MODAL DE INFORMACIÓN Y JUGADORES */}
       {modalAbierto && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/90 backdrop-blur-sm animate-in fade-in duration-300">
           <div 
             className="bg-zinc-900 border border-zinc-800 w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-[2.5rem] p-8 md:p-12 relative shadow-2xl scrollbar-hide"
-            style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }} // Quita el scroll interno visual del modal
+            style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
           >
             <button 
               onClick={() => setModalAbierto(false)}
@@ -169,6 +167,28 @@ function Partida(props) {
               </div>
             </div>
 
+            {/* SECCIÓN DE JUGADORES ANOTADOS */}
+            <div className="mb-8">
+              <h4 className="text-[10px] font-black text-zinc-500 uppercase tracking-[0.3em] mb-4 flex items-center gap-2">
+                <span className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse"></span> Aventureros en la Mesa
+              </h4>
+              <div className="bg-black/20 rounded-2xl p-4 border border-zinc-800">
+                {cargandoJugadores ? (
+                  <p className="text-zinc-600 text-xs italic">Consultando lista de convocados...</p>
+                ) : listaJugadores.length > 0 ? (
+                  <div className="flex flex-wrap gap-2">
+                    {listaJugadores.map((jugador, idx) => (
+                      <span key={idx} className="bg-zinc-800 text-zinc-300 px-3 py-1 rounded-full text-xs font-bold border border-white/5">
+                        👤 {jugador.nombre}
+                      </span>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-zinc-600 text-xs italic">Aún no hay aventureros anotados...</p>
+                )}
+              </div>
+            </div>
+
             <h4 className="text-[10px] font-black text-zinc-500 uppercase tracking-[0.3em] mb-4">Relato de la Misión</h4>
             <p className="text-zinc-300 text-lg leading-relaxed mb-8 italic whitespace-pre-line">
               {props.description || props.descripcion}
@@ -181,12 +201,26 @@ function Partida(props) {
               </div>
             )}
 
-            <button 
-              onClick={() => setModalAbierto(false)}
-              className="w-full bg-zinc-800 hover:bg-zinc-700 text-white font-black py-4 rounded-2xl uppercase text-xs tracking-widest transition-all"
-            >
-              Cerrar Pergamino
-            </button>
+            <div className="flex flex-col gap-3">
+              {!soyElMaster && !props.eventoEsPasado && (
+                <button 
+                  onClick={alternarInscripcion}
+                  className={`w-full py-4 rounded-2xl font-black text-xs uppercase tracking-widest transition-all ${
+                    anotado 
+                    ? 'bg-red-500/20 text-red-500 border border-red-500/40' 
+                    : 'bg-emerald-600 text-white shadow-lg'
+                  }`}
+                >
+                  {anotado ? 'Abandonar Partida' : 'Unirme a la Aventura'}
+                </button>
+              )}
+              <button 
+                onClick={() => setModalAbierto(false)}
+                className="w-full bg-zinc-800 text-zinc-400 font-black py-4 rounded-2xl uppercase text-xs tracking-widest"
+              >
+                Volver al Tablón
+              </button>
+            </div>
           </div>
         </div>
       )}
