@@ -8,9 +8,23 @@ function Partida(props) {
   const [anotado, setAnotado] = useState(yaEstaAnotado);
   const [verJugadores, setVerJugadores] = useState(false);
   const [listaJugadores, setListaJugadores] = useState([]);
-  
-  // NUEVO: Estado para el Modal de Pantalla Completa
   const [modalAbierto, setModalAbierto] = useState(false);
+
+  // === EFECTO PARA QUITAR EL SCROLL DEL BODY ===
+  useEffect(() => {
+    if (modalAbierto) {
+      // Cuando el modal se abre, bloqueamos el scroll del sitio
+      document.body.style.overflow = 'hidden';
+    } else {
+      // Cuando se cierra, devolvemos el scroll a la normalidad
+      document.body.style.overflow = 'unset';
+    }
+
+    // Limpieza por si el componente se desmonta inesperadamente
+    return () => {
+      document.body.style.overflow = 'unset';
+    };
+  }, [modalAbierto]);
 
   useEffect(() => {
     setJugadoresAnotados(cantJugadores);
@@ -21,7 +35,7 @@ function Partida(props) {
   const soyAdmin = props.esAdmin;
 
   const alternarInscripcion = async (e) => {
-    e.stopPropagation(); // Evita que al hacer clic en el botón se abra el modal
+    e.stopPropagation(); 
     const token = localStorage.getItem('token');
     const metodo = anotado ? 'DELETE' : 'POST';
 
@@ -88,7 +102,6 @@ function Partida(props) {
           </div>
         </div>
 
-        {/* Descripción con límite de líneas para mantener el tamaño */}
         <p className="text-zinc-400 text-xs leading-relaxed mb-4 border-l-2 border-zinc-800 pl-4 py-1 italic line-clamp-4 flex-grow">
           {props.description || props.descripcion}
         </p>
@@ -124,10 +137,13 @@ function Partida(props) {
       {/* MODAL DE INFORMACIÓN COMPLETA */}
       {modalAbierto && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/90 backdrop-blur-sm animate-in fade-in duration-300">
-          <div className="bg-zinc-900 border border-zinc-800 w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-[2.5rem] p-8 md:p-12 relative shadow-2xl">
+          <div 
+            className="bg-zinc-900 border border-zinc-800 w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-[2.5rem] p-8 md:p-12 relative shadow-2xl scrollbar-hide"
+            style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }} // Quita el scroll interno visual del modal
+          >
             <button 
               onClick={() => setModalAbierto(false)}
-              className="absolute top-6 right-6 text-zinc-500 hover:text-white text-2xl"
+              className="absolute top-6 right-6 text-zinc-500 hover:text-white text-2xl p-2"
             >
               ✕
             </button>
