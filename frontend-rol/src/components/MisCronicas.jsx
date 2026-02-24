@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import Swal from 'sweetalert2'; // ✨ IMPORTAMOS SWEETALERT
+import Swal from 'sweetalert2'; 
 
 function MisCronicas({ alActualizarUsuario }) { 
   const [cronicas, setCronicas] = useState({ dirigiendo: [], jugando: [] });
@@ -8,7 +8,9 @@ function MisCronicas({ alActualizarUsuario }) {
   const usuarioGuardado = JSON.parse(localStorage.getItem('usuario'));
   const [editando, setEditando] = useState(false);
   
-  // Validamos si es un jugador base para mostrar el botón de solicitud DM
+  // ✨ NUEVO ESTADO: Verificamos si ya tiene una solicitud pendiente guardada
+  const [peticionEnviada, setPeticionEnviada] = useState(usuarioGuardado?.solicitudDmPendiente || false);
+  
   const esJugadorBase = usuarioGuardado?.rol === 'jugador';
   
   const [perfil, setPerfil] = useState({ 
@@ -54,25 +56,23 @@ function MisCronicas({ alActualizarUsuario }) {
         
         setEditando(false);
         
-        // ✨ ALERTA DE ÉXITO ESTILO PERFIL
         Swal.fire({
           title: '¡Ficha Actualizada!',
           text: 'Tus nuevos datos han sido grabados en los anales del gremio.',
           icon: 'success',
-          background: '#18181b', // zinc-900
+          background: '#18181b', 
           color: '#fff',
-          confirmButtonColor: '#10b981', // emerald-500
+          confirmButtonColor: '#10b981', 
           confirmButtonText: 'Excelente'
         });
       } else {
-        // ✨ ALERTA DE ERROR
         Swal.fire({
           title: 'Error de Tinta',
           text: 'No se pudo actualizar la ficha.',
           icon: 'error',
           background: '#18181b',
           color: '#fff',
-          confirmButtonColor: '#ef4444' // red-500
+          confirmButtonColor: '#ef4444' 
         });
       }
     } catch (error) {
@@ -91,7 +91,6 @@ function MisCronicas({ alActualizarUsuario }) {
   const enviarPeticionDM = async () => {
     const token = localStorage.getItem('token');
     
-    // ✨ CONFIRMACIÓN ÉPICA PARA SER DM
     const result = await Swal.fire({
       title: '¿Sientes el llamado?',
       text: "Convertirse en Dungeon Master requiere sabiduría y paciencia. ¿Quieres enviar tu petición a los Altos Mandos?",
@@ -99,8 +98,8 @@ function MisCronicas({ alActualizarUsuario }) {
       showCancelButton: true,
       background: '#18181b',
       color: '#fff',
-      confirmButtonColor: '#9333ea', // purple-600
-      cancelButtonColor: '#3f3f46', // zinc-700
+      confirmButtonColor: '#9333ea', 
+      cancelButtonColor: '#3f3f46', 
       confirmButtonText: '🧙‍♂️ Sí, quiero dirigir',
       cancelButtonText: 'Aún no'
     });
@@ -114,6 +113,12 @@ function MisCronicas({ alActualizarUsuario }) {
       });
       
       if (res.ok) {
+        // ✨ ACTUALIZAMOS EL ESTADO Y EL LOCALSTORAGE AL ENVIAR LA PETICIÓN
+        setPeticionEnviada(true);
+        const usuarioActualizado = { ...usuarioGuardado, solicitudDmPendiente: true };
+        localStorage.setItem('usuario', JSON.stringify(usuarioActualizado));
+        if (alActualizarUsuario) alActualizarUsuario(usuarioActualizado);
+
         Swal.fire({
           title: 'Petición Enviada',
           text: 'Tu solicitud está siendo evaluada. Mantente atento.',
@@ -130,7 +135,7 @@ function MisCronicas({ alActualizarUsuario }) {
           icon: 'warning',
           background: '#18181b',
           color: '#fff',
-          confirmButtonColor: '#f59e0b' // amber-500
+          confirmButtonColor: '#f59e0b' 
         });
       }
     } catch (e) { 
@@ -216,14 +221,21 @@ function MisCronicas({ alActualizarUsuario }) {
               <button onClick={() => setEditando(true)} className="bg-zinc-800 hover:bg-zinc-700 text-zinc-300 px-6 py-3 rounded-xl text-xs font-black uppercase transition-colors">
                 ✏️ Editar Ficha
               </button>
-              {/* ✨ SOLO SE MUESTRA SI ES JUGADOR BASE */}
+              
+              {/* ✨ AQUÍ ESTÁ LA MAGIA: Alternamos entre el botón o la leyenda de progreso */}
               {esJugadorBase && (
-                <button 
-                  onClick={enviarPeticionDM}
-                  className="bg-purple-600 hover:bg-purple-500 text-white px-6 py-3 rounded-xl text-xs font-black uppercase shadow-lg shadow-purple-900/20 transition-all active:scale-95"
-                >
-                  🧙‍♂️ Ser Dungeon Master
-                </button>
+                peticionEnviada ? (
+                  <div className="bg-purple-900/20 border border-purple-500/30 text-purple-400 px-6 py-3 rounded-xl text-xs font-black uppercase text-center shadow-inner">
+                    ⏳ Los Altos Mandos evalúan tu petición...
+                  </div>
+                ) : (
+                  <button 
+                    onClick={enviarPeticionDM}
+                    className="bg-purple-600 hover:bg-purple-500 text-white px-6 py-3 rounded-xl text-xs font-black uppercase shadow-lg shadow-purple-900/20 transition-all active:scale-95"
+                  >
+                    🧙‍♂️ Ser Dungeon Master
+                  </button>
+                )
               )}
             </div>
           </div>
