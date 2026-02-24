@@ -35,7 +35,9 @@ function App() {
 
         {mostrarRegistro ? (
           <div className="w-full max-w-md animate-in fade-in zoom-in-95 duration-300">
-            <Registro />
+            {/* ✨ AQUÍ LE PASAMOS LA FUNCIÓN PARA VOLVER AL LOGIN */}
+            <Registro irALogin={() => setMostrarRegistro(false)} />
+            
             <p className="text-center mt-6 text-zinc-500 text-sm font-bold uppercase tracking-widest">
               ¿Ya eres miembro? {' '}
               <button 
@@ -74,7 +76,6 @@ function App() {
       />
 
       <main className="container mx-auto pb-20">
-        {/* Pasamos setUsuarioLogueado a MisCronicas para que el Navbar se entere de los cambios */}
         {vistaActual === 'eventos' ? (
           <Eventos />
         ) : (

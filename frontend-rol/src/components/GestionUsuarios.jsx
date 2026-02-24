@@ -1,11 +1,10 @@
 import { useState, useEffect } from 'react';
+import Swal from 'sweetalert2'; // ✨ IMPORTAMOS LA MAGIA DE SWEETALERT
 
 function GestionUsuarios() {
   const [solicitudes, setSolicitudes] = useState([]);
   const [todosLosUsuarios, setTodosLosUsuarios] = useState([]);
   const [pestanaActiva, setPestanaActiva] = useState('peticiones');
-  
-  // NUEVO: Estado para controlar qué rango estamos filtrando en el censo
   const [filtroRol, setFiltroRol] = useState('todos'); 
 
   const cargarDatos = () => {
@@ -32,24 +31,66 @@ function GestionUsuarios() {
 
   const promoverUsuario = async (id, nombre) => {
     const token = localStorage.getItem('token');
-    if(!window.confirm(`¿Estás seguro de otorgar el rango de Dungeon Master a ${nombre.toUpperCase()}?`)) return;
+    
+    // ✨ REEMPLAZO DEL WINDOW.CONFIRM POR UNA ALERTA ÉPICA
+    const result = await Swal.fire({
+      title: 'Forjar un nuevo Director',
+      text: `¿Estás seguro de otorgar el manto de Dungeon Master a ${nombre.toUpperCase()}? Este poder es permanente.`,
+      icon: 'warning',
+      showCancelButton: true,
+      background: '#18181b', // zinc-900
+      color: '#fff',
+      confirmButtonColor: '#f59e0b', // amber-500
+      cancelButtonColor: '#3f3f46', // zinc-700
+      confirmButtonText: '🪄 Ascender Aventurero',
+      cancelButtonText: 'Cancelar'
+    });
 
-    try {
-      const res = await fetch(`https://gestor-eventos-rol.onrender.com/api/usuarios/${id}/promover`, {
-        method: 'PUT',
-        headers: { 'authorization': token }
-      });
-      const texto = await res.text();
-      if(res.ok) {
-        alert(`✨ ${nombre} ha sido ascendido.`);
-        cargarDatos(); 
-      } else {
-        alert(`❌ ${texto}`);
+    if (result.isConfirmed) {
+      try {
+        const res = await fetch(`https://gestor-eventos-rol.onrender.com/api/usuarios/${id}/promover`, {
+          method: 'PUT',
+          headers: { 'authorization': token }
+        });
+        
+        const texto = await res.text();
+        
+        if (res.ok) {
+          // ✨ NOTIFICACIÓN DE ÉXITO
+          Swal.fire({
+            title: '¡Ascenso Concedido!',
+            text: `✨ ${nombre} ahora posee el rango de Dungeon Master.`,
+            icon: 'success',
+            background: '#18181b',
+            color: '#fff',
+            confirmButtonColor: '#10b981' // emerald-500
+          });
+          cargarDatos(); 
+        } else {
+          // ✨ NOTIFICACIÓN DE ERROR
+          Swal.fire({
+            title: 'Interferencia Mágica',
+            text: `❌ ${texto}`,
+            icon: 'error',
+            background: '#18181b',
+            color: '#fff',
+            confirmButtonColor: '#ef4444' // red-500
+          });
+        }
+      } catch (e) { 
+        console.error(e); 
+        Swal.fire({
+          title: 'Error de Red',
+          text: 'Los pergaminos no pudieron llegar al servidor.',
+          icon: 'error',
+          background: '#18181b',
+          color: '#fff',
+          confirmButtonColor: '#ef4444'
+        });
       }
-    } catch(e) { console.error(e); }
+    }
   };
 
-  // NUEVO: Filtramos la lista antes de dibujarla en la tabla
   const usuariosFiltrados = todosLosUsuarios.filter(user => 
     filtroRol === 'todos' || user.rol === filtroRol
   );
@@ -136,7 +177,6 @@ function GestionUsuarios() {
               </div>
             </div>
 
-            {/* NUEVO: BOTONES DE FILTRO */}
             <div className="flex gap-2 bg-zinc-900 p-1.5 rounded-xl border border-zinc-800">
               <button onClick={() => setFiltroRol('todos')} className={`px-3 py-1.5 text-[10px] font-black uppercase tracking-widest rounded-lg transition-all ${filtroRol === 'todos' ? 'bg-zinc-700 text-white' : 'text-zinc-500 hover:text-zinc-300'}`}>Todos</button>
               <button onClick={() => setFiltroRol('admin')} className={`px-3 py-1.5 text-[10px] font-black uppercase tracking-widest rounded-lg transition-all ${filtroRol === 'admin' ? 'bg-amber-500/20 text-amber-500' : 'text-zinc-500 hover:text-amber-500/50'}`}>👑 Admins</button>
@@ -155,7 +195,6 @@ function GestionUsuarios() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-zinc-800/50">
-                {/* AHORA MAPEAMOS 'usuariosFiltrados' EN LUGAR DE 'todosLosUsuarios' */}
                 {usuariosFiltrados.length === 0 ? (
                   <tr>
                     <td colSpan="3" className="p-8 text-center text-zinc-500 italic font-bold">

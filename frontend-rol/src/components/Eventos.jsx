@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
+import Swal from 'sweetalert2'; // ✨ IMPORTAMOS SWEETALERT
 import Partida from './Partida'; 
 import CrearMesa from './CrearMesa'; 
 import CrearEvento from './CrearEvento'; 
@@ -12,9 +13,8 @@ function Eventos() {
   const [mostrarFormularioMesa, setMostrarFormularioMesa] = useState(false);
   const [pestanaAdmin, setPestanaAdmin] = useState('eventos');
   
-  // Refs para los carruseles
   const carruselEventosRef = useRef(null);
-  const carruselPartidasRef = useRef(null); // NUEVO: Ref para las partidas
+  const carruselPartidasRef = useRef(null); 
 
   const usuarioGuardado = JSON.parse(localStorage.getItem('usuario'));
   const esDungeonMaster = usuarioGuardado && (usuarioGuardado.rol === 'dm' || usuarioGuardado.rol === 'admin');
@@ -31,15 +31,57 @@ function Eventos() {
     cargarEventos();
   }, []);
 
+  // ✨ MAGIA DE SWEETALERT EN LA ELIMINACIÓN
   const borrarEvento = async (id, e) => {
     e.stopPropagation();
-    if (!window.confirm("⚠️ ¿Estás seguro? Se perderán todos los datos de este evento.")) return;
-    const token = localStorage.getItem('token');
-    await fetch(`https://gestor-eventos-rol.onrender.com/api/eventos/${id}`, {
-      method: 'DELETE',
-      headers: { 'authorization': token }
+    
+    const result = await Swal.fire({
+      title: '¿Arrasar con esta jornada?',
+      text: "⚠️ Se perderán todos los datos, mesas y aventureros inscritos en este evento. Esta acción no se puede deshacer.",
+      icon: 'warning',
+      showCancelButton: true,
+      background: '#18181b', // zinc-900
+      color: '#fff',
+      confirmButtonColor: '#ef4444', // red-500
+      cancelButtonColor: '#3f3f46', // zinc-700
+      confirmButtonText: 'Sí, destruir evento',
+      cancelButtonText: 'Cancelar'
     });
-    cargarEventos();
+
+    if (result.isConfirmed) {
+      const token = localStorage.getItem('token');
+      try {
+        const res = await fetch(`https://gestor-eventos-rol.onrender.com/api/eventos/${id}`, {
+          method: 'DELETE',
+          headers: { 'authorization': token }
+        });
+
+        if (res.ok) {
+          Swal.fire({
+            title: '¡Evento Borrado!',
+            text: 'Los pergaminos han sido reducidos a cenizas.',
+            icon: 'success',
+            background: '#18181b',
+            color: '#fff',
+            confirmButtonColor: '#10b981' // emerald-500
+          });
+          
+          // Si el admin borra el evento que estaba viendo en detalle, lo devolvemos al tablón
+          if (eventoSeleccionado && eventoSeleccionado.id === id) {
+            setEventoSeleccionado(null);
+          }
+          cargarEventos();
+        } else {
+          Swal.fire({
+            title: 'Error',
+            text: 'La magia defensiva del evento impidió su borrado.',
+            icon: 'error',
+            background: '#18181b',
+            color: '#fff'
+          });
+        }
+      } catch (err) { console.error(err); }
+    }
   };
 
   const entrarAlEvento = (evento) => {
@@ -65,11 +107,9 @@ function Eventos() {
 
   const formatearFecha = (f) => new Date(f).toLocaleDateString('es-ES', { day: 'numeric', month: 'long', year: 'numeric' });
 
-  // Controles del carrusel de eventos
   const scrollEventosIzq = () => carruselEventosRef.current?.scrollBy({ left: -400, behavior: 'smooth' });
   const scrollEventosDer = () => carruselEventosRef.current?.scrollBy({ left: 400, behavior: 'smooth' });
 
-  // Controles del carrusel de partidas
   const scrollPartidasIzq = () => carruselPartidasRef.current?.scrollBy({ left: -400, behavior: 'smooth' });
   const scrollPartidasDer = () => carruselPartidasRef.current?.scrollBy({ left: 400, behavior: 'smooth' });
 
@@ -77,7 +117,11 @@ function Eventos() {
   // === VISTA DETALLADA DEL EVENTO ===
   if (eventoSeleccionado) {
     const eventoEsPasado = new Date(eventoSeleccionado.fecha) < hoy;
-    const yaDirigeEnEsteEvento = partidasDelEvento.some(p => p.dungeon_master_id === usuarioGuardado?.id);
+    
+    // ✨ LÓGICA ACTUALIZADA: Verifica si es DM o si ya está anotado como jugador
+    const yaParticipaEnEsteEvento = partidasDelEvento.some(p => 
+      p.dungeon_master_id === usuarioGuardado?.id || p.anotadoInicialmente === 1
+    );
 
     return (
       <div className="max-w-6xl mx-auto p-6 animate-in fade-in slide-in-from-bottom-4 duration-500 overflow-hidden">
@@ -102,7 +146,8 @@ function Eventos() {
           </div>
         </header>
 
-        {esDungeonMaster && !eventoEsPasado && !yaDirigeEnEsteEvento && (
+        {/* ✨ AQUÍ APLICAMOS LA RESTRICCIÓN VISUAL */}
+        {esDungeonMaster && !eventoEsPasado && !yaParticipaEnEsteEvento && (
           <div className="mb-10 max-w-4xl mx-auto">
             <button 
               onClick={() => setMostrarFormularioMesa(!mostrarFormularioMesa)}

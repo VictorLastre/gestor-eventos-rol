@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import Swal from 'sweetalert2'; // ✨ IMPORTAMOS SWEETALERT
 
 function CrearMesa({ idEvento, alCrearMesa }) {
   const [titulo, setTitulo] = useState('');
@@ -7,7 +8,8 @@ function CrearMesa({ idEvento, alCrearMesa }) {
   const [sistema, setSistema] = useState('');
   const [cupo, setCupo] = useState(4);
   const [turno, setTurno] = useState('Tarde');
-  const [mensaje, setMensaje] = useState('');
+
+  // ✨ Eliminamos el estado `mensaje` porque ya no lo necesitamos
 
   const manejarCreacion = async (e) => {
     e.preventDefault();
@@ -25,23 +27,51 @@ function CrearMesa({ idEvento, alCrearMesa }) {
         body: JSON.stringify(nuevaMesa)
       });
 
-      const texto = await respuesta.text();
+      // Parseamos la respuesta como JSON
+      const data = await respuesta.json();
 
       if (respuesta.ok) {
-        setMensaje(`✅ ${texto}`);
-        setTitulo(''); setDescripcion(''); setRequisitos(''); setSistema(''); setCupo(4);
-        
-        setTimeout(() => {
-          alCrearMesa(); 
-          setMensaje('');
-        }, 2000);
+        // ✨ ALERTA DE ÉXITO ESTILO DM
+        Swal.fire({
+          title: '¡Mesa Forjada!',
+          text: data.mensaje || 'Tu aventura ha sido publicada en el tablón.',
+          icon: 'success',
+          background: '#18181b', // zinc-900
+          color: '#fff',
+          confirmButtonColor: '#f59e0b', // amber-500
+          confirmButtonText: '¡A preparar los dados!'
+        });
+
+        // Limpiamos los campos y recargamos la vista principal al instante
+        setTitulo(''); 
+        setDescripcion(''); 
+        setRequisitos(''); 
+        setSistema(''); 
+        setCupo(4);
+        alCrearMesa(); 
 
       } else {
-        setMensaje(`❌ ${texto}`);
+        // ✨ ALERTA DE RESTRICCIÓN (Ej: ya es DM o jugador)
+        Swal.fire({
+          title: 'Aviso del Gremio',
+          text: data.error || 'Error al crear la mesa.',
+          icon: 'warning',
+          background: '#18181b',
+          color: '#fff',
+          confirmButtonColor: '#f59e0b'
+        });
       }
     } catch (error) {
       console.error("Error:", error);
-      setMensaje("❌ Error de comunicación con el servidor.");
+      // ✨ ALERTA DE ERROR DE CONEXIÓN
+      Swal.fire({
+        title: 'Error Mágico',
+        text: 'Los pergaminos no pudieron llegar al servidor.',
+        icon: 'error',
+        background: '#18181b',
+        color: '#fff',
+        confirmButtonColor: '#ef4444' // red-500
+      });
     }
   };
 
@@ -143,16 +173,8 @@ function CrearMesa({ idEvento, alCrearMesa }) {
           ⚔️ Crear Mesa de Rol
         </button>
       </form>
-
-      {mensaje && (
-        <div className={`mt-6 p-4 rounded-xl border text-sm font-bold text-center animate-in zoom-in-95 duration-300 ${
-          mensaje.includes('✅') 
-          ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-400' 
-          : 'bg-red-500/10 border-red-500/30 text-red-400'
-        }`}>
-          {mensaje}
-        </div>
-      )}
+      
+      {/* ✨ El div del mensaje en texto plano desapareció por completo */}
     </div>
   );
 }

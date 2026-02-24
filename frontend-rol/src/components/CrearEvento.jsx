@@ -1,10 +1,12 @@
 import { useState } from 'react';
+import Swal from 'sweetalert2'; // ✨ IMPORTAMOS SWEETALERT
 
 function CrearEvento({ alCrearEvento }) {
   const [nombre, setNombre] = useState('');
   const [descripcion, setDescripcion] = useState('');
   const [fecha, setFecha] = useState('');
-  const [mensaje, setMensaje] = useState('');
+  
+  // ¡Adiós al estado "mensaje"! Ya no lo necesitamos
 
   const manejarCreacion = async (e) => {
     e.preventDefault();
@@ -22,25 +24,48 @@ function CrearEvento({ alCrearEvento }) {
         body: JSON.stringify(nuevoEvento)
       });
 
-      // Parseamos la respuesta como JSON en lugar de texto para evitar problemas
       const data = await respuesta.json();
 
       if (respuesta.ok) {
-        setMensaje(`✅ ${data.mensaje || '¡Evento convocado!'}`);
-        setNombre(''); setDescripcion(''); setFecha('');
-        
-        // Recargamos la lista de eventos después de 1.5 segundos
-        setTimeout(() => {
-          alCrearEvento(); 
-          setMensaje(''); // Limpiamos el mensaje
-        }, 1500);
+        // ✨ ALERTA DE ÉXITO ESTILO ADMIN
+        Swal.fire({
+          title: '¡Evento Convocado!',
+          text: data.mensaje || 'La nueva jornada ha sido registrada en el gremio.',
+          icon: 'success',
+          background: '#18181b',
+          color: '#fff',
+          confirmButtonColor: '#9333ea', // purple-600 para mantener el estilo Admin
+          confirmButtonText: 'Excelente'
+        });
+
+        // Limpiamos el formulario y recargamos la lista al instante
+        setNombre(''); 
+        setDescripcion(''); 
+        setFecha('');
+        alCrearEvento(); 
 
       } else {
-        setMensaje(`❌ ${data.error || 'Error al crear evento'}`);
+        // ✨ ALERTA DE ERROR DE VALIDACIÓN
+        Swal.fire({
+          title: 'Aviso del Sistema',
+          text: data.error || 'Error al crear evento',
+          icon: 'warning',
+          background: '#18181b',
+          color: '#fff',
+          confirmButtonColor: '#f59e0b' // amber-500
+        });
       }
     } catch (error) {
       console.error("Error:", error);
-      setMensaje("❌ Error de comunicación con el servidor.");
+      // ✨ ALERTA DE ERROR DE CONEXIÓN
+      Swal.fire({
+        title: 'Error Mágico',
+        text: 'Hubo un fallo de comunicación con el servidor.',
+        icon: 'error',
+        background: '#18181b',
+        color: '#fff',
+        confirmButtonColor: '#ef4444' // red-500
+      });
     }
   };
 
@@ -116,17 +141,8 @@ function CrearEvento({ alCrearEvento }) {
             ⚔️ Forjar Evento
           </button>
         </form>
-
-        {/* Mensaje de respuesta */}
-        {mensaje && (
-          <div className={`mt-6 p-4 rounded-xl border text-sm font-bold text-center animate-in zoom-in-95 duration-300 ${
-            mensaje.includes('✅') 
-            ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-400' 
-            : 'bg-red-500/10 border-red-500/30 text-red-400'
-          }`}>
-            {mensaje}
-          </div>
-        )}
+        
+        {/* El div de "mensaje" desapareció por completo. ¡Más limpio! */}
       </div>
 
     </div>

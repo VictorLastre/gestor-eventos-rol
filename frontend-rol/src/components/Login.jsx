@@ -1,9 +1,11 @@
 import { useState } from 'react';
+import Swal from 'sweetalert2'; // ✨ IMPORTAMOS SWEETALERT
 
 function Login(props) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [mensaje, setMensaje] = useState('');
+  
+  // ✨ Adiós al estado "mensaje", SweetAlert se encarga ahora.
 
   const manejarLogin = async (e) => {
     e.preventDefault();
@@ -23,7 +25,22 @@ function Login(props) {
         localStorage.setItem('token', datos.token);
         localStorage.setItem('usuario', JSON.stringify(datos.usuario)); 
 
-        setMensaje(`✅ ${datos.mensaje}`);
+        // ✨ TOAST DE BIENVENIDA
+        const Toast = Swal.mixin({
+          toast: true,
+          position: 'top-end',
+          showConfirmButton: false,
+          timer: 2000,
+          timerProgressBar: true,
+          background: '#18181b', // zinc-900
+          color: '#fff'
+        });
+
+        Toast.fire({
+          icon: 'success',
+          title: `¡Bienvenido de vuelta, ${datos.usuario.nombre}!`
+        });
+
         setEmail('');
         setPassword('');
         
@@ -31,11 +48,27 @@ function Login(props) {
         
       } else {
         const textoError = await respuesta.text();
-        setMensaje(`❌ Error: ${textoError}`);
+        // ✨ ALERTA DE ERROR DE CREDENCIALES
+        Swal.fire({
+          title: 'Acceso Denegado',
+          text: textoError,
+          icon: 'error',
+          background: '#18181b',
+          color: '#fff',
+          confirmButtonColor: '#10b981' // emerald-500
+        });
       }
     } catch (error) {
       console.error("Error de comunicación:", error);
-      setMensaje("❌ Error de conexión con el servidor.");
+      // ✨ ALERTA DE ERROR DE CONEXIÓN
+      Swal.fire({
+        title: 'Error de Conexión',
+        text: 'No se pudo contactar con los servidores del Gremio.',
+        icon: 'error',
+        background: '#18181b',
+        color: '#fff',
+        confirmButtonColor: '#ef4444' // red-500
+      });
     }
   };
 
@@ -89,18 +122,9 @@ function Login(props) {
           </button>
         </form>
 
-        {mensaje && (
-          <div className={`mt-6 p-3 rounded-lg text-xs text-center font-bold border ${
-            mensaje.includes('✅') 
-            ? 'bg-emerald-500/10 border-emerald-500/50 text-emerald-400' 
-            : 'bg-red-500/10 border-red-500/50 text-red-400'
-          }`}>
-            {mensaje}
-          </div>
-        )}
+        {/* ✨ El div del "mensaje" en texto plano fue eliminado */}
       </div>
 
-      
     </div>
   );
 }

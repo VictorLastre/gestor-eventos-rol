@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import Swal from 'sweetalert2'; // ✨ IMPORTAMOS LA MAGIA DE SWEETALERT
 
 function Partida(props) {
   const cantJugadores = props.jugadoresIniciales ?? props.jugadores_anotados ?? 0;
@@ -10,6 +11,18 @@ function Partida(props) {
   const [modalAbierto, setModalAbierto] = useState(false);
   const [cargandoJugadores, setCargandoJugadores] = useState(false);
 
+  // === CONFIGURACIÓN DEL TOAST (Notificación sutil en la esquina) ===
+  const Toast = Swal.mixin({
+    toast: true,
+    position: 'top-end',
+    showConfirmButton: false,
+    timer: 3000,
+    timerProgressBar: true,
+    background: '#18181b', // bg-zinc-900
+    color: '#fff'
+  });
+
+  // === BLOQUEO DE SCROLL ===
   useEffect(() => {
     if (modalAbierto) {
       document.body.style.overflow = 'hidden';
@@ -60,9 +73,26 @@ function Partida(props) {
         setAnotado(!anotado);
         setJugadoresAnotados(anotado ? jugadoresAnotados - 1 : jugadoresAnotados + 1);
         cargarListaJugadores();
+        
+        // ✨ FEEDBACK VISUAL POSITIVO
+        Toast.fire({
+          icon: 'success',
+          title: anotado ? 'Has abandonado la mesa' : '¡Te has unido a la aventura!'
+        });
+        
       } else {
         const mensaje = await res.text();
-        alert(`Aviso del Gremio: ${mensaje}`);
+        
+        // ✨ REEMPLAZO DEL ALERT TRADICIONAL
+        Swal.fire({
+          title: 'Aviso del Gremio',
+          text: mensaje,
+          icon: 'warning',
+          background: '#18181b',
+          color: '#fff',
+          confirmButtonColor: '#f59e0b', // amber-500
+          confirmButtonText: 'Entendido'
+        });
       }
     } catch (err) { console.error(err); }
   };
@@ -80,13 +110,11 @@ function Partida(props) {
       >
         <div className="flex justify-between items-start mb-4">
           <div className="max-w-[75%] space-y-2">
-            {/* CONTENEDOR DE BADGES (SISTEMA Y ROL) */}
             <div className="flex flex-wrap gap-2">
               <span className="text-[9px] font-black text-emerald-500 uppercase tracking-widest bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-500/20">
                 {props.sistema}
               </span>
               
-              {/* ETIQUETA "TU MESA" REUBICADA DENTRO DEL FLUJO */}
               {soyElMaster && (
                 <span className="text-[9px] font-black text-amber-500 uppercase tracking-widest bg-amber-500/10 px-2 py-0.5 rounded border border-amber-500/20">
                   ✨ Tu Mesa
@@ -136,7 +164,7 @@ function Partida(props) {
         </div>
       </div>
 
-      {/* MODAL DE INFORMACIÓN Y JUGADORES (Sin cambios aquí) */}
+      {/* MODAL DE INFORMACIÓN Y JUGADORES */}
       {modalAbierto && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/90 backdrop-blur-sm animate-in fade-in duration-300">
           <div 
@@ -226,7 +254,7 @@ function Partida(props) {
               )}
               <button 
                 onClick={() => setModalAbierto(false)}
-                className="w-full bg-zinc-800 text-zinc-400 font-black py-4 rounded-2xl uppercase text-xs tracking-widest"
+                className="w-full bg-zinc-800 text-zinc-400 font-black py-4 rounded-2xl uppercase text-xs tracking-widest hover:bg-zinc-700 hover:text-white transition-colors"
               >
                 Volver al Tablón
               </button>

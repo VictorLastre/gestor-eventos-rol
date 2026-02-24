@@ -1,13 +1,16 @@
 import { useState, useEffect } from 'react';
+import Swal from 'sweetalert2'; // ✨ IMPORTAMOS SWEETALERT
 
-function MisCronicas({ alActualizarUsuario }) { // Recibimos la función para avisar a App.jsx
+function MisCronicas({ alActualizarUsuario }) { 
   const [cronicas, setCronicas] = useState({ dirigiendo: [], jugando: [] });
   const [cargando, setCargando] = useState(true);
   
   const usuarioGuardado = JSON.parse(localStorage.getItem('usuario'));
   const [editando, setEditando] = useState(false);
   
-  // Sincronizamos el perfil con los datos actuales
+  // Validamos si es un jugador base para mostrar el botón de solicitud DM
+  const esJugadorBase = usuarioGuardado?.rol === 'jugador';
+  
   const [perfil, setPerfil] = useState({ 
     nombre: usuarioGuardado?.nombre || '', 
     email: usuarioGuardado?.email || '',
@@ -47,40 +50,93 @@ function MisCronicas({ alActualizarUsuario }) { // Recibimos la función para av
         const nuevoUsuario = { ...usuarioGuardado, ...perfil };
         localStorage.setItem('usuario', JSON.stringify(nuevoUsuario));
         
-        // ¡IMPORTANTE! Avisamos a App.jsx para que el Navbar se actualice
         if (alActualizarUsuario) alActualizarUsuario(nuevoUsuario);
         
         setEditando(false);
-        alert("✨ ¡Perfil y Avatar actualizados!");
+        
+        // ✨ ALERTA DE ÉXITO ESTILO PERFIL
+        Swal.fire({
+          title: '¡Ficha Actualizada!',
+          text: 'Tus nuevos datos han sido grabados en los anales del gremio.',
+          icon: 'success',
+          background: '#18181b', // zinc-900
+          color: '#fff',
+          confirmButtonColor: '#10b981', // emerald-500
+          confirmButtonText: 'Excelente'
+        });
       } else {
-        alert("❌ Error al actualizar el perfil.");
+        // ✨ ALERTA DE ERROR
+        Swal.fire({
+          title: 'Error de Tinta',
+          text: 'No se pudo actualizar la ficha.',
+          icon: 'error',
+          background: '#18181b',
+          color: '#fff',
+          confirmButtonColor: '#ef4444' // red-500
+        });
       }
     } catch (error) {
       console.error(error);
+      Swal.fire({
+        title: 'Error Mágico',
+        text: 'Los pergaminos no llegaron al servidor.',
+        icon: 'error',
+        background: '#18181b',
+        color: '#fff',
+        confirmButtonColor: '#ef4444'
+      });
     }
   };
 
   const enviarPeticionDM = async () => {
-  const token = localStorage.getItem('token');
-  
-  if(!window.confirm("¿Sientes el llamado? ¿Quieres enviar tu petición para convertirte en Dungeon Master?")) return;
-
-  try {
-    const res = await fetch('https://gestor-eventos-rol.onrender.com/api/usuarios/solicitar-dm', {
-      method: 'POST',
-      headers: { 'authorization': token }
-    });
+    const token = localStorage.getItem('token');
     
-    if (res.ok) {
-      alert('✨ ¡Tu petición para ser Dungeon Master ha sido enviada a los altos mandos!');
-    } else {
-      const error = await res.json();
-      alert(`❌ ${error.error}`);
+    // ✨ CONFIRMACIÓN ÉPICA PARA SER DM
+    const result = await Swal.fire({
+      title: '¿Sientes el llamado?',
+      text: "Convertirse en Dungeon Master requiere sabiduría y paciencia. ¿Quieres enviar tu petición a los Altos Mandos?",
+      icon: 'question',
+      showCancelButton: true,
+      background: '#18181b',
+      color: '#fff',
+      confirmButtonColor: '#9333ea', // purple-600
+      cancelButtonColor: '#3f3f46', // zinc-700
+      confirmButtonText: '🧙‍♂️ Sí, quiero dirigir',
+      cancelButtonText: 'Aún no'
+    });
+
+    if (!result.isConfirmed) return;
+
+    try {
+      const res = await fetch('https://gestor-eventos-rol.onrender.com/api/usuarios/solicitar-dm', {
+        method: 'POST',
+        headers: { 'authorization': token }
+      });
+      
+      if (res.ok) {
+        Swal.fire({
+          title: 'Petición Enviada',
+          text: 'Tu solicitud está siendo evaluada. Mantente atento.',
+          icon: 'success',
+          background: '#18181b',
+          color: '#fff',
+          confirmButtonColor: '#10b981'
+        });
+      } else {
+        const error = await res.json();
+        Swal.fire({
+          title: 'Aviso del Gremio',
+          text: error.error,
+          icon: 'warning',
+          background: '#18181b',
+          color: '#fff',
+          confirmButtonColor: '#f59e0b' // amber-500
+        });
+      }
+    } catch (e) { 
+      console.error(e); 
     }
-  } catch (e) { 
-    console.error(e); 
-  }
-};
+  };
 
   const formatearFecha = (fechaString) => {
     return new Date(fechaString).toLocaleDateString('es-ES', { day: 'numeric', month: 'long', year: 'numeric' });
@@ -105,7 +161,7 @@ function MisCronicas({ alActualizarUsuario }) { // Recibimos la función para av
         </h3>
         
         {editando ? (
-          <div className="space-y-6 max-w-md text-left">
+          <div className="space-y-6 max-w-md text-left relative z-10">
             <div className="space-y-2">
               <label className="text-[10px] font-bold text-zinc-600 uppercase ml-2">Elige tu Avatar</label>
               <div className="flex gap-4 p-3 bg-zinc-950 rounded-2xl border border-zinc-800 justify-around">
@@ -125,28 +181,24 @@ function MisCronicas({ alActualizarUsuario }) { // Recibimos la función para av
                 ))}
               </div>
             </div>
-            {/* Solo mostramos el botón si NO es admin ni dm (esto requiere tener el usuario en el componente) */}
-            <button 
-              onClick={enviarPeticionDM}
-              className="mt-6 bg-purple-600 hover:bg-purple-500 text-white font-black px-6 py-3 rounded-xl shadow-lg transition-all transform active:scale-95 text-xs uppercase tracking-widest"
-            >
-              🧙‍♂️ Solicitar rango de Dungeon Master
-            </button>
+            
             <div className="space-y-2">
               <label className="text-[10px] font-bold text-zinc-600 uppercase ml-2">Nombre</label>
               <input name="nombre" className="w-full bg-zinc-950 border border-zinc-800 rounded-xl py-3 px-4 text-white focus:border-emerald-500 outline-none" value={perfil.nombre} onChange={manejarCambioPerfil} />
             </div>
+            
             <div className="space-y-2">
               <label className="text-[10px] font-bold text-zinc-600 uppercase ml-2">Email</label>
               <input name="email" className="w-full bg-zinc-950 border border-zinc-800 rounded-xl py-3 px-4 text-white focus:border-emerald-500 outline-none" value={perfil.email} onChange={manejarCambioPerfil} />
             </div>
-            <div className="flex gap-3">
-              <button onClick={guardarPerfil} className="flex-1 bg-emerald-600 text-white font-black py-3 rounded-xl uppercase text-xs">Guardar</button>
-              <button onClick={() => setEditando(false)} className="px-6 bg-zinc-800 text-zinc-400 rounded-xl uppercase text-xs">Cancelar</button>
+            
+            <div className="flex gap-3 pt-4">
+              <button onClick={guardarPerfil} className="flex-1 bg-emerald-600 hover:bg-emerald-500 text-white font-black py-3 rounded-xl uppercase text-xs transition-colors">Guardar Ficha</button>
+              <button onClick={() => setEditando(false)} className="px-6 bg-zinc-800 hover:bg-zinc-700 text-zinc-400 rounded-xl uppercase text-xs transition-colors">Cancelar</button>
             </div>
           </div>
         ) : (
-          <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 relative z-10">
             <div className="flex items-center gap-6">
                <div className="w-20 h-20 bg-zinc-800 rounded-full flex items-center justify-center text-4xl border-2 border-emerald-500 shadow-lg">
                   {perfil.avatar === 'guerrero' && '⚔️'}
@@ -159,30 +211,52 @@ function MisCronicas({ alActualizarUsuario }) { // Recibimos la función para av
                   <p className="text-zinc-500 font-mono text-sm">{perfil.email}</p>
                </div>
             </div>
-            <button onClick={() => setEditando(true)} className="bg-zinc-800 text-zinc-300 px-6 py-3 rounded-xl text-xs font-black uppercase">✏️ Editar Ficha</button>
+            
+            <div className="flex flex-col gap-3">
+              <button onClick={() => setEditando(true)} className="bg-zinc-800 hover:bg-zinc-700 text-zinc-300 px-6 py-3 rounded-xl text-xs font-black uppercase transition-colors">
+                ✏️ Editar Ficha
+              </button>
+              {/* ✨ SOLO SE MUESTRA SI ES JUGADOR BASE */}
+              {esJugadorBase && (
+                <button 
+                  onClick={enviarPeticionDM}
+                  className="bg-purple-600 hover:bg-purple-500 text-white px-6 py-3 rounded-xl text-xs font-black uppercase shadow-lg shadow-purple-900/20 transition-all active:scale-95"
+                >
+                  🧙‍♂️ Ser Dungeon Master
+                </button>
+              )}
+            </div>
           </div>
         )}
       </section>
 
-      {/* ... (Resto de las secciones de crónicas igual que antes) */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-8 text-left">
         <div className="space-y-6">
-          <h3 className="text-xl font-black text-white flex items-center gap-3 uppercase"><span className="w-8 h-1 bg-emerald-500 rounded-full"></span>Jugando</h3>
-          {cronicas.jugando.map(p => (
-            <div key={p.id} className="bg-zinc-900 border border-zinc-800 p-5 rounded-2xl">
-              <h4 className="font-bold text-white">{p.titulo}</h4>
-              <p className="text-zinc-500 text-xs mt-2 uppercase">{p.evento_nombre} | {formatearFecha(p.evento_fecha)}</p>
-            </div>
-          ))}
+          <h3 className="text-xl font-black text-white flex items-center gap-3 uppercase"><span className="w-8 h-1 bg-emerald-500 rounded-full"></span>Jugando ({cronicas.jugando.length})</h3>
+          {cronicas.jugando.length === 0 ? (
+            <p className="text-zinc-600 italic text-sm">Aún no te has sentado en ninguna mesa...</p>
+          ) : (
+            cronicas.jugando.map(p => (
+              <div key={p.id} className="bg-zinc-900 border border-zinc-800 p-5 rounded-2xl hover:border-emerald-500/30 transition-colors">
+                <h4 className="font-bold text-white">{p.titulo}</h4>
+                <p className="text-zinc-500 text-xs mt-2 uppercase">{p.evento_nombre} | {formatearFecha(p.evento_fecha)}</p>
+              </div>
+            ))
+          )}
         </div>
+        
         <div className="space-y-6">
-          <h3 className="text-xl font-black text-white flex items-center gap-3 uppercase"><span className="w-8 h-1 bg-amber-500 rounded-full"></span>Dirigiendo</h3>
-          {cronicas.dirigiendo.map(p => (
-            <div key={p.id} className="bg-zinc-900 border border-zinc-800 p-5 rounded-2xl">
-              <h4 className="font-bold text-white">{p.titulo}</h4>
-              <p className="text-zinc-500 text-xs mt-2 uppercase">{p.evento_nombre} | {formatearFecha(p.evento_fecha)}</p>
-            </div>
-          ))}
+          <h3 className="text-xl font-black text-white flex items-center gap-3 uppercase"><span className="w-8 h-1 bg-amber-500 rounded-full"></span>Dirigiendo ({cronicas.dirigiendo.length})</h3>
+          {cronicas.dirigiendo.length === 0 ? (
+            <p className="text-zinc-600 italic text-sm">No has convocado ninguna aventura aún...</p>
+          ) : (
+            cronicas.dirigiendo.map(p => (
+              <div key={p.id} className="bg-zinc-900 border border-zinc-800 p-5 rounded-2xl hover:border-amber-500/30 transition-colors">
+                <h4 className="font-bold text-white">{p.titulo}</h4>
+                <p className="text-zinc-500 text-xs mt-2 uppercase">{p.evento_nombre} | {formatearFecha(p.evento_fecha)}</p>
+              </div>
+            ))
+          )}
         </div>
       </div>
     </div>
