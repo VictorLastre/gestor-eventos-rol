@@ -124,7 +124,7 @@ function Eventos() {
         )}
 
         {/* CONTROLES Y TÍTULO DEL CARRUSEL DE PARTIDAS */}
-        <div className="flex items-center justify-between mb-8">
+        <div className="flex items-center justify-between mb-5">
           <div className="flex items-center gap-4">
             <h3 className="text-2xl font-black text-white uppercase tracking-tighter">Mesas de la jornada</h3>
           </div>
