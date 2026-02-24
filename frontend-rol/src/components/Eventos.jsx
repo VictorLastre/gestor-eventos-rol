@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import Partida from './Partida'; 
 import CrearMesa from './CrearMesa'; 
 import CrearEvento from './CrearEvento'; 
@@ -11,6 +11,9 @@ function Eventos() {
   const [partidasDelEvento, setPartidasDelEvento] = useState([]);
   const [mostrarFormularioMesa, setMostrarFormularioMesa] = useState(false);
   const [pestanaAdmin, setPestanaAdmin] = useState('eventos');
+  
+  // NUEVO: Ref para el carrusel
+  const carruselRef = useRef(null);
 
   const usuarioGuardado = JSON.parse(localStorage.getItem('usuario'));
   const esDungeonMaster = usuarioGuardado && (usuarioGuardado.rol === 'dm' || usuarioGuardado.rol === 'admin');
@@ -51,16 +54,28 @@ function Eventos() {
   const hoy = new Date();
   hoy.setHours(0, 0, 0, 0);
 
-  // SEPARACIÓN DE EVENTOS: Próximos vs Pasados
   const eventosProximos = eventos
     .filter(e => new Date(e.fecha) >= hoy)
     .sort((a, b) => new Date(a.fecha) - new Date(b.fecha));
     
   const eventosPasados = eventos
     .filter(e => new Date(e.fecha) < hoy)
-    .sort((a, b) => new Date(b.fecha) - new Date(a.fecha)); // Ordenamos del más reciente al más antiguo
+    .sort((a, b) => new Date(b.fecha) - new Date(a.fecha)); 
 
   const formatearFecha = (f) => new Date(f).toLocaleDateString('es-ES', { day: 'numeric', month: 'long', year: 'numeric' });
+
+  // NUEVO: Funciones para mover el carrusel
+  const scrollIzquierda = () => {
+    if (carruselRef.current) {
+      carruselRef.current.scrollBy({ left: -400, behavior: 'smooth' });
+    }
+  };
+
+  const scrollDerecha = () => {
+    if (carruselRef.current) {
+      carruselRef.current.scrollBy({ left: 400, behavior: 'smooth' });
+    }
+  };
 
   // === VISTA DETALLADA DEL EVENTO ===
   if (eventoSeleccionado) {
@@ -139,7 +154,7 @@ function Eventos() {
 
   // === VISTA PRINCIPAL (EL TABLÓN) ===
   return (
-    <div className="max-w-6xl mx-auto p-6 md:p-12 animate-in fade-in duration-700">
+    <div className="max-w-6xl mx-auto p-6 md:p-12 animate-in fade-in duration-700 overflow-hidden">
       
       {esAdmin && (
         <section className="mb-16 bg-zinc-900 rounded-[2.5rem] border border-purple-500/20 overflow-hidden shadow-2xl shadow-purple-500/5">
@@ -166,33 +181,53 @@ function Eventos() {
         </section>
       )}
 
-      {/* EVENTOS PRÓXIMOS */}
-      <section className="mb-20">
+      {/* EVENTOS PRÓXIMOS (CARRUSEL) */}
+      <section className="mb-20 relative">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-10">
           <h2 className="text-4xl font-black text-white tracking-tighter flex items-center gap-4 italic uppercase">
             <span className="w-12 h-12 bg-emerald-500 text-black flex items-center justify-center rounded-2xl shadow-lg shadow-emerald-500/20 not-italic">⚔️</span>
             Asociación de Rol La Pampa
           </h2>
-          <p className="text-zinc-500 font-bold text-xs tracking-widest uppercase bg-zinc-900 px-4 py-2 rounded-full border border-zinc-800">
-            Tablón de Misiones
-          </p>
+          
+          {/* NUEVO: Controles del carrusel */}
+          <div className="flex items-center gap-3">
+             <p className="text-zinc-500 font-bold text-xs tracking-widest uppercase bg-zinc-900 px-4 py-2 rounded-full border border-zinc-800 hidden md:block">
+               Tablón de Misiones
+             </p>
+             {eventosProximos.length > 2 && (
+               <div className="flex gap-2">
+                 <button onClick={scrollIzquierda} className="w-10 h-10 rounded-full bg-zinc-900 border border-zinc-800 flex items-center justify-center text-zinc-400 hover:text-white hover:border-emerald-500/50 transition-colors">
+                   ←
+                 </button>
+                 <button onClick={scrollDerecha} className="w-10 h-10 rounded-full bg-zinc-900 border border-zinc-800 flex items-center justify-center text-zinc-400 hover:text-white hover:border-emerald-500/50 transition-colors">
+                   →
+                 </button>
+               </div>
+             )}
+          </div>
         </div>
         
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-          {eventosProximos.length > 0 ? (
-            eventosProximos.map(evento => (
+        {eventosProximos.length > 0 ? (
+          // NUEVO: Contenedor con scroll horizontal (snap)
+          <div 
+            ref={carruselRef} 
+            className="flex gap-8 overflow-x-auto pb-8 snap-x snap-mandatory scrollbar-hide"
+            style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
+          >
+            {eventosProximos.map(evento => (
               <div 
                 key={evento.id} 
                 onClick={() => entrarAlEvento(evento)}
-                className="group relative bg-zinc-900/40 hover:bg-zinc-900 border border-zinc-800 hover:border-emerald-500/50 p-8 rounded-[2rem] transition-all duration-300 cursor-pointer shadow-xl hover:shadow-emerald-500/10 hover:-translate-y-2 overflow-hidden"
+                // Modificado para tener un ancho fijo y hacer 'snap'
+                className="group relative bg-zinc-900/40 hover:bg-zinc-900 border border-zinc-800 hover:border-emerald-500/50 p-8 rounded-[2rem] transition-all duration-300 cursor-pointer shadow-xl hover:shadow-emerald-500/10 hover:-translate-y-2 overflow-hidden flex-shrink-0 w-full md:w-[45%] snap-center"
               >
                 <div className="absolute -bottom-10 -right-10 w-32 h-32 bg-emerald-500/5 group-hover:bg-emerald-500/10 blur-3xl rounded-full transition-colors"></div>
 
-                <div className="relative z-10">
-                  <h3 className="text-2xl font-black text-white mb-3 group-hover:text-emerald-400 transition-colors uppercase italic tracking-tight">
+                <div className="relative z-10 h-full flex flex-col">
+                  <h3 className="text-2xl font-black text-white mb-3 group-hover:text-emerald-400 transition-colors uppercase italic tracking-tight line-clamp-2">
                     {evento.nombre}
                   </h3>
-                  <p className="text-zinc-400 text-sm mb-8 line-clamp-3 leading-relaxed italic border-l-2 border-zinc-800 pl-4">
+                  <p className="text-zinc-400 text-sm mb-8 line-clamp-3 leading-relaxed italic border-l-2 border-zinc-800 pl-4 flex-grow">
                     "{evento.descripcion}"
                   </p>
                   
@@ -216,13 +251,13 @@ function Eventos() {
                   </button>
                 )}
               </div>
-            ))
-          ) : (
-            <p className="col-span-full text-center py-20 text-zinc-600 font-bold uppercase tracking-widest italic border-2 border-dashed border-zinc-800 rounded-3xl">
-              No hay eventos convocados por el momento...
-            </p>
-          )}
-        </div>
+            ))}
+          </div>
+        ) : (
+          <p className="text-center py-20 text-zinc-600 font-bold uppercase tracking-widest italic border-2 border-dashed border-zinc-800 rounded-3xl">
+            No hay eventos convocados por el momento...
+          </p>
+        )}
       </section>
 
       {/* EVENTOS PASADOS (HISTORIAL) */}
