@@ -22,10 +22,11 @@ function CrearEvento({ alCrearEvento }) {
         body: JSON.stringify(nuevoEvento)
       });
 
-      const texto = await respuesta.text();
+      // Parseamos la respuesta como JSON en lugar de texto para evitar problemas
+      const data = await respuesta.json();
 
       if (respuesta.ok) {
-        setMensaje(`✅ ${texto}`);
+        setMensaje(`✅ ${data.mensaje || '¡Evento convocado!'}`);
         setNombre(''); setDescripcion(''); setFecha('');
         
         // Recargamos la lista de eventos después de 1.5 segundos
@@ -35,7 +36,7 @@ function CrearEvento({ alCrearEvento }) {
         }, 1500);
 
       } else {
-        setMensaje(`❌ ${texto}`);
+        setMensaje(`❌ ${data.error || 'Error al crear evento'}`);
       }
     } catch (error) {
       console.error("Error:", error);
@@ -44,44 +45,90 @@ function CrearEvento({ alCrearEvento }) {
   };
 
   return (
-    <div style={{ backgroundColor: '#1a1a1a', padding: '20px', borderRadius: '8px', border: '1px solid #9c27b0', marginBottom: '30px', boxShadow: '0 4px 8px rgba(156, 39, 176, 0.2)' }}>
-      <h3 style={{ color: '#ce93d8', marginTop: 0 }}>👑 Convocar Nuevo Evento (Panel de Admin)</h3>
+    <div className="animate-in fade-in slide-in-from-top-2 duration-500">
       
-      <form onSubmit={manejarCreacion} style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-        <input 
-          type="text" 
-          placeholder="Nombre del Evento (Ej: Convención de Invierno)" 
-          value={nombre} 
-          onChange={e => setNombre(e.target.value)} 
-          required 
-          style={{ padding: '8px', borderRadius: '4px', border: '1px solid #444', backgroundColor: '#333', color: 'white' }}
-        />
-        
-        <textarea 
-          placeholder="Descripción del evento..." 
-          value={descripcion} 
-          onChange={e => setDescripcion(e.target.value)} 
-          rows="3"
-          style={{ padding: '8px', borderRadius: '4px', border: '1px solid #444', backgroundColor: '#333', color: 'white' }}
-        />
-        
-        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-          <label style={{ color: '#ccc', fontWeight: 'bold' }}>Fecha del Encuentro:</label>
-          <input 
-            type="date" 
-            value={fecha} 
-            onChange={e => setFecha(e.target.value)} 
-            required 
-            style={{ padding: '8px', borderRadius: '4px', border: '1px solid #444', backgroundColor: '#333', color: 'white' }}
-          />
+      {/* Encabezado del Formulario */}
+      <div className="flex items-center gap-3 mb-8">
+        <div className="w-10 h-10 bg-purple-500/20 text-purple-400 flex items-center justify-center rounded-xl border border-purple-500/30 text-xl">
+          👑
         </div>
+        <div>
+          <h3 className="text-xl font-black text-white uppercase tracking-tighter">
+            Convocar Nuevo Evento
+          </h3>
+          <p className="text-[10px] text-zinc-500 font-bold uppercase tracking-widest">
+            Panel de Administración
+          </p>
+        </div>
+      </div>
 
-        <button type="submit" style={{ backgroundColor: '#9c27b0', color: 'white', fontWeight: 'bold', marginTop: '10px', padding: '10px', border: 'none', borderRadius: '4px', cursor: 'pointer' }}>
-          Forjar Evento
-        </button>
-      </form>
+      {/* Contenedor del Formulario */}
+      <div className="bg-zinc-900 border border-zinc-800 p-6 md:p-8 rounded-[2rem] shadow-2xl relative overflow-hidden">
+        {/* Brillo de fondo */}
+        <div className="absolute top-0 right-0 w-32 h-32 bg-purple-500/5 blur-3xl rounded-full pointer-events-none"></div>
 
-      {mensaje && <p style={{ marginTop: '15px', fontWeight: 'bold', color: mensaje.includes('✅') ? '#4CAF50' : '#f44336' }}>{mensaje}</p>}
+        <form onSubmit={manejarCreacion} className="relative z-10 flex flex-col gap-6">
+          
+          <div className="space-y-2">
+            <label className="text-[10px] font-bold text-zinc-500 uppercase ml-2 tracking-widest">
+              Nombre del Evento
+            </label>
+            <input 
+              type="text" 
+              placeholder="Ej: Convención de Invierno" 
+              value={nombre} 
+              onChange={e => setNombre(e.target.value)} 
+              required 
+              className="w-full bg-zinc-950 border border-zinc-800 rounded-xl py-4 px-5 text-white placeholder:text-zinc-700 focus:border-purple-500 focus:ring-1 focus:ring-purple-500/50 outline-none transition-all font-bold"
+            />
+          </div>
+          
+          <div className="space-y-2">
+            <label className="text-[10px] font-bold text-zinc-500 uppercase ml-2 tracking-widest">
+              Descripción
+            </label>
+            <textarea 
+              placeholder="Detalles de la jornada épica..." 
+              value={descripcion} 
+              onChange={e => setDescripcion(e.target.value)} 
+              rows="3"
+              className="w-full bg-zinc-950 border border-zinc-800 rounded-xl py-4 px-5 text-white placeholder:text-zinc-700 focus:border-purple-500 focus:ring-1 focus:ring-purple-500/50 outline-none transition-all resize-none italic"
+            />
+          </div>
+          
+          <div className="space-y-2">
+            <label className="text-[10px] font-bold text-zinc-500 uppercase ml-2 tracking-widest">
+              Fecha del Encuentro
+            </label>
+            <input 
+              type="date" 
+              value={fecha} 
+              onChange={e => setFecha(e.target.value)} 
+              required 
+              className="w-full bg-zinc-950 border border-zinc-800 rounded-xl py-4 px-5 text-white focus:border-purple-500 focus:ring-1 focus:ring-purple-500/50 outline-none transition-all [color-scheme:dark]"
+            />
+          </div>
+
+          <button 
+            type="submit" 
+            className="mt-4 w-full bg-purple-600 hover:bg-purple-500 text-white font-black py-4 rounded-xl shadow-lg shadow-purple-900/20 transition-all transform active:scale-95 text-xs uppercase tracking-widest"
+          >
+            ⚔️ Forjar Evento
+          </button>
+        </form>
+
+        {/* Mensaje de respuesta */}
+        {mensaje && (
+          <div className={`mt-6 p-4 rounded-xl border text-sm font-bold text-center animate-in zoom-in-95 duration-300 ${
+            mensaje.includes('✅') 
+            ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-400' 
+            : 'bg-red-500/10 border-red-500/30 text-red-400'
+          }`}>
+            {mensaje}
+          </div>
+        )}
+      </div>
+
     </div>
   );
 }
