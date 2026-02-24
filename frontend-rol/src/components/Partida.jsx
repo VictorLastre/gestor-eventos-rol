@@ -10,11 +10,9 @@ function Partida(props) {
   const [modalAbierto, setModalAbierto] = useState(false);
   const [cargandoJugadores, setCargandoJugadores] = useState(false);
 
-  // === BLOQUEO DE SCROLL ===
   useEffect(() => {
     if (modalAbierto) {
       document.body.style.overflow = 'hidden';
-      // Aprovechamos que se abre el modal para cargar los jugadores automáticamente
       cargarListaJugadores();
     } else {
       document.body.style.overflow = 'unset';
@@ -61,7 +59,7 @@ function Partida(props) {
       if (res.ok) {
         setAnotado(!anotado);
         setJugadoresAnotados(anotado ? jugadoresAnotados - 1 : jugadoresAnotados + 1);
-        cargarListaJugadores(); // Refrescamos la lista si se une/va
+        cargarListaJugadores();
       } else {
         const mensaje = await res.text();
         alert(`Aviso del Gremio: ${mensaje}`);
@@ -74,27 +72,33 @@ function Partida(props) {
       {/* CARD DEL CARRUSEL */}
       <div 
         onClick={() => setModalAbierto(true)}
-        className={`relative p-6 rounded-2xl border-2 transition-all duration-300 shadow-xl flex flex-col h-[420px] cursor-pointer group ${
+        className={`relative p-6 rounded-3xl border-2 transition-all duration-300 shadow-xl flex flex-col h-[420px] cursor-pointer group ${
           soyElMaster 
-          ? 'border-amber-500 bg-amber-500/5 shadow-amber-500/10' 
+          ? 'border-amber-500/50 bg-amber-500/5 shadow-amber-500/10' 
           : 'border-zinc-800 bg-zinc-900/40 hover:border-emerald-500/30'
         }`}
       >
-        {soyElMaster && (
-          <span className="absolute -top-3 right-6 bg-amber-500 text-black text-[10px] font-black px-3 py-1 rounded-full uppercase tracking-widest shadow-lg z-10">
-            Tu Mesa
-          </span>
-        )}
-
         <div className="flex justify-between items-start mb-4">
-          <div className="max-w-[70%]">
-            <span className="text-[10px] font-black text-emerald-500 uppercase tracking-widest bg-emerald-500/10 px-2 py-1 rounded">
-              {props.sistema}
-            </span>
-            <h3 className="text-xl font-black text-white mt-2 italic uppercase tracking-tighter leading-tight line-clamp-2">
+          <div className="max-w-[75%] space-y-2">
+            {/* CONTENEDOR DE BADGES (SISTEMA Y ROL) */}
+            <div className="flex flex-wrap gap-2">
+              <span className="text-[9px] font-black text-emerald-500 uppercase tracking-widest bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-500/20">
+                {props.sistema}
+              </span>
+              
+              {/* ETIQUETA "TU MESA" REUBICADA DENTRO DEL FLUJO */}
+              {soyElMaster && (
+                <span className="text-[9px] font-black text-amber-500 uppercase tracking-widest bg-amber-500/10 px-2 py-0.5 rounded border border-amber-500/20">
+                  ✨ Tu Mesa
+                </span>
+              )}
+            </div>
+
+            <h3 className="text-xl font-black text-white mt-1 italic uppercase tracking-tighter leading-tight line-clamp-2">
               {props.titulo}
             </h3>
           </div>
+          
           <div className="text-right">
             <p className={`text-2xl font-mono font-black leading-none ${jugadoresAnotados >= props.cupo ? 'text-red-500' : 'text-emerald-500'}`}>
               {jugadoresAnotados}/{props.cupo}
@@ -119,7 +123,7 @@ function Partida(props) {
               onClick={alternarInscripcion}
               className={`flex-1 py-3 rounded-xl font-black text-[10px] uppercase tracking-widest transition-all ${
                 anotado 
-                ? 'bg-red-500/10 text-red-500 border border-red-500/50 hover:bg-red-600 hover:text-white' 
+                ? 'bg-red-500/10 text-red-500 border border-red-500/40 hover:bg-red-600 hover:text-white' 
                 : 'bg-emerald-600 text-white hover:bg-emerald-500 shadow-lg shadow-emerald-900/30'
               }`}
             >
@@ -132,7 +136,7 @@ function Partida(props) {
         </div>
       </div>
 
-      {/* MODAL DE INFORMACIÓN Y JUGADORES */}
+      {/* MODAL DE INFORMACIÓN Y JUGADORES (Sin cambios aquí) */}
       {modalAbierto && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/90 backdrop-blur-sm animate-in fade-in duration-300">
           <div 
@@ -146,11 +150,18 @@ function Partida(props) {
               ✕
             </button>
 
-            <span className="text-xs font-black text-emerald-500 uppercase tracking-widest bg-emerald-500/10 px-3 py-1 rounded-full border border-emerald-500/20">
-              {props.sistema}
-            </span>
+            <div className="flex gap-2 mb-2">
+              <span className="text-xs font-black text-emerald-500 uppercase tracking-widest bg-emerald-500/10 px-3 py-1 rounded-full border border-emerald-500/20">
+                {props.sistema}
+              </span>
+              {soyElMaster && (
+                <span className="text-xs font-black text-amber-500 uppercase tracking-widest bg-amber-500/10 px-3 py-1 rounded-full border border-amber-500/20">
+                  ✨ Tu Mesa
+                </span>
+              )}
+            </div>
             
-            <h2 className="text-4xl font-black text-white mt-6 mb-4 uppercase italic tracking-tighter leading-none">
+            <h2 className="text-4xl font-black text-white mt-4 mb-4 uppercase italic tracking-tighter leading-none">
               {props.titulo}
             </h2>
 
@@ -167,7 +178,6 @@ function Partida(props) {
               </div>
             </div>
 
-            {/* SECCIÓN DE JUGADORES ANOTADOS */}
             <div className="mb-8">
               <h4 className="text-[10px] font-black text-zinc-500 uppercase tracking-[0.3em] mb-4 flex items-center gap-2">
                 <span className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse"></span> Aventureros en la Mesa
@@ -211,7 +221,7 @@ function Partida(props) {
                     : 'bg-emerald-600 text-white shadow-lg'
                   }`}
                 >
-                  {anotado ? 'Abandonar Partida' : 'Unirme a la Aventura'}
+                  {anotado ? 'Abandonar Partida' : 'Unirse a la Aventura'}
                 </button>
               )}
               <button 
