@@ -2,7 +2,7 @@ const express = require('express');
 const router = express.Router();
 const db = require('../config/db');
 const verificarToken = require('../middlewares/auth');
-const bcrypt = require('bcrypt'); // ¡Vital para encriptar la nueva contraseña!
+const bcrypt = require('bcrypt'); 
 
 router.get('/mis-cronicas', verificarToken, (req, res) => {
   const idUsuario = req.usuario.id;
@@ -26,27 +26,20 @@ router.get('/solicitudes-dm', verificarToken, (req, res) => {
   });
 });
 
-// === RUTA ACTUALIZADA: PERFIL Y AVATAR ===
 router.put('/perfil', verificarToken, async (req, res) => {
-  // Extraemos el avatar que nos manda el frontend
   const { nombre, email, password, avatar } = req.body;
   const idUsuario = req.usuario.id;
 
   try {
-    // Si el aventurero forjó una nueva contraseña
     if (password && password.trim() !== '') {
       const hash = await bcrypt.hash(password, 10);
-      // Agregamos el avatar al UPDATE
       const sql = "UPDATE usuarios SET nombre = ?, email = ?, password = ?, avatar = ? WHERE id = ?";
       
       db.query(sql, [nombre, email, hash, avatar, idUsuario], (err) => {
         if (err) return res.status(500).json({ error: 'Error al actualizar tu ficha en el gremio.' });
         res.json({ mensaje: '¡Perfil, avatar y contraseña actualizados con éxito!' });
       });
-    } 
-    // Si solo está actualizando datos o avatar (sin tocar la contraseña)
-    else {
-      // Agregamos el avatar al UPDATE
+    } else {
       const sql = "UPDATE usuarios SET nombre = ?, email = ?, avatar = ? WHERE id = ?";
       
       db.query(sql, [nombre, email, avatar, idUsuario], (err) => {
@@ -71,6 +64,17 @@ router.put('/:id/promover', verificarToken, (req, res) => {
   });
 });
 
+// ✨ AQUÍ ESTÁ LA RUTA PARA RECHAZAR LA PETICIÓN
+router.put('/:id/rechazar-dm', verificarToken, (req, res) => {
+  if (req.usuario.rol !== 'admin') return res.status(403).json({ error: 'Denegado.' });
+  
+  // Limpiamos el flag de solicita_dm poniéndolo en 0
+  db.query("UPDATE usuarios SET solicita_dm = 0 WHERE id = ?", [req.params.id], (err) => {
+    if (err) return res.status(500).send('Error al rechazar la petición.');
+    res.status(200).send('La petición ha sido denegada correctamente.');
+  });
+});
+
 router.get('/estadisticas', verificarToken, (req, res) => {
   if (req.usuario.rol !== 'admin') return res.status(403).json({ error: 'Acceso denegado.' });
   const sql = `
@@ -83,7 +87,6 @@ router.get('/estadisticas', verificarToken, (req, res) => {
   });
 });
 
-// Ruta para que un jugador pida ser DM
 router.post('/solicitar-dm', verificarToken, (req, res) => {
   if (req.usuario.rol !== 'jugador') {
     return res.status(400).json({ error: 'Ya tienes rango o no puedes solicitarlo.' });
@@ -96,12 +99,10 @@ router.post('/solicitar-dm', verificarToken, (req, res) => {
     res.status(200).send('¡Tu solicitud ha sido enviada al gremio!');
   });
 });
-// === NUEVA RUTA: OBTENER TODOS LOS USUARIOS (Solo Admin) ===
+
 router.get('/', verificarToken, (req, res) => {
-  // Verificamos que solo el Admin supremo pueda ver esta lista
   if (req.usuario.rol !== 'admin') return res.status(403).json({ error: 'Acceso denegado a los archivos secretos.' });
   
-  // Traemos todos los usuarios ordenados alfabéticamente
   const sql = "SELECT id, nombre, email, rol, avatar, solicita_dm FROM usuarios ORDER BY nombre ASC";
   
   db.query(sql, (err, resultados) => {
