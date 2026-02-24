@@ -48,7 +48,6 @@ router.post('/:id/inscripciones', verificarToken, (req, res) => {
   });
 });
 
-// ✨ ¡AQUÍ ESTÁ LA RUTA QUE FALTABA PARA SOLUCIONAR EL 404! ✨
 router.delete('/:id/inscripciones', verificarToken, (req, res) => {
   const idPartida = req.params.id;
   const idUsuario = req.usuario.id;
@@ -69,10 +68,11 @@ router.delete('/:id/inscripciones', verificarToken, (req, res) => {
   });
 });
 
+// ✨ RUTA ACTUALIZADA: Ahora pedimos "u.rol" a la base de datos
 router.get('/:id/jugadores', verificarToken, (req, res) => {
-  const sql = "SELECT u.id, u.nombre, u.email FROM usuarios u JOIN inscripciones i ON u.id = i.usuario_id WHERE i.partida_id = ?";
+  const sql = "SELECT u.id, u.nombre, u.email, u.rol FROM usuarios u JOIN inscripciones i ON u.id = i.usuario_id WHERE i.partida_id = ?";
   db.query(sql, [req.params.id], (err, resultados) => {
-    if (err) return res.status(500).json({ error: 'Error.' });
+    if (err) return res.status(500).json({ error: 'Error al consultar los aventureros.' });
     res.json(resultados);
   });
 });
