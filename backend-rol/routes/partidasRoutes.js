@@ -48,7 +48,26 @@ router.post('/:id/inscripciones', verificarToken, (req, res) => {
   });
 });
 
-// ... resto de las rutas (delete inscripciones, get jugadores, delete partida) se mantienen igual
+// ✨ ¡AQUÍ ESTÁ LA RUTA QUE FALTABA PARA SOLUCIONAR EL 404! ✨
+router.delete('/:id/inscripciones', verificarToken, (req, res) => {
+  const idPartida = req.params.id;
+  const idUsuario = req.usuario.id;
+
+  const sqlDelete = 'DELETE FROM inscripciones WHERE partida_id = ? AND usuario_id = ?';
+  
+  db.query(sqlDelete, [idPartida, idUsuario], (err, resultado) => {
+    if (err) {
+      console.error(err);
+      return res.status(500).send('Error mágico al intentar abandonar la mesa.');
+    }
+    
+    if (resultado.affectedRows === 0) {
+      return res.status(400).send('No figurabas en los registros de esta mesa.');
+    }
+
+    res.status(200).send('Has abandonado la mesa exitosamente.');
+  });
+});
 
 router.get('/:id/jugadores', verificarToken, (req, res) => {
   const sql = "SELECT u.id, u.nombre, u.email FROM usuarios u JOIN inscripciones i ON u.id = i.usuario_id WHERE i.partida_id = ?";
