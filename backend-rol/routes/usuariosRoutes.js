@@ -64,7 +64,7 @@ router.put('/:id/promover', verificarToken, (req, res) => {
   });
 });
 
-// ✨ AQUÍ ESTÁ LA RUTA PARA RECHAZAR LA PETICIÓN
+// ✨ RUTA PARA RECHAZAR LA PETICIÓN
 router.put('/:id/rechazar-dm', verificarToken, (req, res) => {
   if (req.usuario.rol !== 'admin') return res.status(403).json({ error: 'Denegado.' });
   
@@ -72,6 +72,30 @@ router.put('/:id/rechazar-dm', verificarToken, (req, res) => {
   db.query("UPDATE usuarios SET solicita_dm = 0 WHERE id = ?", [req.params.id], (err) => {
     if (err) return res.status(500).send('Error al rechazar la petición.');
     res.status(200).send('La petición ha sido denegada correctamente.');
+  });
+});
+
+// ✨ NUEVA RUTA: CAMBIAR ROL LIBREMENTE (Solo Admins)
+router.put('/:id/rol', verificarToken, (req, res) => {
+  if (req.usuario.rol !== 'admin') {
+    return res.status(403).json({ error: 'No tienes autoridad para otorgar títulos.' });
+  }
+
+  const { rol } = req.body; 
+  const usuarioId = req.params.id;
+
+  if (!['admin', 'dm', 'jugador'].includes(rol)) {
+    return res.status(400).json({ error: 'Rango desconocido en el reino.' });
+  }
+
+  // Actualizamos el rol y limpiamos cualquier solicitud de DM pendiente por las dudas
+  const sqlUpdate = 'UPDATE usuarios SET rol = ?, solicita_dm = 0 WHERE id = ?';
+  db.query(sqlUpdate, [rol, usuarioId], (err) => {
+    if (err) {
+      console.error(err);
+      return res.status(500).json({ error: 'Error al forjar el nuevo rango.' });
+    }
+    res.status(200).json({ mensaje: '¡El rango ha sido modificado con éxito!' });
   });
 });
 

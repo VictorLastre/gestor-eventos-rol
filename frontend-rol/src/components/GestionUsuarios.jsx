@@ -6,6 +6,9 @@ function GestionUsuarios() {
   const [todosLosUsuarios, setTodosLosUsuarios] = useState([]);
   const [pestanaActiva, setPestanaActiva] = useState('peticiones');
   const [filtroRol, setFiltroRol] = useState('todos'); 
+  
+  // ✨ NUEVO ESTADO PARA LA BARRA DE BÚSQUEDA
+  const [busqueda, setBusqueda] = useState('');
 
   const cargarDatos = () => {
     const token = localStorage.getItem('token');
@@ -29,12 +32,13 @@ function GestionUsuarios() {
     cargarDatos();
   }, []);
 
+  // Función original para las peticiones pendientes
   const promoverUsuario = async (id, nombre) => {
     const token = localStorage.getItem('token');
     
     const result = await Swal.fire({
       title: 'Forjar un nuevo Director',
-      text: `¿Estás seguro de otorgar el manto de Dungeon Master a ${nombre.toUpperCase()}? Este poder es permanente.`,
+      text: `¿Estás seguro de otorgar el manto de Dungeon Master a ${nombre.toUpperCase()}?`,
       icon: 'warning',
       showCancelButton: true,
       background: '#18181b', 
@@ -65,41 +69,25 @@ function GestionUsuarios() {
           });
           cargarDatos(); 
         } else {
-          Swal.fire({
-            title: 'Interferencia Mágica',
-            text: `❌ ${texto}`,
-            icon: 'error',
-            background: '#18181b',
-            color: '#fff',
-            confirmButtonColor: '#ef4444' 
-          });
+          Swal.fire({ title: 'Interferencia Mágica', text: `❌ ${texto}`, icon: 'error', background: '#18181b', color: '#fff' });
         }
       } catch (e) { 
         console.error(e); 
-        Swal.fire({
-          title: 'Error de Red',
-          text: 'Los pergaminos no pudieron llegar al servidor.',
-          icon: 'error',
-          background: '#18181b',
-          color: '#fff',
-          confirmButtonColor: '#ef4444'
-        });
       }
     }
   };
 
-  // ✨ NUEVA FUNCIÓN PARA RECHAZAR LA SOLICITUD
   const rechazarUsuario = async (id, nombre) => {
     const token = localStorage.getItem('token');
     
     const result = await Swal.fire({
       title: 'Denegar Petición',
-      text: `¿Estás seguro de rechazar la solicitud de ${nombre.toUpperCase()}? La marca de petición será borrada.`,
+      text: `¿Estás seguro de rechazar la solicitud de ${nombre.toUpperCase()}?`,
       icon: 'error',
       showCancelButton: true,
       background: '#18181b', 
       color: '#fff',
-      confirmButtonColor: '#ef4444', // red-500
+      confirmButtonColor: '#ef4444', 
       cancelButtonColor: '#3f3f46', 
       confirmButtonText: '❌ Rechazar Petición',
       cancelButtonText: 'Cancelar'
@@ -107,56 +95,78 @@ function GestionUsuarios() {
 
     if (result.isConfirmed) {
       try {
-        // Asumimos que crearás esta ruta en el backend usando DELETE o PUT
         const res = await fetch(`https://gestor-eventos-rol.onrender.com/api/usuarios/${id}/rechazar-dm`, {
           method: 'PUT', 
           headers: { 'authorization': token }
         });
         
-        const texto = await res.text();
-        
         if (res.ok) {
-          Swal.fire({
-            title: 'Petición Rechazada',
-            text: `La solicitud de ${nombre} ha sido borrada de los registros.`,
-            icon: 'success',
-            background: '#18181b',
-            color: '#fff',
-            confirmButtonColor: '#10b981' 
-          });
+          Swal.fire({ title: 'Petición Rechazada', text: `La solicitud de ${nombre} ha sido borrada.`, icon: 'success', background: '#18181b', color: '#fff' });
           cargarDatos(); 
-        } else {
-          Swal.fire({
-            title: 'Interferencia Mágica',
-            text: `❌ ${texto}`,
-            icon: 'error',
-            background: '#18181b',
-            color: '#fff',
-            confirmButtonColor: '#ef4444' 
-          });
         }
-      } catch (e) { 
-        console.error(e); 
-        Swal.fire({
-          title: 'Error de Red',
-          text: 'Los pergaminos no pudieron llegar al servidor.',
-          icon: 'error',
-          background: '#18181b',
-          color: '#fff',
-          confirmButtonColor: '#ef4444'
-        });
-      }
+      } catch (e) { console.error(e); }
     }
   };
 
-  const usuariosFiltrados = todosLosUsuarios.filter(user => 
-    filtroRol === 'todos' || user.rol === filtroRol
-  );
+  // ✨ NUEVA FUNCIÓN: Cambiar rol libremente desde el Censo
+  const cambiarRolDirecto = async (id, nombre, nuevoRol) => {
+    const token = localStorage.getItem('token');
+    const rolVisual = nuevoRol === 'admin' ? 'Administrador del Gremio' : nuevoRol === 'dm' ? 'Dungeon Master' : 'Jugador';
+    const icono = nuevoRol === 'admin' ? '👑' : nuevoRol === 'dm' ? '🛡️' : '⚔️';
+
+    const result = await Swal.fire({
+      title: `${icono} Alterar Rango`,
+      text: `¿Estás seguro de convertir a ${nombre} en ${rolVisual}?`,
+      icon: 'question',
+      showCancelButton: true,
+      background: '#18181b', 
+      color: '#fff',
+      confirmButtonColor: '#0ea5e9', 
+      cancelButtonColor: '#3f3f46', 
+      confirmButtonText: 'Sí, aplicar cambio',
+      cancelButtonText: 'Cancelar'
+    });
+
+    if (result.isConfirmed) {
+      try {
+        const res = await fetch(`https://gestor-eventos-rol.onrender.com/api/usuarios/${id}/rol`, {
+          method: 'PUT',
+          headers: { 
+            'Content-Type': 'application/json',
+            'authorization': token 
+          },
+          body: JSON.stringify({ rol: nuevoRol })
+        });
+        
+        if (res.ok) {
+          Swal.fire({
+            title: '¡Rango Alterado!',
+            text: `${nombre} ahora es ${rolVisual}.`,
+            icon: 'success',
+            background: '#18181b',
+            color: '#fff',
+            confirmButtonColor: '#10b981'
+          });
+          cargarDatos(); // Refrescamos la tabla
+        } else {
+          const errorData = await res.json();
+          Swal.fire({ title: 'Error Mágico', text: errorData.error, icon: 'error', background: '#18181b', color: '#fff' });
+        }
+      } catch (e) { console.error(e); }
+    }
+  };
+
+  // ✨ FILTRADO DOBLE: Por Rol y por Búsqueda de Nombre
+  const usuariosFiltrados = todosLosUsuarios.filter(user => {
+    const coincideRol = filtroRol === 'todos' || user.rol === filtroRol;
+    const coincideBusqueda = user.nombre.toLowerCase().includes(busqueda.toLowerCase());
+    return coincideRol && coincideBusqueda;
+  });
 
   return (
     <div className="animate-in fade-in slide-in-from-top-2 duration-500">
       
-      {/* === NAVEGACIÓN DE PESTAÑAS === */}
+      {/* NAVEGACIÓN DE PESTAÑAS */}
       <div className="flex gap-4 mb-8 border-b border-zinc-800 pb-4">
         <button 
           onClick={() => setPestanaActiva('peticiones')}
@@ -180,7 +190,7 @@ function GestionUsuarios() {
         </button>
       </div>
 
-      {/* === VISTA 1: PETICIONES DE ASCENSO === */}
+      {/* VISTA 1: PETICIONES DE ASCENSO */}
       {pestanaActiva === 'peticiones' && (
         <div className="animate-in fade-in duration-300">
           <div className="flex items-center gap-3 mb-6">
@@ -212,7 +222,6 @@ function GestionUsuarios() {
                     </div>
                   </div>
                   
-                  {/* ✨ AQUÍ AGREGAMOS EL BOTÓN DE RECHAZAR JUNTO AL DE ASCENDER */}
                   <div className="flex gap-2 w-full md:w-auto mt-2 md:mt-0">
                     <button 
                       onClick={() => rechazarUsuario(user.id, user.nombre)} 
@@ -227,7 +236,6 @@ function GestionUsuarios() {
                       🪄 Ascender
                     </button>
                   </div>
-
                 </div>
               ))}
             </div>
@@ -235,7 +243,7 @@ function GestionUsuarios() {
         </div>
       )}
 
-      {/* === VISTA 2: LISTADO DE TODOS LOS USUARIOS === */}
+      {/* VISTA 2: LISTADO DE TODOS LOS USUARIOS */}
       {pestanaActiva === 'censo' && (
         <div className="animate-in fade-in duration-300">
           
@@ -249,11 +257,27 @@ function GestionUsuarios() {
               </div>
             </div>
 
-            <div className="flex gap-2 bg-zinc-900 p-1.5 rounded-xl border border-zinc-800">
-              <button onClick={() => setFiltroRol('todos')} className={`px-3 py-1.5 text-[10px] font-black uppercase tracking-widest rounded-lg transition-all ${filtroRol === 'todos' ? 'bg-zinc-700 text-white' : 'text-zinc-500 hover:text-zinc-300'}`}>Todos</button>
-              <button onClick={() => setFiltroRol('admin')} className={`px-3 py-1.5 text-[10px] font-black uppercase tracking-widest rounded-lg transition-all ${filtroRol === 'admin' ? 'bg-amber-500/20 text-amber-500' : 'text-zinc-500 hover:text-amber-500/50'}`}>👑 Admins</button>
-              <button onClick={() => setFiltroRol('dm')} className={`px-3 py-1.5 text-[10px] font-black uppercase tracking-widest rounded-lg transition-all ${filtroRol === 'dm' ? 'bg-purple-500/20 text-purple-400' : 'text-zinc-500 hover:text-purple-400/50'}`}>🛡️ DMs</button>
-              <button onClick={() => setFiltroRol('jugador')} className={`px-3 py-1.5 text-[10px] font-black uppercase tracking-widest rounded-lg transition-all ${filtroRol === 'jugador' ? 'bg-zinc-700 text-white' : 'text-zinc-500 hover:text-zinc-300'}`}>⚔️ Jugadores</button>
+            {/* ✨ CONTROLES: BÚSQUEDA Y FILTROS JUNTOS */}
+            <div className="flex flex-col sm:flex-row gap-3">
+              {/* Barra de Búsqueda */}
+              <div className="relative">
+                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-500 text-sm">🔍</span>
+                <input 
+                  type="text" 
+                  placeholder="Buscar aventurero..." 
+                  value={busqueda}
+                  onChange={(e) => setBusqueda(e.target.value)}
+                  className="bg-zinc-950 border border-zinc-800 text-white text-xs font-bold rounded-xl py-2 pl-9 pr-4 w-full sm:w-48 focus:border-emerald-500 outline-none transition-colors"
+                />
+              </div>
+
+              {/* Botones de Filtro */}
+              <div className="flex gap-1 bg-zinc-900 p-1 rounded-xl border border-zinc-800 overflow-x-auto scrollbar-hide">
+                <button onClick={() => setFiltroRol('todos')} className={`px-3 py-1.5 text-[10px] font-black uppercase tracking-widest rounded-lg transition-all whitespace-nowrap ${filtroRol === 'todos' ? 'bg-zinc-700 text-white' : 'text-zinc-500 hover:text-zinc-300'}`}>Todos</button>
+                <button onClick={() => setFiltroRol('admin')} className={`px-3 py-1.5 text-[10px] font-black uppercase tracking-widest rounded-lg transition-all whitespace-nowrap ${filtroRol === 'admin' ? 'bg-amber-500/20 text-amber-500' : 'text-zinc-500 hover:text-amber-500/50'}`}>👑 Admins</button>
+                <button onClick={() => setFiltroRol('dm')} className={`px-3 py-1.5 text-[10px] font-black uppercase tracking-widest rounded-lg transition-all whitespace-nowrap ${filtroRol === 'dm' ? 'bg-purple-500/20 text-purple-400' : 'text-zinc-500 hover:text-purple-400/50'}`}>🛡️ DMs</button>
+                <button onClick={() => setFiltroRol('jugador')} className={`px-3 py-1.5 text-[10px] font-black uppercase tracking-widest rounded-lg transition-all whitespace-nowrap ${filtroRol === 'jugador' ? 'bg-zinc-700 text-white' : 'text-zinc-500 hover:text-zinc-300'}`}>⚔️ Jugadores</button>
+              </div>
             </div>
           </div>
 
@@ -262,20 +286,21 @@ function GestionUsuarios() {
               <thead className="bg-zinc-950/50 text-[10px] uppercase tracking-widest text-zinc-500 font-black">
                 <tr>
                   <th className="p-4 pl-6">Aventurero</th>
-                  <th className="p-4">Contacto</th>
+                  <th className="p-4 hidden sm:table-cell">Contacto</th>
                   <th className="p-4 text-center">Rango</th>
+                  <th className="p-4 text-center">Acciones</th> {/* ✨ NUEVA COLUMNA */}
                 </tr>
               </thead>
               <tbody className="divide-y divide-zinc-800/50">
                 {usuariosFiltrados.length === 0 ? (
                   <tr>
-                    <td colSpan="3" className="p-8 text-center text-zinc-500 italic font-bold">
-                      No hay registros para este filtro.
+                    <td colSpan="4" className="p-8 text-center text-zinc-500 italic font-bold">
+                      {busqueda ? 'Ningún aventurero coincide con esa búsqueda.' : 'No hay registros para este filtro.'}
                     </td>
                   </tr>
                 ) : (
                   usuariosFiltrados.map(user => (
-                    <tr key={user.id} className="hover:bg-zinc-800/30 transition-colors">
+                    <tr key={user.id} className="hover:bg-zinc-800/30 transition-colors group">
                       <td className="p-4 pl-6 flex items-center gap-3">
                         <span className="text-xl bg-zinc-950 w-8 h-8 flex items-center justify-center rounded-full border border-zinc-800">
                           {user.avatar === 'guerrero' && '⚔️'}
@@ -286,12 +311,12 @@ function GestionUsuarios() {
                         </span>
                         <span className="font-bold text-zinc-200">{user.nombre}</span>
                       </td>
-                      <td className="p-4 text-xs text-zinc-400 font-mono">
+                      <td className="p-4 text-xs text-zinc-400 font-mono hidden sm:table-cell">
                         {user.email}
                       </td>
                       <td className="p-4 text-center">
-                        <span className={`text-[10px] font-black uppercase tracking-widest px-3 py-1 rounded-full border ${
-                          user.rol === 'admin' ? 'bg-amber-500/10 text-amber-500 border-amber-500/30' :
+                        <span className={`text-[9px] font-black uppercase tracking-widest px-3 py-1 rounded-full border ${
+                          user.rol === 'admin' ? 'bg-amber-500/10 text-amber-500 border-amber-500/30 shadow-[0_0_10px_rgba(245,158,11,0.2)]' :
                           user.rol === 'dm' ? 'bg-purple-500/10 text-purple-400 border-purple-500/30' :
                           'bg-zinc-800 text-zinc-400 border-zinc-700'
                         }`}>
@@ -299,6 +324,39 @@ function GestionUsuarios() {
                           {user.rol === 'dm' && '🛡️ DM'}
                           {user.rol === 'jugador' && 'Jugador'}
                         </span>
+                      </td>
+                      
+                      {/* ✨ BOTONES DE ACCIÓN RÁPIDA */}
+                      <td className="p-4 text-center">
+                        <div className="flex items-center justify-center gap-2 opacity-30 group-hover:opacity-100 transition-opacity">
+                          {user.rol !== 'admin' && (
+                            <button 
+                              onClick={() => cambiarRolDirecto(user.id, user.nombre, 'admin')}
+                              className="w-7 h-7 bg-zinc-950 hover:bg-amber-500/20 text-zinc-500 hover:text-amber-500 border border-zinc-800 hover:border-amber-500/50 rounded-lg flex items-center justify-center transition-all"
+                              title="Ascender a Administrador"
+                            >
+                              👑
+                            </button>
+                          )}
+                          {user.rol !== 'dm' && user.rol !== 'admin' && (
+                            <button 
+                              onClick={() => cambiarRolDirecto(user.id, user.nombre, 'dm')}
+                              className="w-7 h-7 bg-zinc-950 hover:bg-purple-500/20 text-zinc-500 hover:text-purple-400 border border-zinc-800 hover:border-purple-500/50 rounded-lg flex items-center justify-center transition-all"
+                              title="Ascender a Dungeon Master"
+                            >
+                              🛡️
+                            </button>
+                          )}
+                          {user.rol !== 'jugador' && (
+                            <button 
+                              onClick={() => cambiarRolDirecto(user.id, user.nombre, 'jugador')}
+                              className="w-7 h-7 bg-zinc-950 hover:bg-zinc-700 text-zinc-600 hover:text-zinc-300 border border-zinc-800 hover:border-zinc-500 rounded-lg flex items-center justify-center transition-all"
+                              title="Revocar títulos (Volver a Jugador)"
+                            >
+                              ⚔️
+                            </button>
+                          )}
+                        </div>
                       </td>
                     </tr>
                   ))
