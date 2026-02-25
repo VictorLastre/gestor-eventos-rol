@@ -5,19 +5,26 @@ const verificarToken = require('../middlewares/auth');
 
 // 1. Obtener todos los eventos (Con actualización automática inteligente de estados)
 router.get('/', (req, res) => {
-  // ✨ LA NUEVA MAGIA: Evalúa la hora actual y asigna el estado correspondiente, 
-  // omitiendo los eventos que hayan sido marcados como 'Suspendido' por un admin.
+  // ✨ CORRECCIÓN 1: Calculamos la hora exacta de Argentina (UTC-3)
+  // Esto evita problemas sin importar en qué país esté alojado tu servidor (ej. Render)
+  const tzOffset = -3 * 60 * 60 * 1000; 
+  const ahoraArg = new Date(Date.now() + tzOffset).toISOString().slice(0, 19).replace('T', ' ');
+
+  // ✨ CORRECCIÓN 2: Comparamos fechas reales y respetamos la decisión del Admin.
+  // Solo se auto-actualizan los que están 'Proximo' o 'En Curso'. 
+  // Si un Admin lo pasó a 'Finalizado' o 'Suspendido', el reloj no lo toca.
   const sqlUpdate = `
     UPDATE eventos 
     SET estado = CASE 
-      WHEN CONCAT(fecha, ' ', hora_fin) < NOW() THEN 'Finalizado'
-      WHEN CONCAT(fecha, ' ', hora_inicio) <= NOW() AND CONCAT(fecha, ' ', hora_fin) >= NOW() THEN 'En Curso'
+      WHEN CAST(CONCAT(DATE(fecha), ' ', hora_fin) AS DATETIME) <= ? THEN 'Finalizado'
+      WHEN CAST(CONCAT(DATE(fecha), ' ', hora_inicio) AS DATETIME) <= ? THEN 'En Curso'
       ELSE 'Proximo'
     END
-    WHERE estado != 'Suspendido'
+    WHERE estado IN ('Proximo', 'En Curso')
   `;
 
-  db.query(sqlUpdate, (err) => {
+  // Le pasamos nuestra hora calculada a la consulta SQL
+  db.query(sqlUpdate, [ahoraArg, ahoraArg], (err) => {
     if (err) console.error("Error actualizando el reloj del gremio:", err);
     
     // Una vez sincronizados los tiempos, leemos los eventos y los enviamos
@@ -103,7 +110,7 @@ router.post('/:id/partidas', verificarToken, (req, res) => {
   });
 });
 
-// ✨ 5. NUEVA RUTA: Modificar un Evento (Solo Admins)
+// 5. Modificar un Evento (Solo Admins)
 router.put('/:id', verificarToken, (req, res) => {
   if (req.usuario.rol !== 'admin') return res.status(403).json({ error: 'Solo los líderes del gremio pueden alterar la historia.' });
 
@@ -122,6 +129,15 @@ router.put('/:id', verificarToken, (req, res) => {
       return res.status(500).json({ error: 'Error al modificar los registros del evento.' });
     }
     res.status(200).json({ mensaje: '¡La jornada ha sido reescrita con éxito!' });
+  });
+});
+
+// 6. Eliminar un evento (Solo Admins)
+router.delete('/:id', verificarToken, (req, res) => {
+  if (req.usuario.rol !== 'admin') return res.status(403).json({ error: 'Sin autorización.' });
+  db.query("DELETE FROM eventos WHERE id = ?", [req.params.id], (err) => {
+    if (err) return res.status(500).send('Error');
+    res.send('Evento borrado');
   });
 });
 
