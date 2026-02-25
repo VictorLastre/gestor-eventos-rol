@@ -3,20 +3,24 @@ const router = express.Router();
 const db = require('../config/db');
 const verificarToken = require('../middlewares/auth');
 
-// 1. Obtener todos los eventos (Con actualización automática de estado)
+// 1. Obtener todos los eventos (Con actualización automática inteligente de estados)
 router.get('/', (req, res) => {
-  // ✨ LA MAGIA: Si la fecha + hora_fin es menor a la fecha/hora actual (NOW), lo finaliza
+  // ✨ LA NUEVA MAGIA: Evalúa la hora actual y asigna el estado correspondiente, 
+  // omitiendo los eventos que hayan sido marcados como 'Suspendido' por un admin.
   const sqlUpdate = `
     UPDATE eventos 
-    SET estado = 'finalizado' 
-    WHERE CONCAT(fecha, ' ', hora_fin) < NOW() 
-    AND estado != 'finalizado'
+    SET estado = CASE 
+      WHEN CONCAT(fecha, ' ', hora_fin) < NOW() THEN 'Finalizado'
+      WHEN CONCAT(fecha, ' ', hora_inicio) <= NOW() AND CONCAT(fecha, ' ', hora_fin) >= NOW() THEN 'En Curso'
+      ELSE 'Proximo'
+    END
+    WHERE estado != 'Suspendido'
   `;
 
   db.query(sqlUpdate, (err) => {
     if (err) console.error("Error actualizando el reloj del gremio:", err);
     
-    // Una vez actualizado, leemos los eventos y los enviamos
+    // Una vez sincronizados los tiempos, leemos los eventos y los enviamos
     db.query('SELECT * FROM eventos ORDER BY fecha DESC', (err, resultados) => {
       if (err) return res.status(500).json({ error: 'Error leyendo los eventos' });
       res.json(resultados);
@@ -28,12 +32,11 @@ router.get('/', (req, res) => {
 router.post('/', verificarToken, (req, res) => {
   if (req.usuario.rol !== 'admin') return res.status(403).json({ error: 'Solo Admins.' });
   
-  // Recibimos las horas. Si el admin no las envía, usamos 16:00 y 20:00 por defecto
   const { nombre, descripcion, fecha, hora_inicio = '16:00', hora_fin = '20:00' } = req.body;
   
   const sqlInsert = 'INSERT INTO eventos (nombre, descripcion, fecha, hora_inicio, hora_fin, estado) VALUES (?, ?, ?, ?, ?, ?)';
   
-  db.query(sqlInsert, [nombre, descripcion, fecha, hora_inicio, hora_fin, 'proximo'], (err) => {
+  db.query(sqlInsert, [nombre, descripcion, fecha, hora_inicio, hora_fin, 'Proximo'], (err) => {
     if (err) return res.status(500).json({ error: 'Error al convocar el evento.' });
     res.status(201).json({ mensaje: '¡Evento convocado con éxito!' });
   });
@@ -41,7 +44,6 @@ router.post('/', verificarToken, (req, res) => {
 
 // 3. Obtener partidas de un evento específico
 router.get('/:id/partidas', verificarToken, (req, res) => {
-  // ✨ AÑADIMOS p.etiqueta y p.apta_novatos al SELECT
   const sql = `
     SELECT 
       p.id, p.evento_id, p.dungeon_master_id, p.titulo, p.descripcion, p.requisitos, p.sistema, p.cupo, p.turno, p.estado, p.etiqueta, p.apta_novatos,
@@ -83,10 +85,8 @@ router.post('/:id/partidas', verificarToken, (req, res) => {
       return res.status(400).json({ error: 'No puedes crear una mesa porque ya estás anotado como jugador en este evento.' });
     }
 
-    // ✨ RECIBIMOS etiqueta Y apta_novatos DESDE EL FRONTEND
     const { titulo, descripcion, requisitos, sistema, cupo, turno, etiqueta, apta_novatos } = req.body;
     
-    // ✨ LAS AGREGAMOS AL INSERT DE LA BASE DE DATOS
     const sqlInsert = `
         INSERT INTO partidas 
         (evento_id, dungeon_master_id, titulo, descripcion, requisitos, sistema, cupo, turno, estado, etiqueta, apta_novatos) 
@@ -100,6 +100,28 @@ router.post('/:id/partidas', verificarToken, (req, res) => {
       }
       res.status(201).json({ mensaje: '¡Mesa creada con éxito!' });
     });
+  });
+});
+
+// ✨ 5. NUEVA RUTA: Modificar un Evento (Solo Admins)
+router.put('/:id', verificarToken, (req, res) => {
+  if (req.usuario.rol !== 'admin') return res.status(403).json({ error: 'Solo los líderes del gremio pueden alterar la historia.' });
+
+  const eventoId = req.params.id;
+  const { nombre, descripcion, fecha, hora_inicio, hora_fin, estado } = req.body;
+
+  const sqlUpdate = `
+    UPDATE eventos 
+    SET nombre = ?, descripcion = ?, fecha = ?, hora_inicio = ?, hora_fin = ?, estado = ?
+    WHERE id = ?
+  `;
+
+  db.query(sqlUpdate, [nombre, descripcion, fecha, hora_inicio, hora_fin, estado, eventoId], (err) => {
+    if (err) {
+      console.error(err);
+      return res.status(500).json({ error: 'Error al modificar los registros del evento.' });
+    }
+    res.status(200).json({ mensaje: '¡La jornada ha sido reescrita con éxito!' });
   });
 });
 
