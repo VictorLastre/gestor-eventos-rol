@@ -11,7 +11,6 @@ function Partida(props) {
   const [modalAbierto, setModalAbierto] = useState(false);
   const [cargandoJugadores, setCargandoJugadores] = useState(false);
 
-  // ✨ ESTADOS PARA LA EDICIÓN DE LA MESA
   const [modoEdicion, setModoEdicion] = useState(false);
   const [datosEdicion, setDatosEdicion] = useState({
     titulo: props.titulo || '',
@@ -24,7 +23,6 @@ function Partida(props) {
     apta_novatos: Boolean(props.apta_novatos)
   });
 
-  // === ICONOS PARA LAS ETIQUETAS ===
   const iconoEtiqueta = {
     'Fantasía Medieval': '🏰',
     'Fantasía Oscura': '🌑',
@@ -163,7 +161,6 @@ function Partida(props) {
     }
   };
 
-  // ✨ NUEVA FUNCIÓN PARA GUARDAR LA EDICIÓN
   const guardarEdicion = async (e) => {
     e.preventDefault();
     const token = localStorage.getItem('token');
@@ -187,7 +184,7 @@ function Partida(props) {
           color: '#fff',
           confirmButtonColor: '#f59e0b'
         }).then(() => {
-          window.location.reload(); // Refrescamos para ver los cambios
+          window.location.reload(); 
         });
       } else {
         const data = await res.json();
@@ -201,12 +198,11 @@ function Partida(props) {
   const abrirEdicion = (e) => {
     e.stopPropagation();
     setModoEdicion(true);
-    setModalAbierto(false); // Cerramos el de info por si estaba abierto
+    setModalAbierto(false); 
   };
 
   return (
     <>
-      {/* CARD DEL CARRUSEL */}
       <div 
         onClick={() => setModalAbierto(true)}
         className={`relative p-6 rounded-3xl border-2 transition-all duration-300 shadow-xl flex flex-col h-[420px] cursor-pointer group ${
@@ -215,29 +211,8 @@ function Partida(props) {
           : 'border-zinc-800 bg-zinc-900/40 hover:border-emerald-500/30'
         }`}
       >
-        {/* ✨ BOTONES DE EDICIÓN Y BORRADO EN LA TARJETA */}
-        {(soyElMaster || soyAdmin) && !props.eventoEsPasado && (
-          <div className="absolute top-4 right-4 z-10 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-            <button 
-              onClick={abrirEdicion}
-              className="w-8 h-8 bg-black/50 hover:bg-amber-500 text-zinc-500 hover:text-black rounded-full flex items-center justify-center transition-colors border border-transparent hover:border-amber-500/50"
-              title="Editar Mesa"
-            >
-              ✏️
-            </button>
-            <button 
-              onClick={borrarMesa}
-              className="w-8 h-8 bg-black/50 hover:bg-red-500 text-zinc-500 hover:text-white rounded-full flex items-center justify-center transition-colors border border-transparent hover:border-red-500/50"
-              title="Borrar Mesa"
-            >
-              🗑️
-            </button>
-          </div>
-        )}
-
         <div className="flex justify-between items-start mb-4">
           <div className="max-w-[75%] space-y-2">
-            
             <div className="flex flex-wrap gap-2">
               {Boolean(props.apta_novatos) && (
                 <span className="text-[9px] font-black text-emerald-950 uppercase tracking-widest bg-emerald-400 px-2 py-0.5 rounded border border-emerald-300 shadow-[0_0_12px_rgba(52,211,153,0.5)] flex items-center gap-1 animate-pulse">
@@ -276,11 +251,31 @@ function Partida(props) {
           {props.description || props.descripcion}
         </p>
 
-        <div className="space-y-2 mb-6">
-          <div className="bg-black/30 p-2 rounded-lg border border-white/5">
+        {/* ✨ REUBICACIÓN DE BOTONES DE EDICIÓN Y BORRADO EN LA TARJETA */}
+        <div className="mb-6 bg-black/30 p-2 rounded-lg border border-white/5 flex justify-between items-center transition-all group-hover:bg-black/50">
+          <div>
             <p className="text-[8px] font-bold text-zinc-500 uppercase tracking-tighter">Director</p>
             <p className="text-xs text-zinc-200 font-bold truncate">🛡️ {props.dmNombre || 'Desconocido'}</p>
           </div>
+          
+          {(soyElMaster || soyAdmin) && !props.eventoEsPasado && (
+            <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+              <button 
+                onClick={abrirEdicion}
+                className="w-7 h-7 bg-zinc-800 hover:bg-amber-500 text-zinc-400 hover:text-black rounded-md flex items-center justify-center transition-colors border border-transparent hover:border-amber-500/50"
+                title="Editar Mesa"
+              >
+                ✏️
+              </button>
+              <button 
+                onClick={borrarMesa}
+                className="w-7 h-7 bg-zinc-800 hover:bg-red-500 text-zinc-400 hover:text-white rounded-md flex items-center justify-center transition-colors border border-transparent hover:border-red-500/50"
+                title="Borrar Mesa"
+              >
+                🗑️
+              </button>
+            </div>
+          )}
         </div>
 
         <div className="flex gap-2 mt-auto">
@@ -302,7 +297,6 @@ function Partida(props) {
         </div>
       </div>
 
-      {/* ✨ MODAL DE EDICIÓN DE LA MESA */}
       {modoEdicion && (
         <div className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-black/90 backdrop-blur-sm animate-in fade-in">
           <div className="bg-zinc-900 border border-amber-500/30 w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-[2rem] p-8 relative shadow-[0_0_50px_rgba(245,158,11,0.1)] scrollbar-hide" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
@@ -377,7 +371,6 @@ function Partida(props) {
         </div>
       )}
 
-      {/* MODAL ORIGINAL DE INFORMACIÓN Y JUGADORES */}
       {modalAbierto && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/90 backdrop-blur-sm animate-in fade-in duration-300">
           <div 
