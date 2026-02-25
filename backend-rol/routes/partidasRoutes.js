@@ -3,6 +3,27 @@ const router = express.Router();
 const db = require('../config/db');
 const verificarToken = require('../middlewares/auth');
 
+// ✨ NUEVA RUTA: Obtener el Top de Sistemas Más Jugados (¡Debe ir primero!)
+router.get('/estadisticas/sistemas', verificarToken, (req, res) => {
+  const sql = `
+    SELECT sistema, COUNT(*) as cantidad 
+    FROM partidas 
+    GROUP BY sistema 
+    ORDER BY cantidad DESC 
+    LIMIT 5
+  `;
+  
+  db.query(sql, (err, resultados) => {
+    if (err) {
+      console.error("Error al consultar el Oráculo de Sistemas:", err);
+      return res.status(500).json({ error: 'Error leyendo los sistemas más jugados.' });
+    }
+    res.json(resultados);
+  });
+});
+
+// ----------------------------------------------------------------------
+
 router.post('/:id/inscripciones', verificarToken, (req, res) => {
   const idPartida = req.params.id;
   const idUsuario = req.usuario.id;
