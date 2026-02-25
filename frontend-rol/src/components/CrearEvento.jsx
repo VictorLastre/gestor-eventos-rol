@@ -1,18 +1,21 @@
 import { useState } from 'react';
-import Swal from 'sweetalert2'; // ✨ IMPORTAMOS SWEETALERT
+import Swal from 'sweetalert2'; 
 
 function CrearEvento({ alCrearEvento }) {
   const [nombre, setNombre] = useState('');
   const [descripcion, setDescripcion] = useState('');
   const [fecha, setFecha] = useState('');
   
-  // ¡Adiós al estado "mensaje"! Ya no lo necesitamos
+  // ✨ NUEVOS ESTADOS PARA LAS HORAS (Por defecto las clásicas del gremio)
+  const [horaInicio, setHoraInicio] = useState('16:00');
+  const [horaFin, setHoraFin] = useState('20:00');
 
   const manejarCreacion = async (e) => {
     e.preventDefault();
     const token = localStorage.getItem('token');
 
-    const nuevoEvento = { nombre, descripcion, fecha };
+    // ✨ AGREGAMOS LAS HORAS AL OBJETO
+    const nuevoEvento = { nombre, descripcion, fecha, hora_inicio: horaInicio, hora_fin: horaFin };
 
     try {
       const respuesta = await fetch('https://gestor-eventos-rol.onrender.com/api/eventos', {
@@ -27,44 +30,41 @@ function CrearEvento({ alCrearEvento }) {
       const data = await respuesta.json();
 
       if (respuesta.ok) {
-        // ✨ ALERTA DE ÉXITO ESTILO ADMIN
         Swal.fire({
           title: '¡Evento Convocado!',
           text: data.mensaje || 'La nueva jornada ha sido registrada en el gremio.',
           icon: 'success',
           background: '#18181b',
           color: '#fff',
-          confirmButtonColor: '#9333ea', // purple-600 para mantener el estilo Admin
+          confirmButtonColor: '#9333ea', 
           confirmButtonText: 'Excelente'
         });
 
-        // Limpiamos el formulario y recargamos la lista al instante
-        setNombre(''); 
-        setDescripcion(''); 
-        setFecha('');
+        // Limpiamos el formulario
+        setNombre(''); setDescripcion(''); setFecha(''); 
+        setHoraInicio('16:00'); setHoraFin('20:00');
+        
         alCrearEvento(); 
 
       } else {
-        // ✨ ALERTA DE ERROR DE VALIDACIÓN
         Swal.fire({
           title: 'Aviso del Sistema',
           text: data.error || 'Error al crear evento',
           icon: 'warning',
           background: '#18181b',
           color: '#fff',
-          confirmButtonColor: '#f59e0b' // amber-500
+          confirmButtonColor: '#f59e0b' 
         });
       }
     } catch (error) {
       console.error("Error:", error);
-      // ✨ ALERTA DE ERROR DE CONEXIÓN
       Swal.fire({
         title: 'Error Mágico',
         text: 'Hubo un fallo de comunicación con el servidor.',
         icon: 'error',
         background: '#18181b',
         color: '#fff',
-        confirmButtonColor: '#ef4444' // red-500
+        confirmButtonColor: '#ef4444' 
       });
     }
   };
@@ -121,17 +121,46 @@ function CrearEvento({ alCrearEvento }) {
             />
           </div>
           
-          <div className="space-y-2">
-            <label className="text-[10px] font-bold text-zinc-500 uppercase ml-2 tracking-widest">
-              Fecha del Encuentro
-            </label>
-            <input 
-              type="date" 
-              value={fecha} 
-              onChange={e => setFecha(e.target.value)} 
-              required 
-              className="w-full bg-zinc-950 border border-zinc-800 rounded-xl py-4 px-5 text-white focus:border-purple-500 focus:ring-1 focus:ring-purple-500/50 outline-none transition-all [color-scheme:dark]"
-            />
+          {/* ✨ GRID PARA FECHA Y HORARIOS */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="space-y-2 md:col-span-1">
+              <label className="text-[10px] font-bold text-zinc-500 uppercase ml-2 tracking-widest">
+                Fecha
+              </label>
+              <input 
+                type="date" 
+                value={fecha} 
+                onChange={e => setFecha(e.target.value)} 
+                required 
+                className="w-full bg-zinc-950 border border-zinc-800 rounded-xl py-4 px-5 text-white focus:border-purple-500 focus:ring-1 focus:ring-purple-500/50 outline-none transition-all [color-scheme:dark]"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <label className="text-[10px] font-bold text-zinc-500 uppercase ml-2 tracking-widest">
+                Apertura
+              </label>
+              <input 
+                type="time" 
+                value={horaInicio} 
+                onChange={e => setHoraInicio(e.target.value)} 
+                required 
+                className="w-full bg-zinc-950 border border-zinc-800 rounded-xl py-4 px-5 text-white focus:border-purple-500 focus:ring-1 focus:ring-purple-500/50 outline-none transition-all [color-scheme:dark]"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <label className="text-[10px] font-bold text-zinc-500 uppercase ml-2 tracking-widest">
+                Cierre
+              </label>
+              <input 
+                type="time" 
+                value={horaFin} 
+                onChange={e => setHoraFin(e.target.value)} 
+                required 
+                className="w-full bg-zinc-950 border border-zinc-800 rounded-xl py-4 px-5 text-white focus:border-purple-500 focus:ring-1 focus:ring-purple-500/50 outline-none transition-all [color-scheme:dark]"
+              />
+            </div>
           </div>
 
           <button 
@@ -141,8 +170,6 @@ function CrearEvento({ alCrearEvento }) {
             ⚔️ Forjar Evento
           </button>
         </form>
-        
-        {/* El div de "mensaje" desapareció por completo. ¡Más limpio! */}
       </div>
 
     </div>

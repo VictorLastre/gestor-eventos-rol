@@ -3,21 +3,39 @@ const router = express.Router();
 const db = require('../config/db');
 const verificarToken = require('../middlewares/auth');
 
-// 1. Obtener todos los eventos
+// 1. Obtener todos los eventos (Con actualización automática de estado)
 router.get('/', (req, res) => {
-  db.query('SELECT * FROM eventos ORDER BY fecha DESC', (err, resultados) => {
-    if (err) return res.status(500).json({ error: 'Error leyendo los eventos' });
-    res.json(resultados);
+  // ✨ LA MAGIA: Si la fecha + hora_fin es menor a la fecha/hora actual (NOW), lo finaliza
+  const sqlUpdate = `
+    UPDATE eventos 
+    SET estado = 'finalizado' 
+    WHERE CONCAT(fecha, ' ', hora_fin) < NOW() 
+    AND estado != 'finalizado'
+  `;
+
+  db.query(sqlUpdate, (err) => {
+    if (err) console.error("Error actualizando el reloj del gremio:", err);
+    
+    // Una vez actualizado, leemos los eventos y los enviamos
+    db.query('SELECT * FROM eventos ORDER BY fecha DESC', (err, resultados) => {
+      if (err) return res.status(500).json({ error: 'Error leyendo los eventos' });
+      res.json(resultados);
+    });
   });
 });
 
 // 2. Crear un nuevo evento (Solo Admins)
 router.post('/', verificarToken, (req, res) => {
   if (req.usuario.rol !== 'admin') return res.status(403).json({ error: 'Solo Admins.' });
-  const { nombre, descripcion, fecha } = req.body;
-  db.query('INSERT INTO eventos (nombre, descripcion, fecha) VALUES (?, ?, ?)', [nombre, descripcion, fecha], (err) => {
-    if (err) return res.status(500).json({ error: 'Error al crear evento.' });
-    res.status(201).json({ mensaje: '¡Evento convocado!' });
+  
+  // Recibimos las horas. Si el admin no las envía, usamos 16:00 y 20:00 por defecto
+  const { nombre, descripcion, fecha, hora_inicio = '16:00', hora_fin = '20:00' } = req.body;
+  
+  const sqlInsert = 'INSERT INTO eventos (nombre, descripcion, fecha, hora_inicio, hora_fin, estado) VALUES (?, ?, ?, ?, ?, ?)';
+  
+  db.query(sqlInsert, [nombre, descripcion, fecha, hora_inicio, hora_fin, 'proximo'], (err) => {
+    if (err) return res.status(500).json({ error: 'Error al convocar el evento.' });
+    res.status(201).json({ mensaje: '¡Evento convocado con éxito!' });
   });
 });
 

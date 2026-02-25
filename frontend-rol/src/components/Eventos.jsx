@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import Swal from 'sweetalert2'; // ✨ IMPORTAMOS SWEETALERT
+import Swal from 'sweetalert2'; 
 import Partida from './Partida'; 
 import CrearMesa from './CrearMesa'; 
 import CrearEvento from './CrearEvento'; 
@@ -31,7 +31,6 @@ function Eventos() {
     cargarEventos();
   }, []);
 
-  // ✨ MAGIA DE SWEETALERT EN LA ELIMINACIÓN
   const borrarEvento = async (id, e) => {
     e.stopPropagation();
     
@@ -40,10 +39,10 @@ function Eventos() {
       text: "⚠️ Se perderán todos los datos, mesas y aventureros inscritos en este evento. Esta acción no se puede deshacer.",
       icon: 'warning',
       showCancelButton: true,
-      background: '#18181b', // zinc-900
+      background: '#18181b', 
       color: '#fff',
-      confirmButtonColor: '#ef4444', // red-500
-      cancelButtonColor: '#3f3f46', // zinc-700
+      confirmButtonColor: '#ef4444', 
+      cancelButtonColor: '#3f3f46', 
       confirmButtonText: 'Sí, destruir evento',
       cancelButtonText: 'Cancelar'
     });
@@ -63,10 +62,9 @@ function Eventos() {
             icon: 'success',
             background: '#18181b',
             color: '#fff',
-            confirmButtonColor: '#10b981' // emerald-500
+            confirmButtonColor: '#10b981' 
           });
           
-          // Si el admin borra el evento que estaba viendo en detalle, lo devolvemos al tablón
           if (eventoSeleccionado && eventoSeleccionado.id === id) {
             setEventoSeleccionado(null);
           }
@@ -94,18 +92,18 @@ function Eventos() {
       .then(setPartidasDelEvento);
   };
 
-  const hoy = new Date();
-  hoy.setHours(0, 0, 0, 0);
-
+  // ✨ AHORA FILTRAMOS POR EL ESTADO QUE NOS MANDA EL BACKEND
   const eventosProximos = eventos
-    .filter(e => new Date(e.fecha) >= hoy)
+    .filter(e => e.estado !== 'finalizado')
     .sort((a, b) => new Date(a.fecha) - new Date(b.fecha));
     
   const eventosPasados = eventos
-    .filter(e => new Date(e.fecha) < hoy)
+    .filter(e => e.estado === 'finalizado')
     .sort((a, b) => new Date(b.fecha) - new Date(a.fecha)); 
 
+  // Utilidades para limpiar fechas y horas ("16:00:00" -> "16:00")
   const formatearFecha = (f) => new Date(f).toLocaleDateString('es-ES', { day: 'numeric', month: 'long', year: 'numeric' });
+  const formatearHora = (hora) => hora ? hora.substring(0, 5) : '';
 
   const scrollEventosIzq = () => carruselEventosRef.current?.scrollBy({ left: -400, behavior: 'smooth' });
   const scrollEventosDer = () => carruselEventosRef.current?.scrollBy({ left: 400, behavior: 'smooth' });
@@ -113,12 +111,11 @@ function Eventos() {
   const scrollPartidasIzq = () => carruselPartidasRef.current?.scrollBy({ left: -400, behavior: 'smooth' });
   const scrollPartidasDer = () => carruselPartidasRef.current?.scrollBy({ left: 400, behavior: 'smooth' });
 
-
   // === VISTA DETALLADA DEL EVENTO ===
   if (eventoSeleccionado) {
-    const eventoEsPasado = new Date(eventoSeleccionado.fecha) < hoy;
+    // ✨ VERIFICACIÓN DE ESTADO
+    const eventoEsPasado = eventoSeleccionado.estado === 'finalizado';
     
-    // ✨ LÓGICA ACTUALIZADA: Verifica si es DM o si ya está anotado como jugador
     const yaParticipaEnEsteEvento = partidasDelEvento.some(p => 
       p.dungeon_master_id === usuarioGuardado?.id || p.anotadoInicialmente === 1
     );
@@ -141,12 +138,20 @@ function Eventos() {
           <div className={`absolute top-0 right-0 w-32 h-32 ${eventoEsPasado ? 'bg-zinc-500/5' : 'bg-emerald-500/5'} blur-3xl rounded-full`}></div>
           <h2 className="text-4xl font-black text-white mb-3 tracking-tighter">{eventoSeleccionado.nombre}</h2>
           <p className="text-zinc-400 text-lg leading-relaxed mb-6 italic">"{eventoSeleccionado.descripcion}"</p>
-          <div className={`flex items-center gap-2 font-bold w-fit px-4 py-1.5 rounded-full border shadow-[0_0_15px_rgba(16,185,129,0.1)] ${eventoEsPasado ? 'text-zinc-500 bg-zinc-500/10 border-zinc-500/20' : 'text-emerald-500 bg-emerald-500/10 border-emerald-500/20'}`}>
-            <span>📅</span> {formatearFecha(eventoSeleccionado.fecha)}
+          
+          <div className="flex flex-wrap gap-3">
+            <div className={`flex items-center gap-2 font-bold w-fit px-4 py-1.5 rounded-full border shadow-[0_0_15px_rgba(16,185,129,0.1)] ${eventoEsPasado ? 'text-zinc-500 bg-zinc-500/10 border-zinc-500/20' : 'text-emerald-500 bg-emerald-500/10 border-emerald-500/20'}`}>
+              <span>📅</span> {formatearFecha(eventoSeleccionado.fecha)}
+            </div>
+            {/* ✨ ETIQUETA DE HORA EN LA VISTA DETALLADA */}
+            {eventoSeleccionado.hora_inicio && (
+              <div className={`flex items-center gap-2 font-bold w-fit px-4 py-1.5 rounded-full border ${eventoEsPasado ? 'text-zinc-500 bg-zinc-500/10 border-zinc-500/20' : 'text-emerald-500 bg-emerald-500/10 border-emerald-500/20'}`}>
+                <span>⏰</span> {formatearHora(eventoSeleccionado.hora_inicio)} a {formatearHora(eventoSeleccionado.hora_fin)}
+              </div>
+            )}
           </div>
         </header>
 
-        {/* ✨ AQUÍ APLICAMOS LA RESTRICCIÓN VISUAL */}
         {esDungeonMaster && !eventoEsPasado && !yaParticipaEnEsteEvento && (
           <div className="mb-10 max-w-4xl mx-auto">
             <button 
@@ -289,11 +294,17 @@ function Eventos() {
                   </p>
                   
                   <div className="flex justify-between items-center mt-auto">
-                    <span className="text-emerald-500 font-black text-xs bg-emerald-500/10 px-4 py-1.5 rounded-xl border border-emerald-500/20 uppercase tracking-tighter">
-                      {formatearFecha(evento.fecha)}
+                    {/* ✨ ETIQUETA DE FECHA Y HORA EN LA TARJETA */}
+                    <span className="text-emerald-500 font-black text-[10px] md:text-xs bg-emerald-500/10 px-3 md:px-4 py-1.5 rounded-xl border border-emerald-500/20 uppercase tracking-tighter flex items-center gap-2">
+                      <span>{formatearFecha(evento.fecha)}</span>
+                      {evento.hora_inicio && (
+                        <span className="border-l border-emerald-500/30 pl-2 opacity-80">
+                          {formatearHora(evento.hora_inicio)} hs
+                        </span>
+                      )}
                     </span>
                     <span className="text-zinc-600 text-[10px] font-black tracking-[0.2em] uppercase group-hover:text-emerald-500 transition-all flex items-center gap-2">
-                      Ver Detalles <span className="text-lg">→</span>
+                      Entrar <span className="text-lg">→</span>
                     </span>
                   </div>
                 </div>
@@ -340,8 +351,14 @@ function Eventos() {
                     {evento.descripcion}
                   </p>
                   <div className="mt-auto">
-                    <span className="text-zinc-500 font-black text-[10px] bg-zinc-800/50 px-3 py-1 rounded-lg uppercase tracking-tighter">
+                    {/* ✨ ETIQUETA DE FECHA Y HORA EN EL HISTORIAL */}
+                    <span className="text-zinc-500 font-black text-[10px] bg-zinc-800/50 px-3 py-1 rounded-lg uppercase tracking-tighter flex items-center gap-1.5 w-fit">
                       {formatearFecha(evento.fecha)}
+                      {evento.hora_inicio && (
+                        <span className="border-l border-zinc-600 pl-1.5">
+                          {formatearHora(evento.hora_inicio)}
+                        </span>
+                      )}
                     </span>
                   </div>
                 </div>
