@@ -23,11 +23,28 @@ function Partida(props) {
     apta_novatos: Boolean(props.apta_novatos)
   });
 
+  // ✨ DICCIONARIO DE ICONOS AMPLIADO
   const iconoEtiqueta = {
     'Fantasía Medieval': '🏰',
     'Fantasía Oscura': '🌑',
+    'Fantasía Urbana': '🏙️',
     'Terror / Horror': '🩸',
+    'Horror Cósmico': '🐙', // Cthulhu, Delta Green
+    'Terror Espacial': '🛰️', // Alien, Mothership, Cosmofobia
     'Ciencia Ficción': '🚀',
+    'Cyberpunk': '🦾',
+    'Steampunk': '⚙️',
+    'Post-Apocalíptico': '☢️',
+    'Misterio / Investigación': '🔎',
+    'Mundo de Tinieblas': '🦇', // Vampiro, Hombre Lobo
+    'Superhéroes': '🦸',
+    'Western / Weird West': '🤠',
+    'Piratas / Naval': '🏴‍☠️',
+    'Space Opera': '🛸',
+    'Histórico': '📜',
+    'Anime / Manga': '🌸',
+    'Espionaje / Acción': '🕶️',
+    'Rol Infantil / Familiar': '🧸', // Magissa, Pequeños Detectives de Monstruos
     'Comedia': '🎭'
   }[props.etiqueta] || '🏷️';
 
@@ -251,7 +268,6 @@ function Partida(props) {
           {props.description || props.descripcion}
         </p>
 
-        {/* ✨ REUBICACIÓN DE BOTONES DE EDICIÓN Y BORRADO EN LA TARJETA */}
         <div className="mb-6 bg-black/30 p-2 rounded-lg border border-white/5 flex justify-between items-center transition-all group-hover:bg-black/50">
           <div>
             <p className="text-[8px] font-bold text-zinc-500 uppercase tracking-tighter">Director</p>
@@ -322,8 +338,24 @@ function Partida(props) {
                   <select value={datosEdicion.etiqueta} onChange={e => setDatosEdicion({...datosEdicion, etiqueta: e.target.value})} className="bg-zinc-950 border border-zinc-800 rounded-xl py-3.5 px-4 text-white focus:border-amber-500 outline-none font-bold">
                     <option value="Fantasía Medieval">🏰 Fantasía Medieval</option>
                     <option value="Fantasía Oscura">🌑 Fantasía Oscura</option>
+                    <option value="Fantasía Urbana">🏙️ Fantasía Urbana</option>
                     <option value="Terror / Horror">🩸 Terror / Horror</option>
+                    <option value="Horror Cósmico">🐙 Horror Cósmico</option>
+                    <option value="Terror Espacial">🛰️ Terror Espacial</option>
                     <option value="Ciencia Ficción">🚀 Ciencia Ficción</option>
+                    <option value="Cyberpunk">🦾 Cyberpunk</option>
+                    <option value="Steampunk">⚙️ Steampunk</option>
+                    <option value="Post-Apocalíptico">☢️ Post-Apocalíptico</option>
+                    <option value="Misterio / Investigación">🔎 Misterio / Investigación</option>
+                    <option value="Mundo de Tinieblas">🦇 Mundo de Tinieblas</option>
+                    <option value="Superhéroes">🦸 Superhéroes</option>
+                    <option value="Western / Weird West">🤠 Western / Weird West</option>
+                    <option value="Piratas / Naval">🏴‍☠️ Piratas / Naval</option>
+                    <option value="Space Opera">🛸 Space Opera</option>
+                    <option value="Histórico">📜 Histórico</option>
+                    <option value="Anime / Manga">🌸 Anime / Manga</option>
+                    <option value="Espionaje / Acción">🕶️ Espionaje / Acción</option>
+                    <option value="Rol Infantil / Familiar">🧸 Rol Infantil / Familiar</option>
                     <option value="Comedia">🎭 Comedia</option>
                   </select>
                 </div>

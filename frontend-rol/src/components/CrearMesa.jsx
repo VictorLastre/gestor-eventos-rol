@@ -127,14 +127,31 @@ function CrearMesa({ idEvento, alCrearMesa }) {
           <div className="flex flex-col gap-1 justify-center">
             <label className="text-[10px] font-bold text-zinc-500 uppercase ml-2 tracking-widest">Género Principal</label>
             <select 
-              value={etiqueta} 
-              onChange={e => setEtiqueta(e.target.value)} 
-              className="bg-zinc-950 border border-zinc-800 rounded-xl py-3.5 px-4 text-white focus:border-amber-500 outline-none transition-all font-bold appearance-none cursor-pointer"
+              value={formulario.etiqueta} 
+              onChange={manejarCambio} 
+              name="etiqueta" 
+              className="w-full bg-zinc-950 border border-zinc-800 rounded-xl py-3.5 px-4 text-white focus:border-amber-500 outline-none font-bold"
             >
               <option value="Fantasía Medieval">🏰 Fantasía Medieval</option>
               <option value="Fantasía Oscura">🌑 Fantasía Oscura</option>
+              <option value="Fantasía Urbana">🏙️ Fantasía Urbana</option>
               <option value="Terror / Horror">🩸 Terror / Horror</option>
+              <option value="Horror Cósmico">🐙 Horror Cósmico</option>
+              <option value="Terror Espacial">🛰️ Terror Espacial</option>
               <option value="Ciencia Ficción">🚀 Ciencia Ficción</option>
+              <option value="Cyberpunk">🦾 Cyberpunk</option>
+              <option value="Steampunk">⚙️ Steampunk</option>
+              <option value="Post-Apocalíptico">☢️ Post-Apocalíptico</option>
+              <option value="Misterio / Investigación">🔎 Misterio / Investigación</option>
+              <option value="Mundo de Tinieblas">🦇 Mundo de Tinieblas</option>
+              <option value="Superhéroes">🦸 Superhéroes</option>
+              <option value="Western / Weird West">🤠 Western / Weird West</option>
+              <option value="Piratas / Naval">🏴‍☠️ Piratas / Naval</option>
+              <option value="Space Opera">🛸 Space Opera</option>
+              <option value="Histórico">📜 Histórico</option>
+              <option value="Anime / Manga">🌸 Anime / Manga</option>
+              <option value="Espionaje / Acción">🕶️ Espionaje / Acción</option>
+              <option value="Rol Infantil / Familiar">🧸 Rol Infantil / Familiar</option>
               <option value="Comedia">🎭 Comedia</option>
             </select>
           </div>
