@@ -23,9 +23,10 @@ router.post('/', verificarToken, (req, res) => {
 
 // 3. Obtener partidas de un evento específico
 router.get('/:id/partidas', verificarToken, (req, res) => {
+  // ✨ AÑADIMOS p.etiqueta y p.apta_novatos al SELECT
   const sql = `
     SELECT 
-      p.id, p.evento_id, p.dungeon_master_id, p.titulo, p.descripcion, p.requisitos, p.sistema, p.cupo, p.turno, p.estado,
+      p.id, p.evento_id, p.dungeon_master_id, p.titulo, p.descripcion, p.requisitos, p.sistema, p.cupo, p.turno, p.estado, p.etiqueta, p.apta_novatos,
       u.nombre AS dmNombre, 
       (SELECT COUNT(*) FROM inscripciones WHERE partida_id = p.id) AS jugadoresIniciales,
       (SELECT COUNT(*) FROM inscripciones WHERE partida_id = p.id AND usuario_id = ?) AS anotadoInicialmente
@@ -40,14 +41,11 @@ router.get('/:id/partidas', verificarToken, (req, res) => {
 
 // 4. Crear una mesa en un evento (Con candado de participación única)
 router.post('/:id/partidas', verificarToken, (req, res) => {
-  // Los jugadores base no pueden crear mesas
   if (req.usuario.rol === 'jugador') return res.status(403).json({ error: 'Solo DMs y Admins pueden crear mesas.' });
   
   const eventoId = req.params.id;
   const usuarioId = req.usuario.id;
 
-  // LÓGICA DE VALIDACIÓN:
-  // Verificamos si el usuario ya es DM de una mesa O si ya es jugador en alguna mesa de ESTE evento.
   const sqlCheck = `
     SELECT 
       (SELECT COUNT(*) FROM partidas WHERE evento_id = ? AND dungeon_master_id = ?) as es_dm,
@@ -59,26 +57,29 @@ router.post('/:id/partidas', verificarToken, (req, res) => {
     
     const { es_dm, es_jugador } = resultados[0];
 
-    // Si ya tiene una mesa como DM
     if (es_dm > 0) {
       return res.status(400).json({ error: 'Ya estás dirigiendo una mesa en este evento.' });
     }
 
-    // Si ya está anotado como jugador en otra mesa
     if (es_jugador > 0) {
       return res.status(400).json({ error: 'No puedes crear una mesa porque ya estás anotado como jugador en este evento.' });
     }
 
-    // Si el camino está libre, procedemos a insertar la mesa
-    const { titulo, descripcion, requisitos, sistema, cupo, turno } = req.body;
+    // ✨ RECIBIMOS etiqueta Y apta_novatos DESDE EL FRONTEND
+    const { titulo, descripcion, requisitos, sistema, cupo, turno, etiqueta, apta_novatos } = req.body;
+    
+    // ✨ LAS AGREGAMOS AL INSERT DE LA BASE DE DATOS
     const sqlInsert = `
         INSERT INTO partidas 
-        (evento_id, dungeon_master_id, titulo, descripcion, requisitos, sistema, cupo, turno, estado) 
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'abierta')
+        (evento_id, dungeon_master_id, titulo, descripcion, requisitos, sistema, cupo, turno, estado, etiqueta, apta_novatos) 
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'abierta', ?, ?)
     `;
     
-    db.query(sqlInsert, [eventoId, usuarioId, titulo, descripcion, requisitos, sistema, cupo, turno], (err) => {
-      if (err) return res.status(500).json({ error: 'Error al crear la mesa.' });
+    db.query(sqlInsert, [eventoId, usuarioId, titulo, descripcion, requisitos, sistema, cupo, turno, etiqueta, apta_novatos], (err) => {
+      if (err) {
+        console.error(err);
+        return res.status(500).json({ error: 'Error al crear la mesa.' });
+      }
       res.status(201).json({ mensaje: '¡Mesa creada con éxito!' });
     });
   });

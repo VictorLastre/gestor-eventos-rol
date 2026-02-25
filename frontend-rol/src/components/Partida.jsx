@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import Swal from 'sweetalert2'; // ✨ IMPORTAMOS LA MAGIA DE SWEETALERT
+import Swal from 'sweetalert2'; 
 
 function Partida(props) {
   const cantJugadores = props.jugadoresIniciales ?? props.jugadores_anotados ?? 0;
@@ -11,18 +11,25 @@ function Partida(props) {
   const [modalAbierto, setModalAbierto] = useState(false);
   const [cargandoJugadores, setCargandoJugadores] = useState(false);
 
-  // === CONFIGURACIÓN DEL TOAST (Notificación sutil en la esquina) ===
+  // === ICONOS PARA LAS ETIQUETAS ===
+  const iconoEtiqueta = {
+    'Fantasía Medieval': '🏰',
+    'Fantasía Oscura': '🌑',
+    'Terror / Horror': '🩸',
+    'Ciencia Ficción': '🚀',
+    'Comedia': '🎭'
+  }[props.etiqueta] || '🏷️';
+
   const Toast = Swal.mixin({
     toast: true,
     position: 'top-end',
     showConfirmButton: false,
     timer: 3000,
     timerProgressBar: true,
-    background: '#18181b', // bg-zinc-900
+    background: '#18181b', 
     color: '#fff'
   });
 
-  // === BLOQUEO DE SCROLL ===
   useEffect(() => {
     if (modalAbierto) {
       document.body.style.overflow = 'hidden';
@@ -74,7 +81,6 @@ function Partida(props) {
         setJugadoresAnotados(anotado ? jugadoresAnotados - 1 : jugadoresAnotados + 1);
         cargarListaJugadores();
         
-        // ✨ FEEDBACK VISUAL POSITIVO
         Toast.fire({
           icon: 'success',
           title: anotado ? 'Has abandonado la mesa' : '¡Te has unido a la aventura!'
@@ -82,15 +88,13 @@ function Partida(props) {
         
       } else {
         const mensaje = await res.text();
-        
-        // ✨ REEMPLAZO DEL ALERT TRADICIONAL
         Swal.fire({
           title: 'Aviso del Gremio',
           text: mensaje,
           icon: 'warning',
           background: '#18181b',
           color: '#fff',
-          confirmButtonColor: '#f59e0b', // amber-500
+          confirmButtonColor: '#f59e0b',
           confirmButtonText: 'Entendido'
         });
       }
@@ -110,9 +114,27 @@ function Partida(props) {
       >
         <div className="flex justify-between items-start mb-4">
           <div className="max-w-[75%] space-y-2">
+            
+            {/* ✨ SECCIÓN DE ETIQUETAS (TAGS) EN LA TARJETA */}
             <div className="flex flex-wrap gap-2">
-              <span className="text-[9px] font-black text-emerald-500 uppercase tracking-widest bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-500/20">
-                {props.sistema}
+              
+              {/* Etiqueta Apta Novatos (Destaque principal) */}
+              {Boolean(props.apta_novatos) && (
+                <span className="text-[9px] font-black text-emerald-950 uppercase tracking-widest bg-emerald-400 px-2 py-0.5 rounded border border-emerald-300 shadow-[0_0_12px_rgba(52,211,153,0.5)] flex items-center gap-1 animate-pulse">
+                  🌱 Apta Novatos
+                </span>
+              )}
+
+              {/* Etiqueta de Género */}
+              {props.etiqueta && (
+                <span className="text-[9px] font-black text-purple-400 uppercase tracking-widest bg-purple-500/10 px-2 py-0.5 rounded border border-purple-500/30 flex items-center gap-1">
+                  {iconoEtiqueta} {props.etiqueta}
+                </span>
+              )}
+
+              {/* Sistema */}
+              <span className="text-[9px] font-black text-zinc-300 uppercase tracking-widest bg-zinc-800 px-2 py-0.5 rounded border border-zinc-700">
+                🎲 {props.sistema}
               </span>
               
               {soyElMaster && (
@@ -159,7 +181,7 @@ function Partida(props) {
             </button>
           )}
           <div className="px-4 py-3 bg-zinc-800 text-zinc-400 rounded-xl border border-white/10 text-xs flex items-center gap-1 font-bold">
-             🔍 Info
+              🔍 Info
           </div>
         </div>
       </div>
@@ -178,9 +200,20 @@ function Partida(props) {
               ✕
             </button>
 
-            <div className="flex gap-2 mb-2">
-              <span className="text-xs font-black text-emerald-500 uppercase tracking-widest bg-emerald-500/10 px-3 py-1 rounded-full border border-emerald-500/20">
-                {props.sistema}
+            {/* ✨ SECCIÓN DE ETIQUETAS EN EL MODAL */}
+            <div className="flex flex-wrap gap-2 mb-2">
+              {Boolean(props.apta_novatos) && (
+                <span className="text-xs font-black text-emerald-950 uppercase tracking-widest bg-emerald-400 px-3 py-1 rounded-full border border-emerald-300 shadow-[0_0_15px_rgba(52,211,153,0.4)] flex items-center gap-1">
+                  🌱 Apta Novatos
+                </span>
+              )}
+              {props.etiqueta && (
+                <span className="text-xs font-black text-purple-400 uppercase tracking-widest bg-purple-500/10 px-3 py-1 rounded-full border border-purple-500/30 flex items-center gap-1">
+                  {iconoEtiqueta} {props.etiqueta}
+                </span>
+              )}
+              <span className="text-xs font-black text-zinc-300 uppercase tracking-widest bg-zinc-800 px-3 py-1 rounded-full border border-zinc-700">
+                🎲 {props.sistema}
               </span>
               {soyElMaster && (
                 <span className="text-xs font-black text-amber-500 uppercase tracking-widest bg-amber-500/10 px-3 py-1 rounded-full border border-amber-500/20">
@@ -206,6 +239,7 @@ function Partida(props) {
               </div>
             </div>
 
+            {/* ✨ SECCIÓN DE JUGADORES CON COLORES POR ROL */}
             <div className="mb-8">
               <h4 className="text-[10px] font-black text-zinc-500 uppercase tracking-[0.3em] mb-4 flex items-center gap-2">
                 <span className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse"></span> Aventureros en la Mesa
@@ -215,11 +249,27 @@ function Partida(props) {
                   <p className="text-zinc-600 text-xs italic">Consultando lista de convocados...</p>
                 ) : listaJugadores.length > 0 ? (
                   <div className="flex flex-wrap gap-2">
-                    {listaJugadores.map((jugador, idx) => (
-                      <span key={idx} className="bg-zinc-800 text-zinc-300 px-3 py-1 rounded-full text-xs font-bold border border-white/5">
-                        👤 {jugador.nombre}
-                      </span>
-                    ))}
+                    {listaJugadores.map((jugador, idx) => {
+                      let estilosRol = 'bg-blue-500/10 text-blue-400 border-blue-500/30'; 
+                      let iconoRol = '👤';
+
+                      if (jugador.rol === 'admin') {
+                        estilosRol = 'bg-amber-500/10 text-amber-500 border-amber-500/30 shadow-[0_0_10px_rgba(251,191,36,0.1)]'; 
+                        iconoRol = '👑';
+                      } else if (jugador.rol === 'dm') {
+                        estilosRol = 'bg-purple-500/10 text-purple-400 border-purple-500/30'; 
+                        iconoRol = '🛡️';
+                      }
+
+                      return (
+                        <span 
+                          key={idx} 
+                          className={`px-3 py-1.5 rounded-full text-xs font-black uppercase tracking-widest border flex items-center gap-1.5 ${estilosRol}`}
+                        >
+                          <span className="text-sm">{iconoRol}</span> {jugador.nombre}
+                        </span>
+                      );
+                    })}
                   </div>
                 ) : (
                   <p className="text-zinc-600 text-xs italic">Aún no hay aventureros anotados...</p>
@@ -245,8 +295,8 @@ function Partida(props) {
                   onClick={alternarInscripcion}
                   className={`w-full py-4 rounded-2xl font-black text-xs uppercase tracking-widest transition-all ${
                     anotado 
-                    ? 'bg-red-500/20 text-red-500 border border-red-500/40' 
-                    : 'bg-emerald-600 text-white shadow-lg'
+                    ? 'bg-red-500/20 text-red-500 border border-red-500/40 hover:bg-red-500 hover:text-white' 
+                    : 'bg-emerald-600 text-white shadow-lg hover:bg-emerald-500'
                   }`}
                 >
                   {anotado ? 'Abandonar Partida' : 'Unirse a la Aventura'}
