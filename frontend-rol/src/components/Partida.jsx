@@ -101,6 +101,56 @@ function Partida(props) {
     } catch (err) { console.error(err); }
   };
 
+  // ✨ NUEVA FUNCIÓN PARA BORRAR LA MESA
+  const borrarMesa = async (e) => {
+    if (e) e.stopPropagation(); 
+    
+    const result = await Swal.fire({
+      title: '¿Disolver la Mesa?',
+      text: "Se cancelará la aventura y todos los aventureros inscritos perderán su lugar. Esta acción no se puede deshacer.",
+      icon: 'warning',
+      showCancelButton: true,
+      background: '#18181b', 
+      color: '#fff',
+      confirmButtonColor: '#ef4444', 
+      cancelButtonColor: '#3f3f46', 
+      confirmButtonText: 'Sí, borrar mesa',
+      cancelButtonText: 'Cancelar'
+    });
+
+    if (result.isConfirmed) {
+      const token = localStorage.getItem('token');
+      try {
+        const res = await fetch(`https://gestor-eventos-rol.onrender.com/api/partidas/${props.id}`, {
+          method: 'DELETE',
+          headers: { 'authorization': token }
+        });
+
+        if (res.ok) {
+          Swal.fire({
+            title: 'Mesa Borrada',
+            text: 'La aventura ha sido cancelada.',
+            icon: 'success',
+            background: '#18181b',
+            color: '#fff',
+            confirmButtonColor: '#10b981'
+          }).then(() => {
+            window.location.reload(); 
+          });
+        } else {
+          Swal.fire({
+            title: 'Error Mágico',
+            text: 'No se pudo disolver la mesa.',
+            icon: 'error',
+            background: '#18181b',
+            color: '#fff',
+            confirmButtonColor: '#ef4444'
+          });
+        }
+      } catch (err) { console.error(err); }
+    }
+  };
+
   return (
     <>
       {/* CARD DEL CARRUSEL */}
@@ -112,6 +162,17 @@ function Partida(props) {
           : 'border-zinc-800 bg-zinc-900/40 hover:border-emerald-500/30'
         }`}
       >
+        {/* ✨ BOTÓN DE BORRAR EN LA TARJETA (Solo Master o Admin) */}
+        {(soyElMaster || soyAdmin) && !props.eventoEsPasado && (
+          <button 
+            onClick={borrarMesa}
+            className="absolute top-4 right-4 z-10 w-8 h-8 bg-black/50 hover:bg-red-500 text-zinc-500 hover:text-white rounded-full flex items-center justify-center transition-colors border border-transparent hover:border-red-500/50 opacity-0 group-hover:opacity-100"
+            title="Borrar Mesa"
+          >
+            🗑️
+          </button>
+        )}
+
         <div className="flex justify-between items-start mb-4">
           <div className="max-w-[75%] space-y-2">
             
@@ -193,15 +254,26 @@ function Partida(props) {
             className="bg-zinc-900 border border-zinc-800 w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-[2.5rem] p-8 md:p-12 relative shadow-2xl scrollbar-hide"
             style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
           >
-            <button 
-              onClick={() => setModalAbierto(false)}
-              className="absolute top-6 right-6 text-zinc-500 hover:text-white text-2xl p-2"
-            >
-              ✕
-            </button>
+            <div className="flex justify-end gap-2 absolute top-6 right-6">
+              {/* ✨ BOTÓN DE BORRAR EN EL MODAL (Solo Master o Admin) */}
+              {(soyElMaster || soyAdmin) && !props.eventoEsPasado && (
+                <button 
+                  onClick={borrarMesa}
+                  className="bg-red-500/10 text-red-500 hover:bg-red-500 hover:text-white border border-red-500/30 font-bold text-xs px-3 py-1.5 rounded-lg transition-colors"
+                >
+                  🗑️ Borrar Mesa
+                </button>
+              )}
+              <button 
+                onClick={() => setModalAbierto(false)}
+                className="text-zinc-500 hover:text-white text-xl p-1 px-3 bg-zinc-800 rounded-lg transition-colors"
+              >
+                ✕
+              </button>
+            </div>
 
             {/* ✨ SECCIÓN DE ETIQUETAS EN EL MODAL */}
-            <div className="flex flex-wrap gap-2 mb-2">
+            <div className="flex flex-wrap gap-2 mb-2 mt-4 md:mt-0">
               {Boolean(props.apta_novatos) && (
                 <span className="text-xs font-black text-emerald-950 uppercase tracking-widest bg-emerald-400 px-3 py-1 rounded-full border border-emerald-300 shadow-[0_0_15px_rgba(52,211,153,0.4)] flex items-center gap-1">
                   🌱 Apta Novatos
