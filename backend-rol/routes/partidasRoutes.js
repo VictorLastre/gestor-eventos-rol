@@ -68,7 +68,6 @@ router.delete('/:id/inscripciones', verificarToken, (req, res) => {
   });
 });
 
-// ✨ RUTA ACTUALIZADA: Ahora pedimos "u.rol" a la base de datos
 router.get('/:id/jugadores', verificarToken, (req, res) => {
   const sql = "SELECT u.id, u.nombre, u.email, u.rol FROM usuarios u JOIN inscripciones i ON u.id = i.usuario_id WHERE i.partida_id = ?";
   db.query(sql, [req.params.id], (err, resultados) => {
@@ -77,10 +76,29 @@ router.get('/:id/jugadores', verificarToken, (req, res) => {
   });
 });
 
+// ✨ RUTA PROTEGIDA: Solo el DM dueño o un Admin pueden disolver la mesa
 router.delete('/:id', verificarToken, (req, res) => {
-  db.query("DELETE FROM partidas WHERE id = ?", [req.params.id], (err) => {
-    if (err) return res.status(500).send('Error al borrar la mesa.');
-    res.send('Mesa disuelta correctamente.');
+  const partidaId = req.params.id;
+  const usuarioId = req.usuario.id;
+  const rolUsuario = req.usuario.rol;
+
+  // Primero verificamos quién es el DM de esta partida
+  db.query("SELECT dungeon_master_id FROM partidas WHERE id = ?", [partidaId], (err, resultados) => {
+    if (err) return res.status(500).send('Error al buscar la mesa en los registros.');
+    if (resultados.length === 0) return res.status(404).send('La mesa no existe.');
+
+    const dmId = resultados[0].dungeon_master_id;
+
+    // Candado de seguridad
+    if (dmId !== usuarioId && rolUsuario !== 'admin') {
+      return res.status(403).send('No tienes autoridad para disolver esta mesa.');
+    }
+
+    // Si pasa el filtro, procedemos a borrarla
+    db.query("DELETE FROM partidas WHERE id = ?", [partidaId], (err) => {
+      if (err) return res.status(500).send('Error al disolver la mesa.');
+      res.send('Mesa disuelta correctamente.');
+    });
   });
 });
 
