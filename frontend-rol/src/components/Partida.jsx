@@ -11,6 +11,19 @@ function Partida(props) {
   const [modalAbierto, setModalAbierto] = useState(false);
   const [cargandoJugadores, setCargandoJugadores] = useState(false);
 
+  // ✨ ESTADOS PARA LA EDICIÓN DE LA MESA
+  const [modoEdicion, setModoEdicion] = useState(false);
+  const [datosEdicion, setDatosEdicion] = useState({
+    titulo: props.titulo || '',
+    descripcion: props.descripcion || props.description || '',
+    requisitos: props.requisitos || '',
+    sistema: props.sistema || '',
+    cupo: props.cupo || 4,
+    turno: props.turno || 'Tarde',
+    etiqueta: props.etiqueta || 'Fantasía Medieval',
+    apta_novatos: Boolean(props.apta_novatos)
+  });
+
   // === ICONOS PARA LAS ETIQUETAS ===
   const iconoEtiqueta = {
     'Fantasía Medieval': '🏰',
@@ -31,14 +44,14 @@ function Partida(props) {
   });
 
   useEffect(() => {
-    if (modalAbierto) {
+    if (modalAbierto || modoEdicion) {
       document.body.style.overflow = 'hidden';
-      cargarListaJugadores();
+      if (modalAbierto) cargarListaJugadores();
     } else {
       document.body.style.overflow = 'unset';
     }
     return () => { document.body.style.overflow = 'unset'; };
-  }, [modalAbierto]);
+  }, [modalAbierto, modoEdicion]);
 
   useEffect(() => {
     setJugadoresAnotados(cantJugadores);
@@ -101,7 +114,6 @@ function Partida(props) {
     } catch (err) { console.error(err); }
   };
 
-  // ✨ NUEVA FUNCIÓN PARA BORRAR LA MESA
   const borrarMesa = async (e) => {
     if (e) e.stopPropagation(); 
     
@@ -151,6 +163,47 @@ function Partida(props) {
     }
   };
 
+  // ✨ NUEVA FUNCIÓN PARA GUARDAR LA EDICIÓN
+  const guardarEdicion = async (e) => {
+    e.preventDefault();
+    const token = localStorage.getItem('token');
+
+    try {
+      const res = await fetch(`https://gestor-eventos-rol.onrender.com/api/partidas/${props.id}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'authorization': token
+        },
+        body: JSON.stringify(datosEdicion)
+      });
+
+      if (res.ok) {
+        Swal.fire({
+          title: '¡Aventura Reescríta!',
+          text: 'Los detalles de la mesa han sido actualizados.',
+          icon: 'success',
+          background: '#18181b',
+          color: '#fff',
+          confirmButtonColor: '#f59e0b'
+        }).then(() => {
+          window.location.reload(); // Refrescamos para ver los cambios
+        });
+      } else {
+        const data = await res.json();
+        Swal.fire({ title: 'Aviso del Gremio', text: data.error, icon: 'warning', background: '#18181b', color: '#fff' });
+      }
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  const abrirEdicion = (e) => {
+    e.stopPropagation();
+    setModoEdicion(true);
+    setModalAbierto(false); // Cerramos el de info por si estaba abierto
+  };
+
   return (
     <>
       {/* CARD DEL CARRUSEL */}
@@ -162,38 +215,40 @@ function Partida(props) {
           : 'border-zinc-800 bg-zinc-900/40 hover:border-emerald-500/30'
         }`}
       >
-        {/* ✨ BOTÓN DE BORRAR EN LA TARJETA (Solo Master o Admin) */}
+        {/* ✨ BOTONES DE EDICIÓN Y BORRADO EN LA TARJETA */}
         {(soyElMaster || soyAdmin) && !props.eventoEsPasado && (
-          <button 
-            onClick={borrarMesa}
-            className="absolute top-4 right-4 z-10 w-8 h-8 bg-black/50 hover:bg-red-500 text-zinc-500 hover:text-white rounded-full flex items-center justify-center transition-colors border border-transparent hover:border-red-500/50 opacity-0 group-hover:opacity-100"
-            title="Borrar Mesa"
-          >
-            🗑️
-          </button>
+          <div className="absolute top-4 right-4 z-10 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+            <button 
+              onClick={abrirEdicion}
+              className="w-8 h-8 bg-black/50 hover:bg-amber-500 text-zinc-500 hover:text-black rounded-full flex items-center justify-center transition-colors border border-transparent hover:border-amber-500/50"
+              title="Editar Mesa"
+            >
+              ✏️
+            </button>
+            <button 
+              onClick={borrarMesa}
+              className="w-8 h-8 bg-black/50 hover:bg-red-500 text-zinc-500 hover:text-white rounded-full flex items-center justify-center transition-colors border border-transparent hover:border-red-500/50"
+              title="Borrar Mesa"
+            >
+              🗑️
+            </button>
+          </div>
         )}
 
         <div className="flex justify-between items-start mb-4">
           <div className="max-w-[75%] space-y-2">
             
-            {/* ✨ SECCIÓN DE ETIQUETAS (TAGS) EN LA TARJETA */}
             <div className="flex flex-wrap gap-2">
-              
-              {/* Etiqueta Apta Novatos (Destaque principal) */}
               {Boolean(props.apta_novatos) && (
                 <span className="text-[9px] font-black text-emerald-950 uppercase tracking-widest bg-emerald-400 px-2 py-0.5 rounded border border-emerald-300 shadow-[0_0_12px_rgba(52,211,153,0.5)] flex items-center gap-1 animate-pulse">
                   🌱 Apta Novatos
                 </span>
               )}
-
-              {/* Etiqueta de Género */}
               {props.etiqueta && (
                 <span className="text-[9px] font-black text-purple-400 uppercase tracking-widest bg-purple-500/10 px-2 py-0.5 rounded border border-purple-500/30 flex items-center gap-1">
                   {iconoEtiqueta} {props.etiqueta}
                 </span>
               )}
-
-              {/* Sistema */}
               <span className="text-[9px] font-black text-zinc-300 uppercase tracking-widest bg-zinc-800 px-2 py-0.5 rounded border border-zinc-700">
                 🎲 {props.sistema}
               </span>
@@ -247,7 +302,82 @@ function Partida(props) {
         </div>
       </div>
 
-      {/* MODAL DE INFORMACIÓN Y JUGADORES */}
+      {/* ✨ MODAL DE EDICIÓN DE LA MESA */}
+      {modoEdicion && (
+        <div className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-black/90 backdrop-blur-sm animate-in fade-in">
+          <div className="bg-zinc-900 border border-amber-500/30 w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-[2rem] p-8 relative shadow-[0_0_50px_rgba(245,158,11,0.1)] scrollbar-hide" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
+            <button onClick={() => setModoEdicion(false)} className="absolute top-6 right-6 text-zinc-500 hover:text-white text-2xl">✕</button>
+            <h3 className="text-2xl font-black text-white uppercase tracking-tighter mb-6 flex items-center gap-2">
+              <span className="text-amber-500">📜</span> Reescribir Aventura
+            </h3>
+            
+            <form onSubmit={guardarEdicion} className="flex flex-col gap-4">
+              <div className="space-y-1">
+                <label className="text-[10px] font-bold text-zinc-500 uppercase ml-2 tracking-widest">Título</label>
+                <input type="text" value={datosEdicion.titulo} onChange={e => setDatosEdicion({...datosEdicion, titulo: e.target.value})} required className="w-full bg-zinc-950 border border-zinc-800 rounded-xl py-3 px-4 text-white focus:border-amber-500 outline-none transition-all font-bold" />
+              </div>
+
+              <div className="space-y-1">
+                <label className="text-[10px] font-bold text-zinc-500 uppercase ml-2 tracking-widest">Descripción</label>
+                <textarea value={datosEdicion.descripcion} onChange={e => setDatosEdicion({...datosEdicion, descripcion: e.target.value})} required rows="3" className="w-full bg-zinc-950 border border-zinc-800 rounded-xl py-3 px-4 text-white focus:border-amber-500 outline-none transition-all resize-none italic" />
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="flex flex-col gap-1">
+                  <label className="text-[10px] font-bold text-zinc-500 uppercase ml-2 tracking-widest">Género</label>
+                  <select value={datosEdicion.etiqueta} onChange={e => setDatosEdicion({...datosEdicion, etiqueta: e.target.value})} className="bg-zinc-950 border border-zinc-800 rounded-xl py-3.5 px-4 text-white focus:border-amber-500 outline-none font-bold">
+                    <option value="Fantasía Medieval">🏰 Fantasía Medieval</option>
+                    <option value="Fantasía Oscura">🌑 Fantasía Oscura</option>
+                    <option value="Terror / Horror">🩸 Terror / Horror</option>
+                    <option value="Ciencia Ficción">🚀 Ciencia Ficción</option>
+                    <option value="Comedia">🎭 Comedia</option>
+                  </select>
+                </div>
+                
+                <div onClick={() => setDatosEdicion({...datosEdicion, apta_novatos: !datosEdicion.apta_novatos})} className={`cursor-pointer p-3 rounded-xl border-2 transition-all flex items-center justify-between gap-4 select-none mt-5 ${datosEdicion.apta_novatos ? 'bg-emerald-500/10 border-emerald-500 shadow-[0_0_15px_rgba(16,185,129,0.2)]' : 'bg-zinc-950 border-zinc-800'}`}>
+                  <div>
+                    <h4 className={`font-black uppercase tracking-widest text-xs ${datosEdicion.apta_novatos ? 'text-emerald-400' : 'text-zinc-500'}`}>🌱 Apta Novatos</h4>
+                  </div>
+                  <div className={`w-6 h-6 rounded-md flex items-center justify-center border-2 transition-colors ${datosEdicion.apta_novatos ? 'bg-emerald-500 border-emerald-500 text-black' : 'border-zinc-700'}`}>
+                    {datosEdicion.apta_novatos && <span className="font-black text-sm">✓</span>}
+                  </div>
+                </div>
+              </div>
+
+              <div className="space-y-1">
+                <label className="text-[10px] font-bold text-zinc-500 uppercase ml-2 tracking-widest">Requisitos</label>
+                <input type="text" value={datosEdicion.requisitos} onChange={e => setDatosEdicion({...datosEdicion, requisitos: e.target.value})} className="w-full bg-zinc-950 border border-zinc-800 rounded-xl py-3 px-4 text-white focus:border-amber-500 outline-none" />
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="flex flex-col gap-1">
+                  <label className="text-[10px] font-bold text-zinc-500 uppercase ml-2 tracking-widest">Sistema</label>
+                  <input type="text" value={datosEdicion.sistema} onChange={e => setDatosEdicion({...datosEdicion, sistema: e.target.value})} required className="bg-zinc-950 border border-zinc-800 rounded-xl py-3 px-4 text-white focus:border-amber-500 outline-none font-bold" />
+                </div>
+                <div className="flex flex-col gap-1">
+                  <label className="text-[10px] font-bold text-zinc-500 uppercase ml-2 tracking-widest">Cupo</label>
+                  <input type="number" value={datosEdicion.cupo} onChange={e => setDatosEdicion({...datosEdicion, cupo: e.target.value})} min="1" max="10" required className="bg-zinc-950 border border-zinc-800 rounded-xl py-3 px-4 text-white focus:border-amber-500 outline-none font-bold" />
+                </div>
+                <div className="flex flex-col gap-1">
+                  <label className="text-[10px] font-bold text-zinc-500 uppercase ml-2 tracking-widest">Turno</label>
+                  <select value={datosEdicion.turno} onChange={e => setDatosEdicion({...datosEdicion, turno: e.target.value})} className="bg-zinc-950 border border-zinc-800 rounded-xl py-3 px-4 text-white focus:border-amber-500 outline-none font-bold">
+                    <option value="Mañana">Mañana</option>
+                    <option value="Tarde">Tarde</option>
+                    <option value="Noche">Noche</option>
+                    <option value="Madrugada">Madrugada</option>
+                  </select>
+                </div>
+              </div>
+
+              <button type="submit" className="bg-amber-500 hover:bg-amber-400 text-black font-black py-4 rounded-xl shadow-lg transition-all active:scale-95 text-xs uppercase tracking-widest mt-2">
+                💾 Guardar Cambios
+              </button>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL ORIGINAL DE INFORMACIÓN Y JUGADORES */}
       {modalAbierto && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/90 backdrop-blur-sm animate-in fade-in duration-300">
           <div 
@@ -255,14 +385,21 @@ function Partida(props) {
             style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
           >
             <div className="flex justify-end gap-2 absolute top-6 right-6">
-              {/* ✨ BOTÓN DE BORRAR EN EL MODAL (Solo Master o Admin) */}
               {(soyElMaster || soyAdmin) && !props.eventoEsPasado && (
-                <button 
-                  onClick={borrarMesa}
-                  className="bg-red-500/10 text-red-500 hover:bg-red-500 hover:text-white border border-red-500/30 font-bold text-xs px-3 py-1.5 rounded-lg transition-colors"
-                >
-                  🗑️ Borrar Mesa
-                </button>
+                <>
+                  <button 
+                    onClick={abrirEdicion}
+                    className="bg-amber-500/10 text-amber-500 hover:bg-amber-500 hover:text-black border border-amber-500/30 font-bold text-xs px-3 py-1.5 rounded-lg transition-colors"
+                  >
+                    ✏️ Editar
+                  </button>
+                  <button 
+                    onClick={borrarMesa}
+                    className="bg-red-500/10 text-red-500 hover:bg-red-500 hover:text-white border border-red-500/30 font-bold text-xs px-3 py-1.5 rounded-lg transition-colors"
+                  >
+                    🗑️ Borrar
+                  </button>
+                </>
               )}
               <button 
                 onClick={() => setModalAbierto(false)}
@@ -272,7 +409,6 @@ function Partida(props) {
               </button>
             </div>
 
-            {/* ✨ SECCIÓN DE ETIQUETAS EN EL MODAL */}
             <div className="flex flex-wrap gap-2 mb-2 mt-4 md:mt-0">
               {Boolean(props.apta_novatos) && (
                 <span className="text-xs font-black text-emerald-950 uppercase tracking-widest bg-emerald-400 px-3 py-1 rounded-full border border-emerald-300 shadow-[0_0_15px_rgba(52,211,153,0.4)] flex items-center gap-1">
@@ -311,7 +447,6 @@ function Partida(props) {
               </div>
             </div>
 
-            {/* ✨ SECCIÓN DE JUGADORES CON COLORES POR ROL */}
             <div className="mb-8">
               <h4 className="text-[10px] font-black text-zinc-500 uppercase tracking-[0.3em] mb-4 flex items-center gap-2">
                 <span className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse"></span> Aventureros en la Mesa

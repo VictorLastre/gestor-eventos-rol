@@ -102,4 +102,42 @@ router.delete('/:id', verificarToken, (req, res) => {
   });
 });
 
+// ✨ NUEVA RUTA: Modificar una mesa (Solo el DM dueño o un Admin)
+router.put('/:id', verificarToken, (req, res) => {
+  const partidaId = req.params.id;
+  const usuarioId = req.usuario.id;
+  const rolUsuario = req.usuario.rol;
+
+  // 1. Verificamos de quién es la mesa
+  db.query("SELECT dungeon_master_id FROM partidas WHERE id = ?", [partidaId], (err, resultados) => {
+    if (err) return res.status(500).json({ error: 'Error al buscar los pergaminos de la mesa.' });
+    if (resultados.length === 0) return res.status(404).json({ error: 'La mesa no existe.' });
+
+    const dmId = resultados[0].dungeon_master_id;
+
+    // 2. Candado de seguridad
+    if (dmId !== usuarioId && rolUsuario !== 'admin') {
+      return res.status(403).json({ error: 'No tienes permisos para modificar esta historia.' });
+    }
+
+    // 3. Extraemos los datos actualizados enviados desde el frontend
+    const { titulo, descripcion, requisitos, sistema, cupo, turno, etiqueta, apta_novatos } = req.body;
+
+    // 4. Ejecutamos la actualización
+    const sqlUpdate = `
+      UPDATE partidas 
+      SET titulo = ?, descripcion = ?, requisitos = ?, sistema = ?, cupo = ?, turno = ?, etiqueta = ?, apta_novatos = ?
+      WHERE id = ?
+    `;
+
+    db.query(sqlUpdate, [titulo, descripcion, requisitos, sistema, cupo, turno, etiqueta, apta_novatos, partidaId], (err) => {
+      if (err) {
+        console.error(err);
+        return res.status(500).json({ error: 'Error al reescribir la mesa.' });
+      }
+      res.status(200).json({ mensaje: '¡La aventura ha sido actualizada con éxito!' });
+    });
+  });
+});
+
 module.exports = router;
