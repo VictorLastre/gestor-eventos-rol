@@ -13,7 +13,6 @@ function Eventos() {
   const [mostrarFormularioMesa, setMostrarFormularioMesa] = useState(false);
   const [pestanaAdmin, setPestanaAdmin] = useState('eventos');
   
-  // ✨ NUEVO ESTADO PARA LA EDICIÓN
   const [eventoEditando, setEventoEditando] = useState(null);
   
   const carruselEventosRef = useRef(null);
@@ -85,7 +84,6 @@ function Eventos() {
     }
   };
 
-  // ✨ NUEVA FUNCIÓN PARA GUARDAR LA EDICIÓN DEL EVENTO
   const guardarEdicionEvento = async (e) => {
     e.preventDefault();
     const token = localStorage.getItem('token');
@@ -107,16 +105,15 @@ function Eventos() {
           icon: 'success',
           background: '#18181b',
           color: '#fff',
-          confirmButtonColor: '#9333ea' // purple-600
+          confirmButtonColor: '#9333ea' 
         });
         
-        // Actualizamos la vista detallada si era el evento que estábamos viendo
         if (eventoSeleccionado && eventoSeleccionado.id === eventoEditando.id) {
           setEventoSeleccionado(eventoEditando);
         }
         
-        setEventoEditando(null); // Cerramos el modal
-        cargarEventos(); // Refrescamos el tablón
+        setEventoEditando(null); 
+        cargarEventos(); 
       } else {
         const errorText = await res.text();
         Swal.fire({ title: 'Error', text: errorText, icon: 'error', background: '#18181b', color: '#fff' });
@@ -128,7 +125,6 @@ function Eventos() {
 
   const abrirEdicion = (evento, e) => {
     e.stopPropagation();
-    // Ajustamos la fecha para que el input type="date" la lea correctamente (YYYY-MM-DD)
     const fechaFormateada = evento.fecha ? new Date(evento.fecha).toISOString().split('T')[0] : '';
     setEventoEditando({ ...evento, fecha: fechaFormateada });
   };
@@ -143,12 +139,13 @@ function Eventos() {
       .then(setPartidasDelEvento);
   };
 
+  // ✨ FILTROS CORREGIDOS: "Proximo" y "En Curso" arriba. "Finalizado" y "Suspendido" al historial.
   const eventosProximos = eventos
-    .filter(e => e.estado !== 'Finalizado') // Ojo: coincidir con la capitalización del backend
+    .filter(e => e.estado === 'Proximo' || e.estado === 'En Curso')
     .sort((a, b) => new Date(a.fecha) - new Date(b.fecha));
     
   const eventosPasados = eventos
-    .filter(e => e.estado === 'Finalizado')
+    .filter(e => e.estado === 'Finalizado' || e.estado === 'Suspendido')
     .sort((a, b) => new Date(b.fecha) - new Date(a.fecha)); 
 
   const formatearFecha = (f) => new Date(f).toLocaleDateString('es-ES', { day: 'numeric', month: 'long', year: 'numeric' });
@@ -280,7 +277,6 @@ function Eventos() {
   return (
     <div className="max-w-6xl mx-auto p-6 md:p-12 animate-in fade-in duration-700 overflow-hidden relative">
       
-      {/* ✨ MODAL DE EDICIÓN DE EVENTO (SOLO ADMIN) */}
       {eventoEditando && (
         <div className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-black/90 backdrop-blur-sm animate-in fade-in">
           <div className="bg-zinc-900 border border-purple-500/30 w-full max-w-lg rounded-[2rem] p-8 relative shadow-[0_0_50px_rgba(147,51,234,0.15)]">
@@ -388,24 +384,19 @@ function Eventos() {
               <div 
                 key={evento.id} 
                 onClick={() => entrarAlEvento(evento)}
-                className={`group relative bg-zinc-900/40 hover:bg-zinc-900 border ${evento.estado === 'Suspendido' ? 'border-red-500/30' : 'border-zinc-800 hover:border-emerald-500/50'} p-8 rounded-[2rem] transition-all duration-300 cursor-pointer shadow-xl hover:-translate-y-2 overflow-hidden flex-shrink-0 w-[90%] md:w-[45%] snap-center`}
+                className="group relative bg-zinc-900/40 hover:bg-zinc-900 border border-zinc-800 hover:border-emerald-500/50 p-8 rounded-[2rem] transition-all duration-300 cursor-pointer shadow-xl hover:-translate-y-2 overflow-hidden flex-shrink-0 w-[90%] md:w-[45%] snap-center"
               >
-                <div className={`absolute -bottom-10 -right-10 w-32 h-32 ${evento.estado === 'Suspendido' ? 'bg-red-500/5' : 'bg-emerald-500/5 group-hover:bg-emerald-500/10'} blur-3xl rounded-full transition-colors`}></div>
+                <div className="absolute -bottom-10 -right-10 w-32 h-32 bg-emerald-500/5 group-hover:bg-emerald-500/10 blur-3xl rounded-full transition-colors"></div>
 
-                {/* ✨ ETIQUETAS VISUALES EN LA TARJETA */}
+                {/* ✨ ETIQUETA EN CURSO EN LA TARJETA */}
                 {evento.estado === 'En Curso' && (
                   <div className="absolute top-4 right-4 bg-blue-500/20 border border-blue-500 text-blue-400 text-[9px] font-black uppercase tracking-widest px-3 py-1 rounded-full animate-pulse shadow-[0_0_10px_rgba(59,130,246,0.5)]">
                     En Curso
                   </div>
                 )}
-                {evento.estado === 'Suspendido' && (
-                  <div className="absolute top-4 right-4 bg-red-500/20 border border-red-500 text-red-500 text-[9px] font-black uppercase tracking-widest px-3 py-1 rounded-full">
-                    Suspendido
-                  </div>
-                )}
 
                 <div className="relative z-10 h-full flex flex-col">
-                  <h3 className={`text-2xl font-black mb-3 transition-colors uppercase italic tracking-tight line-clamp-2 ${evento.estado === 'Suspendido' ? 'text-zinc-500' : 'text-white group-hover:text-emerald-400'}`}>
+                  <h3 className="text-2xl font-black text-white mb-3 group-hover:text-emerald-400 transition-colors uppercase italic tracking-tight line-clamp-2">
                     {evento.nombre}
                   </h3>
                   <p className="text-zinc-400 text-sm mb-8 line-clamp-3 leading-relaxed italic border-l-2 border-zinc-800 pl-4 flex-grow">
@@ -413,15 +404,15 @@ function Eventos() {
                   </p>
                   
                   <div className="flex justify-between items-center mt-auto">
-                    <span className={`font-black text-[10px] md:text-xs px-3 md:px-4 py-1.5 rounded-xl border uppercase tracking-tighter flex items-center gap-2 ${evento.estado === 'Suspendido' ? 'text-zinc-500 bg-zinc-800/50 border-zinc-700' : 'text-emerald-500 bg-emerald-500/10 border-emerald-500/20'}`}>
+                    <span className="text-emerald-500 font-black text-[10px] md:text-xs bg-emerald-500/10 px-3 md:px-4 py-1.5 rounded-xl border border-emerald-500/20 uppercase tracking-tighter flex items-center gap-2">
                       <span>{formatearFecha(evento.fecha)}</span>
                       {evento.hora_inicio && (
-                        <span className={`border-l pl-2 opacity-80 ${evento.estado === 'Suspendido' ? 'border-zinc-700' : 'border-emerald-500/30'}`}>
+                        <span className="border-l border-emerald-500/30 pl-2 opacity-80">
                           {formatearHora(evento.hora_inicio)} hs
                         </span>
                       )}
                     </span>
-                    <span className={`text-[10px] font-black tracking-[0.2em] uppercase transition-all flex items-center gap-2 ${evento.estado === 'Suspendido' ? 'text-zinc-600' : 'text-zinc-600 group-hover:text-emerald-500'}`}>
+                    <span className="text-zinc-600 text-[10px] font-black tracking-[0.2em] uppercase group-hover:text-emerald-500 transition-all flex items-center gap-2">
                       Entrar <span className="text-lg">→</span>
                     </span>
                   </div>
@@ -477,15 +468,18 @@ function Eventos() {
                   <p className="text-zinc-600 text-xs mb-4 line-clamp-2 italic">
                     {evento.descripcion}
                   </p>
-                  <div className="mt-auto">
-                    <span className="text-zinc-500 font-black text-[10px] bg-zinc-800/50 px-3 py-1 rounded-lg uppercase tracking-tighter flex items-center gap-1.5 w-fit">
+                  
+                  {/* ✨ ETIQUETA DE ESTADO Y FECHA EN EL HISTORIAL */}
+                  <div className="mt-auto flex justify-between items-end">
+                    <span className="text-zinc-500 font-black text-[10px] bg-zinc-800/50 px-3 py-1.5 rounded-lg uppercase tracking-tighter flex items-center gap-1.5 w-fit">
                       {formatearFecha(evento.fecha)}
-                      {evento.hora_inicio && (
-                        <span className="border-l border-zinc-600 pl-1.5">
-                          {formatearHora(evento.hora_inicio)}
-                        </span>
-                      )}
                     </span>
+                    
+                    {evento.estado === 'Suspendido' && (
+                      <span className="text-red-500 font-black text-[9px] bg-red-500/10 border border-red-500/20 px-2 py-1 rounded uppercase tracking-widest">
+                        Suspendido
+                      </span>
+                    )}
                   </div>
                 </div>
                 
