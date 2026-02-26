@@ -121,14 +121,14 @@ function CrearMesa({ idEvento, alCrearMesa }) {
           />
         </div>
 
-        {/* ✨ SECCIÓN NUEVA: ETIQUETAS Y NOVATOS */}
+        {/* ✨ SECCIÓN CORREGIDA: ETIQUETAS Y NOVATOS */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           
           <div className="flex flex-col gap-1 justify-center">
             <label className="text-[10px] font-bold text-zinc-500 uppercase ml-2 tracking-widest">Género Principal</label>
             <select 
-              value={formulario.etiqueta} 
-              onChange={manejarCambio} 
+              value={etiqueta} 
+              onChange={e => setEtiqueta(e.target.value)} 
               name="etiqueta" 
               className="w-full bg-zinc-950 border border-zinc-800 rounded-xl py-3.5 px-4 text-white focus:border-amber-500 outline-none font-bold"
             >
