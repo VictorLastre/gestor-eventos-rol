@@ -69,23 +69,45 @@ router.post('/:id/inscripciones', verificarToken, (req, res) => {
   });
 });
 
-router.delete('/:id/inscripciones', verificarToken, (req, res) => {
-  const idPartida = req.params.id;
-  const idUsuario = req.usuario.id;
+// ✨ RUTA PROTEGIDA: Solo el DM dueño o un Admin pueden disolver la mesa y NOTIFICAR
+router.delete('/:id', verificarToken, (req, res) => {
+  const partidaId = req.params.id;
+  const usuarioId = req.usuario.id;
+  const rolUsuario = req.usuario.rol;
 
-  const sqlDelete = 'DELETE FROM inscripciones WHERE partida_id = ? AND usuario_id = ?';
-  
-  db.query(sqlDelete, [idPartida, idUsuario], (err, resultado) => {
-    if (err) {
-      console.error(err);
-      return res.status(500).send('Error mágico al intentar abandonar la mesa.');
-    }
-    
-    if (resultado.affectedRows === 0) {
-      return res.status(400).send('No figurabas en los registros de esta mesa.');
+  // 1. Verificamos quién es el DM de esta partida y obtenemos el título
+  db.query("SELECT dungeon_master_id, titulo FROM partidas WHERE id = ?", [partidaId], (err, resultados) => {
+    if (err) return res.status(500).send('Error al buscar la mesa en los registros.');
+    if (resultados.length === 0) return res.status(404).send('La mesa no existe.');
+
+    const dmId = resultados[0].dungeon_master_id;
+    const tituloPartida = resultados[0].titulo;
+
+    // 2. Candado de seguridad
+    if (dmId !== usuarioId && rolUsuario !== 'admin') {
+      return res.status(403).send('No tienes autoridad para disolver esta mesa.');
     }
 
-    res.status(200).send('Has abandonado la mesa exitosamente.');
+    // 3. Buscamos a los jugadores inscritos ANTES de borrar la mesa
+    db.query("SELECT usuario_id FROM inscripciones WHERE partida_id = ?", [partidaId], (err, inscritos) => {
+      if (err) console.error("Error buscando inscritos para notificar:", err);
+
+      // 4. Si hay inscritos, preparamos y enviamos las notificaciones
+      if (inscritos && inscritos.length > 0) {
+        const mensaje = `El Director de Juego ha disuelto la mesa de "${tituloPartida}". Tu inscripción ha sido cancelada.`;
+        const values = inscritos.map(jugador => [jugador.usuario_id, mensaje]);
+        
+        db.query("INSERT INTO notificaciones (usuario_id, mensaje) VALUES ?", [values], (err) => {
+          if (err) console.error("Error al enviar cuervos mensajeros:", err);
+        });
+      }
+
+      // 5. Finalmente, disolvemos la mesa
+      db.query("DELETE FROM partidas WHERE id = ?", [partidaId], (err) => {
+        if (err) return res.status(500).send('Error al disolver la mesa.');
+        res.send('Mesa disuelta correctamente y aventureros notificados.');
+      });
+    });
   });
 });
 
