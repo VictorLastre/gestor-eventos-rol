@@ -12,11 +12,12 @@ function CrearMesa({ idEvento, alCrearMesa }) {
   
   const [etiqueta, setEtiqueta] = useState('Fantasía Medieval');
   const [aptaNovatos, setAptaNovatos] = useState(false);
+  
+  // ✨ NUEVO ESTADO: Pedido de materiales para logística
+  const [materialesPedidos, setMaterialesPedidos] = useState('');
 
   const manejarCreacion = async (e) => {
     e.preventDefault();
-    
-    // ✨ ELIMINAMOS LA LLAMADA AL LOCALSTORAGE
     
     const nuevaMesa = { 
       titulo, 
@@ -26,11 +27,11 @@ function CrearMesa({ idEvento, alCrearMesa }) {
       cupo, 
       turno, 
       etiqueta, 
-      apta_novatos: aptaNovatos 
+      apta_novatos: aptaNovatos,
+      materiales_pedidos: materialesPedidos // ✨ LO ENVIAMOS AL SERVIDOR
     };
 
     try {
-      // ✨ USAMOS FETCH PROTEGIDO Y SIMPLIFICAMOS LOS HEADERS
       const respuesta = await fetchProtegido(`https://gestor-eventos-rol.onrender.com/api/eventos/${idEvento}/partidas`, {
         method: 'POST',
         body: JSON.stringify(nuevaMesa)
@@ -49,9 +50,10 @@ function CrearMesa({ idEvento, alCrearMesa }) {
           confirmButtonText: '¡A preparar los dados!'
         });
 
-        // Limpiamos los campos
+        // Limpiamos los campos incluyendo el nuevo
         setTitulo(''); setDescripcion(''); setRequisitos(''); 
-        setSistema(''); setCupo(4); setEtiqueta('Fantasía Medieval'); setAptaNovatos(false);
+        setSistema(''); setCupo(4); setEtiqueta('Fantasía Medieval'); 
+        setAptaNovatos(false); setMaterialesPedidos('');
         
         alCrearMesa(); 
 
@@ -66,7 +68,6 @@ function CrearMesa({ idEvento, alCrearMesa }) {
         });
       }
     } catch (error) {
-      // ✨ IGNORAMOS EL ERROR SI ES POR SESIÓN CADUCADA (el guardián ya avisó)
       if (error === 'Sesión expirada') return;
 
       console.error("Error:", error);
@@ -227,6 +228,21 @@ function CrearMesa({ idEvento, alCrearMesa }) {
               <option value="Madrugada" className="bg-zinc-900 text-white">Madrugada</option>
             </select>
           </div>
+        </div>
+
+        {/* ✨ NUEVA SECCIÓN: PEDIDO DE MATERIALES (Solo para Admins) */}
+        <div className="space-y-1 mt-2">
+          <label className="text-[10px] font-black text-amber-500 uppercase ml-2 tracking-[0.2em] flex items-center gap-2">
+            <span className="w-1.5 h-1.5 bg-amber-500 rounded-full animate-pulse"></span> 
+            Pedido al Gremio (Solo Admins lo verán)
+          </label>
+          <input 
+            type="text" 
+            placeholder="¿Necesitas dados, mapas, hojas de personaje...?" 
+            value={materialesPedidos} 
+            onChange={e => setMaterialesPedidos(e.target.value)} 
+            className="w-full bg-amber-500/5 border border-amber-500/20 rounded-xl py-3 px-4 text-amber-200 focus:border-amber-500 outline-none transition-all placeholder:text-amber-900/50 text-sm italic"
+          />
         </div>
 
         <button 
