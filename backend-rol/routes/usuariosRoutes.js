@@ -212,13 +212,43 @@ router.post('/votaciones/:id/votar', verificarToken, (req, res) => {
 });
 
 router.get('/', verificarToken, (req, res) => {
-  if (req.usuario.rol !== 'admin') return res.status(403).json({ error: 'Acceso denegado a los archivos secretos.' });
+  if (req.usuario.rol !== 'admin') {
+    return res.status(403).json({ error: 'Acceso denegado a los archivos secretos.' });
+  }
   
-  const sql = "SELECT id, nombre, email, rol, avatar, solicita_dm FROM usuarios ORDER BY nombre ASC";
+  // 1. Recibimos la página solicitada (por defecto la 1) y el límite (por defecto 10)
+  const page = parseInt(req.query.page) || 1;
+  const limit = parseInt(req.query.limit) || 10;
   
-  db.query(sql, (err, resultados) => {
-    if (err) return res.status(500).json({ error: 'Error al consultar el censo del gremio.' });
-    res.json(resultados);
+  // 2. Calculamos el salto (offset)
+  const offset = (page - 1) * limit;
+
+  // 3. Primero contamos el total de aventureros en la base de datos
+  const countSql = "SELECT COUNT(*) AS total FROM usuarios";
+  
+  db.query(countSql, (err, countResult) => {
+    if (err) return res.status(500).json({ error: 'Error al contar el censo del gremio.' });
+    
+    const totalUsuarios = countResult[0].total;
+    const totalPaginas = Math.ceil(totalUsuarios / limit);
+
+    // 4. Ahora buscamos solo los usuarios de esa página usando LIMIT y OFFSET
+    const sql = "SELECT id, nombre, email, rol, avatar, solicita_dm FROM usuarios ORDER BY nombre ASC LIMIT ? OFFSET ?";
+    
+    db.query(sql, [limit, offset], (err, resultados) => {
+      if (err) return res.status(500).json({ error: 'Error al consultar el censo del gremio.' });
+      
+      // 5. Enviamos la respuesta estructurada con los datos y la metadata
+      res.json({
+        datos: resultados,
+        paginacion: {
+          paginaActual: page,
+          totalPaginas: totalPaginas,
+          totalUsuarios: totalUsuarios,
+          limite: limit
+        }
+      });
+    });
   });
 });
 

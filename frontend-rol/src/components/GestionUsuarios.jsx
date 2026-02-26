@@ -1,29 +1,25 @@
 import { useState, useEffect } from 'react';
 import Swal from 'sweetalert2'; 
-import { fetchProtegido } from '../utils/api'; // ✨ IMPORTAMOS AL GUARDIÁN
+import { fetchProtegido } from '../utils/api'; 
 
 function GestionUsuarios() {
   const [solicitudes, setSolicitudes] = useState([]);
-  const [todosLosUsuarios, setTodosLosUsuarios] = useState([]);
   const [votaciones, setVotaciones] = useState([]); 
   
   const [pestanaActiva, setPestanaActiva] = useState('peticiones');
   const [filtroRol, setFiltroRol] = useState('todos'); 
   const [busqueda, setBusqueda] = useState('');
 
-  const cargarDatos = () => {
-    // ✨ ADIÓS LECTURA MANUAL DE TOKEN Y HEADERS
-    
+  // ✨ NUEVOS ESTADOS PARA LA PAGINACIÓN
+  const [todosLosUsuarios, setTodosLosUsuarios] = useState([]);
+  const [paginaCenso, setPaginaCenso] = useState(1);
+  const [infoPaginacion, setInfoPaginacion] = useState({ totalPaginas: 1, totalUsuarios: 0 });
+
+  const cargarDatosPrincipales = () => {
     // Cargar Peticiones de DM
     fetchProtegido('https://gestor-eventos-rol.onrender.com/api/usuarios/solicitudes-dm')
       .then(res => res.json())
       .then(datos => setSolicitudes(datos))
-      .catch(err => { if (err !== 'Sesión expirada') console.error(err); });
-
-    // Cargar Censo Total
-    fetchProtegido('https://gestor-eventos-rol.onrender.com/api/usuarios')
-      .then(res => res.json())
-      .then(datos => setTodosLosUsuarios(datos))
       .catch(err => { if (err !== 'Sesión expirada') console.error(err); });
 
     // Cargar Votaciones del Senado
@@ -33,9 +29,31 @@ function GestionUsuarios() {
       .catch(err => { if (err !== 'Sesión expirada') console.error(err); });
   };
 
+  // ✨ FUNCIÓN INDEPENDIENTE PARA CARGAR EL CENSO PAGINADO
+  const cargarCenso = (pagina) => {
+    fetchProtegido(`https://gestor-eventos-rol.onrender.com/api/usuarios?page=${pagina}&limit=10`)
+      .then(res => res.json())
+      .then(data => {
+        // Adaptamos para leer la nueva estructura del backend
+        if (data.datos && data.paginacion) {
+          setTodosLosUsuarios(data.datos);
+          setInfoPaginacion(data.paginacion);
+        } else {
+          // Fallback por si la API antigua aún responde
+          setTodosLosUsuarios(data);
+        }
+      })
+      .catch(err => { if (err !== 'Sesión expirada') console.error(err); });
+  };
+
   useEffect(() => {
-    cargarDatos();
+    cargarDatosPrincipales();
   }, []);
+
+  // ✨ EL CENSO SE RECARGA CADA VEZ QUE CAMBIAMOS DE PÁGINA
+  useEffect(() => {
+    cargarCenso(paginaCenso);
+  }, [paginaCenso]);
 
   const promoverUsuario = async (id, nombre) => {
     const result = await Swal.fire({
@@ -53,15 +71,12 @@ function GestionUsuarios() {
 
     if (result.isConfirmed) {
       try {
-        const res = await fetchProtegido(`https://gestor-eventos-rol.onrender.com/api/usuarios/${id}/promover`, {
-          method: 'PUT'
-        });
-        
+        const res = await fetchProtegido(`https://gestor-eventos-rol.onrender.com/api/usuarios/${id}/promover`, { method: 'PUT' });
         const texto = await res.text();
-        
         if (res.ok) {
           Swal.fire({ title: '¡Ascenso Concedido!', text: `✨ ${nombre} ahora posee el rango de Dungeon Master.`, icon: 'success', background: '#18181b', color: '#fff', confirmButtonColor: '#10b981' });
-          cargarDatos(); 
+          cargarDatosPrincipales(); 
+          cargarCenso(paginaCenso); // Actualizamos la página actual
         } else {
           Swal.fire({ title: 'Interferencia Mágica', text: `❌ ${texto}`, icon: 'error', background: '#18181b', color: '#fff' });
         }
@@ -84,12 +99,11 @@ function GestionUsuarios() {
 
     if (result.isConfirmed) {
       try {
-        const res = await fetchProtegido(`https://gestor-eventos-rol.onrender.com/api/usuarios/${id}/rechazar-dm`, {
-          method: 'PUT'
-        });
+        const res = await fetchProtegido(`https://gestor-eventos-rol.onrender.com/api/usuarios/${id}/rechazar-dm`, { method: 'PUT' });
         if (res.ok) {
           Swal.fire({ title: 'Petición Rechazada', text: `La solicitud de ${nombre} ha sido borrada.`, icon: 'success', background: '#18181b', color: '#fff' });
-          cargarDatos(); 
+          cargarDatosPrincipales(); 
+          cargarCenso(paginaCenso);
         }
       } catch (e) { 
         if (e === 'Sesión expirada') return;
@@ -120,7 +134,7 @@ function GestionUsuarios() {
         
         if (res.ok) {
           Swal.fire({ title: '¡Rango Alterado!', text: `${nombre} ahora es ${rolVisual}.`, icon: 'success', background: '#18181b', color: '#fff', confirmButtonColor: '#10b981' });
-          cargarDatos(); 
+          cargarCenso(paginaCenso); 
         } else {
           const errorData = await res.json();
           Swal.fire({ title: 'Error Mágico', text: errorData.error, icon: 'error', background: '#18181b', color: '#fff' });
@@ -144,14 +158,12 @@ function GestionUsuarios() {
 
     if (result.isConfirmed) {
       try {
-        const res = await fetchProtegido(`https://gestor-eventos-rol.onrender.com/api/usuarios/${id}/proponer-admin`, {
-          method: 'POST'
-        });
+        const res = await fetchProtegido(`https://gestor-eventos-rol.onrender.com/api/usuarios/${id}/proponer-admin`, { method: 'POST' });
         const data = await res.json();
         if (res.ok) {
           Swal.fire({ title: 'Senado Convocado', text: data.mensaje, icon: 'success', background: '#18181b', color: '#fff', confirmButtonColor: '#10b981' });
           setPestanaActiva('senado'); 
-          cargarDatos();
+          cargarDatosPrincipales();
         } else {
           Swal.fire({ title: 'Aviso del Consejo', text: data.error, icon: 'warning', background: '#18181b', color: '#fff' });
         }
@@ -190,7 +202,8 @@ function GestionUsuarios() {
             icon: data.ascendido ? 'success' : data.rechazado ? 'error' : 'info', 
             background: '#18181b', color: '#fff' 
           });
-          cargarDatos();
+          cargarDatosPrincipales();
+          cargarCenso(paginaCenso);
         } else {
           Swal.fire({ title: 'Error en los Archivos', text: data.error, icon: 'warning', background: '#18181b', color: '#fff' });
         }
@@ -226,9 +239,8 @@ function GestionUsuarios() {
             pestanaActiva === 'censo' ? 'bg-emerald-600 text-white shadow-lg shadow-emerald-900/20' : 'text-zinc-500 hover:bg-zinc-800 hover:text-zinc-300'
           }`}
         >
-          Registro Gremial ({todosLosUsuarios.length})
+          Registro Gremial ({infoPaginacion.totalUsuarios})
         </button>
-        {/* PESTAÑA SENADO */}
         <button 
           onClick={() => setPestanaActiva('senado')}
           className={`px-4 py-2 font-black text-xs uppercase tracking-widest transition-all rounded-lg ${
@@ -274,7 +286,7 @@ function GestionUsuarios() {
         </div>
       )}
 
-      {/* VISTA 2: LISTADO DE TODOS LOS USUARIOS */}
+      {/* VISTA 2: LISTADO DE TODOS LOS USUARIOS (PAGINADO) */}
       {pestanaActiva === 'censo' && (
         <div className="animate-in fade-in duration-300">
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
@@ -285,7 +297,7 @@ function GestionUsuarios() {
             <div className="flex flex-col sm:flex-row gap-3">
               <div className="relative">
                 <span className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-500 text-sm">🔍</span>
-                <input type="text" placeholder="Buscar aventurero..." value={busqueda} onChange={(e) => setBusqueda(e.target.value)} className="bg-zinc-950 border border-zinc-800 text-white text-xs font-bold rounded-xl py-2 pl-9 pr-4 w-full sm:w-48 focus:border-emerald-500 outline-none transition-colors" />
+                <input type="text" placeholder="Buscar en esta página..." value={busqueda} onChange={(e) => setBusqueda(e.target.value)} className="bg-zinc-950 border border-zinc-800 text-white text-xs font-bold rounded-xl py-2 pl-9 pr-4 w-full sm:w-48 focus:border-emerald-500 outline-none transition-colors" />
               </div>
               <div className="flex gap-1 bg-zinc-900 p-1 rounded-xl border border-zinc-800 overflow-x-auto scrollbar-hide">
                 <button onClick={() => setFiltroRol('todos')} className={`px-3 py-1.5 text-[10px] font-black uppercase tracking-widest rounded-lg transition-all whitespace-nowrap ${filtroRol === 'todos' ? 'bg-zinc-700 text-white' : 'text-zinc-500 hover:text-zinc-300'}`}>Todos</button>
@@ -295,7 +307,7 @@ function GestionUsuarios() {
               </div>
             </div>
           </div>
-          <div className="bg-zinc-900 rounded-2xl border border-zinc-800 overflow-hidden">
+          <div className="bg-zinc-900 rounded-2xl border border-zinc-800 overflow-hidden flex flex-col">
             <table className="w-full text-left">
               <thead className="bg-zinc-950/50 text-[10px] uppercase tracking-widest text-zinc-500 font-black">
                 <tr>
@@ -307,7 +319,7 @@ function GestionUsuarios() {
               </thead>
               <tbody className="divide-y divide-zinc-800/50">
                 {usuariosFiltrados.length === 0 ? (
-                  <tr><td colSpan="4" className="p-8 text-center text-zinc-500 italic font-bold">{busqueda ? 'Ningún aventurero coincide con esa búsqueda.' : 'No hay registros para este filtro.'}</td></tr>
+                  <tr><td colSpan="4" className="p-8 text-center text-zinc-500 italic font-bold">{busqueda ? 'Ningún aventurero coincide con esa búsqueda.' : 'No hay registros para este filtro en esta página.'}</td></tr>
                 ) : (
                   usuariosFiltrados.map(user => (
                     <tr key={user.id} className="hover:bg-zinc-800/30 transition-colors group">
@@ -345,6 +357,27 @@ function GestionUsuarios() {
                 )}
               </tbody>
             </table>
+            
+            {/* ✨ CONTROLES DE PAGINACIÓN */}
+            <div className="flex justify-between items-center p-4 bg-zinc-950/50 border-t border-zinc-800 mt-auto">
+              <button 
+                onClick={() => setPaginaCenso(p => Math.max(1, p - 1))}
+                disabled={paginaCenso === 1}
+                className="px-4 py-2 bg-zinc-900 border border-zinc-800 text-zinc-400 text-xs font-black uppercase tracking-widest rounded-xl hover:bg-zinc-800 hover:text-white transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+              >
+                ← Anterior
+              </button>
+              <span className="text-zinc-500 text-[10px] font-black uppercase tracking-widest">
+                Página <span className="text-white">{paginaCenso}</span> de {infoPaginacion.totalPaginas}
+              </span>
+              <button 
+                onClick={() => setPaginaCenso(p => Math.min(infoPaginacion.totalPaginas, p + 1))}
+                disabled={paginaCenso === infoPaginacion.totalPaginas || infoPaginacion.totalPaginas === 0}
+                className="px-4 py-2 bg-zinc-900 border border-zinc-800 text-zinc-400 text-xs font-black uppercase tracking-widest rounded-xl hover:bg-zinc-800 hover:text-white transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+              >
+                Siguiente →
+              </button>
+            </div>
           </div>
         </div>
       )}
