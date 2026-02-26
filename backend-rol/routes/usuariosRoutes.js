@@ -26,6 +26,40 @@ router.get('/solicitudes-dm', verificarToken, (req, res) => {
   });
 });
 
+// ✨ SENADO 1: OBTENER VOTACIONES ACTIVAS
+router.get('/votaciones/activas', verificarToken, (req, res) => {
+  if (req.usuario.rol !== 'admin') return res.status(403).json({ error: 'Acceso denegado.' });
+
+  const sql = `
+    SELECT v.id, v.candidato_id, v.estado, c.nombre as candidato_nombre, p.nombre as proponente_nombre,
+    (SELECT COUNT(*) FROM votos_admin WHERE votacion_id = v.id AND voto = 'a favor') as votos_favor,
+    (SELECT COUNT(*) FROM votos_admin WHERE votacion_id = v.id AND voto = 'en contra') as votos_contra,
+    (SELECT COUNT(*) FROM usuarios WHERE rol = 'admin') as total_admins,
+    (SELECT COUNT(*) FROM votos_admin WHERE votacion_id = v.id AND admin_id = ?) as ya_vote
+    FROM votaciones_admin v
+    JOIN usuarios c ON v.candidato_id = c.id
+    JOIN usuarios p ON v.proponente_id = p.id
+    WHERE v.estado = 'pendiente'
+  `;
+
+  db.query(sql, [req.usuario.id], (err, resultados) => {
+    if (err) return res.status(500).json({ error: 'Error al consultar el Senado.' });
+    res.json(resultados);
+  });
+});
+
+router.get('/estadisticas', verificarToken, (req, res) => {
+  if (req.usuario.rol !== 'admin') return res.status(403).json({ error: 'Acceso denegado.' });
+  const sql = `
+    SELECT e.nombre, COUNT(DISTINCT p.id) AS total_mesas, COUNT(i.id) AS total_jugadores
+    FROM eventos e LEFT JOIN partidas p ON e.id = p.evento_id LEFT JOIN inscripciones i ON p.id = i.partida_id
+    GROUP BY e.id ORDER BY e.fecha DESC`;
+  db.query(sql, (err, resultados) => {
+    if (err) return res.status(500).json({ error: 'Error.' });
+    res.json(resultados);
+  });
+});
+
 router.put('/perfil', verificarToken, async (req, res) => {
   const { nombre, email, password, avatar } = req.body;
   const idUsuario = req.usuario.id;
@@ -56,6 +90,19 @@ router.put('/perfil', verificarToken, async (req, res) => {
   }
 });
 
+router.post('/solicitar-dm', verificarToken, (req, res) => {
+  if (req.usuario.rol !== 'jugador') {
+    return res.status(400).json({ error: 'Ya tienes rango o no puedes solicitarlo.' });
+  }
+
+  const sql = "UPDATE usuarios SET solicita_dm = 1 WHERE id = ?";
+  
+  db.query(sql, [req.usuario.id], (err) => {
+    if (err) return res.status(500).json({ error: 'Error al enviar la petición.' });
+    res.status(200).send('¡Tu solicitud ha sido enviada al gremio!');
+  });
+});
+
 router.put('/:id/promover', verificarToken, (req, res) => {
   if (req.usuario.rol !== 'admin') return res.status(403).json({ error: 'Denegado.' });
   db.query("UPDATE usuarios SET rol = 'dm', solicita_dm = 0 WHERE id = ?", [req.params.id], (err) => {
@@ -64,18 +111,16 @@ router.put('/:id/promover', verificarToken, (req, res) => {
   });
 });
 
-// ✨ RUTA PARA RECHAZAR LA PETICIÓN
 router.put('/:id/rechazar-dm', verificarToken, (req, res) => {
   if (req.usuario.rol !== 'admin') return res.status(403).json({ error: 'Denegado.' });
   
-  // Limpiamos el flag de solicita_dm poniéndolo en 0
   db.query("UPDATE usuarios SET solicita_dm = 0 WHERE id = ?", [req.params.id], (err) => {
     if (err) return res.status(500).send('Error al rechazar la petición.');
     res.status(200).send('La petición ha sido denegada correctamente.');
   });
 });
 
-// ✨ NUEVA RUTA: CAMBIAR ROL LIBREMENTE (Solo Admins)
+// RUTA PARA ASIGNAR ROL LIBREMENTE (DM O JUGADOR)
 router.put('/:id/rol', verificarToken, (req, res) => {
   if (req.usuario.rol !== 'admin') {
     return res.status(403).json({ error: 'No tienes autoridad para otorgar títulos.' });
@@ -88,7 +133,6 @@ router.put('/:id/rol', verificarToken, (req, res) => {
     return res.status(400).json({ error: 'Rango desconocido en el reino.' });
   }
 
-  // Actualizamos el rol y limpiamos cualquier solicitud de DM pendiente por las dudas
   const sqlUpdate = 'UPDATE usuarios SET rol = ?, solicita_dm = 0 WHERE id = ?';
   db.query(sqlUpdate, [rol, usuarioId], (err) => {
     if (err) {
@@ -99,28 +143,71 @@ router.put('/:id/rol', verificarToken, (req, res) => {
   });
 });
 
-router.get('/estadisticas', verificarToken, (req, res) => {
-  if (req.usuario.rol !== 'admin') return res.status(403).json({ error: 'Acceso denegado.' });
-  const sql = `
-    SELECT e.nombre, COUNT(DISTINCT p.id) AS total_mesas, COUNT(i.id) AS total_jugadores
-    FROM eventos e LEFT JOIN partidas p ON e.id = p.evento_id LEFT JOIN inscripciones i ON p.id = i.partida_id
-    GROUP BY e.id ORDER BY e.fecha DESC`;
-  db.query(sql, (err, resultados) => {
-    if (err) return res.status(500).json({ error: 'Error.' });
-    res.json(resultados);
+// ✨ SENADO 2: PROPONER A UN USUARIO PARA ADMIN
+router.post('/:id/proponer-admin', verificarToken, (req, res) => {
+  if (req.usuario.rol !== 'admin') return res.status(403).json({ error: 'Solo los administradores pueden convocar al Senado.' });
+  
+  const candidatoId = req.params.id;
+  const proponenteId = req.usuario.id;
+
+  db.query("SELECT id FROM votaciones_admin WHERE candidato_id = ? AND estado = 'pendiente'", [candidatoId], (err, results) => {
+    if (err) return res.status(500).json({ error: 'Error al consultar el oráculo.' });
+    if (results.length > 0) return res.status(400).json({ error: 'Ya hay una votación en curso para este aventurero.' });
+
+    db.query("INSERT INTO votaciones_admin (candidato_id, proponente_id) VALUES (?, ?)", [candidatoId, proponenteId], (err, result) => {
+      if (err) return res.status(500).json({ error: 'Error al abrir la sesión en el Senado.' });
+      
+      const votacionId = result.insertId;
+      db.query("INSERT INTO votos_admin (votacion_id, admin_id, voto) VALUES (?, ?, 'a favor')", [votacionId, proponenteId], (err) => {
+        if (err) return res.status(500).json({ error: 'Votación creada, pero falló el registro de tu voto.' });
+        res.json({ mensaje: '¡El Senado ha sido convocado! La votación está abierta.' });
+      });
+    });
   });
 });
 
-router.post('/solicitar-dm', verificarToken, (req, res) => {
-  if (req.usuario.rol !== 'jugador') {
-    return res.status(400).json({ error: 'Ya tienes rango o no puedes solicitarlo.' });
-  }
+// ✨ SENADO 3: EMITIR UN VOTO EN UNA PROPUESTA
+router.post('/votaciones/:id/votar', verificarToken, (req, res) => {
+  if (req.usuario.rol !== 'admin') return res.status(403).json({ error: 'Solo los administradores pueden votar.' });
 
-  const sql = "UPDATE usuarios SET solicita_dm = 1 WHERE id = ?";
-  
-  db.query(sql, [req.usuario.id], (err) => {
-    if (err) return res.status(500).json({ error: 'Error al enviar la petición.' });
-    res.status(200).send('¡Tu solicitud ha sido enviada al gremio!');
+  const votacionId = req.params.id;
+  const adminId = req.usuario.id;
+  const { voto } = req.body; 
+
+  if (!['a favor', 'en contra'].includes(voto)) return res.status(400).json({ error: 'Voto inválido.' });
+
+  db.query("INSERT INTO votos_admin (votacion_id, admin_id, voto) VALUES (?, ?, ?)", [votacionId, adminId, voto], (err) => {
+    if (err) {
+        if (err.code === 'ER_DUP_ENTRY') return res.status(400).json({ error: 'Ya has emitido tu voto en esta moción.' });
+        return res.status(500).json({ error: 'Error al registrar tu voto en los pergaminos.' });
+    }
+
+    const sqlCheck = `
+      SELECT 
+        v.candidato_id,
+        (SELECT COUNT(*) FROM votos_admin WHERE votacion_id = ? AND voto = 'a favor') as votos_favor,
+        (SELECT COUNT(*) FROM votos_admin WHERE votacion_id = ? AND voto = 'en contra') as votos_contra,
+        (SELECT COUNT(*) FROM usuarios WHERE rol = 'admin') as total_admins
+      FROM votaciones_admin v WHERE v.id = ?
+    `;
+
+    db.query(sqlCheck, [votacionId, votacionId, votacionId], (err, results) => {
+      if (err || results.length === 0) return res.json({ mensaje: 'Voto registrado con éxito.' });
+
+      const { candidato_id, votos_favor, votos_contra, total_admins } = results[0];
+      const mayoria = Math.floor(total_admins / 2) + 1;
+
+      if (votos_favor >= mayoria) {
+        db.query("UPDATE usuarios SET rol = 'admin', solicita_dm = 0 WHERE id = ?", [candidato_id]);
+        db.query("UPDATE votaciones_admin SET estado = 'aprobada' WHERE id = ?", [votacionId]);
+        return res.json({ mensaje: '¡La mayoría ha hablado! El aventurero ha sido ascendido a Administrador.', ascendido: true });
+      } else if (votos_contra >= mayoria) {
+        db.query("UPDATE votaciones_admin SET estado = 'rechazada' WHERE id = ?", [votacionId]);
+        return res.json({ mensaje: 'La moción ha sido rechazada por mayoría del consejo.', rechazado: true });
+      }
+
+      res.json({ mensaje: 'Voto registrado con éxito en los archivos del Senado.' });
+    });
   });
 });
 
