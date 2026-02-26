@@ -5,14 +5,9 @@ const verificarToken = require('../middlewares/auth');
 
 // 1. Obtener todos los eventos (Con actualización automática inteligente de estados)
 router.get('/', (req, res) => {
-  // ✨ CORRECCIÓN 1: Calculamos la hora exacta de Argentina (UTC-3)
-  // Esto evita problemas sin importar en qué país esté alojado tu servidor (ej. Render)
   const tzOffset = -3 * 60 * 60 * 1000; 
   const ahoraArg = new Date(Date.now() + tzOffset).toISOString().slice(0, 19).replace('T', ' ');
 
-  // ✨ CORRECCIÓN 2: Comparamos fechas reales y respetamos la decisión del Admin.
-  // Solo se auto-actualizan los que están 'Proximo' o 'En Curso'. 
-  // Si un Admin lo pasó a 'Finalizado' o 'Suspendido', el reloj no lo toca.
   const sqlUpdate = `
     UPDATE eventos 
     SET estado = CASE 
@@ -23,11 +18,9 @@ router.get('/', (req, res) => {
     WHERE estado IN ('Proximo', 'En Curso')
   `;
 
-  // Le pasamos nuestra hora calculada a la consulta SQL
   db.query(sqlUpdate, [ahoraArg, ahoraArg], (err) => {
     if (err) console.error("Error actualizando el reloj del gremio:", err);
     
-    // Una vez sincronizados los tiempos, leemos los eventos y los enviamos
     db.query('SELECT * FROM eventos ORDER BY fecha DESC', (err, resultados) => {
       if (err) return res.status(500).json({ error: 'Error leyendo los eventos' });
       res.json(resultados);
@@ -53,7 +46,7 @@ router.post('/', verificarToken, (req, res) => {
 router.get('/:id/partidas', verificarToken, (req, res) => {
   const sql = `
     SELECT 
-      p.id, p.evento_id, p.dungeon_master_id, p.titulo, p.descripcion, p.requisitos, p.sistema, p.cupo, p.turno, p.estado, p.etiqueta, p.apta_novatos,
+      p.id, p.evento_id, p.dungeon_master_id, p.titulo, p.descripcion, p.requisitos, p.sistema, p.cupo, p.turno, p.estado, p.etiqueta, p.apta_novatos, p.materiales_pedidos,
       u.nombre AS dmNombre, 
       (SELECT COUNT(*) FROM inscripciones WHERE partida_id = p.id) AS jugadoresIniciales,
       (SELECT COUNT(*) FROM inscripciones WHERE partida_id = p.id AND usuario_id = ?) AS anotadoInicialmente
@@ -66,7 +59,7 @@ router.get('/:id/partidas', verificarToken, (req, res) => {
   });
 });
 
-// 4. Crear una mesa en un evento (Con candado de participación única)
+// 4. Crear una mesa en un evento (Con candado de participación única y MATERIALES)
 router.post('/:id/partidas', verificarToken, (req, res) => {
   if (req.usuario.rol === 'jugador') return res.status(403).json({ error: 'Solo DMs y Admins pueden crear mesas.' });
   
@@ -84,23 +77,20 @@ router.post('/:id/partidas', verificarToken, (req, res) => {
     
     const { es_dm, es_jugador } = resultados[0];
 
-    if (es_dm > 0) {
-      return res.status(400).json({ error: 'Ya estás dirigiendo una mesa en este evento.' });
-    }
+    if (es_dm > 0) return res.status(400).json({ error: 'Ya estás dirigiendo una mesa en este evento.' });
+    if (es_jugador > 0) return res.status(400).json({ error: 'No puedes crear una mesa porque ya estás anotado como jugador en este evento.' });
 
-    if (es_jugador > 0) {
-      return res.status(400).json({ error: 'No puedes crear una mesa porque ya estás anotado como jugador en este evento.' });
-    }
-
-    const { titulo, descripcion, requisitos, sistema, cupo, turno, etiqueta, apta_novatos } = req.body;
+    // ✨ EXTRAEMOS materiales_pedidos DEL BODY
+    const { titulo, descripcion, requisitos, sistema, cupo, turno, etiqueta, apta_novatos, materiales_pedidos } = req.body;
     
     const sqlInsert = `
         INSERT INTO partidas 
-        (evento_id, dungeon_master_id, titulo, descripcion, requisitos, sistema, cupo, turno, estado, etiqueta, apta_novatos) 
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'abierta', ?, ?)
+        (evento_id, dungeon_master_id, titulo, descripcion, requisitos, sistema, cupo, turno, estado, etiqueta, apta_novatos, materiales_pedidos) 
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'abierta', ?, ?, ?)
     `;
     
-    db.query(sqlInsert, [eventoId, usuarioId, titulo, descripcion, requisitos, sistema, cupo, turno, etiqueta, apta_novatos], (err) => {
+    // ✨ LO AÑADIMOS AL ARRAY DE VALORES
+    db.query(sqlInsert, [eventoId, usuarioId, titulo, descripcion, requisitos, sistema, cupo, turno, etiqueta, apta_novatos, materiales_pedidos], (err) => {
       if (err) {
         console.error(err);
         return res.status(500).json({ error: 'Error al crear la mesa.' });
