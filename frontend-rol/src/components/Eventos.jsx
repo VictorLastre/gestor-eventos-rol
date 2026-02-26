@@ -5,6 +5,7 @@ import CrearMesa from './CrearMesa';
 import CrearEvento from './CrearEvento'; 
 import GestionUsuarios from './GestionUsuarios'; 
 import Estadisticas from './Estadisticas';
+import { fetchProtegido } from '../utils/api'; // ✨ IMPORTAMOS AL GUARDIÁN
 
 function Eventos() {
   const [eventos, setEventos] = useState([]);
@@ -23,6 +24,7 @@ function Eventos() {
   const esAdmin = usuarioGuardado && usuarioGuardado.rol === 'admin';
 
   const cargarEventos = () => {
+    // ✨ Este queda como fetch normal porque es público (Cualquiera puede ver el tablón)
     fetch('https://gestor-eventos-rol.onrender.com/api/eventos')
       .then(res => res.json())
       .then(datos => setEventos(datos))
@@ -50,11 +52,10 @@ function Eventos() {
     });
 
     if (result.isConfirmed) {
-      const token = localStorage.getItem('token');
       try {
-        const res = await fetch(`https://gestor-eventos-rol.onrender.com/api/eventos/${id}`, {
-          method: 'DELETE',
-          headers: { 'authorization': token }
+        // ✨ USAMOS FETCH PROTEGIDO Y ELIMINAMOS EL TOKEN MANUAL
+        const res = await fetchProtegido(`https://gestor-eventos-rol.onrender.com/api/eventos/${id}`, {
+          method: 'DELETE'
         });
 
         if (res.ok) {
@@ -80,21 +81,20 @@ function Eventos() {
             color: '#fff'
           });
         }
-      } catch (err) { console.error(err); }
+      } catch (err) { 
+        if (err === 'Sesión expirada') return;
+        console.error(err); 
+      }
     }
   };
 
   const guardarEdicionEvento = async (e) => {
     e.preventDefault();
-    const token = localStorage.getItem('token');
 
     try {
-      const res = await fetch(`https://gestor-eventos-rol.onrender.com/api/eventos/${eventoEditando.id}`, {
+      // ✨ USAMOS FETCH PROTEGIDO
+      const res = await fetchProtegido(`https://gestor-eventos-rol.onrender.com/api/eventos/${eventoEditando.id}`, {
         method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          'authorization': token
-        },
         body: JSON.stringify(eventoEditando)
       });
 
@@ -119,6 +119,7 @@ function Eventos() {
         Swal.fire({ title: 'Error', text: errorText, icon: 'error', background: '#18181b', color: '#fff' });
       }
     } catch (err) {
+      if (err === 'Sesión expirada') return;
       console.error(err);
     }
   };
@@ -131,15 +132,17 @@ function Eventos() {
 
   const entrarAlEvento = (evento) => {
     setEventoSeleccionado(evento);
-    const token = localStorage.getItem('token'); 
-    fetch(`https://gestor-eventos-rol.onrender.com/api/eventos/${evento.id}/partidas`, {
-      headers: { 'authorization': token }
-    })
+    
+    // ✨ USAMOS FETCH PROTEGIDO PARA VER LAS MESAS PRIVADAS
+    fetchProtegido(`https://gestor-eventos-rol.onrender.com/api/eventos/${evento.id}/partidas`)
       .then(res => res.json())
-      .then(setPartidasDelEvento);
+      .then(setPartidasDelEvento)
+      .catch(err => {
+        if (err === 'Sesión expirada') return;
+        console.error(err);
+      });
   };
 
-  // ✨ FILTROS CORREGIDOS: "Proximo" y "En Curso" arriba. "Finalizado" y "Suspendido" al historial.
   const eventosProximos = eventos
     .filter(e => e.estado === 'Proximo' || e.estado === 'En Curso')
     .sort((a, b) => new Date(a.fecha) - new Date(b.fecha));
@@ -388,7 +391,6 @@ function Eventos() {
               >
                 <div className="absolute -bottom-10 -right-10 w-32 h-32 bg-emerald-500/5 group-hover:bg-emerald-500/10 blur-3xl rounded-full transition-colors"></div>
 
-                {/* ✨ ETIQUETA EN CURSO EN LA TARJETA */}
                 {evento.estado === 'En Curso' && (
                   <div className="absolute top-4 right-4 bg-blue-500/20 border border-blue-500 text-blue-400 text-[9px] font-black uppercase tracking-widest px-3 py-1 rounded-full animate-pulse shadow-[0_0_10px_rgba(59,130,246,0.5)]">
                     En Curso
@@ -469,7 +471,6 @@ function Eventos() {
                     {evento.descripcion}
                   </p>
                   
-                  {/* ✨ ETIQUETA DE ESTADO Y FECHA EN EL HISTORIAL */}
                   <div className="mt-auto flex justify-between items-end">
                     <span className="text-zinc-500 font-black text-[10px] bg-zinc-800/50 px-3 py-1.5 rounded-lg uppercase tracking-tighter flex items-center gap-1.5 w-fit">
                       {formatearFecha(evento.fecha)}

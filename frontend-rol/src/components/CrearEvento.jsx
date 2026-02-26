@@ -1,29 +1,27 @@
 import { useState } from 'react';
 import Swal from 'sweetalert2'; 
+import { fetchProtegido } from '../utils/api'; // ✨ IMPORTAMOS AL GUARDIÁN
 
 function CrearEvento({ alCrearEvento }) {
   const [nombre, setNombre] = useState('');
   const [descripcion, setDescripcion] = useState('');
   const [fecha, setFecha] = useState('');
   
-  // ✨ NUEVOS ESTADOS PARA LAS HORAS (Por defecto las clásicas del gremio)
+  // NUEVOS ESTADOS PARA LAS HORAS (Por defecto las clásicas del gremio)
   const [horaInicio, setHoraInicio] = useState('16:00');
   const [horaFin, setHoraFin] = useState('20:00');
 
   const manejarCreacion = async (e) => {
     e.preventDefault();
-    const token = localStorage.getItem('token');
+    
+    // ✨ ELIMINAMOS LA LLAMADA AL LOCALSTORAGE (El guardián se encarga)
 
-    // ✨ AGREGAMOS LAS HORAS AL OBJETO
     const nuevoEvento = { nombre, descripcion, fecha, hora_inicio: horaInicio, hora_fin: horaFin };
 
     try {
-      const respuesta = await fetch('https://gestor-eventos-rol.onrender.com/api/eventos', {
+      // ✨ USAMOS FETCH PROTEGIDO Y SIMPLIFICAMOS LOS HEADERS
+      const respuesta = await fetchProtegido('https://gestor-eventos-rol.onrender.com/api/eventos', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'authorization': token
-        },
         body: JSON.stringify(nuevoEvento)
       });
 
@@ -57,6 +55,9 @@ function CrearEvento({ alCrearEvento }) {
         });
       }
     } catch (error) {
+      // Si el error es "Sesión expirada" (lanzado por nuestro guardián), lo ignoramos aquí porque el guardián ya mostró la alerta
+      if (error === 'Sesión expirada') return;
+
       console.error("Error:", error);
       Swal.fire({
         title: 'Error Mágico',
@@ -121,7 +122,7 @@ function CrearEvento({ alCrearEvento }) {
             />
           </div>
           
-          {/* ✨ GRID PARA FECHA Y HORARIOS */}
+          {/* GRID PARA FECHA Y HORARIOS */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div className="space-y-2 md:col-span-1">
               <label className="text-[10px] font-bold text-zinc-500 uppercase ml-2 tracking-widest">

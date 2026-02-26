@@ -1,51 +1,43 @@
 import { useState, useEffect } from 'react';
 import Swal from 'sweetalert2'; 
+import { fetchProtegido } from '../utils/api'; // ✨ IMPORTAMOS AL GUARDIÁN
 
 function GestionUsuarios() {
   const [solicitudes, setSolicitudes] = useState([]);
   const [todosLosUsuarios, setTodosLosUsuarios] = useState([]);
-  const [votaciones, setVotaciones] = useState([]); // ✨ NUEVO ESTADO PARA EL SENADO
+  const [votaciones, setVotaciones] = useState([]); 
   
   const [pestanaActiva, setPestanaActiva] = useState('peticiones');
   const [filtroRol, setFiltroRol] = useState('todos'); 
   const [busqueda, setBusqueda] = useState('');
 
   const cargarDatos = () => {
-    const token = localStorage.getItem('token');
+    // ✨ ADIÓS LECTURA MANUAL DE TOKEN Y HEADERS
     
     // Cargar Peticiones de DM
-    fetch('https://gestor-eventos-rol.onrender.com/api/usuarios/solicitudes-dm', {
-      headers: { 'authorization': token }
-    })
+    fetchProtegido('https://gestor-eventos-rol.onrender.com/api/usuarios/solicitudes-dm')
       .then(res => res.json())
       .then(datos => setSolicitudes(datos))
-      .catch(err => console.error(err));
+      .catch(err => { if (err !== 'Sesión expirada') console.error(err); });
 
     // Cargar Censo Total
-    fetch('https://gestor-eventos-rol.onrender.com/api/usuarios', {
-      headers: { 'authorization': token }
-    })
+    fetchProtegido('https://gestor-eventos-rol.onrender.com/api/usuarios')
       .then(res => res.json())
       .then(datos => setTodosLosUsuarios(datos))
-      .catch(err => console.error(err));
+      .catch(err => { if (err !== 'Sesión expirada') console.error(err); });
 
-    // ✨ Cargar Votaciones del Senado
-    fetch('https://gestor-eventos-rol.onrender.com/api/usuarios/votaciones/activas', {
-      headers: { 'authorization': token }
-    })
+    // Cargar Votaciones del Senado
+    fetchProtegido('https://gestor-eventos-rol.onrender.com/api/usuarios/votaciones/activas')
       .then(res => res.json())
       .then(datos => setVotaciones(datos))
-      .catch(err => console.error(err));
+      .catch(err => { if (err !== 'Sesión expirada') console.error(err); });
   };
 
   useEffect(() => {
     cargarDatos();
   }, []);
 
-  // Función original para las peticiones pendientes (DM)
   const promoverUsuario = async (id, nombre) => {
-    const token = localStorage.getItem('token');
-    
     const result = await Swal.fire({
       title: 'Forjar un nuevo Director',
       text: `¿Estás seguro de otorgar el manto de Dungeon Master a ${nombre.toUpperCase()}?`,
@@ -61,9 +53,8 @@ function GestionUsuarios() {
 
     if (result.isConfirmed) {
       try {
-        const res = await fetch(`https://gestor-eventos-rol.onrender.com/api/usuarios/${id}/promover`, {
-          method: 'PUT',
-          headers: { 'authorization': token }
+        const res = await fetchProtegido(`https://gestor-eventos-rol.onrender.com/api/usuarios/${id}/promover`, {
+          method: 'PUT'
         });
         
         const texto = await res.text();
@@ -74,13 +65,14 @@ function GestionUsuarios() {
         } else {
           Swal.fire({ title: 'Interferencia Mágica', text: `❌ ${texto}`, icon: 'error', background: '#18181b', color: '#fff' });
         }
-      } catch (e) { console.error(e); }
+      } catch (e) { 
+        if (e === 'Sesión expirada') return;
+        console.error(e); 
+      }
     }
   };
 
   const rechazarUsuario = async (id, nombre) => {
-    const token = localStorage.getItem('token');
-    
     const result = await Swal.fire({
       title: 'Denegar Petición',
       text: `¿Estás seguro de rechazar la solicitud de ${nombre.toUpperCase()}?`,
@@ -92,20 +84,21 @@ function GestionUsuarios() {
 
     if (result.isConfirmed) {
       try {
-        const res = await fetch(`https://gestor-eventos-rol.onrender.com/api/usuarios/${id}/rechazar-dm`, {
-          method: 'PUT', headers: { 'authorization': token }
+        const res = await fetchProtegido(`https://gestor-eventos-rol.onrender.com/api/usuarios/${id}/rechazar-dm`, {
+          method: 'PUT'
         });
         if (res.ok) {
           Swal.fire({ title: 'Petición Rechazada', text: `La solicitud de ${nombre} ha sido borrada.`, icon: 'success', background: '#18181b', color: '#fff' });
           cargarDatos(); 
         }
-      } catch (e) { console.error(e); }
+      } catch (e) { 
+        if (e === 'Sesión expirada') return;
+        console.error(e); 
+      }
     }
   };
 
-  // Cambiar rol libremente (Para DM o Jugador)
   const cambiarRolDirecto = async (id, nombre, nuevoRol) => {
-    const token = localStorage.getItem('token');
     const rolVisual = nuevoRol === 'dm' ? 'Dungeon Master' : 'Jugador';
     const icono = nuevoRol === 'dm' ? '🛡️' : '⚔️';
 
@@ -120,8 +113,8 @@ function GestionUsuarios() {
 
     if (result.isConfirmed) {
       try {
-        const res = await fetch(`https://gestor-eventos-rol.onrender.com/api/usuarios/${id}/rol`, {
-          method: 'PUT', headers: { 'Content-Type': 'application/json', 'authorization': token },
+        const res = await fetchProtegido(`https://gestor-eventos-rol.onrender.com/api/usuarios/${id}/rol`, {
+          method: 'PUT',
           body: JSON.stringify({ rol: nuevoRol })
         });
         
@@ -132,13 +125,14 @@ function GestionUsuarios() {
           const errorData = await res.json();
           Swal.fire({ title: 'Error Mágico', text: errorData.error, icon: 'error', background: '#18181b', color: '#fff' });
         }
-      } catch (e) { console.error(e); }
+      } catch (e) { 
+        if (e === 'Sesión expirada') return;
+        console.error(e); 
+      }
     }
   };
 
-  // ✨ NUEVA FUNCIÓN: Proponer al Senado
   const proponerAdmin = async (id, nombre) => {
-    const token = localStorage.getItem('token');
     const result = await Swal.fire({
       title: '👑 Convocar al Senado',
       text: `¿Quieres proponer a ${nombre} para formar parte de los Administradores? El resto del consejo deberá votar.`,
@@ -150,24 +144,25 @@ function GestionUsuarios() {
 
     if (result.isConfirmed) {
       try {
-        const res = await fetch(`https://gestor-eventos-rol.onrender.com/api/usuarios/${id}/proponer-admin`, {
-          method: 'POST', headers: { 'authorization': token }
+        const res = await fetchProtegido(`https://gestor-eventos-rol.onrender.com/api/usuarios/${id}/proponer-admin`, {
+          method: 'POST'
         });
         const data = await res.json();
         if (res.ok) {
           Swal.fire({ title: 'Senado Convocado', text: data.mensaje, icon: 'success', background: '#18181b', color: '#fff', confirmButtonColor: '#10b981' });
-          setPestanaActiva('senado'); // Redirigimos al admin directo a la pestaña de votación
+          setPestanaActiva('senado'); 
           cargarDatos();
         } else {
           Swal.fire({ title: 'Aviso del Consejo', text: data.error, icon: 'warning', background: '#18181b', color: '#fff' });
         }
-      } catch (e) { console.error(e); }
+      } catch (e) { 
+        if (e === 'Sesión expirada') return;
+        console.error(e); 
+      }
     }
   };
 
-  // ✨ NUEVA FUNCIÓN: Emitir Voto
   const emitirVoto = async (votacionId, candidatoNombre, voto) => {
-    const token = localStorage.getItem('token');
     const esAFavor = voto === 'a favor';
     
     const result = await Swal.fire({
@@ -183,8 +178,8 @@ function GestionUsuarios() {
 
     if (result.isConfirmed) {
       try {
-        const res = await fetch(`https://gestor-eventos-rol.onrender.com/api/usuarios/votaciones/${votacionId}/votar`, {
-          method: 'POST', headers: { 'Content-Type': 'application/json', 'authorization': token },
+        const res = await fetchProtegido(`https://gestor-eventos-rol.onrender.com/api/usuarios/votaciones/${votacionId}/votar`, {
+          method: 'POST',
           body: JSON.stringify({ voto })
         });
         const data = await res.json();
@@ -199,7 +194,10 @@ function GestionUsuarios() {
         } else {
           Swal.fire({ title: 'Error en los Archivos', text: data.error, icon: 'warning', background: '#18181b', color: '#fff' });
         }
-      } catch (e) { console.error(e); }
+      } catch (e) { 
+        if (e === 'Sesión expirada') return;
+        console.error(e); 
+      }
     }
   };
 
@@ -230,7 +228,7 @@ function GestionUsuarios() {
         >
           Registro Gremial ({todosLosUsuarios.length})
         </button>
-        {/* ✨ NUEVA PESTAÑA: SENADO */}
+        {/* PESTAÑA SENADO */}
         <button 
           onClick={() => setPestanaActiva('senado')}
           className={`px-4 py-2 font-black text-xs uppercase tracking-widest transition-all rounded-lg ${
@@ -351,7 +349,7 @@ function GestionUsuarios() {
         </div>
       )}
 
-      {/* ✨ VISTA 3: SENADO DEL GREMIO */}
+      {/* VISTA 3: SENADO DEL GREMIO */}
       {pestanaActiva === 'senado' && (
         <div className="animate-in fade-in duration-300">
           <div className="flex items-center gap-3 mb-6">

@@ -1,21 +1,20 @@
 import { useState, useEffect } from 'react';
 import Swal from 'sweetalert2'; 
+import { fetchProtegido } from '../utils/api'; // ✨ IMPORTAMOS AL GUARDIÁN
 
 function Estadisticas() {
   const [datos, setDatos] = useState([]);
-  const [sistemasTop, setSistemasTop] = useState([]); // ✨ NUEVO ESTADO PARA LOS SISTEMAS
+  const [sistemasTop, setSistemasTop] = useState([]); 
 
   useEffect(() => {
-    const token = localStorage.getItem('token');
+    // ✨ ELIMINAMOS LA LECTURA MANUAL DEL LOCALSTORAGE
     
-    // ✨ CONSULTA MÚLTIPLE AL ORÁCULO
-    const fetchEventos = fetch('https://gestor-eventos-rol.onrender.com/api/usuarios/estadisticas', {
-      headers: { 'authorization': token }
-    }).then(res => res.json());
+    // ✨ USAMOS FETCH PROTEGIDO Y QUITAMOS LOS HEADERS MANUALES
+    const fetchEventos = fetchProtegido('https://gestor-eventos-rol.onrender.com/api/usuarios/estadisticas')
+      .then(res => res.json());
 
-    const fetchSistemas = fetch('https://gestor-eventos-rol.onrender.com/api/partidas/estadisticas/sistemas', {
-      headers: { 'authorization': token }
-    }).then(res => res.json());
+    const fetchSistemas = fetchProtegido('https://gestor-eventos-rol.onrender.com/api/partidas/estadisticas/sistemas')
+      .then(res => res.json());
 
     // Esperamos a que ambos pergaminos lleguen
     Promise.all([fetchEventos, fetchSistemas])
@@ -24,6 +23,9 @@ function Estadisticas() {
         setSistemasTop(topSistemas);
       })
       .catch(err => {
+        // ✨ IGNORAMOS EL ERROR SI FUE UNA EXPIRACIÓN DE SESIÓN
+        if (err === 'Sesión expirada') return;
+
         console.error(err);
         Swal.fire({
           title: 'El Oráculo está nublado',
@@ -78,10 +80,10 @@ function Estadisticas() {
         </div>
       </div>
 
-      {/* ✨ NUEVA SECCIÓN: GRILLA DIVIDIDA PARA SISTEMAS Y TABLA */}
+      {/* GRILLA DIVIDIDA PARA SISTEMAS Y TABLA */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 relative z-10">
         
-        {/* TABLA HISTÓRICA (Ocupa 2/3 del espacio en pantallas grandes) */}
+        {/* TABLA HISTÓRICA */}
         <div className="lg:col-span-2 overflow-hidden rounded-2xl border border-zinc-800 bg-zinc-900/50 shadow-2xl h-fit">
           <table className="w-full text-left border-collapse">
             <thead>
@@ -126,7 +128,7 @@ function Estadisticas() {
           </table>
         </div>
 
-        {/* ✨ SALÓN DE LA FAMA: SISTEMAS MÁS JUGADOS */}
+        {/* SALÓN DE LA FAMA: SISTEMAS MÁS JUGADOS */}
         <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-6 shadow-xl relative overflow-hidden h-fit">
           <div className="absolute -bottom-10 -right-10 w-32 h-32 bg-amber-500/5 blur-3xl rounded-full"></div>
           

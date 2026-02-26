@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import Swal from 'sweetalert2'; 
+import { fetchProtegido } from '../utils/api'; // ✨ IMPORTAMOS AL GUARDIÁN
 
 function CrearMesa({ idEvento, alCrearMesa }) {
   const [titulo, setTitulo] = useState('');
@@ -9,15 +10,14 @@ function CrearMesa({ idEvento, alCrearMesa }) {
   const [cupo, setCupo] = useState(4);
   const [turno, setTurno] = useState('Tarde');
   
-  // ✨ NUEVOS ESTADOS PARA LOS TAGS
   const [etiqueta, setEtiqueta] = useState('Fantasía Medieval');
   const [aptaNovatos, setAptaNovatos] = useState(false);
 
   const manejarCreacion = async (e) => {
     e.preventDefault();
-    const token = localStorage.getItem('token');
-
-    // ✨ AGREGAMOS LOS NUEVOS DATOS AL OBJETO
+    
+    // ✨ ELIMINAMOS LA LLAMADA AL LOCALSTORAGE
+    
     const nuevaMesa = { 
       titulo, 
       descripcion, 
@@ -30,12 +30,9 @@ function CrearMesa({ idEvento, alCrearMesa }) {
     };
 
     try {
-      const respuesta = await fetch(`https://gestor-eventos-rol.onrender.com/api/eventos/${idEvento}/partidas`, {
+      // ✨ USAMOS FETCH PROTEGIDO Y SIMPLIFICAMOS LOS HEADERS
+      const respuesta = await fetchProtegido(`https://gestor-eventos-rol.onrender.com/api/eventos/${idEvento}/partidas`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'authorization': token
-        },
         body: JSON.stringify(nuevaMesa)
       });
 
@@ -69,6 +66,9 @@ function CrearMesa({ idEvento, alCrearMesa }) {
         });
       }
     } catch (error) {
+      // ✨ IGNORAMOS EL ERROR SI ES POR SESIÓN CADUCADA (el guardián ya avisó)
+      if (error === 'Sesión expirada') return;
+
       console.error("Error:", error);
       Swal.fire({
         title: 'Error Mágico',
@@ -121,7 +121,6 @@ function CrearMesa({ idEvento, alCrearMesa }) {
           />
         </div>
 
-        {/* ✨ SECCIÓN CORREGIDA: ETIQUETAS Y NOVATOS */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           
           <div className="flex flex-col gap-1 justify-center">

@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import Swal from 'sweetalert2'; 
+import { fetchProtegido } from '../utils/api'; // ✨ IMPORTAMOS AL GUARDIÁN
 
 function MisCronicas({ alActualizarUsuario }) { 
   const [cronicas, setCronicas] = useState({ dirigiendo: [], jugando: [] });
@@ -8,7 +9,6 @@ function MisCronicas({ alActualizarUsuario }) {
   const usuarioGuardado = JSON.parse(localStorage.getItem('usuario'));
   const [editando, setEditando] = useState(false);
   
-  // ✨ NUEVO ESTADO: Verificamos si ya tiene una solicitud pendiente guardada
   const [peticionEnviada, setPeticionEnviada] = useState(usuarioGuardado?.solicitudDmPendiente || false);
   
   const esJugadorBase = usuarioGuardado?.rol === 'jugador';
@@ -20,16 +20,17 @@ function MisCronicas({ alActualizarUsuario }) {
   });
 
   useEffect(() => {
-    const token = localStorage.getItem('token');
-    fetch('https://gestor-eventos-rol.onrender.com/api/usuarios/mis-cronicas', {
-      headers: { 'authorization': token }
-    })
+    // ✨ USAMOS EL GUARDIÁN PARA CARGAR LAS CRÓNICAS
+    fetchProtegido('https://gestor-eventos-rol.onrender.com/api/usuarios/mis-cronicas')
       .then(res => res.json())
       .then(datos => {
         setCronicas(datos);
         setCargando(false);
       })
-      .catch(err => console.error("Error cargando crónicas:", err));
+      .catch(err => {
+        if (err === 'Sesión expirada') return;
+        console.error("Error cargando crónicas:", err);
+      });
   }, []);
 
   const manejarCambioPerfil = (e) => {
@@ -37,14 +38,10 @@ function MisCronicas({ alActualizarUsuario }) {
   };
 
   const guardarPerfil = async () => {
-    const token = localStorage.getItem('token');
     try {
-      const res = await fetch('https://gestor-eventos-rol.onrender.com/api/usuarios/perfil', {
+      // ✨ USAMOS EL GUARDIÁN PARA GUARDAR LA FICHA (Adiós headers manuales)
+      const res = await fetchProtegido('https://gestor-eventos-rol.onrender.com/api/usuarios/perfil', {
         method: 'PUT',
-        headers: { 
-          'Content-Type': 'application/json', 
-          'authorization': token 
-        },
         body: JSON.stringify(perfil)
       });
       
@@ -76,6 +73,7 @@ function MisCronicas({ alActualizarUsuario }) {
         });
       }
     } catch (error) {
+      if (error === 'Sesión expirada') return;
       console.error(error);
       Swal.fire({
         title: 'Error Mágico',
@@ -89,8 +87,6 @@ function MisCronicas({ alActualizarUsuario }) {
   };
 
   const enviarPeticionDM = async () => {
-    const token = localStorage.getItem('token');
-    
     const result = await Swal.fire({
       title: '¿Sientes el llamado?',
       text: "Convertirse en Dungeon Master requiere sabiduría y paciencia. ¿Quieres enviar tu petición a los Altos Mandos?",
@@ -107,13 +103,12 @@ function MisCronicas({ alActualizarUsuario }) {
     if (!result.isConfirmed) return;
 
     try {
-      const res = await fetch('https://gestor-eventos-rol.onrender.com/api/usuarios/solicitar-dm', {
-        method: 'POST',
-        headers: { 'authorization': token }
+      // ✨ USAMOS EL GUARDIÁN PARA PEDIR RANGO
+      const res = await fetchProtegido('https://gestor-eventos-rol.onrender.com/api/usuarios/solicitar-dm', {
+        method: 'POST'
       });
       
       if (res.ok) {
-        // ✨ ACTUALIZAMOS EL ESTADO Y EL LOCALSTORAGE AL ENVIAR LA PETICIÓN
         setPeticionEnviada(true);
         const usuarioActualizado = { ...usuarioGuardado, solicitudDmPendiente: true };
         localStorage.setItem('usuario', JSON.stringify(usuarioActualizado));
@@ -139,6 +134,7 @@ function MisCronicas({ alActualizarUsuario }) {
         });
       }
     } catch (e) { 
+      if (e === 'Sesión expirada') return;
       console.error(e); 
     }
   };
@@ -222,7 +218,6 @@ function MisCronicas({ alActualizarUsuario }) {
                 ✏️ Editar Ficha
               </button>
               
-              {/* ✨ AQUÍ ESTÁ LA MAGIA: Alternamos entre el botón o la leyenda de progreso */}
               {esJugadorBase && (
                 peticionEnviada ? (
                   <div className="bg-purple-900/20 border border-purple-500/30 text-purple-400 px-6 py-3 rounded-xl text-xs font-black uppercase text-center shadow-inner">

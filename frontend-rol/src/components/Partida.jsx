@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import Swal from 'sweetalert2'; 
+import { fetchProtegido } from '../utils/api'; // ✨ IMPORTAMOS AL GUARDIÁN
 
 function Partida(props) {
   const cantJugadores = props.jugadoresIniciales ?? props.jugadores_anotados ?? 0;
@@ -23,20 +24,19 @@ function Partida(props) {
     apta_novatos: Boolean(props.apta_novatos)
   });
 
-  // ✨ DICCIONARIO DE ICONOS AMPLIADO
   const iconoEtiqueta = {
     'Fantasía Medieval': '🏰',
     'Fantasía Oscura': '🌑',
     'Fantasía Urbana': '🏙️',
     'Terror / Horror': '🩸',
-    'Horror Cósmico': '🐙', // Cthulhu, Delta Green
-    'Terror Espacial': '🛰️', // Alien, Mothership, Cosmofobia
+    'Horror Cósmico': '🐙', 
+    'Terror Espacial': '🛰️', 
     'Ciencia Ficción': '🚀',
     'Cyberpunk': '🦾',
     'Steampunk': '⚙️',
     'Post-Apocalíptico': '☢️',
     'Misterio / Investigación': '🔎',
-    'Mundo de Tinieblas': '🦇', // Vampiro, Hombre Lobo
+    'Mundo de Tinieblas': '🦇', 
     'Superhéroes': '🦸',
     'Western / Weird West': '🤠',
     'Piratas / Naval': '🏴‍☠️',
@@ -44,7 +44,7 @@ function Partida(props) {
     'Histórico': '📜',
     'Anime / Manga': '🌸',
     'Espionaje / Acción': '🕶️',
-    'Rol Infantil / Familiar': '🧸', // Magissa, Pequeños Detectives de Monstruos
+    'Rol Infantil / Familiar': '🧸', 
     'Comedia': '🎭'
   }[props.etiqueta] || '🏷️';
 
@@ -74,17 +74,16 @@ function Partida(props) {
   }, [cantJugadores, yaEstaAnotado]);
 
   const cargarListaJugadores = () => {
-    const token = localStorage.getItem('token');
     setCargandoJugadores(true);
-    fetch(`https://gestor-eventos-rol.onrender.com/api/partidas/${props.id}/jugadores`, {
-      headers: { 'authorization': token }
-    })
+    // ✨ USAMOS EL GUARDIÁN PARA VER QUIÉN ESTÁ EN LA MESA
+    fetchProtegido(`https://gestor-eventos-rol.onrender.com/api/partidas/${props.id}/jugadores`)
       .then(res => res.json())
       .then(datos => {
         setListaJugadores(datos);
         setCargandoJugadores(false);
       })
       .catch(err => {
+        if (err === 'Sesión expirada') return;
         console.error(err);
         setCargandoJugadores(false);
       });
@@ -95,13 +94,12 @@ function Partida(props) {
 
   const alternarInscripcion = async (e) => {
     e.stopPropagation(); 
-    const token = localStorage.getItem('token');
     const metodo = anotado ? 'DELETE' : 'POST';
 
     try {
-      const res = await fetch(`https://gestor-eventos-rol.onrender.com/api/partidas/${props.id}/inscripciones`, {
-        method: metodo,
-        headers: { 'authorization': token }
+      // ✨ USAMOS EL GUARDIÁN PARA ANOTARNOS/BORRARNOS
+      const res = await fetchProtegido(`https://gestor-eventos-rol.onrender.com/api/partidas/${props.id}/inscripciones`, {
+        method: metodo
       });
 
       if (res.ok) {
@@ -126,7 +124,10 @@ function Partida(props) {
           confirmButtonText: 'Entendido'
         });
       }
-    } catch (err) { console.error(err); }
+    } catch (err) { 
+      if (err === 'Sesión expirada') return;
+      console.error(err); 
+    }
   };
 
   const borrarMesa = async (e) => {
@@ -146,11 +147,10 @@ function Partida(props) {
     });
 
     if (result.isConfirmed) {
-      const token = localStorage.getItem('token');
       try {
-        const res = await fetch(`https://gestor-eventos-rol.onrender.com/api/partidas/${props.id}`, {
-          method: 'DELETE',
-          headers: { 'authorization': token }
+        // ✨ USAMOS EL GUARDIÁN PARA DESTRUIR LA MESA
+        const res = await fetchProtegido(`https://gestor-eventos-rol.onrender.com/api/partidas/${props.id}`, {
+          method: 'DELETE'
         });
 
         if (res.ok) {
@@ -174,21 +174,20 @@ function Partida(props) {
             confirmButtonColor: '#ef4444'
           });
         }
-      } catch (err) { console.error(err); }
+      } catch (err) { 
+        if (err === 'Sesión expirada') return;
+        console.error(err); 
+      }
     }
   };
 
   const guardarEdicion = async (e) => {
     e.preventDefault();
-    const token = localStorage.getItem('token');
 
     try {
-      const res = await fetch(`https://gestor-eventos-rol.onrender.com/api/partidas/${props.id}`, {
+      // ✨ USAMOS EL GUARDIÁN PARA REESCRIBIR LA MESA
+      const res = await fetchProtegido(`https://gestor-eventos-rol.onrender.com/api/partidas/${props.id}`, {
         method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          'authorization': token
-        },
         body: JSON.stringify(datosEdicion)
       });
 
@@ -208,6 +207,7 @@ function Partida(props) {
         Swal.fire({ title: 'Aviso del Gremio', text: data.error, icon: 'warning', background: '#18181b', color: '#fff' });
       }
     } catch (err) {
+      if (err === 'Sesión expirada') return;
       console.error(err);
     }
   };
