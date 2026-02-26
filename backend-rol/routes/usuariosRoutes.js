@@ -211,6 +211,26 @@ router.post('/votaciones/:id/votar', verificarToken, (req, res) => {
   });
 });
 
+// ✨ NOTIFICACIONES 1: Obtener mensajes sin leer
+router.get('/notificaciones', verificarToken, (req, res) => {
+  const sql = "SELECT id, mensaje, fecha FROM notificaciones WHERE usuario_id = ? AND leida = FALSE ORDER BY fecha DESC";
+  
+  db.query(sql, [req.usuario.id], (err, resultados) => {
+    if (err) return res.status(500).json({ error: 'Error al consultar los cuervos mensajeros.' });
+    res.json(resultados);
+  });
+});
+
+// ✨ NOTIFICACIONES 2: Marcar como leída
+router.put('/notificaciones/:id/leida', verificarToken, (req, res) => {
+  const sql = "UPDATE notificaciones SET leida = TRUE WHERE id = ? AND usuario_id = ?";
+  
+  db.query(sql, [req.params.id, req.usuario.id], (err) => {
+    if (err) return res.status(500).json({ error: 'Error al quemar el pergamino.' });
+    res.json({ mensaje: 'Notificación descartada.' });
+  });
+});
+
 router.get('/', verificarToken, (req, res) => {
   if (req.usuario.rol !== 'admin') {
     return res.status(403).json({ error: 'Acceso denegado a los archivos secretos.' });
@@ -233,9 +253,9 @@ router.get('/', verificarToken, (req, res) => {
     const totalPaginas = Math.ceil(totalUsuarios / limit);
 
     // 4. Ahora buscamos solo los usuarios de esa página usando LIMIT y OFFSET
-    const sql = "SELECT id, nombre, email, rol, avatar, solicita_dm FROM usuarios ORDER BY nombre ASC LIMIT ? OFFSET ?";
+    const sql = `SELECT id, nombre, email, rol, avatar, solicita_dm FROM usuarios ORDER BY nombre ASC LIMIT ${limit} OFFSET ${offset}`;
     
-    db.query(sql, [limit, offset], (err, resultados) => {
+    db.query(sql, (err, resultados) => {
       if (err) return res.status(500).json({ error: 'Error al consultar el censo del gremio.' });
       
       // 5. Enviamos la respuesta estructurada con los datos y la metadata
