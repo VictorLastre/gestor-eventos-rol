@@ -1,25 +1,29 @@
 import { useState } from 'react';
 import Swal from 'sweetalert2'; 
-import { fetchProtegido } from '../utils/api'; // ✨ IMPORTAMOS AL GUARDIÁN
+import { fetchProtegido } from '../utils/api'; 
 
 function CrearEvento({ alCrearEvento }) {
   const [nombre, setNombre] = useState('');
   const [descripcion, setDescripcion] = useState('');
   const [fecha, setFecha] = useState('');
   
-  // NUEVOS ESTADOS PARA LAS HORAS (Por defecto las clásicas del gremio)
   const [horaInicio, setHoraInicio] = useState('16:00');
   const [horaFin, setHoraFin] = useState('20:00');
 
   const manejarCreacion = async (e) => {
     e.preventDefault();
     
-    // ✨ ELIMINAMOS LA LLAMADA AL LOCALSTORAGE (El guardián se encarga)
-
-    const nuevoEvento = { nombre, descripcion, fecha, hora_inicio: horaInicio, hora_fin: horaFin };
+    // ✨ FIX: Aseguramos que la fecha se envíe como string puro YYYY-MM-DD
+    // Al no usar new Date() aquí, evitamos que JS le reste horas antes de enviarla.
+    const nuevoEvento = { 
+      nombre, 
+      descripcion, 
+      fecha, // El input type="date" ya nos da YYYY-MM-DD
+      hora_inicio: horaInicio, 
+      hora_fin: horaFin 
+    };
 
     try {
-      // ✨ USAMOS FETCH PROTEGIDO Y SIMPLIFICAMOS LOS HEADERS
       const respuesta = await fetchProtegido('https://gestor-eventos-rol.onrender.com/api/eventos', {
         method: 'POST',
         body: JSON.stringify(nuevoEvento)
@@ -38,7 +42,6 @@ function CrearEvento({ alCrearEvento }) {
           confirmButtonText: 'Excelente'
         });
 
-        // Limpiamos el formulario
         setNombre(''); setDescripcion(''); setFecha(''); 
         setHoraInicio('16:00'); setHoraFin('20:00');
         
@@ -55,9 +58,7 @@ function CrearEvento({ alCrearEvento }) {
         });
       }
     } catch (error) {
-      // Si el error es "Sesión expirada" (lanzado por nuestro guardián), lo ignoramos aquí porque el guardián ya mostró la alerta
       if (error === 'Sesión expirada') return;
-
       console.error("Error:", error);
       Swal.fire({
         title: 'Error Mágico',
@@ -73,7 +74,6 @@ function CrearEvento({ alCrearEvento }) {
   return (
     <div className="animate-in fade-in slide-in-from-top-2 duration-500">
       
-      {/* Encabezado del Formulario */}
       <div className="flex items-center gap-3 mb-8">
         <div className="w-10 h-10 bg-purple-500/20 text-purple-400 flex items-center justify-center rounded-xl border border-purple-500/30 text-xl">
           👑
@@ -88,9 +88,7 @@ function CrearEvento({ alCrearEvento }) {
         </div>
       </div>
 
-      {/* Contenedor del Formulario */}
       <div className="bg-zinc-900 border border-zinc-800 p-6 md:p-8 rounded-[2rem] shadow-2xl relative overflow-hidden">
-        {/* Brillo de fondo */}
         <div className="absolute top-0 right-0 w-32 h-32 bg-purple-500/5 blur-3xl rounded-full pointer-events-none"></div>
 
         <form onSubmit={manejarCreacion} className="relative z-10 flex flex-col gap-6">
@@ -122,7 +120,6 @@ function CrearEvento({ alCrearEvento }) {
             />
           </div>
           
-          {/* GRID PARA FECHA Y HORARIOS */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div className="space-y-2 md:col-span-1">
               <label className="text-[10px] font-bold text-zinc-500 uppercase ml-2 tracking-widest">
