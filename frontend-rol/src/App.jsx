@@ -10,6 +10,7 @@ function App() {
   const [usuarioLogueado, setUsuarioLogueado] = useState(JSON.parse(localStorage.getItem('usuario')));
   const [mostrarRegistro, setMostrarRegistro] = useState(false);
   const [vistaActual, setVistaActual] = useState('eventos'); 
+  
 
   const manejarLogin = (usuario) => {
     setUsuarioLogueado(usuario);
@@ -20,6 +21,7 @@ function App() {
     localStorage.removeItem('token');
     localStorage.removeItem('usuario');
     setUsuarioLogueado(null);
+    setVistaActual('eventos'); // ✨ Aseguramos resetear la vista
   };
 
   // 1. VISTA PARA USUARIOS NO LOGUEADOS
@@ -35,7 +37,6 @@ function App() {
 
         {mostrarRegistro ? (
           <div className="w-full max-w-md animate-in fade-in zoom-in-95 duration-300">
-            {/* ✨ AQUÍ LE PASAMOS LA FUNCIÓN PARA VOLVER AL LOGIN */}
             <Registro irALogin={() => setMostrarRegistro(false)} />
             
             <p className="text-center mt-6 text-zinc-500 text-sm font-bold uppercase tracking-widest">
