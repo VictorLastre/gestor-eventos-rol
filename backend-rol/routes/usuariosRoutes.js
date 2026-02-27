@@ -4,11 +4,11 @@ const db = require('../config/db');
 const verificarToken = require('../middlewares/auth');
 const bcrypt = require('bcrypt'); 
 
-// 1. Obtener Crónicas del usuario (FECHAS CORREGIDAS)
+// 1. MIS CRÓNICAS (Corregido para evitar "Invalid Date" y desfase de días)
 router.get('/mis-cronicas', verificarToken, (req, res) => {
   const idUsuario = req.usuario.id;
 
-  // ✨ Usamos DATE_FORMAT para que la fecha no sufra desplazamientos de zona horaria
+  // ✨ Usamos DATE_FORMAT para que la fecha llegue como String limpio al Frontend
   const sqlDirigiendo = `
     SELECT p.*, e.nombre as evento_nombre, DATE_FORMAT(e.fecha, '%Y-%m-%d') as fecha 
     FROM partidas p 
@@ -140,6 +140,7 @@ router.put('/:id/rechazar-dm', verificarToken, (req, res) => {
   });
 });
 
+// RUTA PARA ASIGNAR ROL LIBREMENTE (DM O JUGADOR)
 router.put('/:id/rol', verificarToken, (req, res) => {
   if (req.usuario.rol !== 'admin') {
     return res.status(403).json({ error: 'No tienes autoridad para otorgar títulos.' });
@@ -162,6 +163,7 @@ router.put('/:id/rol', verificarToken, (req, res) => {
   });
 });
 
+// ✨ SENADO 2: PROPONER A UN USUARIO PARA ADMIN
 router.post('/:id/proponer-admin', verificarToken, (req, res) => {
   if (req.usuario.rol !== 'admin') return res.status(403).json({ error: 'Solo los administradores pueden convocar al Senado.' });
   
@@ -184,6 +186,7 @@ router.post('/:id/proponer-admin', verificarToken, (req, res) => {
   });
 });
 
+// ✨ SENADO 3: EMITIR UN VOTO EN UNA PROPUESTA
 router.post('/votaciones/:id/votar', verificarToken, (req, res) => {
   if (req.usuario.rol !== 'admin') return res.status(403).json({ error: 'Solo los administradores pueden votar.' });
 
@@ -228,6 +231,7 @@ router.post('/votaciones/:id/votar', verificarToken, (req, res) => {
   });
 });
 
+// ✨ NOTIFICACIONES 1: Obtener mensajes sin leer
 router.get('/notificaciones', verificarToken, (req, res) => {
   const sql = "SELECT id, mensaje, fecha FROM notificaciones WHERE usuario_id = ? AND leida = FALSE ORDER BY fecha DESC";
   
@@ -237,6 +241,7 @@ router.get('/notificaciones', verificarToken, (req, res) => {
   });
 });
 
+// ✨ NOTIFICACIONES 2: Marcar como leída
 router.put('/notificaciones/:id/leida', verificarToken, (req, res) => {
   const sql = "UPDATE notificaciones SET leida = TRUE WHERE id = ? AND usuario_id = ?";
   
@@ -246,6 +251,7 @@ router.put('/notificaciones/:id/leida', verificarToken, (req, res) => {
   });
 });
 
+// OBTENER CENSO (Con paginación)
 router.get('/', verificarToken, (req, res) => {
   if (req.usuario.rol !== 'admin') {
     return res.status(403).json({ error: 'Acceso denegado a los archivos secretos.' });
