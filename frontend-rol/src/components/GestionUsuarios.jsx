@@ -1,12 +1,12 @@
 import { useState, useEffect } from 'react';
 import Swal from 'sweetalert2'; 
 import { fetchProtegido } from '../utils/api'; 
-import * as XLSX from 'xlsx'; // ✨ Librería para generar el reporte
+import * as XLSX from 'xlsx'; 
 
 function GestionUsuarios() {
   const [solicitudes, setSolicitudes] = useState([]);
   const [votaciones, setVotaciones] = useState([]); 
-  const [eventos, setEventos] = useState([]); // ✨ Estado para cargar los eventos disponibles
+  const [eventos, setEventos] = useState([]); 
   
   const [pestanaActiva, setPestanaActiva] = useState('peticiones');
   const [filtroRol, setFiltroRol] = useState('todos'); 
@@ -17,19 +17,16 @@ function GestionUsuarios() {
   const [infoPaginacion, setInfoPaginacion] = useState({ totalPaginas: 1, totalUsuarios: 0 });
 
   const cargarDatosPrincipales = () => {
-    // Cargar Peticiones de DM
     fetchProtegido('https://gestor-eventos-rol.onrender.com/api/usuarios/solicitudes-dm')
       .then(res => res.json())
       .then(datos => setSolicitudes(datos))
       .catch(err => { if (err !== 'Sesión expirada') console.error(err); });
 
-    // Cargar Votaciones del Senado
     fetchProtegido('https://gestor-eventos-rol.onrender.com/api/usuarios/votaciones/activas')
       .then(res => res.json())
       .then(datos => setVotaciones(datos))
       .catch(err => { if (err !== 'Sesión expirada') console.error(err); });
 
-    // ✨ Cargar lista de eventos para el selector de exportación
     fetchProtegido('https://gestor-eventos-rol.onrender.com/api/eventos')
       .then(res => res.json())
       .then(datos => setEventos(datos))
@@ -58,7 +55,7 @@ function GestionUsuarios() {
     cargarCenso(paginaCenso);
   }, [paginaCenso]);
 
-  // ✨ FUNCIÓN DE EXPORTACIÓN LOGÍSTICA MEJORADA
+  // ✨ FUNCIÓN DE EXPORTACIÓN CON FIX DE ESTILO PARA SELECT
   const exportarLogistica = async () => {
     if (eventos.length === 0) {
       return Swal.fire({ title: 'Error', text: 'No hay eventos registrados.', icon: 'error', background: '#18181b', color: '#fff' });
@@ -66,7 +63,7 @@ function GestionUsuarios() {
 
     const { value: eventoId } = await Swal.fire({
       title: '📊 Reporte Logístico',
-      text: 'Selecciona el evento para exportar las necesidades de los DMs:',
+      text: 'Selecciona el evento para exportar:',
       input: 'select',
       inputOptions: Object.fromEntries(eventos.map(e => [e.id, e.nombre])),
       inputPlaceholder: 'Seleccionar evento...',
@@ -76,7 +73,26 @@ function GestionUsuarios() {
       confirmButtonColor: '#10b981',
       cancelButtonColor: '#3f3f46',
       confirmButtonText: 'Descargar Excel',
-      cancelButtonText: 'Cancelar'
+      cancelButtonText: 'Cancelar',
+      // ✨ FIX: Forzamos el color del select y sus opciones
+      customClass: {
+        input: 'custom-swal-select'
+      },
+      didOpen: () => {
+        const select = Swal.getInput();
+        if (select) {
+          select.style.backgroundColor = '#09090b';
+          select.style.color = '#fff';
+          select.style.borderColor = '#3f3f46';
+          select.style.borderRadius = '12px';
+          // Esto soluciona el fondo blanco en las opciones
+          const options = select.querySelectorAll('option');
+          options.forEach(opt => {
+            opt.style.backgroundColor = '#18181b';
+            opt.style.color = '#fff';
+          });
+        }
+      }
     });
 
     if (eventoId) {
@@ -85,27 +101,27 @@ function GestionUsuarios() {
         const datos = await res.json();
 
         if (!datos || datos.length === 0) {
-          return Swal.fire({ title: 'Mesa Vacía', text: 'Este evento no tiene partidas creadas todavía.', icon: 'info', background: '#18181b', color: '#fff' });
+          return Swal.fire({ title: 'Mesa Vacía', text: 'Este evento no tiene partidas creadas.', icon: 'info', background: '#18181b', color: '#fff' });
         }
 
         const filas = datos.map(m => ({
-          "ESTADO DM": m.es_dm_nuevo ? "⚠️ NUEVO (ENTREGAR CERTIFICADO)" : "VETERANO",
+          "ESTADO": m.es_dm_nuevo ? "⚠️ NUEVO (ENTREGAR CERTIFICADO)" : "VETERANO",
           "DIRECTOR": m.dm_nombre.toUpperCase(),
           "TURNO": m.turno,
           "MESA": m.mesa,
           "SISTEMA": m.sistema,
           "JUGADORES": m.jugadores || "Sin inscritos",
-          "MATERIALES SOLICITADOS": m.materiales_pedidos && m.materiales_pedidos.trim() !== "" ? m.materiales_pedidos : "✅ NADA PENDIENTE"
+          "MATERIALES": m.materiales_pedidos && m.materiales_pedidos.trim() !== "" ? m.materiales_pedidos : "✅ NADA PENDIENTE"
         }));
 
         const hoja = XLSX.utils.json_to_sheet(filas);
         const libro = XLSX.utils.book_new();
-        XLSX.utils.book_append_sheet(libro, hoja, "Planilla Logística");
+        XLSX.utils.book_append_sheet(libro, hoja, "Planilla");
         
         const nombreEvento = eventos.find(e => e.id == eventoId).nombre;
         XLSX.writeFile(libro, `Logistica_${nombreEvento.replace(/\s+/g, '_')}.xlsx`);
 
-        Swal.fire({ title: '¡Generado!', text: 'El reporte se ha descargado correctamente.', icon: 'success', background: '#18181b', color: '#fff' });
+        Swal.fire({ title: '¡Generado!', text: 'El reporte se ha descargado.', icon: 'success', background: '#18181b', color: '#fff' });
       } catch (e) {
         console.error("Error exportando:", e);
       }
@@ -244,7 +260,6 @@ function GestionUsuarios() {
   return (
     <div className="animate-in fade-in slide-in-from-top-2 duration-500">
       
-      {/* NAVEGACIÓN DE PESTAÑAS */}
       <div className="flex flex-wrap gap-4 mb-8 border-b border-zinc-800 pb-4">
         <button onClick={() => setPestanaActiva('peticiones')} className={`px-4 py-2 font-black text-xs uppercase tracking-widest transition-all rounded-lg ${pestanaActiva === 'peticiones' ? 'bg-purple-600 text-white shadow-lg shadow-purple-900/20' : 'text-zinc-500 hover:bg-zinc-800 hover:text-zinc-300'}`}>
           Peticiones DM {solicitudes.length > 0 && <span className="bg-white text-purple-600 px-2 py-0.5 rounded-full ml-2">{solicitudes.length}</span>}
@@ -257,7 +272,6 @@ function GestionUsuarios() {
         </button>
       </div>
 
-      {/* VISTA 1: PETICIONES */}
       {pestanaActiva === 'peticiones' && (
         <div className="animate-in fade-in duration-300">
            <div className="flex items-center gap-3 mb-6">
@@ -269,17 +283,17 @@ function GestionUsuarios() {
            ) : (
              <div className="grid gap-4">
                {solicitudes.map(user => (
-                 <div key={user.id} className="group flex flex-col md:flex-row justify-between items-center bg-zinc-900 border border-zinc-800 p-5 rounded-2xl transition-all hover:border-purple-500/30">
+                 <div key={user.id} className="group flex flex-col md:flex-row justify-between items-center bg-zinc-900 border border-zinc-800 p-5 rounded-2xl">
                    <div className="flex items-center gap-4">
-                     <div className="w-12 h-12 bg-zinc-800 rounded-full flex items-center justify-center text-xl shadow-lg">👤</div>
+                     <div className="w-12 h-12 bg-zinc-800 rounded-full flex items-center justify-center text-xl">👤</div>
                      <div>
                        <p className="text-lg font-black text-white leading-tight">{user.nombre}</p>
                        <p className="text-xs text-zinc-500 font-mono">{user.email}</p>
                      </div>
                    </div>
                    <div className="flex gap-2 w-full md:w-auto mt-4 md:mt-0">
-                     <button onClick={() => rechazarUsuario(user.id, user.nombre)} className="flex-1 md:flex-none bg-zinc-800 text-zinc-400 font-black px-4 py-3 rounded-xl text-[10px] uppercase tracking-widest hover:bg-red-500/10 hover:text-red-500 transition-all">✕ Denegar</button>
-                     <button onClick={() => promoverUsuario(user.id, user.nombre)} className="flex-1 md:flex-none bg-amber-500 text-black font-black px-6 py-3 rounded-xl text-[10px] uppercase tracking-widest hover:bg-amber-400 transition-all shadow-lg shadow-amber-900/20">🪄 Ascender</button>
+                     <button onClick={() => rechazarUsuario(user.id, user.nombre)} className="flex-1 md:flex-none bg-zinc-800 text-zinc-400 font-black px-4 py-3 rounded-xl text-[10px] uppercase tracking-widest">✕ Denegar</button>
+                     <button onClick={() => promoverUsuario(user.id, user.nombre)} className="flex-1 md:flex-none bg-amber-500 text-black font-black px-6 py-3 rounded-xl text-[10px] uppercase tracking-widest">🪄 Ascender</button>
                    </div>
                  </div>
                ))}
@@ -288,7 +302,6 @@ function GestionUsuarios() {
         </div>
       )}
 
-      {/* VISTA 2: CENSO */}
       {pestanaActiva === 'censo' && (
         <div className="animate-in fade-in duration-300">
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
@@ -298,10 +311,9 @@ function GestionUsuarios() {
             </div>
             
             <div className="flex flex-col sm:flex-row gap-3">
-              {/* ✨ BOTÓN DE EXPORTACIÓN LOGÍSTICA */}
               <button 
                 onClick={exportarLogistica}
-                className="bg-emerald-600 hover:bg-emerald-500 text-white font-black px-4 py-2 rounded-xl text-[10px] uppercase tracking-widest transition-all flex items-center justify-center gap-2 shadow-lg shadow-emerald-900/40 active:scale-95"
+                className="bg-emerald-600 hover:bg-emerald-500 text-white font-black px-4 py-2 rounded-xl text-[10px] uppercase tracking-widest transition-all flex items-center justify-center gap-2 shadow-lg shadow-emerald-900/40"
               >
                 📊 Exportar Logística
               </button>
@@ -333,25 +345,19 @@ function GestionUsuarios() {
               </thead>
               <tbody className="divide-y divide-zinc-800/50">
                 {usuariosFiltrados.length === 0 ? (
-                  <tr><td colSpan="4" className="p-8 text-center text-zinc-500 italic font-bold">Sin resultados en esta página.</td></tr>
+                  <tr><td colSpan="4" className="p-8 text-center text-zinc-500 italic font-bold">Sin resultados.</td></tr>
                 ) : (
                   usuariosFiltrados.map(user => (
                     <tr key={user.id} className="hover:bg-zinc-800/30 transition-colors group">
                       <td className="p-4 pl-6 flex items-center gap-3">
-                        <span className="text-xl bg-zinc-950 w-8 h-8 flex items-center justify-center rounded-full border border-zinc-800 shadow-inner">
+                        <span className="text-xl bg-zinc-950 w-8 h-8 flex items-center justify-center rounded-full border border-zinc-800">
                           {user.avatar === 'guerrero' ? '⚔️' : user.avatar === 'mago' ? '🧙' : user.avatar === 'esqueleto' ? '💀' : user.avatar === 'goblin' ? '👺' : '👤'}
                         </span>
-                        <div>
-                           <span className="font-bold text-zinc-200 block">{user.nombre}</span>
-                           {/* ✨ Indicador de materiales si es DM y tiene pedidos */}
-                           {user.rol === 'dm' && user.materiales_pedidos && (
-                             <span className="text-[8px] bg-amber-500/20 text-amber-500 px-1.5 py-0.5 rounded uppercase font-black tracking-tighter cursor-help" title={user.materiales_pedidos}>📦 Materiales</span>
-                           )}
-                        </div>
+                        <span className="font-bold text-zinc-200">{user.nombre}</span>
                       </td>
                       <td className="p-4 text-xs text-zinc-400 font-mono hidden sm:table-cell">{user.email}</td>
                       <td className="p-4 text-center">
-                        <span className={`text-[9px] font-black uppercase tracking-widest px-3 py-1 rounded-full border ${user.rol === 'admin' ? 'bg-amber-500/10 text-amber-500 border-amber-500/30 shadow-[0_0_10px_rgba(245,158,11,0.1)]' : user.rol === 'dm' ? 'bg-purple-500/10 text-purple-400 border-purple-500/30' : 'bg-zinc-800 text-zinc-400 border-zinc-700'}`}>
+                        <span className={`text-[9px] font-black uppercase tracking-widest px-3 py-1 rounded-full border ${user.rol === 'admin' ? 'bg-amber-500/10 text-amber-500 border-amber-500/30' : user.rol === 'dm' ? 'bg-purple-500/10 text-purple-400 border-purple-500/30' : 'bg-zinc-800 text-zinc-400 border-zinc-700'}`}>
                           {user.rol === 'admin' ? '👑 Admin' : user.rol === 'dm' ? '🛡️ DM' : 'Jugador'}
                         </span>
                       </td>
@@ -369,15 +375,14 @@ function GestionUsuarios() {
             </table>
             
             <div className="flex justify-between items-center p-4 bg-zinc-950/50 border-t border-zinc-800 mt-auto">
-              <button onClick={() => setPaginaCenso(p => Math.max(1, p - 1))} disabled={paginaCenso === 1} className="px-4 py-2 bg-zinc-900 border border-zinc-800 text-zinc-400 text-xs font-black uppercase tracking-widest rounded-xl disabled:opacity-30 hover:bg-zinc-800 hover:text-white transition-all">← Anterior</button>
-              <span className="text-zinc-500 text-[10px] font-black uppercase tracking-widest italic">Página <span className="text-white font-black">{paginaCenso}</span> de {infoPaginacion.totalPaginas}</span>
-              <button onClick={() => setPaginaCenso(p => Math.min(infoPaginacion.totalPaginas, p + 1))} disabled={paginaCenso === infoPaginacion.totalPaginas || infoPaginacion.totalPaginas === 0} className="px-4 py-2 bg-zinc-900 border border-zinc-800 text-zinc-400 text-xs font-black uppercase tracking-widest rounded-xl disabled:opacity-30 hover:bg-zinc-800 hover:text-white transition-all">Siguiente →</button>
+              <button onClick={() => setPaginaCenso(p => Math.max(1, p - 1))} disabled={paginaCenso === 1} className="px-4 py-2 bg-zinc-900 border border-zinc-800 text-zinc-400 text-xs font-black uppercase tracking-widest rounded-xl disabled:opacity-30">← Anterior</button>
+              <span className="text-zinc-500 text-[10px] font-black uppercase tracking-widest">Página <span className="text-white">{paginaCenso}</span> de {infoPaginacion.totalPaginas}</span>
+              <button onClick={() => setPaginaCenso(p => Math.min(infoPaginacion.totalPaginas, p + 1))} disabled={paginaCenso === infoPaginacion.totalPaginas || infoPaginacion.totalPaginas === 0} className="px-4 py-2 bg-zinc-900 border border-zinc-800 text-zinc-400 text-xs font-black uppercase tracking-widest rounded-xl disabled:opacity-30">Siguiente →</button>
             </div>
           </div>
         </div>
       )}
 
-      {/* VISTA 3: SENADO */}
       {pestanaActiva === 'senado' && (
         <div className="animate-in fade-in duration-300">
           <div className="flex items-center gap-3 mb-6">
@@ -388,31 +393,27 @@ function GestionUsuarios() {
             </div>
           </div>
           {votaciones.length === 0 ? (
-            <div className="bg-zinc-950/50 border-2 border-dashed border-zinc-800 rounded-3xl p-12 text-center text-zinc-600 font-bold italic">El Senado está en silencio. No hay mociones activas.</div>
+            <div className="bg-zinc-950/50 border-2 border-dashed border-zinc-800 rounded-3xl p-12 text-center text-zinc-600 font-bold italic">El Senado está en silencio.</div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {votaciones.map(v => (
-                <div key={v.id} className="bg-zinc-900 border border-zinc-800 rounded-2xl p-6 relative overflow-hidden shadow-xl hover:border-amber-500/20 transition-all">
+                <div key={v.id} className="bg-zinc-900 border border-zinc-800 rounded-2xl p-6 relative overflow-hidden shadow-xl">
                   <div className="relative z-10">
-                    <h4 className="text-2xl font-black text-white tracking-tighter mb-1 uppercase">{v.candidato_nombre}</h4>
-                    <p className="text-xs text-zinc-400 italic mb-4">Moción presentada por: <span className="text-amber-500 font-bold">{v.proponente_nombre}</span></p>
+                    <h4 className="text-2xl font-black text-white tracking-tighter mb-1">{v.candidato_nombre}</h4>
+                    <p className="text-xs text-zinc-400 italic mb-4">Propuesto por: {v.proponente_nombre}</p>
                     <div className="bg-zinc-950 rounded-xl p-4 border border-zinc-800 mb-6 text-center">
                       <div className="flex justify-between text-[10px] font-black uppercase tracking-widest mb-2">
-                        <span className="text-emerald-500">A Favor: {v.votos_favor}</span>
-                        <span className="text-red-500">En Contra: {v.votos_contra}</span>
+                        <span className="text-emerald-500">Favor: {v.votos_favor}</span>
+                        <span className="text-red-500">Contra: {v.votos_contra}</span>
                       </div>
-                      <div className="w-full bg-zinc-800 h-1 rounded-full mb-2 overflow-hidden flex">
-                         <div style={{width: `${(v.votos_favor / v.total_admins) * 100}%`}} className="bg-emerald-500 h-full transition-all"></div>
-                         <div style={{width: `${(v.votos_contra / v.total_admins) * 100}%`}} className="bg-red-500 h-full transition-all"></div>
-                      </div>
-                      <p className="text-[9px] text-zinc-500 font-bold uppercase tracking-widest italic">Votos requeridos para mayoría: {Math.floor(v.total_admins / 2) + 1}</p>
+                      <p className="text-[9px] text-zinc-500 font-bold uppercase tracking-widest">Mínimo para resolver: {Math.floor(v.total_admins / 2) + 1}</p>
                     </div>
                     {v.ya_vote > 0 ? (
-                      <div className="bg-zinc-800/50 text-zinc-400 text-center py-3 rounded-xl font-black text-[10px] uppercase tracking-widest border border-zinc-700">🏛️ Voto emitido y registrado</div>
+                      <div className="bg-zinc-800/50 text-zinc-400 text-center py-3 rounded-xl font-black text-[10px] uppercase tracking-widest">🏛️ Voto emitido</div>
                     ) : (
                       <div className="flex gap-2">
-                        <button onClick={() => emitirVoto(v.id, v.candidato_nombre, 'en contra')} className="flex-1 bg-zinc-800 text-zinc-400 py-3 rounded-xl font-black text-[10px] uppercase tracking-widest hover:bg-red-500/10 hover:text-red-500 transition-all">👎 Rechazar</button>
-                        <button onClick={() => emitirVoto(v.id, v.candidato_nombre, 'a favor')} className="flex-1 bg-emerald-600 text-white py-3 rounded-xl font-black text-[10px] uppercase tracking-widest hover:bg-emerald-500 transition-all shadow-lg shadow-emerald-900/20">👍 Apoyar</button>
+                        <button onClick={() => emitirVoto(v.id, v.candidato_nombre, 'en contra')} className="flex-1 bg-zinc-800 text-zinc-400 py-3 rounded-xl font-black text-[10px] uppercase tracking-widest">👎 Rechazar</button>
+                        <button onClick={() => emitirVoto(v.id, v.candidato_nombre, 'a favor')} className="flex-1 bg-emerald-600 text-white py-3 rounded-xl font-black text-[10px] uppercase tracking-widest">👍 Apoyar</button>
                       </div>
                     )}
                   </div>
