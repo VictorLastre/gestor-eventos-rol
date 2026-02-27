@@ -3,9 +3,8 @@ const router = express.Router();
 const db = require('../config/db');
 const verificarToken = require('../middlewares/auth');
 
-// 1. Obtener todos los eventos (Con ajuste de zona horaria y formateo de fecha)
+// 1. Obtener todos los eventos (Con actualización automática inteligente de estados)
 router.get('/', (req, res) => {
-  // Ajuste para Argentina (UTC-3) para el cálculo de estados
   const tzOffset = -3 * 60 * 60 * 1000; 
   const ahoraArg = new Date(Date.now() + tzOffset).toISOString().slice(0, 19).replace('T', ' ');
 
@@ -20,26 +19,16 @@ router.get('/', (req, res) => {
   `;
 
   db.query(sqlUpdate, [ahoraArg, ahoraArg], (err) => {
-    if (err) console.error("Error actualizando estados:", err);
+    if (err) console.error("Error actualizando el reloj del gremio:", err);
     
-    // ✨ TRUCO MAESTRO: Usamos DATE_FORMAT para que la fecha salga como texto (YYYY-MM-DD)
-    // Esto evita que el Frontend reciba un objeto Date desfasado por el Timezone.
-    const sqlSelect = `
-      SELECT id, nombre, descripcion, 
-      DATE_FORMAT(fecha, '%Y-%m-%d') as fecha, 
-      hora_inicio, hora_fin, estado 
-      FROM eventos 
-      ORDER BY fecha DESC
-    `;
-
-    db.query(sqlSelect, (err, resultados) => {
-      if (err) return res.status(500).json({ error: 'Error leyendo eventos' });
+    db.query('SELECT * FROM eventos ORDER BY fecha DESC', (err, resultados) => {
+      if (err) return res.status(500).json({ error: 'Error leyendo los eventos' });
       res.json(resultados);
     });
   });
 });
 
-// 2. Crear un nuevo evento (Asegurando fecha correcta)
+// 2. Crear un nuevo evento (Solo Admins)
 router.post('/', verificarToken, (req, res) => {
   if (req.usuario.rol !== 'admin') return res.status(403).json({ error: 'Solo Admins.' });
   
@@ -48,12 +37,12 @@ router.post('/', verificarToken, (req, res) => {
   const sqlInsert = 'INSERT INTO eventos (nombre, descripcion, fecha, hora_inicio, hora_fin, estado) VALUES (?, ?, ?, ?, ?, ?)';
   
   db.query(sqlInsert, [nombre, descripcion, fecha, hora_inicio, hora_fin, 'Proximo'], (err) => {
-    if (err) return res.status(500).json({ error: 'Error al crear evento.' });
+    if (err) return res.status(500).json({ error: 'Error al convocar el evento.' });
     res.status(201).json({ mensaje: '¡Evento convocado con éxito!' });
   });
 });
 
-// 3. Obtener partidas de un evento (Incluye materiales_pedidos)
+// 3. Obtener partidas de un evento específico
 router.get('/:id/partidas', verificarToken, (req, res) => {
   const sql = `
     SELECT 
@@ -65,14 +54,14 @@ router.get('/:id/partidas', verificarToken, (req, res) => {
     WHERE p.evento_id = ? GROUP BY p.id
   `;
   db.query(sql, [req.usuario.id, req.params.id], (err, resultados) => {
-    if (err) return res.status(500).json({ error: 'Error al consultar mesas.' });
+    if (err) return res.status(500).json({ error: 'Error al consultar las mesas.' });
     res.json(resultados);
   });
 });
 
-// 4. Crear una mesa (Incluye materiales_pedidos)
+// 4. Crear una mesa en un evento (Con candado de participación única y MATERIALES)
 router.post('/:id/partidas', verificarToken, (req, res) => {
-  if (req.usuario.rol === 'jugador') return res.status(403).json({ error: 'Solo DMs y Admins.' });
+  if (req.usuario.rol === 'jugador') return res.status(403).json({ error: 'Solo DMs y Admins pueden crear mesas.' });
   
   const eventoId = req.params.id;
   const usuarioId = req.usuario.id;
@@ -84,12 +73,14 @@ router.post('/:id/partidas', verificarToken, (req, res) => {
   `;
   
   db.query(sqlCheck, [eventoId, usuarioId, eventoId, usuarioId], (err, resultados) => {
-    if (err) return res.status(500).json({ error: 'Error de validación.' });
+    if (err) return res.status(500).json({ error: 'Error al consultar los registros del gremio.' });
     
     const { es_dm, es_jugador } = resultados[0];
-    if (es_dm > 0) return res.status(400).json({ error: 'Ya diriges en este evento.' });
-    if (es_jugador > 0) return res.status(400).json({ error: 'Ya eres jugador en este evento.' });
 
+    if (es_dm > 0) return res.status(400).json({ error: 'Ya estás dirigiendo una mesa en este evento.' });
+    if (es_jugador > 0) return res.status(400).json({ error: 'No puedes crear una mesa porque ya estás anotado como jugador en este evento.' });
+
+    // ✨ EXTRAEMOS materiales_pedidos DEL BODY
     const { titulo, descripcion, requisitos, sistema, cupo, turno, etiqueta, apta_novatos, materiales_pedidos } = req.body;
     
     const sqlInsert = `
@@ -98,27 +89,42 @@ router.post('/:id/partidas', verificarToken, (req, res) => {
         VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'abierta', ?, ?, ?)
     `;
     
+    // ✨ LO AÑADIMOS AL ARRAY DE VALORES
     db.query(sqlInsert, [eventoId, usuarioId, titulo, descripcion, requisitos, sistema, cupo, turno, etiqueta, apta_novatos, materiales_pedidos], (err) => {
-      if (err) return res.status(500).json({ error: 'Error al crear mesa.' });
-      res.status(201).json({ mensaje: 'Mesa creada!' });
+      if (err) {
+        console.error(err);
+        return res.status(500).json({ error: 'Error al crear la mesa.' });
+      }
+      res.status(201).json({ mensaje: '¡Mesa creada con éxito!' });
     });
   });
 });
 
-// 5. Modificar evento
+// 5. Modificar un Evento (Solo Admins)
 router.put('/:id', verificarToken, (req, res) => {
-  if (req.usuario.rol !== 'admin') return res.status(403).json({ error: 'No autorizado.' });
+  if (req.usuario.rol !== 'admin') return res.status(403).json({ error: 'Solo los líderes del gremio pueden alterar la historia.' });
+
+  const eventoId = req.params.id;
   const { nombre, descripcion, fecha, hora_inicio, hora_fin, estado } = req.body;
-  const sqlUpdate = 'UPDATE eventos SET nombre=?, descripcion=?, fecha=?, hora_inicio=?, hora_fin=?, estado=? WHERE id=?';
-  db.query(sqlUpdate, [nombre, descripcion, fecha, hora_inicio, hora_fin, estado, req.params.id], (err) => {
-    if (err) return res.status(500).json({ error: 'Error al modificar.' });
-    res.json({ mensaje: 'Evento actualizado.' });
+
+  const sqlUpdate = `
+    UPDATE eventos 
+    SET nombre = ?, descripcion = ?, fecha = ?, hora_inicio = ?, hora_fin = ?, estado = ?
+    WHERE id = ?
+  `;
+
+  db.query(sqlUpdate, [nombre, descripcion, fecha, hora_inicio, hora_fin, estado, eventoId], (err) => {
+    if (err) {
+      console.error(err);
+      return res.status(500).json({ error: 'Error al modificar los registros del evento.' });
+    }
+    res.status(200).json({ mensaje: '¡La jornada ha sido reescrita con éxito!' });
   });
 });
 
-// 6. Eliminar evento
+// 6. Eliminar un evento (Solo Admins)
 router.delete('/:id', verificarToken, (req, res) => {
-  if (req.usuario.rol !== 'admin') return res.status(403).json({ error: 'No autorizado.' });
+  if (req.usuario.rol !== 'admin') return res.status(403).json({ error: 'Sin autorización.' });
   db.query("DELETE FROM eventos WHERE id = ?", [req.params.id], (err) => {
     if (err) return res.status(500).send('Error');
     res.send('Evento borrado');
