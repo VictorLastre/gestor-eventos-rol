@@ -3,8 +3,9 @@ const router = express.Router();
 const db = require('../config/db');
 const verificarToken = require('../middlewares/auth');
 
-// 1. Obtener todos los eventos (Con actualización automática inteligente de estados)
+// 1. Obtener todos los eventos (Con actualización de estados y formateo de fecha SEGURO)
 router.get('/', (req, res) => {
+  // Ajuste para Argentina (UTC-3) para la lógica de comparación de estados
   const tzOffset = -3 * 60 * 60 * 1000; 
   const ahoraArg = new Date(Date.now() + tzOffset).toISOString().slice(0, 19).replace('T', ' ');
 
@@ -21,7 +22,17 @@ router.get('/', (req, res) => {
   db.query(sqlUpdate, [ahoraArg, ahoraArg], (err) => {
     if (err) console.error("Error actualizando el reloj del gremio:", err);
     
-    db.query('SELECT * FROM eventos ORDER BY fecha DESC', (err, resultados) => {
+    // ✨ TRUCO MAESTRO: DATE_FORMAT evita que el driver de JS reste horas por zona horaria
+    const sqlSelect = `
+      SELECT 
+        id, nombre, descripcion, 
+        DATE_FORMAT(fecha, '%Y-%m-%d') as fecha, 
+        hora_inicio, hora_fin, estado 
+      FROM eventos 
+      ORDER BY fecha DESC
+    `;
+
+    db.query(sqlSelect, (err, resultados) => {
       if (err) return res.status(500).json({ error: 'Error leyendo los eventos' });
       res.json(resultados);
     });
@@ -32,11 +43,14 @@ router.get('/', (req, res) => {
 router.post('/', verificarToken, (req, res) => {
   if (req.usuario.rol !== 'admin') return res.status(403).json({ error: 'Solo Admins.' });
   
-  const { nombre, descripcion, fecha, hora_inicio = '16:00', hora_fin = '20:00' } = req.body;
+  let { nombre, descripcion, fecha, hora_inicio = '16:00', hora_fin = '20:00' } = req.body;
   
+  // Limpiamos la fecha por si viene con barras / la pasamos a guiones -
+  const fechaLimpia = fecha.replace(/\//g, '-');
+
   const sqlInsert = 'INSERT INTO eventos (nombre, descripcion, fecha, hora_inicio, hora_fin, estado) VALUES (?, ?, ?, ?, ?, ?)';
   
-  db.query(sqlInsert, [nombre, descripcion, fecha, hora_inicio, hora_fin, 'Proximo'], (err) => {
+  db.query(sqlInsert, [nombre, descripcion, fechaLimpia, hora_inicio, hora_fin, 'Proximo'], (err) => {
     if (err) return res.status(500).json({ error: 'Error al convocar el evento.' });
     res.status(201).json({ mensaje: '¡Evento convocado con éxito!' });
   });
@@ -80,7 +94,6 @@ router.post('/:id/partidas', verificarToken, (req, res) => {
     if (es_dm > 0) return res.status(400).json({ error: 'Ya estás dirigiendo una mesa en este evento.' });
     if (es_jugador > 0) return res.status(400).json({ error: 'No puedes crear una mesa porque ya estás anotado como jugador en este evento.' });
 
-    // ✨ EXTRAEMOS materiales_pedidos DEL BODY
     const { titulo, descripcion, requisitos, sistema, cupo, turno, etiqueta, apta_novatos, materiales_pedidos } = req.body;
     
     const sqlInsert = `
@@ -89,7 +102,6 @@ router.post('/:id/partidas', verificarToken, (req, res) => {
         VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'abierta', ?, ?, ?)
     `;
     
-    // ✨ LO AÑADIMOS AL ARRAY DE VALORES
     db.query(sqlInsert, [eventoId, usuarioId, titulo, descripcion, requisitos, sistema, cupo, turno, etiqueta, apta_novatos, materiales_pedidos], (err) => {
       if (err) {
         console.error(err);
@@ -105,7 +117,10 @@ router.put('/:id', verificarToken, (req, res) => {
   if (req.usuario.rol !== 'admin') return res.status(403).json({ error: 'Solo los líderes del gremio pueden alterar la historia.' });
 
   const eventoId = req.params.id;
-  const { nombre, descripcion, fecha, hora_inicio, hora_fin, estado } = req.body;
+  let { nombre, descripcion, fecha, hora_inicio, hora_fin, estado } = req.body;
+
+  // Limpiamos la fecha por si viene con barras / la pasamos a guiones -
+  const fechaLimpia = fecha.replace(/\//g, '-');
 
   const sqlUpdate = `
     UPDATE eventos 
@@ -113,7 +128,7 @@ router.put('/:id', verificarToken, (req, res) => {
     WHERE id = ?
   `;
 
-  db.query(sqlUpdate, [nombre, descripcion, fecha, hora_inicio, hora_fin, estado, eventoId], (err) => {
+  db.query(sqlUpdate, [nombre, descripcion, fechaLimpia, hora_inicio, hora_fin, estado, eventoId], (err) => {
     if (err) {
       console.error(err);
       return res.status(500).json({ error: 'Error al modificar los registros del evento.' });
