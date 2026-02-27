@@ -22,7 +22,7 @@ const eventosRoutes = require('./routes/eventosRoutes');
 const partidasRoutes = require('./routes/partidasRoutes');
 const usuariosRoutes = require('./routes/usuariosRoutes');
 // ✨ AQUÍ IMPORTAMOS EL NUEVO PERGAMINO DE SISTEMAS
-const sistemasRoutes = require('./routes/sistemas'); // Asegúrate de que el archivo se llame sistemas.js (o sistemasRoutes.js si seguiste ese patrón)
+const sistemasRoutes = require('./routes/sistemasRoutes'); // Asegúrate de que el archivo se llame sistemas.js (o sistemasRoutes.js si seguiste ese patrón)
 
 // Usamos las rutas
 app.use('/api', authRoutes); // /api/registro y /api/login
