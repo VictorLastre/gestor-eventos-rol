@@ -4,16 +4,36 @@ const db = require('../config/db');
 const verificarToken = require('../middlewares/auth');
 const bcrypt = require('bcrypt'); 
 
+// 1. Obtener Crónicas del usuario (FECHAS CORREGIDAS)
 router.get('/mis-cronicas', verificarToken, (req, res) => {
   const idUsuario = req.usuario.id;
-  const sqlDirigiendo = `SELECT p.*, e.nombre as evento_nombre FROM partidas p JOIN eventos e ON p.evento_id = e.id WHERE p.dungeon_master_id = ?`;
-  const sqlJugando = `SELECT p.*, e.nombre as evento_nombre FROM inscripciones i JOIN partidas p ON i.partida_id = p.id JOIN eventos e ON p.evento_id = e.id WHERE i.usuario_id = ?`;
+
+  // ✨ Usamos DATE_FORMAT para que la fecha no sufra desplazamientos de zona horaria
+  const sqlDirigiendo = `
+    SELECT p.*, e.nombre as evento_nombre, DATE_FORMAT(e.fecha, '%Y-%m-%d') as fecha 
+    FROM partidas p 
+    JOIN eventos e ON p.evento_id = e.id 
+    WHERE p.dungeon_master_id = ?
+  `;
+  
+  const sqlJugando = `
+    SELECT p.*, e.nombre as evento_nombre, DATE_FORMAT(e.fecha, '%Y-%m-%d') as fecha 
+    FROM inscripciones i 
+    JOIN partidas p ON i.partida_id = p.id 
+    JOIN eventos e ON p.evento_id = e.id 
+    WHERE i.usuario_id = ?
+  `;
   
   db.query(sqlDirigiendo, [idUsuario], (err, dirigiendo) => {
-    if (err) return res.status(500).json({ error: 'Error en crónicas.' });
+    if (err) return res.status(500).json({ error: 'Error en crónicas de DM.' });
+    
     db.query(sqlJugando, [idUsuario], (err, jugando) => {
-      if (err) return res.status(500).json({ error: 'Error en crónicas.' });
-      res.json({ dirigiendo: dirigiendo || [], jugando: jugando || [] });
+      if (err) return res.status(500).json({ error: 'Error en crónicas de jugador.' });
+      
+      res.json({ 
+        dirigiendo: dirigiendo || [], 
+        jugando: jugando || [] 
+      });
     });
   });
 });
@@ -120,7 +140,6 @@ router.put('/:id/rechazar-dm', verificarToken, (req, res) => {
   });
 });
 
-// RUTA PARA ASIGNAR ROL LIBREMENTE (DM O JUGADOR)
 router.put('/:id/rol', verificarToken, (req, res) => {
   if (req.usuario.rol !== 'admin') {
     return res.status(403).json({ error: 'No tienes autoridad para otorgar títulos.' });
@@ -143,7 +162,6 @@ router.put('/:id/rol', verificarToken, (req, res) => {
   });
 });
 
-// ✨ SENADO 2: PROPONER A UN USUARIO PARA ADMIN
 router.post('/:id/proponer-admin', verificarToken, (req, res) => {
   if (req.usuario.rol !== 'admin') return res.status(403).json({ error: 'Solo los administradores pueden convocar al Senado.' });
   
@@ -166,7 +184,6 @@ router.post('/:id/proponer-admin', verificarToken, (req, res) => {
   });
 });
 
-// ✨ SENADO 3: EMITIR UN VOTO EN UNA PROPUESTA
 router.post('/votaciones/:id/votar', verificarToken, (req, res) => {
   if (req.usuario.rol !== 'admin') return res.status(403).json({ error: 'Solo los administradores pueden votar.' });
 
@@ -211,7 +228,6 @@ router.post('/votaciones/:id/votar', verificarToken, (req, res) => {
   });
 });
 
-// ✨ NOTIFICACIONES 1: Obtener mensajes sin leer
 router.get('/notificaciones', verificarToken, (req, res) => {
   const sql = "SELECT id, mensaje, fecha FROM notificaciones WHERE usuario_id = ? AND leida = FALSE ORDER BY fecha DESC";
   
@@ -221,7 +237,6 @@ router.get('/notificaciones', verificarToken, (req, res) => {
   });
 });
 
-// ✨ NOTIFICACIONES 2: Marcar como leída
 router.put('/notificaciones/:id/leida', verificarToken, (req, res) => {
   const sql = "UPDATE notificaciones SET leida = TRUE WHERE id = ? AND usuario_id = ?";
   
@@ -236,14 +251,10 @@ router.get('/', verificarToken, (req, res) => {
     return res.status(403).json({ error: 'Acceso denegado a los archivos secretos.' });
   }
   
-  // 1. Recibimos la página solicitada (por defecto la 1) y el límite (por defecto 10)
   const page = parseInt(req.query.page) || 1;
   const limit = parseInt(req.query.limit) || 10;
-  
-  // 2. Calculamos el salto (offset)
   const offset = (page - 1) * limit;
 
-  // 3. Primero contamos el total de aventureros en la base de datos
   const countSql = "SELECT COUNT(*) AS total FROM usuarios";
   
   db.query(countSql, (err, countResult) => {
@@ -252,13 +263,11 @@ router.get('/', verificarToken, (req, res) => {
     const totalUsuarios = countResult[0].total;
     const totalPaginas = Math.ceil(totalUsuarios / limit);
 
-    // 4. Ahora buscamos solo los usuarios de esa página usando LIMIT y OFFSET
     const sql = `SELECT id, nombre, email, rol, avatar, solicita_dm FROM usuarios ORDER BY nombre ASC LIMIT ${limit} OFFSET ${offset}`;
     
     db.query(sql, (err, resultados) => {
       if (err) return res.status(500).json({ error: 'Error al consultar el censo del gremio.' });
       
-      // 5. Enviamos la respuesta estructurada con los datos y la metadata
       res.json({
         datos: resultados,
         paginacion: {
