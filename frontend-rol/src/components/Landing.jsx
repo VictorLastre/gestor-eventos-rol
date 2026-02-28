@@ -1,5 +1,5 @@
 import { useState, useRef } from 'react';
-import puertaDungeon from '../assets/puerta-dungeon.png'; // ✨ IMPORTAMOS LA PUERTA
+import puertaDungeon from '../assets/dungeon_door.png'; // ✨ IMPORTAMOS LA PUERTA
 
 function Landing({ irALogin }) {
   const [indiceFundador, setIndiceFundador] = useState(null);
