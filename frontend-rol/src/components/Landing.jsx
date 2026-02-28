@@ -1,41 +1,135 @@
 import { useState } from 'react';
 
 function Landing({ irALogin }) {
-  // Estado para el modal de los fundadores
-  const [fundadorSeleccionado, setFundadorSeleccionado] = useState(null);
+  // ✨ ESTADO DEL CARRUSEL: Ahora guardamos el ÍNDICE (0 al 6) en lugar del objeto
+  const [indiceFundador, setIndiceFundador] = useState(null);
   
-  // ✨ NUEVO ESTADO: Controla qué sección se está mostrando en pantalla
-  const [seccionActiva, setSeccionActiva] = useState('inicio'); // 'inicio', 'nosotros', 'fundadores'
+  const [seccionActiva, setSeccionActiva] = useState('inicio'); 
 
-  // 📜 Aquí es donde agregarás los textos que te pasen los miembros más adelante
+  // 📜 LISTA DE LOS 7 FUNDADORES CON SUS COLORES FOIL
   const fundadores = [
     {
-      id: 1,
-      nombre: "Nombre Fundador 1",
-      titulo: "Gran Maestre de Mesa",
-      icono: "🧙‍♂️",
-      descripcion: "Aquí irá la historia de sus primeras campañas, los sistemas que domina y su visión para unir a los jugadores..."
+      nombre: "Sterbern",
+      titulo: "El Arquitecto",
+      icono: "💻",
+      descripcion: "Aquí irá tu historia, la creación del sistema web y tu visión para el Gremio...",
+      color: {
+        border: "group-hover:border-emerald-500",
+        shadow: "hover:shadow-[0_0_40px_rgba(16,185,129,0.4)]",
+        text: "group-hover:text-emerald-400",
+        bgIcon: "group-hover:border-emerald-500 shadow-[inset_0_0_20px_rgba(16,185,129,0)] group-hover:shadow-[inset_0_0_20px_rgba(16,185,129,0.3)]",
+        foil: "from-emerald-400/0 via-emerald-300/30 to-emerald-400/0",
+        modalGlow: "shadow-[0_0_40px_rgba(16,185,129,0.2)]",
+        modalBorder: "border-emerald-500"
+      }
     },
     {
-      id: 2,
-      nombre: "Nombre Fundador 2",
+      nombre: "Martín",
+      titulo: "Maestre de Dados",
+      icono: "🎲",
+      descripcion: "Aquí irá la historia de Martín, sus anécdotas en las mesas y los sistemas que domina...",
+      color: {
+        border: "group-hover:border-blue-500",
+        shadow: "hover:shadow-[0_0_40px_rgba(59,130,246,0.4)]",
+        text: "group-hover:text-blue-400",
+        bgIcon: "group-hover:border-blue-500 shadow-[inset_0_0_20px_rgba(59,130,246,0)] group-hover:shadow-[inset_0_0_20px_rgba(59,130,246,0.3)]",
+        foil: "from-blue-400/0 via-blue-300/30 to-blue-400/0",
+        modalGlow: "shadow-[0_0_40px_rgba(59,130,246,0.2)]",
+        modalBorder: "border-blue-500"
+      }
+    },
+    {
+      nombre: "Diny",
       titulo: "Guardián del Lore",
-      icono: "🛡️",
-      descripcion: "Aquí irá el relato de cómo ayudó a forjar la Asociación, sus anécdotas con los dados y los mundos que prefiere explorar..."
+      icono: "📚",
+      descripcion: "Aquí irá la historia de Diny, su conocimiento del trasfondo y sus mejores campañas...",
+      color: {
+        border: "group-hover:border-purple-500",
+        shadow: "hover:shadow-[0_0_40px_rgba(168,85,247,0.4)]",
+        text: "group-hover:text-purple-400",
+        bgIcon: "group-hover:border-purple-500 shadow-[inset_0_0_20px_rgba(168,85,247,0)] group-hover:shadow-[inset_0_0_20px_rgba(168,85,247,0.3)]",
+        foil: "from-purple-400/0 via-purple-300/30 to-purple-400/0",
+        modalGlow: "shadow-[0_0_40px_rgba(168,85,247,0.2)]",
+        modalBorder: "border-purple-500"
+      }
     },
     {
-      id: 3,
-      nombre: "Nombre Fundador 3",
+      nombre: "Mati",
       titulo: "Forjador de Mundos",
-      icono: "📜",
-      descripcion: "Aquí irá su experiencia diseñando partidas épicas, su rol en la comunidad y su mensaje para los nuevos aventureros..."
+      icono: "🗺️",
+      descripcion: "Aquí irá la historia de Mati, cómo crea escenarios increíbles y sus mundos favoritos...",
+      color: {
+        border: "group-hover:border-amber-500",
+        shadow: "hover:shadow-[0_0_40px_rgba(245,158,11,0.4)]",
+        text: "group-hover:text-amber-400",
+        bgIcon: "group-hover:border-amber-500 shadow-[inset_0_0_20px_rgba(245,158,11,0)] group-hover:shadow-[inset_0_0_20px_rgba(245,158,11,0.3)]",
+        foil: "from-amber-400/0 via-amber-300/30 to-amber-400/0",
+        modalGlow: "shadow-[0_0_40px_rgba(245,158,11,0.2)]",
+        modalBorder: "border-amber-500"
+      }
+    },
+    {
+      nombre: "Delo",
+      titulo: "Voz del Caos",
+      icono: "🔥",
+      descripcion: "Aquí irá la historia de Delo, sus momentos más divertidos y su estilo de juego...",
+      color: {
+        border: "group-hover:border-red-500",
+        shadow: "hover:shadow-[0_0_40px_rgba(239,68,68,0.4)]",
+        text: "group-hover:text-red-400",
+        bgIcon: "group-hover:border-red-500 shadow-[inset_0_0_20px_rgba(239,68,68,0)] group-hover:shadow-[inset_0_0_20px_rgba(239,68,68,0.3)]",
+        foil: "from-red-400/0 via-red-300/30 to-red-400/0",
+        modalGlow: "shadow-[0_0_40px_rgba(239,68,68,0.2)]",
+        modalBorder: "border-red-500"
+      }
+    },
+    {
+      nombre: "Keith",
+      titulo: "Señor de las Sombras",
+      icono: "🥷",
+      descripcion: "Aquí irá la historia de Keith, sus estrategias en la mesa y personajes letales...",
+      color: {
+        border: "group-hover:border-indigo-500",
+        shadow: "hover:shadow-[0_0_40px_rgba(99,102,241,0.4)]",
+        text: "group-hover:text-indigo-400",
+        bgIcon: "group-hover:border-indigo-500 shadow-[inset_0_0_20px_rgba(99,102,241,0)] group-hover:shadow-[inset_0_0_20px_rgba(99,102,241,0.3)]",
+        foil: "from-indigo-400/0 via-indigo-300/30 to-indigo-400/0",
+        modalGlow: "shadow-[0_0_40px_rgba(99,102,241,0.2)]",
+        modalBorder: "border-indigo-500"
+      }
+    },
+    {
+      nombre: "Chiquito",
+      titulo: "El Coloso",
+      icono: "🛡️",
+      descripcion: "Aquí irá la historia de Chiquito, su presencia en el Gremio y sus roles favoritos...",
+      color: {
+        border: "group-hover:border-rose-500",
+        shadow: "hover:shadow-[0_0_40px_rgba(244,63,94,0.4)]",
+        text: "group-hover:text-rose-400",
+        bgIcon: "group-hover:border-rose-500 shadow-[inset_0_0_20px_rgba(244,63,94,0)] group-hover:shadow-[inset_0_0_20px_rgba(244,63,94,0.3)]",
+        foil: "from-rose-400/0 via-rose-300/30 to-rose-400/0",
+        modalGlow: "shadow-[0_0_40px_rgba(244,63,94,0.2)]",
+        modalBorder: "border-rose-500"
+      }
     }
   ];
+
+  // Funciones del Carrusel
+  const siguienteFundador = (e) => {
+    e.stopPropagation();
+    setIndiceFundador((prev) => (prev + 1) % fundadores.length);
+  };
+
+  const anteriorFundador = (e) => {
+    e.stopPropagation();
+    setIndiceFundador((prev) => (prev - 1 + fundadores.length) % fundadores.length);
+  };
 
   return (
     <div className="min-h-screen bg-zinc-950 text-zinc-300 font-sans selection:bg-emerald-500/30 overflow-x-hidden relative flex flex-col">
       
-      {/* 🧭 BARRA DE NAVEGACIÓN SUPERIOR (AHORA FUNCIONA COMO PESTAÑAS) */}
+      {/* 🧭 BARRA DE NAVEGACIÓN SUPERIOR */}
       <nav className="fixed top-0 w-full bg-zinc-950/90 backdrop-blur-md border-b border-zinc-800 z-50">
         <div className="max-w-6xl mx-auto px-6 h-20 flex items-center justify-between">
           <div 
@@ -80,10 +174,9 @@ function Landing({ irALogin }) {
         </div>
       </nav>
 
-      {/* CONTENEDOR PRINCIPAL QUE CAMBIA SEGÚN LA PESTAÑA */}
       <main className="flex-grow flex flex-col justify-center mt-20">
         
-        {/* 🏰 PESTAÑA 1: PORTADA ÉPICA (HERO) */}
+        {/* 🏰 PESTAÑA 1: INICIO */}
         {seccionActiva === 'inicio' && (
           <header className="relative py-20 px-6 flex flex-col items-center justify-center text-center flex-grow animate-in fade-in zoom-in-95 duration-500">
             <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-emerald-500/10 blur-[120px] rounded-full pointer-events-none"></div>
@@ -128,14 +221,14 @@ function Landing({ irALogin }) {
                   Nacimos con un propósito claro: reunir a los apasionados por el rol bajo un mismo estandarte. Somos un espacio creado por y para jugadores y Directores de Juego, donde no importa si eres un veterano curtido en mil batallas o si recién vas a tirar tu primer dado de 20 caras.
                 </p>
                 <p>
-                  Organizamos eventos, facilitamos mesas de juego y promovemos la difusión de todos los sistemas (desde la fantasía medieval hasta el horror cósmico y la ciencia ficción). Nuestra misión es que nadie se quede sin un grupo con el cual compartir una tarde de imaginación y estrategia.
+                  Organizamos eventos, facilitamos mesas de juego y promovemos la difusión de todos los sistemas. Nuestra misión es que nadie se quede sin un grupo con el cual compartir una tarde de imaginación y estrategia.
                 </p>
               </div>
             </div>
           </section>
         )}
 
-        {/* 👑 PESTAÑA 3: FUNDADORES */}
+        {/* 👑 PESTAÑA 3: FUNDADORES (CON EFECTO FOIL) */}
         {seccionActiva === 'fundadores' && (
           <section className="py-12 px-6 max-w-6xl mx-auto flex-grow animate-in fade-in slide-in-from-bottom-8 duration-500">
             <div className="text-center mb-12">
@@ -147,27 +240,30 @@ function Landing({ irALogin }) {
               </p>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-              {fundadores.map((fundador) => (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 justify-center">
+              {fundadores.map((fundador, index) => (
                 <div 
-                  key={fundador.id}
-                  onClick={() => setFundadorSeleccionado(fundador)}
-                  className="bg-zinc-900 border border-zinc-800 hover:border-emerald-500/50 rounded-3xl p-8 cursor-pointer group transition-all duration-300 hover:-translate-y-2 hover:shadow-[0_10px_30px_rgba(16,185,129,0.1)] flex flex-col items-center text-center relative overflow-hidden"
+                  key={index}
+                  onClick={() => setIndiceFundador(index)}
+                  className={`bg-zinc-900 border border-zinc-800 rounded-3xl p-6 cursor-pointer group transition-all duration-500 hover:-translate-y-2 flex flex-col items-center text-center relative overflow-hidden ${fundador.color.shadow} ${fundador.color.border}`}
                 >
-                  <div className="absolute top-0 right-0 w-24 h-24 bg-zinc-800/50 rounded-bl-full -z-10 group-hover:bg-emerald-500/10 transition-colors"></div>
+                  {/* EFECTO DE BRILLO FOIL DIAGONAL EN HOVER */}
+                  <div className={`absolute inset-0 bg-gradient-to-tr ${fundador.color.foil} opacity-0 group-hover:opacity-100 group-hover:translate-x-full transition-all duration-700 ease-in-out transform -translate-x-full skew-x-12 z-10 pointer-events-none`}></div>
                   
-                  <div className="w-24 h-24 bg-zinc-950 rounded-full border-2 border-zinc-800 group-hover:border-emerald-500 flex items-center justify-center text-4xl mb-6 shadow-inner transition-colors">
+                  {/* CÍRCULO DEL ICONO QUE SE ILUMINA */}
+                  <div className={`w-20 h-20 bg-zinc-950 rounded-full border-2 border-zinc-800 flex items-center justify-center text-3xl mb-5 transition-all duration-300 relative z-20 ${fundador.color.bgIcon}`}>
                     {fundador.icono}
                   </div>
-                  <h3 className="text-xl font-black text-white uppercase tracking-tight mb-2 group-hover:text-emerald-400 transition-colors">
+                  
+                  <h3 className={`text-xl font-black text-white uppercase tracking-tight mb-1 transition-colors relative z-20 ${fundador.color.text}`}>
                     {fundador.nombre}
                   </h3>
-                  <p className="text-sm font-bold text-zinc-500 uppercase tracking-widest mb-6">
+                  <p className="text-xs font-bold text-zinc-500 uppercase tracking-widest mb-6 relative z-20">
                     {fundador.titulo}
                   </p>
                   
-                  <span className="mt-auto text-[10px] font-black uppercase tracking-widest text-zinc-600 group-hover:text-emerald-500 flex items-center gap-2 bg-zinc-950/50 px-4 py-2 rounded-lg border border-zinc-800/50">
-                    Leer Pergamino <span>→</span>
+                  <span className={`mt-auto text-[9px] font-black uppercase tracking-widest text-zinc-600 flex items-center gap-2 bg-zinc-950/50 px-3 py-1.5 rounded-lg border border-zinc-800/50 transition-colors relative z-20 ${fundador.color.text}`}>
+                    Ver Historia <span>→</span>
                   </span>
                 </div>
               ))}
@@ -176,40 +272,68 @@ function Landing({ irALogin }) {
         )}
       </main>
 
-      {/* 👁️ MODAL DEL FUNDADOR */}
-      {fundadorSeleccionado && (
+      {/* 🔄 MODAL DEL CARRUSEL DE FUNDADORES */}
+      {indiceFundador !== null && (
         <div 
-          className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/90 backdrop-blur-sm animate-in fade-in duration-300" 
-          onClick={() => setFundadorSeleccionado(null)}
+          className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/90 backdrop-blur-md animate-in fade-in duration-300" 
+          onClick={() => setIndiceFundador(null)}
         >
+          {/* BOTÓN ANTERIOR */}
+          <button 
+            onClick={anteriorFundador}
+            className="absolute left-4 md:left-12 text-zinc-500 hover:text-white text-4xl p-2 transition-transform hover:-translate-x-2 z-50 bg-black/50 rounded-full w-14 h-14 flex items-center justify-center border border-zinc-800"
+          >
+            ‹
+          </button>
+
+          {/* TARJETA DEL FUNDADOR SELECCIONADO (CON ANIMACIÓN DE CAMBIO) */}
           <div 
-            className="bg-zinc-900 border border-zinc-800 w-full max-w-lg rounded-[2.5rem] p-10 relative shadow-[0_0_50px_rgba(16,185,129,0.1)] animate-in zoom-in-95"
+            key={indiceFundador} // Esto fuerza la animación al cambiar de tarjeta
+            className={`bg-zinc-900 border w-full max-w-lg rounded-[2.5rem] p-10 relative animate-in zoom-in-95 duration-300 ${fundadores[indiceFundador].color.modalGlow} ${fundadores[indiceFundador].color.modalBorder}`}
             onClick={(e) => e.stopPropagation()} 
           >
             <button 
-              onClick={() => setFundadorSeleccionado(null)}
+              onClick={() => setIndiceFundador(null)}
               className="absolute top-6 right-6 text-zinc-500 hover:text-white text-xl p-2 bg-zinc-950 rounded-full transition-colors w-10 h-10 flex items-center justify-center border border-zinc-800"
             >
               ✕
             </button>
             
-            <div className="w-20 h-20 bg-zinc-950 rounded-full border-2 border-emerald-500 flex items-center justify-center text-3xl mb-6 mx-auto shadow-[0_0_15px_rgba(16,185,129,0.2)]">
-              {fundadorSeleccionado.icono}
+            <div className={`w-24 h-24 bg-zinc-950 rounded-full border-2 flex items-center justify-center text-4xl mb-6 mx-auto ${fundadores[indiceFundador].color.modalGlow} ${fundadores[indiceFundador].color.modalBorder}`}>
+              {fundadores[indiceFundador].icono}
             </div>
             
-            <h3 className="text-3xl font-black text-white text-center uppercase tracking-tighter mb-2">
-              {fundadorSeleccionado.nombre}
+            <h3 className="text-4xl font-black text-white text-center uppercase tracking-tighter mb-2">
+              {fundadores[indiceFundador].nombre}
             </h3>
-            <p className="text-center text-emerald-500 font-bold uppercase tracking-widest text-xs mb-8">
-              {fundadorSeleccionado.titulo}
+            <p className={`text-center font-black uppercase tracking-widest text-xs mb-8 ${fundadores[indiceFundador].color.text.replace('group-hover:', '')}`}>
+              {fundadores[indiceFundador].titulo}
             </p>
             
-            <div className="w-12 h-1 bg-zinc-800 mx-auto mb-8 rounded-full"></div>
+            <div className="w-16 h-1 bg-zinc-800 mx-auto mb-8 rounded-full"></div>
             
-            <p className="text-zinc-300 leading-relaxed italic text-center">
-              "{fundadorSeleccionado.descripcion}"
+            <p className="text-zinc-300 leading-relaxed italic text-center text-lg">
+              "{fundadores[indiceFundador].descripcion}"
             </p>
+
+            {/* INDICADORES DEL CARRUSEL */}
+            <div className="flex justify-center gap-2 mt-10">
+              {fundadores.map((_, idx) => (
+                <div 
+                  key={idx} 
+                  className={`h-2 rounded-full transition-all duration-300 ${idx === indiceFundador ? `w-8 ${fundadores[indiceFundador].color.modalBorder.replace('border-', 'bg-')}` : 'w-2 bg-zinc-800'}`}
+                />
+              ))}
+            </div>
           </div>
+
+          {/* BOTÓN SIGUIENTE */}
+          <button 
+            onClick={siguienteFundador}
+            className="absolute right-4 md:right-12 text-zinc-500 hover:text-white text-4xl p-2 transition-transform hover:translate-x-2 z-50 bg-black/50 rounded-full w-14 h-14 flex items-center justify-center border border-zinc-800"
+          >
+            ›
+          </button>
         </div>
       )}
 
