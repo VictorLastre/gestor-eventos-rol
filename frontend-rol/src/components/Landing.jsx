@@ -1,9 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
 import puertaDungeon from '../assets/dungeon_door.png'; 
 import forjaAventura from '../assets/forja_tu_aventura.png'; 
-
-// ✨ IMPORTAMOS EL LOGO SVG COMO COMPONENTE PARA CONTROLAR COLOR POR CSS
-import { ReactComponent as LogoSVG } from '../assets/Logo.svg'; 
+import LogoSVG from '../assets/Logo.svg'; // ✨ Cambiado a importación estándar
 
 function Landing({ irALogin }) {
   const [indiceFundador, setIndiceFundador] = useState(null);
@@ -25,14 +23,111 @@ function Landing({ irALogin }) {
   }, [seccionActiva]);
 
   const fundadores = [
-    // ... (Se mantienen tus 7 fundadores igual)
-    { nombre: "Sterbern", titulo: "El Arquitecto", icono: "💻", descripcion: "...", color: { /*...*/ } },
-    { nombre: "Martín", titulo: "Forjador de Mundos", icono: "🗺️", descripcion: "...", color: { /*...*/ } },
-    { nombre: "Diny", titulo: "Guardiána del Lore", icono: "📚", descripcion: "...", color: { /*...*/ } },
-    { nombre: "Mati", titulo: "Maestre de Dados", icono: "🎲", descripcion: "...", color: { /*...*/ } },
-    { nombre: "Delo", titulo: "Voz del Caos", icono: "🔥", descripcion: "...", color: { /*...*/ } },
-    { nombre: "Keith", titulo: "Tejedora de Tinta y Destinos", icono: "✒️", descripcion: "...", color: { /*...*/ } },
-    { nombre: "Chiquito", titulo: "El Coloso Gentil", icono: "🗿", descripcion: "...", color: { /*...*/ } }
+    {
+      nombre: "Sterbern",
+      titulo: "El Arquitecto",
+      icono: "💻",
+      descripcion: "Aquí irá tu historia, la creación del sistema web y tu visión para el Gremio...",
+      color: {
+        border: "border-emerald-500/40 hover:border-emerald-500",
+        shadow: "shadow-[0_0_25px_rgba(16,185,129,0.15)] hover:shadow-[0_0_40px_rgba(16,185,129,0.4)]",
+        text: "text-emerald-400",
+        bgIcon: "border-emerald-500/50 shadow-[inset_0_0_15px_rgba(16,185,129,0.2)]",
+        foil: "from-emerald-400/0 via-emerald-300/40 to-emerald-400/0",
+        modalGlow: "shadow-[0_0_40px_rgba(16,185,129,0.2)]",
+        modalBorder: "border-emerald-500"
+      }
+    },
+    {
+      nombre: "Martín",
+      titulo: "Forjador de Mundos",
+      icono: "🗺️",
+      descripcion: "Aquí irá la historia de Martín, sus anécdotas en las mesas y los sistemas que domina...",
+      color: {
+        border: "border-blue-500/40 hover:border-blue-500",
+        shadow: "shadow-[0_0_25px_rgba(59,130,246,0.15)] hover:shadow-[0_0_40px_rgba(59,130,246,0.4)]",
+        text: "text-blue-400",
+        bgIcon: "border-blue-500/50 shadow-[inset_0_0_15px_rgba(59,130,246,0.2)]",
+        foil: "from-blue-400/0 via-blue-300/40 to-blue-400/0",
+        modalGlow: "shadow-[0_0_40px_rgba(59,130,246,0.2)]",
+        modalBorder: "border-blue-500"
+      }
+    },
+    {
+      nombre: "Diny",
+      titulo: "Guardiána del Lore",
+      icono: "📚",
+      descripcion: "Aquí irá la historia de Diny, su conocimiento del trasfondo y sus mejores campañas...",
+      color: {
+        border: "border-purple-500/40 hover:border-purple-500",
+        shadow: "shadow-[0_0_25px_rgba(168,85,247,0.15)] hover:shadow-[0_0_40px_rgba(168,85,247,0.4)]",
+        text: "text-purple-400",
+        bgIcon: "border-purple-500/50 shadow-[inset_0_0_15px_rgba(168,85,247,0.2)]",
+        foil: "from-purple-400/0 via-purple-300/40 to-purple-400/0",
+        modalGlow: "shadow-[0_0_40px_rgba(168,85,247,0.2)]",
+        modalBorder: "border-purple-500"
+      }
+    },
+    {
+      nombre: "Mati",
+      titulo: "Maestre de Dados",
+      icono: "🎲",
+      descripcion: "Aquí irá la historia de Mati, cómo crea escenarios increíbles y sus mundos favoritos...",
+      color: {
+        border: "border-amber-500/40 hover:border-amber-500",
+        shadow: "shadow-[0_0_25px_rgba(245,158,11,0.15)] hover:shadow-[0_0_40px_rgba(245,158,11,0.4)]",
+        text: "text-amber-400",
+        bgIcon: "border-amber-500/50 shadow-[inset_0_0_15px_rgba(245,158,11,0.2)]",
+        foil: "from-amber-400/0 via-amber-300/40 to-amber-400/0",
+        modalGlow: "shadow-[0_0_40px_rgba(245,158,11,0.2)]",
+        modalBorder: "border-amber-500"
+      }
+    },
+    {
+      nombre: "Delo",
+      titulo: "Voz del Caos",
+      icono: "🔥",
+      descripcion: "Aquí irá la historia de Delo, sus momentos más divertidos y su estilo de juego...",
+      color: {
+        border: "border-red-500/40 hover:border-red-500",
+        shadow: "shadow-[0_0_25px_rgba(239,68,68,0.15)] hover:shadow-[0_0_40px_rgba(239,68,68,0.4)]",
+        text: "text-red-400",
+        bgIcon: "border-red-500/50 shadow-[inset_0_0_15px_rgba(239,68,68,0.2)]",
+        foil: "from-red-400/0 via-red-300/40 to-red-400/0",
+        modalGlow: "shadow-[0_0_40px_rgba(239,68,68,0.2)]",
+        modalBorder: "border-red-500"
+      }
+    },
+    {
+      nombre: "Keith",
+      titulo: "Tejedora de Tinta y Destinos",
+      icono: "✒️",
+      descripcion: "Aquí irá la historia de Keith, sus estrategias en la mesa y personajes letales...",
+      color: {
+        border: "border-indigo-500/40 hover:border-indigo-500",
+        shadow: "shadow-[0_0_25px_rgba(99,102,241,0.15)] hover:shadow-[0_0_40px_rgba(99,102,241,0.4)]",
+        text: "text-indigo-400",
+        bgIcon: "border-indigo-500/50 shadow-[inset_0_0_15px_rgba(99,102,241,0.2)]",
+        foil: "from-indigo-400/0 via-indigo-300/40 to-indigo-400/0",
+        modalGlow: "shadow-[0_0_40px_rgba(99,102,241,0.2)]",
+        modalBorder: "border-indigo-500"
+      }
+    },
+    {
+      nombre: "Chiquito",
+      titulo: "El Coloso Gentil",
+      icono: "🗿",
+      descripcion: "Aquí irá la historia de Chiquito, su presencia en el Gremio y sus roles favoritos...",
+      color: {
+        border: "border-green-500/40 hover:border-green-500",
+        shadow: "shadow-[0_0_25px_rgba(34,197,94,0.15)] hover:shadow-[0_0_40px_rgba(34,197,94,0.4)]",
+        text: "text-green-400",
+        bgIcon: "border-green-500/50 shadow-[inset_0_0_15px_rgba(34,197,94,0.2)]",
+        foil: "from-green-400/0 via-green-300/40 to-green-400/0",
+        modalGlow: "shadow-[0_0_40px_rgba(34,197,94,0.2)]",
+        modalBorder: "border-green-500"
+      }
+    }
   ];
 
   const siguienteFundador = (e) => { e.stopPropagation(); setIndiceFundador((prev) => (prev + 1) % fundadores.length); };
@@ -62,35 +157,24 @@ function Landing({ irALogin }) {
             filter: drop-shadow(0 0 8px rgba(16, 185, 129, 0.4));
             transition: filter 0.3s ease;
           }
-          .img-glow:hover {
-            filter: drop-shadow(0 0 15px rgba(16, 185, 129, 0.7));
-          }
-
-          /* ✨ ESTILOS ESPECÍFICOS PARA EL LOGO SVG ANIMADO */
-          .logo-svg-container svg {
-            fill: #71717a; /* Color zinc-400 por defecto */
-            transition: fill 0.3s ease, transform 0.3s ease;
-          }
-          .group:hover .logo-svg-container svg {
-            fill: #10b981; /* Cambia a emerald-500 en hover del grupo */
-            transform: scale(1.05);
-          }
         `}
       </style>
 
       {/* 🧭 NAV */}
       <nav className="fixed top-0 w-full bg-zinc-950/90 backdrop-blur-md border-b border-zinc-800 z-50">
-        <div className="max-w-6xl mx-auto px-6 h-24 flex items-center justify-between"> {/* Agrandamos un poco el nav h-20 -> h-24 */}
+        <div className="max-w-6xl mx-auto px-6 h-24 flex items-center justify-between">
           <div className="flex items-center gap-4 cursor-pointer group" onClick={() => setSeccionActiva('inicio')}>
             
-            {/* ✨ CONTENEDOR DEL LOGO SVG CON EFECTO FOIL Y AGRANDADO */}
-            <div className="relative logo-svg-container w-20 h-20 rounded-full flex items-center justify-center overflow-hidden border-2 border-zinc-800 group-hover:border-emerald-500/50 transition-colors duration-300 shadow-inner bg-zinc-950 img-glow">
-              
-              {/* Efecto Foil Holográfico (Mismo de las cards) */}
+            {/* ✨ CONTENEDOR DEL LOGO CORREGIDO */}
+            <div className="relative w-20 h-20 rounded-full flex items-center justify-center overflow-hidden border-2 border-zinc-800 group-hover:border-emerald-500/50 transition-colors duration-300 shadow-inner bg-zinc-950 img-glow">
               <div className="absolute inset-0 bg-gradient-to-tr from-emerald-400/0 via-emerald-300/40 to-emerald-400/0 animate-foil z-10 pointer-events-none"></div>
               
-              {/* El componente SVG real */}
-              <LogoSVG className="w-14 h-14 object-contain relative z-20" />
+              {/* Usamos etiqueta img estándar para evitar errores de Rollup */}
+              <img 
+                src={LogoSVG} 
+                alt="Logo" 
+                className="w-14 h-14 object-contain relative z-20 transition-transform duration-300 group-hover:scale-110" 
+              />
             </div>
 
             <span className="text-2xl font-black text-white uppercase tracking-tighter hidden sm:block transition-colors group-hover:text-zinc-200">
@@ -111,9 +195,7 @@ function Landing({ irALogin }) {
         </div>
       </nav>
 
-      <main className="flex-grow flex flex-col justify-center mt-24"> {/* Ajustamos margen top mt-20 -> mt-24 */}
-        {/* ... (Resto del componente Inicio, Nosotros, Fundadores, Modal se mantiene igual que la versión anterior) */}
-        
+      <main className="flex-grow flex flex-col justify-center mt-24">
         {seccionActiva === 'inicio' && (
           <header className="relative py-20 px-6 flex flex-col items-center justify-center text-center flex-grow animate-in fade-in zoom-in-95 duration-500">
             <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-emerald-500/10 blur-[120px] rounded-full pointer-events-none"></div>
@@ -129,7 +211,6 @@ function Landing({ irALogin }) {
           </header>
         )}
 
-        {/* ... (Secciones Nosotros y Fundadores se mantienen igual) */}
         {seccionActiva === 'nosotros' && (
           <section className="py-20 px-6 max-w-4xl mx-auto flex-grow flex flex-col justify-center animate-in fade-in slide-in-from-bottom-8 duration-500">
              <div className="text-center relative z-10">
@@ -168,7 +249,7 @@ function Landing({ irALogin }) {
         )}
       </main>
 
-      {/* 🔄 MODAL */}
+      {/* Modal e Indicadores se mantienen... */}
       {indiceFundador !== null && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/90 backdrop-blur-sm" onClick={() => setIndiceFundador(null)}>
           <button onClick={anteriorFundador} className="absolute left-4 md:left-12 text-zinc-500 hover:text-white text-4xl p-2 z-50">‹</button>
