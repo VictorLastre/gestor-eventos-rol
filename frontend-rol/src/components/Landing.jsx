@@ -199,7 +199,7 @@ function Landing({ irALogin }) {
             <div className="relative z-10 max-w-4xl flex flex-col items-center">
               <button onClick={irALogin} className="group relative transition-transform duration-500 hover:scale-105 active:scale-95 mb-8 outline-none">
                 <div className="absolute inset-0 bg-emerald-500/20 blur-3xl opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
-                <img src={forjaAventura} alt="Comenzar Aventura" className="w-full max-w-[600px] md:max-w-[800px] h-auto object-contain relative z-10 img-glow" />
+                <img src={forjaAventura} alt="Comenzar Aventura" className="w-full max-w-[300px] md:max-w-[300px] h-auto object-contain relative z-10 img-glow" />
                 <span className="mt-4 block text-emerald-500 font-black uppercase tracking-[0.4em] text-xs opacity-60 group-hover:opacity-100 transition-opacity animate-pulse">Haz clic para comenzar aventura →</span>
               </button>
               <p className="text-xl md:text-2xl text-zinc-400 mb-12 font-medium italic max-w-2xl mx-auto leading-relaxed border-l-4 border-emerald-500/50 pl-6 text-left md:text-center md:border-l-0 md:pl-0">Únete a la Asociación de Rol. Encuentra mesas, descubre nuevos sistemas y comparte aventuras épicas con la comunidad.</p>
