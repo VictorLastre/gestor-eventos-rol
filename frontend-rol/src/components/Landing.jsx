@@ -1,5 +1,4 @@
-import { useState, useRef } from 'react';
-import puertaDungeon from '../assets/dungeon_door.png'; 
+import { useState, useRef, useEffect } from 'react';import puertaDungeon from '../assets/dungeon_door.png'; 
 import dado20 from '../assets/dado_20.png'; 
 import forjaAventura from '../assets/forja_tu_aventura.png'; // ✨ IMPORTAMOS EL NUEVO TÍTULO
 
@@ -9,6 +8,25 @@ function Landing({ irALogin }) {
 
   // ✨ REFERENCIA PARA EL CARRUSEL DE TARJETAS
   const carruselRef = useRef(null);
+
+  // ✨ EFECTO DE AUTOPLAY PARA EL CARRUSEL DE TARJETAS
+  useEffect(() => {
+    const intervalo = setInterval(() => {
+      if (carruselRef.current) {
+        const { scrollLeft, scrollWidth, clientWidth } = carruselRef.current;
+        
+        // Si llegamos al final (o muy cerca), volvemos al inicio
+        if (scrollLeft + clientWidth >= scrollWidth - 10) {
+          carruselRef.current.scrollTo({ left: 0, behavior: 'smooth' });
+        } else {
+          // Si no, avanzamos una tarjeta (aprox 350px)
+          carruselRef.current.scrollBy({ left: 350, behavior: 'smooth' });
+        }
+      }
+    }, 4000); // Se mueve cada 4 segundos
+
+    return () => clearInterval(intervalo); // Limpiamos al desmontar
+  }, [seccionActiva]); // Se reinicia si cambias de pestaña
 
   // ✨ AHORA LOS COLORES TIENEN ESTADO FIJO PARA VERSE SIEMPRE VIVOS
   const fundadores = [
@@ -108,11 +126,11 @@ function Landing({ irALogin }) {
       icono: "🗿",
       descripcion: "Aquí irá la historia de Chiquito, su presencia en el Gremio y sus roles favoritos...",
       color: {
-        border: "border-rose-500/40 hover:border-rose-500",
+        border: "border-green-500/40 hover:border-green-500",
         shadow: "shadow-[0_0_25px_rgba(244,63,94,0.15)] hover:shadow-[0_0_40px_rgba(244,63,94,0.4)]",
-        text: "text-rose-400",
+        text: "text-green-400",
         bgIcon: "border-green-500/50 shadow-[inset_0_0_15px_rgba(244,63,94,0.2)]",
-        foil: "from-rose-400/0 via-rose-300/40 to-rose-400/0",
+        foil: "from-green-400/0 via-green-300/40 to-green-400/0",
         modalGlow: "shadow-[0_0_40px_rgba(244,63,94,0.2)]",
         modalBorder: "border-green-500"
       }
