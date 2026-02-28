@@ -13,7 +13,6 @@ function Eventos() {
   const [partidasDelEvento, setPartidasDelEvento] = useState([]);
   const [mostrarFormularioMesa, setMostrarFormularioMesa] = useState(false);
   const [pestanaAdmin, setPestanaAdmin] = useState('eventos');
-  
   const [eventoEditando, setEventoEditando] = useState(null);
   
   const carruselEventosRef = useRef(null);
@@ -23,18 +22,11 @@ function Eventos() {
   const esDungeonMaster = usuarioGuardado && (usuarioGuardado.rol === 'dm' || usuarioGuardado.rol === 'admin');
   const esAdmin = usuarioGuardado && usuarioGuardado.rol === 'admin';
 
-  // ✨ FUNCIÓN CLAVE: Formatear fecha sin usar el objeto Date (Evita desfase horario)
   const formatearFechaManual = (fechaStr) => {
     if (!fechaStr) return "Fecha Desconocida";
-    // Si viene formato ISO "2026-02-28T00:00:00.000Z" o "2026-02-28"
     const soloFecha = fechaStr.split('T')[0];
     const [anio, mes, dia] = soloFecha.split('-');
-    
-    const meses = [
-      "enero", "febrero", "marzo", "abril", "mayo", "junio",
-      "julio", "agosto", "septiembre", "octubre", "noviembre", "diciembre"
-    ];
-    
+    const meses = ["enero", "febrero", "marzo", "abril", "mayo", "junio", "julio", "agosto", "septiembre", "octubre", "noviembre", "diciembre"];
     return `${parseInt(dia)} de ${meses[parseInt(mes) - 1]} de ${anio}`;
   };
 
@@ -45,41 +37,30 @@ function Eventos() {
       .catch(err => console.error("Error:", err));
   };
 
-  useEffect(() => {
-    cargarEventos();
-  }, []);
+  useEffect(() => { cargarEventos(); }, []);
 
   const borrarEvento = async (id, e) => {
     e.stopPropagation();
-    
     const result = await Swal.fire({
       title: '¿Arrasar con esta jornada?',
-      text: "⚠️ Se perderán todos los datos, mesas y aventureros inscritos en este evento.",
+      text: "⚠️ Se perderán todos los datos, mesas y aventureros inscritos.",
       icon: 'warning',
       showCancelButton: true,
       background: '#18181b', 
       color: '#fff',
       confirmButtonColor: '#ef4444', 
-      cancelButtonColor: '#3f3f46', 
-      confirmButtonText: 'Sí, destruir evento',
-      cancelButtonText: 'Cancelar'
+      confirmButtonText: 'Sí, destruir evento'
     });
 
     if (result.isConfirmed) {
       try {
-        const res = await fetchProtegido(`https://gestor-eventos-rol.onrender.com/api/eventos/${id}`, {
-          method: 'DELETE'
-        });
-
+        const res = await fetchProtegido(`https://gestor-eventos-rol.onrender.com/api/eventos/${id}`, { method: 'DELETE' });
         if (res.ok) {
           Swal.fire({ title: '¡Evento Borrado!', icon: 'success', background: '#18181b', color: '#fff' });
           if (eventoSeleccionado && eventoSeleccionado.id === id) setEventoSeleccionado(null);
           cargarEventos();
         }
-      } catch (err) { 
-        if (err === 'Sesión expirada') return;
-        console.error(err); 
-      }
+      } catch (err) { if (err !== 'Sesión expirada') console.error(err); }
     }
   };
 
@@ -90,22 +71,17 @@ function Eventos() {
         method: 'PUT',
         body: JSON.stringify(eventoEditando)
       });
-
       if (res.ok) {
-        Swal.fire({ title: '¡Jornada Reescríta!', icon: 'success', background: '#18181b', color: '#fff' });
+        Swal.fire({ title: '¡Jornada Reescrita!', icon: 'success', background: '#18181b', color: '#fff' });
         if (eventoSeleccionado && eventoSeleccionado.id === eventoEditando.id) setEventoSeleccionado(eventoEditando);
         setEventoEditando(null); 
         cargarEventos(); 
       }
-    } catch (err) {
-      if (err === 'Sesión expirada') return;
-      console.error(err);
-    }
+    } catch (err) { if (err !== 'Sesión expirada') console.error(err); }
   };
 
   const abrirEdicion = (evento, e) => {
     e.stopPropagation();
-    // Tomamos la fecha directamente como string para el input date
     const fechaLimpia = evento.fecha.split('T')[0];
     setEventoEditando({ ...evento, fecha: fechaLimpia });
   };
@@ -115,144 +91,132 @@ function Eventos() {
     fetchProtegido(`https://gestor-eventos-rol.onrender.com/api/eventos/${evento.id}/partidas`)
       .then(res => res.json())
       .then(setPartidasDelEvento)
-      .catch(err => {
-        if (err === 'Sesión expirada') return;
-        console.error(err);
-      });
+      .catch(err => { if (err !== 'Sesión expirada') console.error(err); });
   };
 
-  // Ordenamiento seguro tratando la fecha como string para evitar saltos de día
-  const eventosProximos = eventos
-    .filter(e => e.estado === 'Proximo' || e.estado === 'En Curso')
-    .sort((a, b) => a.fecha.localeCompare(b.fecha));
-    
-  const eventosPasados = eventos
-    .filter(e => e.estado === 'Finalizado' || e.estado === 'Suspendido')
-    .sort((a, b) => b.fecha.localeCompare(a.fecha)); 
-
-  const formatearHora = (hora) => hora ? hora.substring(0, 5) : '';
+  const eventosProximos = eventos.filter(e => e.estado === 'Proximo' || e.estado === 'En Curso').sort((a, b) => a.fecha.localeCompare(b.fecha));
+  const eventosPasados = eventos.filter(e => e.estado === 'Finalizado' || e.estado === 'Suspendido').sort((a, b) => b.fecha.localeCompare(a.fecha)); 
 
   const scrollEventosIzq = () => carruselEventosRef.current?.scrollBy({ left: -400, behavior: 'smooth' });
   const scrollEventosDer = () => carruselEventosRef.current?.scrollBy({ left: 400, behavior: 'smooth' });
-  const scrollPartidasIzq = () => carruselPartidasRef.current?.scrollBy({ left: -400, behavior: 'smooth' });
-  const scrollPartidasDer = () => carruselPartidasRef.current?.scrollBy({ left: 400, behavior: 'smooth' });
 
+  // VISTA DE DETALLE DEL EVENTO
   if (eventoSeleccionado) {
-    const eventoEsPasado = eventoSeleccionado.estado === 'Finalizado';
-    const eventoSuspendido = eventoSeleccionado.estado === 'Suspendido';
-    const yaParticipaEnEsteEvento = partidasDelEvento.some(p => 
-      p.dungeon_master_id === usuarioGuardado?.id || p.anotadoInicialmente === 1
-    );
+    const yaParticipa = partidasDelEvento.some(p => p.dungeon_master_id === usuarioGuardado?.id || p.anotadoInicialmente === 1);
 
     return (
-      <div className="max-w-6xl mx-auto p-6 animate-in fade-in slide-in-from-bottom-4 duration-500 overflow-hidden">
-        <div className="flex justify-between items-center mb-8 max-w-4xl mx-auto">
-          <button onClick={() => setEventoSeleccionado(null)} className="group flex items-center gap-2 text-zinc-500 hover:text-emerald-400 transition-colors font-black text-xs uppercase tracking-widest">
-            <span className="group-hover:-translate-x-1 transition-transform">←</span> Volver al Tablón
-          </button>
-          {esAdmin && (
-            <button onClick={(e) => abrirEdicion(eventoSeleccionado, e)} className="bg-purple-500/10 hover:bg-purple-500 hover:text-white text-purple-400 border border-purple-500/30 px-4 py-2 rounded-xl text-[10px] uppercase font-black tracking-widest transition-colors">
-              ✏️ Editar Evento
-            </button>
-          )}
-        </div>
+      <div className="max-w-6xl mx-auto p-4 md:p-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
+        <button onClick={() => setEventoSeleccionado(null)} className="group flex items-center gap-2 text-zinc-500 hover:text-emerald-400 transition-colors font-black text-[10px] uppercase tracking-[0.3em] mb-8">
+          <span className="group-hover:-translate-x-1 transition-transform">←</span> Volver al Tablón
+        </button>
 
-        <header className={`bg-zinc-900/50 border ${eventoEsPasado || eventoSuspendido ? 'border-zinc-800 opacity-80' : 'border-zinc-800'} p-8 rounded-3xl backdrop-blur-xl mb-8 relative overflow-hidden max-w-4xl mx-auto`}>
-          {eventoEsPasado && <div className="absolute -top-6 -right-10 bg-zinc-800 text-zinc-400 text-xs font-black px-12 py-2 rotate-45 uppercase tracking-widest shadow-lg">FINALIZADO</div>}
-          {eventoSuspendido && <div className="absolute -top-6 -right-10 bg-red-500 text-black text-xs font-black px-12 py-2 rotate-45 uppercase tracking-widest shadow-lg">SUSPENDIDO</div>}
-          {eventoSeleccionado.estado === 'En Curso' && <div className="absolute -top-6 -right-10 bg-blue-500 text-white text-xs font-black px-12 py-2 rotate-45 uppercase tracking-widest shadow-lg animate-pulse">EN CURSO</div>}
+        <header className="relative bg-zinc-900 border border-zinc-800 p-8 rounded-[2.5rem] shadow-2xl mb-12 overflow-hidden">
+          {/* Badge de Estado Dinámico */}
+          <div className={`absolute top-6 right-6 px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest border ${
+            eventoSeleccionado.estado === 'En Curso' ? 'bg-blue-500/20 text-blue-400 border-blue-500/30 animate-pulse' : 
+            eventoSeleccionado.estado === 'Suspendido' ? 'bg-red-500/20 text-red-400 border-red-500/30' : 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30'
+          }`}>
+            {eventoSeleccionado.estado}
+          </div>
+
+          <h2 className="text-4xl md:text-5xl font-black text-white mb-4 tracking-tighter uppercase italic">{eventoSeleccionado.nombre}</h2>
+          <p className="text-zinc-400 text-lg italic mb-8 border-l-4 border-emerald-500/30 pl-6 max-w-2xl leading-relaxed">"{eventoSeleccionado.descripcion}"</p>
           
-          <h2 className="text-4xl font-black text-white mb-3 tracking-tighter">{eventoSeleccionado.nombre}</h2>
-          <p className="text-zinc-400 text-lg leading-relaxed mb-6 italic">"{eventoSeleccionado.descripcion}"</p>
-          
-          <div className="flex flex-wrap gap-3">
-            <div className={`flex items-center gap-2 font-bold w-fit px-4 py-1.5 rounded-full border ${eventoEsPasado || eventoSuspendido ? 'text-zinc-500 bg-zinc-500/10 border-zinc-500/20' : 'text-emerald-500 bg-emerald-500/10 border-emerald-500/20'}`}>
-              <span>📅</span> {formatearFechaManual(eventoSeleccionado.fecha)}
+          <div className="flex flex-wrap gap-4">
+            <div className="bg-zinc-950 px-5 py-3 rounded-2xl border border-zinc-800 flex items-center gap-3">
+              <span className="text-emerald-500">📅</span>
+              <span className="font-bold text-zinc-300 text-sm">{formatearFechaManual(eventoSeleccionado.fecha)}</span>
             </div>
-            {eventoSeleccionado.hora_inicio && (
-              <div className={`flex items-center gap-2 font-bold w-fit px-4 py-1.5 rounded-full border ${eventoEsPasado || eventoSuspendido ? 'text-zinc-500 bg-zinc-500/10 border-zinc-500/20' : 'text-emerald-500 bg-emerald-500/10 border-emerald-500/20'}`}>
-                <span>⏰</span> {formatearHora(eventoSeleccionado.hora_inicio)} a {formatearHora(eventoSeleccionado.hora_fin)}
-              </div>
-            )}
+            <div className="bg-zinc-950 px-5 py-3 rounded-2xl border border-zinc-800 flex items-center gap-3">
+              <span className="text-emerald-500">⏰</span>
+              <span className="font-bold text-zinc-300 text-sm">{eventoSeleccionado.hora_inicio?.substring(0,5)} a {eventoSeleccionado.hora_fin?.substring(0,5)}</span>
+            </div>
           </div>
         </header>
 
-        {esDungeonMaster && !eventoEsPasado && !eventoSuspendido && !yaParticipaEnEsteEvento && (
-          <div className="mb-10 max-w-4xl mx-auto">
+        {esDungeonMaster && (eventoSeleccionado.estado !== 'Finalizado' && eventoSeleccionado.estado !== 'Suspendido') && !yaParticipa && (
+          <div className="mb-12">
             <button 
               onClick={() => setMostrarFormularioMesa(!mostrarFormularioMesa)}
-              className={`w-full py-4 rounded-2xl font-black transition-all shadow-xl flex items-center justify-center gap-2 ${mostrarFormularioMesa ? 'bg-zinc-800 text-zinc-400 border border-zinc-700' : 'bg-amber-500 text-black hover:bg-amber-400 hover:scale-[1.01]'}`}
+              className={`w-full py-5 rounded-[2rem] font-black transition-all shadow-xl flex items-center justify-center gap-3 tracking-widest text-xs uppercase ${mostrarFormularioMesa ? 'bg-zinc-800 text-zinc-500 border border-zinc-700' : 'bg-amber-500 text-black hover:scale-[1.01] hover:shadow-amber-500/20'}`}
             >
-              {mostrarFormularioMesa ? '✕ CANCELAR CONVOCATORIA' : '⚔️ CONVOCAR NUEVA MESA'}
+              {mostrarFormularioMesa ? '✕ Cancelar Convocatoria' : '⚔️ Convocar Nueva Mesa de Rol'}
             </button>
             {mostrarFormularioMesa && (
-              <div className="mt-6 p-8 bg-zinc-900 border border-amber-500/20 rounded-3xl animate-in zoom-in-95 duration-300 shadow-2xl">
-                 <CrearMesa idEvento={eventoSeleccionado.id} alCrearMesa={() => {setMostrarFormularioMesa(false); entrarAlEvento(eventoSeleccionado);}} />
+              <div className="mt-8 p-1 bg-gradient-to-b from-amber-500/20 to-transparent rounded-[2.5rem]">
+                <div className="bg-zinc-900 p-8 rounded-[2.5rem] border border-zinc-800 shadow-3xl">
+                  <CrearMesa idEvento={eventoSeleccionado.id} alCrearMesa={() => {setMostrarFormularioMesa(false); entrarAlEvento(eventoSeleccionado);}} />
+                </div>
               </div>
             )}
           </div>
         )}
 
-        <h3 className="text-2xl font-black text-white uppercase tracking-tighter mb-5">Mesas de la jornada</h3>
+        <div className="flex items-center justify-between mb-8">
+          <h3 className="text-2xl font-black text-white uppercase tracking-tighter italic">Mesas de la Jornada</h3>
+          <div className="flex gap-2">
+            <button onClick={() => carruselPartidasRef.current?.scrollBy({left: -350, behavior: 'smooth'})} className="w-10 h-10 bg-zinc-900 border border-zinc-800 rounded-full flex items-center justify-center hover:bg-zinc-800 text-zinc-500">‹</button>
+            <button onClick={() => carruselPartidasRef.current?.scrollBy({left: 350, behavior: 'smooth'})} className="w-10 h-10 bg-zinc-900 border border-zinc-800 rounded-full flex items-center justify-center hover:bg-zinc-800 text-zinc-500">›</button>
+          </div>
+        </div>
+
         {partidasDelEvento.length > 0 ? (
-          <div ref={carruselPartidasRef} className="flex gap-6 overflow-x-auto pb-10 scrollbar-hide">
+          <div ref={carruselPartidasRef} className="flex gap-6 overflow-x-auto pb-12 scrollbar-hide snap-x">
             {partidasDelEvento.map(p => (
-              <div key={p.id} className="w-[90%] md:w-[45%] lg:w-[400px] flex-shrink-0">
-                <Partida {...p} eventoEsPasado={eventoEsPasado || eventoSuspendido} esAdmin={esAdmin} esMiMesa={usuarioGuardado?.id === p.dungeon_master_id} />
+              <div key={p.id} className="min-w-[300px] md:min-w-[400px] snap-center">
+                <Partida {...p} eventoEsPasado={eventoSeleccionado.estado === 'Finalizado' || eventoSeleccionado.estado === 'Suspendido'} esAdmin={esAdmin} esMiMesa={usuarioGuardado?.id === p.dungeon_master_id} />
               </div>
             ))}
           </div>
         ) : (
-          <div className="text-center py-20 bg-zinc-900/20 border-2 border-dashed border-zinc-800 rounded-3xl max-w-4xl mx-auto">
-            <p className="text-zinc-500 font-bold italic">No hubo expediciones en este evento.</p>
+          <div className="text-center py-24 bg-zinc-900/30 border-2 border-dashed border-zinc-800 rounded-[2.5rem]">
+            <p className="text-zinc-600 font-black uppercase tracking-widest text-xs">No hay expediciones registradas para este evento</p>
           </div>
         )}
       </div>
     );
   }
 
+  // VISTA PRINCIPAL (TABLÓN)
   return (
-    <div className="max-w-6xl mx-auto p-6 md:p-12 animate-in fade-in duration-700 overflow-hidden relative">
+    <div className="max-w-7xl mx-auto p-4 md:p-12 animate-in fade-in duration-700">
       
+      {/* MODAL EDICIÓN ADMIN */}
       {eventoEditando && (
-        <div className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-black/90 backdrop-blur-sm">
-          <div className="bg-zinc-900 border border-purple-500/30 w-full max-w-lg rounded-[2rem] p-8 relative">
-            <button onClick={() => setEventoEditando(null)} className="absolute top-6 right-6 text-zinc-500 hover:text-white text-2xl">✕</button>
-            <h3 className="text-2xl font-black text-white uppercase tracking-tighter mb-6">✏️ Alterar Evento</h3>
-            <form onSubmit={guardarEdicionEvento} className="flex flex-col gap-4">
-              <input type="text" value={eventoEditando.nombre} onChange={e => setEventoEditando({...eventoEditando, nombre: e.target.value})} className="w-full bg-zinc-950 border border-zinc-800 rounded-xl py-3 px-4 text-white font-bold" />
-              <textarea value={eventoEditando.descripcion} onChange={e => setEventoEditando({...eventoEditando, descripcion: e.target.value})} rows="3" className="w-full bg-zinc-950 border border-zinc-800 rounded-xl py-3 px-4 text-white italic resize-none" />
+        <div className="fixed inset-0 z-[300] flex items-center justify-center p-4 bg-black/95 backdrop-blur-md">
+          <div className="bg-zinc-900 border border-purple-500/30 w-full max-w-lg rounded-[2.5rem] p-10 shadow-3xl">
+            <h3 className="text-3xl font-black text-white uppercase tracking-tighter mb-8 italic">✏️ Alterar Evento</h3>
+            <form onSubmit={guardarEdicionEvento} className="flex flex-col gap-6">
+              <input type="text" value={eventoEditando.nombre} onChange={e => setEventoEditando({...eventoEditando, nombre: e.target.value})} className="w-full bg-zinc-950 border border-zinc-800 rounded-2xl py-4 px-6 text-white font-bold focus:border-purple-500 outline-none transition-all" />
+              <textarea value={eventoEditando.descripcion} onChange={e => setEventoEditando({...eventoEditando, descripcion: e.target.value})} rows="3" className="w-full bg-zinc-950 border border-zinc-800 rounded-2xl py-4 px-6 text-white italic resize-none focus:border-purple-500 outline-none transition-all" />
               <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="text-[10px] font-bold text-zinc-500 uppercase">Fecha</label>
-                  <input type="date" value={eventoEditando.fecha} onChange={e => setEventoEditando({...eventoEditando, fecha: e.target.value})} className="w-full bg-zinc-950 border border-zinc-800 rounded-xl py-3 px-4 text-white [color-scheme:dark]" />
-                </div>
-                <div>
-                  <label className="text-[10px] font-bold text-zinc-500 uppercase">Estado</label>
-                  <select value={eventoEditando.estado} onChange={e => setEventoEditando({...eventoEditando, estado: e.target.value})} className="w-full bg-zinc-950 border border-zinc-800 rounded-xl py-3.5 px-4 text-white outline-none">
-                    <option value="Proximo">Próximo</option>
-                    <option value="En Curso">En Curso</option>
-                    <option value="Suspendido">Suspendido</option>
-                    <option value="Finalizado">Finalizado</option>
-                  </select>
-                </div>
+                <input type="date" value={eventoEditando.fecha} onChange={e => setEventoEditando({...eventoEditando, fecha: e.target.value})} className="bg-zinc-950 border border-zinc-800 rounded-2xl py-4 px-6 text-white [color-scheme:dark]" />
+                <select value={eventoEditando.estado} onChange={e => setEventoEditando({...eventoEditando, estado: e.target.value})} className="bg-zinc-950 border border-zinc-800 rounded-2xl py-4 px-6 text-white font-bold outline-none">
+                  <option value="Proximo">Próximo</option>
+                  <option value="En Curso">En Curso</option>
+                  <option value="Suspendido">Suspendido</option>
+                  <option value="Finalizado">Finalizado</option>
+                </select>
               </div>
-              <button type="submit" className="mt-4 w-full bg-purple-600 text-white font-black py-4 rounded-xl text-xs uppercase tracking-widest">💾 Guardar Cambios</button>
+              <div className="flex gap-4 mt-4">
+                <button type="button" onClick={() => setEventoEditando(null)} className="flex-1 bg-zinc-800 text-zinc-400 font-black py-5 rounded-2xl uppercase text-[10px] tracking-widest">Descartar</button>
+                <button type="submit" className="flex-1 bg-purple-600 text-white font-black py-5 rounded-2xl uppercase text-[10px] tracking-widest shadow-lg shadow-purple-600/20">Guardar Cambios</button>
+              </div>
             </form>
           </div>
         </div>
       )}
 
       {esAdmin && (
-        <section className="mb-16 bg-zinc-900 rounded-[2.5rem] border border-purple-500/20 overflow-hidden shadow-2xl">
-          <header className="bg-zinc-800/50 p-2 flex gap-2">
+        <section className="mb-20 bg-zinc-900 rounded-[3rem] border border-purple-500/10 shadow-3xl overflow-hidden">
+          <nav className="flex bg-zinc-950/50 p-2 gap-2">
             {['eventos', 'usuarios', 'stats'].map(tab => (
-              <button key={tab} onClick={() => setPestanaAdmin(tab)} className={`flex-1 py-3 rounded-2xl font-black text-[10px] uppercase tracking-widest transition-all ${pestanaAdmin === tab ? 'bg-purple-600 text-white' : 'text-zinc-500 hover:text-zinc-300'}`}>
-                {tab === 'eventos' ? '👑 Gestor Eventos' : tab === 'usuarios' ? '🛡️ Ascensos' : '📊 Estadísticas'}
+              <button key={tab} onClick={() => setPestanaAdmin(tab)} className={`flex-1 py-4 rounded-2xl font-black text-[10px] uppercase tracking-[0.2em] transition-all ${pestanaAdmin === tab ? 'bg-purple-600 text-white shadow-lg' : 'text-zinc-600 hover:text-zinc-400'}`}>
+                {tab === 'eventos' ? '⚔️ Gestor de Jornadas' : tab === 'usuarios' ? '🛡️ Alistamiento' : '📊 Oráculo de Datos'}
               </button>
             ))}
-          </header>
-          <div className="p-8">
+          </nav>
+          <div className="p-8 md:p-12">
             {pestanaAdmin === 'eventos' && <CrearEvento alCrearEvento={cargarEventos} />}
             {pestanaAdmin === 'usuarios' && <GestionUsuarios />}
             {pestanaAdmin === 'stats' && <Estadisticas />}
@@ -260,49 +224,54 @@ function Eventos() {
         </section>
       )}
 
-      <section className="mb-20">
-        <h2 className="text-4xl font-black text-white tracking-tighter mb-10 flex items-center gap-4 italic uppercase">
-          <span className="w-12 h-12 bg-emerald-500 text-black flex items-center justify-center rounded-2xl not-italic">⚔️</span>
-          Asociación de Rol La Pampa
-        </h2>
+      <section className="mb-20 relative">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-12">
+          <h2 className="text-4xl md:text-6xl font-black text-white tracking-tighter uppercase italic leading-none">
+            Tablón de <br /><span className="text-emerald-500 not-italic">Misiones</span>
+          </h2>
+          <div className="flex gap-3">
+             <button onClick={scrollEventosIzq} className="w-14 h-14 bg-zinc-900 border border-zinc-800 rounded-full flex items-center justify-center hover:border-emerald-500/50 text-zinc-500 hover:text-emerald-500 transition-all shadow-xl">‹</button>
+             <button onClick={scrollEventosDer} className="w-14 h-14 bg-zinc-900 border border-zinc-800 rounded-full flex items-center justify-center hover:border-emerald-500/50 text-zinc-500 hover:text-emerald-500 transition-all shadow-xl">›</button>
+          </div>
+        </div>
         
         {eventosProximos.length > 0 ? (
-          <div ref={carruselEventosRef} className="flex gap-8 overflow-x-auto pb-8 scrollbar-hide">
+          <div ref={carruselEventosRef} className="flex gap-8 overflow-x-auto pb-10 scrollbar-hide snap-x">
             {eventosProximos.map(evento => (
               <div 
                 key={evento.id} 
                 onClick={() => entrarAlEvento(evento)}
-                className="group relative bg-zinc-900/40 hover:bg-zinc-900 border border-zinc-800 p-8 rounded-[2rem] transition-all cursor-pointer w-[90%] md:w-[45%] flex-shrink-0"
+                className="group min-w-[300px] md:min-w-[450px] bg-zinc-900/50 hover:bg-zinc-900 border border-zinc-800 hover:border-emerald-500/40 p-10 rounded-[2.5rem] transition-all cursor-pointer snap-center shadow-2xl relative overflow-hidden"
               >
-                <h3 className="text-2xl font-black text-white mb-3 group-hover:text-emerald-400 uppercase italic tracking-tight">{evento.nombre}</h3>
-                <p className="text-zinc-400 text-sm mb-8 line-clamp-3 italic border-l-2 border-zinc-800 pl-4">"{evento.descripcion}"</p>
-                <div className="flex justify-between items-center mt-auto">
-                  <span className="text-emerald-500 font-black text-xs bg-emerald-500/10 px-4 py-1.5 rounded-xl border border-emerald-500/20 uppercase">
-                    {formatearFechaManual(evento.fecha)}
-                  </span>
-                  <span className="text-zinc-600 text-[10px] font-black uppercase group-hover:text-emerald-500 transition-all">Entrar →</span>
+                <div className="absolute top-0 right-0 w-32 h-32 bg-emerald-500/5 blur-3xl rounded-full"></div>
+                <h3 className="text-3xl font-black text-white mb-4 group-hover:text-emerald-400 uppercase tracking-tighter italic transition-colors leading-tight">{evento.nombre}</h3>
+                <p className="text-zinc-500 text-sm mb-10 line-clamp-3 italic leading-relaxed">"{evento.descripcion}"</p>
+                <div className="flex justify-between items-center">
+                  <div className="flex flex-col">
+                    <span className="text-[10px] font-black text-zinc-600 uppercase tracking-widest mb-1">Próxima Jornada</span>
+                    <span className="text-emerald-500 font-black text-sm uppercase tracking-tighter">{formatearFechaManual(evento.fecha)}</span>
+                  </div>
+                  <span className="w-10 h-10 bg-zinc-950 rounded-full flex items-center justify-center border border-zinc-800 group-hover:border-emerald-500 group-hover:text-emerald-500 transition-all">→</span>
                 </div>
                 {esAdmin && (
-                  <div className="absolute top-6 right-6 flex gap-2 opacity-0 group-hover:opacity-100 transition-all">
-                    <button onClick={(e) => abrirEdicion(evento, e)} className="p-2 bg-zinc-950 text-purple-400 rounded-full border border-purple-500/30">✏️</button>
-                    <button onClick={(e) => borrarEvento(evento.id, e)} className="p-2 bg-zinc-950 text-red-500 rounded-full border border-red-500/30">🗑️</button>
+                  <div className="absolute top-6 right-6 flex gap-2">
+                    <button onClick={(e) => abrirEdicion(evento, e)} className="w-8 h-8 bg-zinc-950 text-purple-400 rounded-full border border-purple-500/20 flex items-center justify-center hover:bg-purple-500 hover:text-white transition-all text-xs">✏️</button>
+                    <button onClick={(e) => borrarEvento(evento.id, e)} className="w-8 h-8 bg-zinc-950 text-red-500 rounded-full border border-red-500/20 flex items-center justify-center hover:bg-red-500 hover:text-white transition-all text-xs">🗑️</button>
                   </div>
                 )}
               </div>
             ))}
           </div>
-        ) : <p className="text-center py-20 text-zinc-600 font-bold italic border-2 border-dashed border-zinc-800 rounded-3xl">No hay eventos convocados...</p>}
+        ) : <p className="text-center py-24 bg-zinc-900/20 border-2 border-dashed border-zinc-800 rounded-[3rem] text-zinc-600 font-black uppercase tracking-widest text-xs italic">No hay pergaminos convocados por el momento</p>}
       </section>
 
-      <section>
-        <h3 className="text-2xl font-black text-zinc-600 uppercase tracking-tighter italic mb-8">Historial de Misiones</h3>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+      <section className="opacity-60 hover:opacity-100 transition-opacity duration-500">
+        <h3 className="text-xl font-black text-zinc-600 uppercase tracking-[0.3em] mb-10 italic">Anales del Pasado</h3>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
           {eventosPasados.map(evento => (
-            <div key={evento.id} onClick={() => entrarAlEvento(evento)} className="group bg-zinc-900/20 border border-zinc-800 p-6 rounded-3xl transition-all cursor-pointer hover:bg-zinc-900/50">
-              <h4 className="text-lg font-black text-zinc-400 mb-2 group-hover:text-zinc-300">{evento.nombre}</h4>
-              <span className="text-zinc-500 font-black text-[10px] bg-zinc-800/50 px-3 py-1.5 rounded-lg uppercase">
-                {formatearFechaManual(evento.fecha)}
-              </span>
+            <div key={evento.id} onClick={() => entrarAlEvento(evento)} className="group bg-zinc-950 border border-zinc-900 p-6 rounded-[2rem] transition-all cursor-pointer hover:bg-zinc-900">
+              <h4 className="text-sm font-black text-zinc-500 mb-3 group-hover:text-zinc-300 uppercase italic truncate">{evento.nombre}</h4>
+              <span className="text-[10px] font-bold text-zinc-700 uppercase tracking-widest">{formatearFechaManual(evento.fecha)}</span>
             </div>
           ))}
         </div>

@@ -7,7 +7,6 @@ function CrearMesa({ idEvento, alCrearMesa }) {
   const [descripcion, setDescripcion] = useState('');
   const [requisitos, setRequisitos] = useState('');
   
-  // ✨ CAMBIO: Ahora manejamos el ID del sistema y la lista de sistemas
   const [sistemas, setSistemas] = useState([]);
   const [sistemaId, setSistemaId] = useState('');
   
@@ -22,7 +21,6 @@ function CrearMesa({ idEvento, alCrearMesa }) {
     fetch('https://gestor-eventos-rol.onrender.com/api/sistemas')
       .then(res => res.json())
       .then(data => {
-        // Aseguramos que data sea un array antes de setear
         setSistemas(Array.isArray(data) ? data : []);
       })
       .catch(err => console.error("Error al cargar sistemas:", err));
@@ -37,7 +35,8 @@ function CrearMesa({ idEvento, alCrearMesa }) {
             text: 'Debes seleccionar un sistema de juego de la lista.',
             icon: 'warning',
             background: '#18181b',
-            color: '#fff'
+            color: '#fff',
+            confirmButtonColor: '#f59e0b'
         });
     }
 
@@ -45,7 +44,7 @@ function CrearMesa({ idEvento, alCrearMesa }) {
       titulo, 
       descripcion, 
       requisitos, 
-      sistema_id: sistemaId, // ✨ ENVIAMOS EL ID EN LUGAR DEL TEXTO
+      sistema_id: sistemaId, 
       cupo, 
       turno, 
       etiqueta, 
@@ -103,163 +102,184 @@ function CrearMesa({ idEvento, alCrearMesa }) {
   };
 
   return (
-    <div className="animate-in fade-in zoom-in-95 duration-300">
-      <div className="flex items-center gap-3 mb-6">
-        <div className="w-10 h-10 bg-amber-500/20 text-amber-500 flex items-center justify-center rounded-xl border border-amber-500/30 text-xl">
+    <div className="animate-in fade-in slide-in-from-right-4 duration-500 max-w-4xl mx-auto">
+      
+      {/* 🧭 CABECERA DE LA MESA */}
+      <div className="flex items-center gap-4 mb-8">
+        <div className="w-12 h-12 bg-amber-500/10 text-amber-500 flex items-center justify-center rounded-2xl border border-amber-500/30 text-2xl shadow-[0_0_15px_rgba(245,158,11,0.2)]">
           📜
         </div>
         <div>
-          <h3 className="text-xl font-black text-white uppercase tracking-tighter">
+          <h3 className="text-2xl font-black text-white uppercase tracking-tighter leading-none">
             Forjar Nueva Mesa
           </h3>
-          <p className="text-[10px] text-zinc-500 font-bold uppercase tracking-widest">
+          <p className="text-[10px] text-amber-500/70 font-black uppercase tracking-[0.3em] mt-1">
             Convocatoria de Aventuras
           </p>
         </div>
       </div>
 
-      <form onSubmit={manejarCreacion} className="flex flex-col gap-5">
-        
-        <div className="space-y-1">
-          <input 
-            type="text" 
-            placeholder="Título de la aventura" 
-            value={titulo} 
-            onChange={e => setTitulo(e.target.value)} 
-            required 
-            className="w-full bg-zinc-950 border border-zinc-800 rounded-xl py-3 px-4 text-white focus:border-amber-500 outline-none transition-all font-bold placeholder:text-zinc-700"
-          />
-        </div>
+      <div className="relative group">
+        {/* Glow ámbar de fondo */}
+        <div className="absolute -inset-1 bg-amber-500/10 rounded-[2.5rem] blur-2xl opacity-50 group-hover:opacity-100 transition duration-1000"></div>
 
-        <div className="space-y-1">
-          <textarea 
-            placeholder="Descripción épica de la partida..." 
-            value={descripcion} 
-            onChange={e => setDescripcion(e.target.value)} 
-            required 
-            rows="3" 
-            className="w-full bg-zinc-950 border border-zinc-800 rounded-xl py-3 px-4 text-white focus:border-amber-500 outline-none transition-all resize-none italic placeholder:text-zinc-700"
-          />
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div className="flex flex-col gap-1 justify-center">
-            <label className="text-[10px] font-bold text-zinc-500 uppercase ml-2 tracking-widest">Género Principal</label>
-            <select 
-              value={etiqueta} 
-              onChange={e => setEtiqueta(e.target.value)} 
-              className="w-full bg-zinc-950 border border-zinc-800 rounded-xl py-3.5 px-4 text-white focus:border-amber-500 outline-none font-bold"
-            >
-              <option value="Fantasía Medieval">🏰 Fantasía Medieval</option>
-              <option value="Fantasía Oscura">🌑 Fantasía Oscura</option>
-              <option value="Fantasía Urbana">🏙️ Fantasía Urbana</option>
-              <option value="Terror / Horror">🩸 Terror / Horror</option>
-              <option value="Horror Cósmico">🐙 Horror Cósmico</option>
-              <option value="Ciencia Ficción">🚀 Ciencia Ficción</option>
-              <option value="Cyberpunk">🦾 Cyberpunk</option>
-              <option value="Post-Apocalíptico">☢️ Post-Apocalíptico</option>
-              <option value="Misterio / Investigación">🔎 Misterio / Investigación</option>
-              <option value="Anime / Manga">🌸 Anime / Manga</option>
-            </select>
-          </div>
-
-          <div 
-            onClick={() => setAptaNovatos(!aptaNovatos)}
-            className={`cursor-pointer p-3 rounded-xl border-2 transition-all flex items-center justify-between gap-4 select-none mt-5 md:mt-0 ${
-              aptaNovatos 
-              ? 'bg-emerald-500/10 border-emerald-500 shadow-[0_0_15px_rgba(16,185,129,0.2)]' 
-              : 'bg-zinc-950 border-zinc-800 hover:border-zinc-700'
-            }`}
-          >
-            <div>
-              <h4 className={`font-black uppercase tracking-widest text-xs ${aptaNovatos ? 'text-emerald-400' : 'text-zinc-500'}`}>
-                🌱 Apta Novatos
-              </h4>
-              <p className={`text-[9px] uppercase mt-0.5 ${aptaNovatos ? 'text-emerald-500/80' : 'text-zinc-600'}`}>
-                Ideal para aprender a jugar
-              </p>
+        <div className="relative bg-zinc-900/90 border border-zinc-800 p-6 md:p-10 rounded-[2.5rem] shadow-2xl overflow-hidden">
+          
+          <form onSubmit={manejarCreacion} className="relative z-10 flex flex-col gap-6">
+            
+            {/* TÍTULO */}
+            <div className="space-y-2">
+              <label className="text-[11px] font-black text-zinc-500 uppercase ml-1 tracking-widest">Nombre de la Gesta</label>
+              <input 
+                type="text" 
+                placeholder="Ej: El Despertar del Dragón" 
+                value={titulo} 
+                onChange={e => setTitulo(e.target.value)} 
+                required 
+                className="w-full bg-zinc-950 border border-zinc-800 rounded-2xl py-4 px-6 text-white focus:border-amber-500 focus:ring-1 focus:ring-amber-500/30 outline-none transition-all font-bold placeholder:text-zinc-800"
+              />
             </div>
-            <div className={`w-6 h-6 rounded-md flex items-center justify-center border-2 transition-colors ${aptaNovatos ? 'bg-emerald-500 border-emerald-500 text-black' : 'border-zinc-700'}`}>
-              {aptaNovatos && <span className="font-black text-sm">✓</span>}
+
+            {/* DESCRIPCIÓN */}
+            <div className="space-y-2">
+              <label className="text-[11px] font-black text-zinc-500 uppercase ml-1 tracking-widest">Resumen de la Aventura</label>
+              <textarea 
+                placeholder="Escribe la sinopsis que atraerá a los valientes..." 
+                value={descripcion} 
+                onChange={e => setDescripcion(e.target.value)} 
+                required 
+                rows="3" 
+                className="w-full bg-zinc-950 border border-zinc-800 rounded-2xl py-4 px-6 text-white focus:border-amber-500 focus:ring-1 focus:ring-amber-500/30 outline-none transition-all resize-none italic font-medium placeholder:text-zinc-800"
+              />
             </div>
-          </div>
-        </div>
 
-        <div className="space-y-1">
-          <input 
-            type="text" 
-            placeholder="Requisitos (ej: Nivel 5, Veteranos...)" 
-            value={requisitos} 
-            onChange={e => setRequisitos(e.target.value)} 
-            className="w-full bg-zinc-950 border border-zinc-800 rounded-xl py-3 px-4 text-white focus:border-amber-500 outline-none transition-all placeholder:text-zinc-700"
-          />
-        </div>
+            {/* GÉNERO Y APTA NOVATOS */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="space-y-2">
+                <label className="text-[11px] font-black text-zinc-500 uppercase ml-1 tracking-widest">Género Principal</label>
+                <select 
+                  value={etiqueta} 
+                  onChange={e => setTurno(e.target.value)} // Corregido: antes apuntaba a setEtiqueta en el render del usuario
+                  className="w-full bg-zinc-950 border border-zinc-800 rounded-2xl py-4 px-6 text-white focus:border-amber-500 outline-none font-bold [color-scheme:dark]"
+                >
+                  <option value="Fantasía Medieval">🏰 Fantasía Medieval</option>
+                  <option value="Fantasía Oscura">🌑 Fantasía Oscura</option>
+                  <option value="Fantasía Urbana">🏙️ Fantasía Urbana</option>
+                  <option value="Terror / Horror">🩸 Terror / Horror</option>
+                  <option value="Horror Cósmico">🐙 Horror Cósmico</option>
+                  <option value="Ciencia Ficción">Ciencia Ficción</option>
+                  <option value="Cyberpunk">🦾 Cyberpunk</option>
+                  <option value="Post-Apocalíptico">☢️ Post-Apocalíptico</option>
+                  <option value="Misterio / Investigación">🔎 Misterio / Investigación</option>
+                  <option value="Anime / Manga">🌸 Anime / Manga</option>
+                </select>
+              </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          {/* ✨ SELECT DE SISTEMAS DINÁMICO */}
-          <div className="flex flex-col gap-1">
-            <label className="text-[10px] font-bold text-zinc-500 uppercase ml-2 tracking-widest">Sistema</label>
-            <select 
-              value={sistemaId} 
-              onChange={e => setSistemaId(e.target.value)}
-              required
-              className="bg-zinc-950 border border-zinc-800 rounded-xl py-3 px-4 text-white focus:border-amber-500 outline-none font-bold cursor-pointer"
+              <div 
+                onClick={() => setAptaNovatos(!aptaNovatos)}
+                className={`cursor-pointer p-4 rounded-2xl border-2 transition-all flex items-center justify-between select-none mt-auto h-[60px] ${
+                  aptaNovatos 
+                  ? 'bg-emerald-500/10 border-emerald-500/50 shadow-[0_0_20px_rgba(16,185,129,0.1)]' 
+                  : 'bg-zinc-950 border-zinc-800 hover:border-zinc-700'
+                }`}
+              >
+                <div className="flex items-center gap-3">
+                  <span className={`text-xl ${aptaNovatos ? 'opacity-100' : 'opacity-30'}`}>🌱</span>
+                  <div>
+                    <h4 className={`font-black uppercase tracking-widest text-[11px] ${aptaNovatos ? 'text-emerald-400' : 'text-zinc-500'}`}>Apta Novatos</h4>
+                    <p className="text-[9px] font-bold text-zinc-600 uppercase">Sin experiencia previa</p>
+                  </div>
+                </div>
+                <div className={`w-5 h-5 rounded-md flex items-center justify-center border-2 transition-colors ${aptaNovatos ? 'bg-emerald-500 border-emerald-500 text-black' : 'border-zinc-700'}`}>
+                  {aptaNovatos && <span className="font-black text-xs">✓</span>}
+                </div>
+              </div>
+            </div>
+
+            {/* SISTEMA, CUPO Y TURNO */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              <div className="space-y-2">
+                <label className="text-[11px] font-black text-zinc-500 uppercase ml-1 tracking-widest">Sistema</label>
+                <select 
+                  value={sistemaId} 
+                  onChange={e => setSistemaId(e.target.value)}
+                  required
+                  className="w-full bg-zinc-950 border border-zinc-800 rounded-2xl py-4 px-6 text-white focus:border-amber-500 outline-none font-bold [color-scheme:dark]"
+                >
+                  <option value="">Seleccionar...</option>
+                  {sistemas.map(s => (
+                    <option key={s.id} value={s.id}>{s.nombre}</option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="space-y-2">
+                <label className="text-[11px] font-black text-zinc-500 uppercase ml-1 tracking-widest">Cupo Máx.</label>
+                <input 
+                  type="number" 
+                  value={cupo} 
+                  onChange={e => setCupo(e.target.value)} 
+                  min="1" max="10" required 
+                  className="w-full bg-zinc-950 border border-zinc-800 rounded-2xl py-4 px-6 text-white focus:border-amber-500 outline-none font-bold" 
+                />
+              </div>
+
+              <div className="space-y-2">
+                <label className="text-[11px] font-black text-zinc-500 uppercase ml-1 tracking-widest">Turno</label>
+                <select 
+                  value={turno} 
+                  onChange={e => setTurno(e.target.value)} 
+                  className="w-full bg-zinc-950 border border-zinc-800 rounded-2xl py-4 px-6 text-white focus:border-amber-500 outline-none font-bold [color-scheme:dark]"
+                >
+                  <option value="Mañana">Mañana</option>
+                  <option value="Tarde">Tarde</option>
+                  <option value="Noche">Noche</option>
+                </select>
+              </div>
+            </div>
+
+            {/* REQUISITOS Y MATERIALES */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="space-y-2">
+                <label className="text-[11px] font-black text-zinc-500 uppercase ml-1 tracking-widest">Requisitos de PJ</label>
+                <input 
+                  type="text" 
+                  placeholder="Ej: Nivel 3, traer ficha lista" 
+                  value={requisitos} 
+                  onChange={e => setRequisitos(e.target.value)} 
+                  className="w-full bg-zinc-950 border border-zinc-800 rounded-2xl py-4 px-6 text-white focus:border-amber-500 outline-none font-bold placeholder:text-zinc-800"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <label className="text-[11px] font-black text-amber-500 uppercase ml-1 tracking-widest flex items-center gap-2">
+                  <span className="w-1.5 h-1.5 bg-amber-500 rounded-full animate-pulse"></span>
+                  Logística (Pedido al Gremio)
+                </label>
+                <input 
+                  type="text" 
+                  placeholder="¿Necesitas dados, mapas...?" 
+                  value={materialesPedidos} 
+                  onChange={e => setMaterialesPedidos(e.target.value)} 
+                  className="w-full bg-amber-500/5 border border-amber-500/20 rounded-2xl py-4 px-6 text-amber-200 focus:border-amber-500 outline-none italic text-sm placeholder:text-amber-900/50 shadow-inner"
+                />
+              </div>
+            </div>
+
+            {/* BOTÓN DE CREACIÓN */}
+            <button 
+              type="submit" 
+              className="mt-4 relative group/btn overflow-hidden rounded-2xl shadow-xl"
             >
-              <option value="">Seleccionar...</option>
-              {sistemas.map(s => (
-                <option key={s.id} value={s.id} className="bg-zinc-900">
-                  {s.nombre}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          <div className="flex flex-col gap-1">
-            <label className="text-[10px] font-bold text-zinc-500 uppercase ml-2 tracking-widest">Cupo</label>
-            <input 
-              type="number" 
-              value={cupo} 
-              onChange={e => setCupo(e.target.value)} 
-              min="1" max="10" required 
-              className="bg-zinc-950 border border-zinc-800 rounded-xl py-3 px-4 text-white focus:border-amber-500 outline-none font-bold" 
-            />
-          </div>
-
-          <div className="flex flex-col gap-1">
-            <label className="text-[10px] font-bold text-zinc-500 uppercase ml-2 tracking-widest">Turno</label>
-            <select 
-              value={turno} 
-              onChange={e => setTurno(e.target.value)} 
-              className="bg-zinc-950 border border-zinc-800 rounded-xl py-3 px-4 text-white focus:border-amber-500 outline-none font-bold cursor-pointer"
-            >
-              <option value="Mañana" className="bg-zinc-900">Mañana</option>
-              <option value="Tarde" className="bg-zinc-900">Tarde</option>
-              <option value="Noche" className="bg-zinc-900">Noche</option>
-            </select>
-          </div>
+              <div className="absolute inset-0 bg-gradient-to-r from-amber-600 to-orange-600 transition-transform group-hover/btn:scale-105 duration-500"></div>
+              <div className="relative flex items-center justify-center gap-3 py-5 font-black text-black text-sm uppercase tracking-[0.3em] active:scale-95 transition-transform border border-white/20">
+                <span>⚔️</span> Forjar Mesa de Rol
+              </div>
+            </button>
+            
+          </form>
         </div>
-
-        <div className="space-y-1 mt-2">
-          <label className="text-[10px] font-black text-amber-500 uppercase ml-2 tracking-[0.2em] flex items-center gap-2">
-            <span className="w-1.5 h-1.5 bg-amber-500 rounded-full animate-pulse"></span> 
-            Pedido al Gremio (Logística)
-          </label>
-          <input 
-            type="text" 
-            placeholder="¿Necesitas dados, mapas, manuales...?" 
-            value={materialesPedidos} 
-            onChange={e => setMaterialesPedidos(e.target.value)} 
-            className="w-full bg-amber-500/5 border border-amber-500/20 rounded-xl py-3 px-4 text-amber-200 focus:border-amber-500 outline-none italic text-sm"
-          />
-        </div>
-
-        <button 
-          type="submit" 
-          className="bg-amber-500 hover:bg-amber-400 text-black font-black py-4 rounded-xl shadow-lg transition-all transform active:scale-95 text-xs uppercase tracking-widest mt-2"
-        >
-          ⚔️ Crear Mesa de Rol
-        </button>
-      </form>
+      </div>
     </div>
   );
 }

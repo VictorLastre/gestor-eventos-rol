@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import Swal from 'sweetalert2'; 
-import { fetchProtegido } from '../utils/api'; // ✨ IMPORTAMOS AL GUARDIÁN
+import { fetchProtegido } from '../utils/api'; 
 
 function MisCronicas({ alActualizarUsuario }) { 
   const [cronicas, setCronicas] = useState({ dirigiendo: [], jugando: [] });
@@ -10,7 +10,6 @@ function MisCronicas({ alActualizarUsuario }) {
   const [editando, setEditando] = useState(false);
   
   const [peticionEnviada, setPeticionEnviada] = useState(usuarioGuardado?.solicitudDmPendiente || false);
-  
   const esJugadorBase = usuarioGuardado?.rol === 'jugador';
   
   const [perfil, setPerfil] = useState({ 
@@ -20,7 +19,6 @@ function MisCronicas({ alActualizarUsuario }) {
   });
 
   useEffect(() => {
-    // ✨ USAMOS EL GUARDIÁN PARA CARGAR LAS CRÓNICAS
     fetchProtegido('https://gestor-eventos-rol.onrender.com/api/usuarios/mis-cronicas')
       .then(res => res.json())
       .then(datos => {
@@ -39,7 +37,6 @@ function MisCronicas({ alActualizarUsuario }) {
 
   const guardarPerfil = async () => {
     try {
-      // ✨ USAMOS EL GUARDIÁN PARA GUARDAR LA FICHA (Adiós headers manuales)
       const res = await fetchProtegido('https://gestor-eventos-rol.onrender.com/api/usuarios/perfil', {
         method: 'PUT',
         body: JSON.stringify(perfil)
@@ -48,62 +45,39 @@ function MisCronicas({ alActualizarUsuario }) {
       if (res.ok) {
         const nuevoUsuario = { ...usuarioGuardado, ...perfil };
         localStorage.setItem('usuario', JSON.stringify(nuevoUsuario));
-        
         if (alActualizarUsuario) alActualizarUsuario(nuevoUsuario);
-        
         setEditando(false);
         
         Swal.fire({
           title: '¡Ficha Actualizada!',
-          text: 'Tus nuevos datos han sido grabados en los anales del gremio.',
+          text: 'Tus datos han sido grabados en los anales del gremio.',
           icon: 'success',
-          background: '#18181b', 
+          background: '#09090b', 
           color: '#fff',
-          confirmButtonColor: '#10b981', 
-          confirmButtonText: 'Excelente'
-        });
-      } else {
-        Swal.fire({
-          title: 'Error de Tinta',
-          text: 'No se pudo actualizar la ficha.',
-          icon: 'error',
-          background: '#18181b',
-          color: '#fff',
-          confirmButtonColor: '#ef4444' 
+          confirmButtonColor: '#10b981'
         });
       }
     } catch (error) {
       if (error === 'Sesión expirada') return;
       console.error(error);
-      Swal.fire({
-        title: 'Error Mágico',
-        text: 'Los pergaminos no llegaron al servidor.',
-        icon: 'error',
-        background: '#18181b',
-        color: '#fff',
-        confirmButtonColor: '#ef4444'
-      });
     }
   };
 
   const enviarPeticionDM = async () => {
     const result = await Swal.fire({
       title: '¿Sientes el llamado?',
-      text: "Convertirse en Dungeon Master requiere sabiduría y paciencia. ¿Quieres enviar tu petición a los Altos Mandos?",
+      text: "Convertirse en Dungeon Master requiere sabiduría. ¿Enviar petición al Senado?",
       icon: 'question',
       showCancelButton: true,
-      background: '#18181b',
+      background: '#09090b',
       color: '#fff',
       confirmButtonColor: '#9333ea', 
-      cancelButtonColor: '#3f3f46', 
-      confirmButtonText: '🧙‍♂️ Sí, quiero dirigir',
-      cancelButtonText: 'Aún no'
+      confirmButtonText: '🧙‍♂️ Sí, quiero dirigir'
     });
 
     if (!result.isConfirmed) return;
 
     try {
-      // ✨ USAMOS EL GUARDIÁN PARA PEDIR RANGO
       const res = await fetchProtegido('https://gestor-eventos-rol.onrender.com/api/usuarios/solicitar-dm', {
         method: 'POST'
       });
@@ -116,27 +90,13 @@ function MisCronicas({ alActualizarUsuario }) {
 
         Swal.fire({
           title: 'Petición Enviada',
-          text: 'Tu solicitud está siendo evaluada. Mantente atento.',
           icon: 'success',
-          background: '#18181b',
+          background: '#09090b',
           color: '#fff',
           confirmButtonColor: '#10b981'
         });
-      } else {
-        const error = await res.json();
-        Swal.fire({
-          title: 'Aviso del Gremio',
-          text: error.error,
-          icon: 'warning',
-          background: '#18181b',
-          color: '#fff',
-          confirmButtonColor: '#f59e0b' 
-        });
       }
-    } catch (e) { 
-      if (e === 'Sesión expirada') return;
-      console.error(e); 
-    }
+    } catch (e) { if (e !== 'Sesión expirada') console.error(e); }
   };
 
   const formatearFecha = (fechaString) => {
@@ -145,33 +105,31 @@ function MisCronicas({ alActualizarUsuario }) {
 
   if (cargando) return (
     <div className="flex justify-center items-center min-h-[50vh]">
-      <p className="text-emerald-500 font-black animate-pulse uppercase tracking-widest text-left">Consultando Archivos...</p>
+      <div className="flex flex-col items-center gap-4">
+        <div className="w-12 h-12 border-4 border-emerald-500/20 border-t-emerald-500 rounded-full animate-spin"></div>
+        <p className="text-emerald-500 font-black animate-pulse uppercase tracking-widest text-xs">Consultando Archivos...</p>
+      </div>
     </div>
   );
 
   return (
-    <div className="max-w-4xl mx-auto p-6 animate-in fade-in duration-500 text-left">
-      <h2 className="text-4xl font-black text-white text-center mb-10 italic uppercase tracking-tighter">
-        📖 Mi Diario de Aventuras
-      </h2>
-
-      <section className="bg-zinc-900 border border-zinc-800 p-8 rounded-[2rem] shadow-2xl mb-12 relative overflow-hidden text-left">
-        <div className="absolute top-0 right-0 w-32 h-32 bg-emerald-500/5 blur-3xl rounded-full"></div>
-        <h3 className="text-xs font-black text-zinc-500 uppercase tracking-[0.2em] mb-6 flex items-center gap-2">
-          <span className="w-2 h-2 bg-emerald-500 rounded-full"></span> Ficha del Aventurero
-        </h3>
+    <div className="max-w-5xl mx-auto p-4 md:p-8 animate-in fade-in duration-700">
+      
+      {/* 📜 ENCABEZADO DE PERFIL */}
+      <section className="bg-zinc-900/50 backdrop-blur-xl border border-zinc-800 p-6 md:p-10 rounded-[2.5rem] shadow-2xl mb-12 relative overflow-hidden">
+        <div className="absolute top-0 right-0 w-64 h-64 bg-emerald-500/5 blur-[100px] rounded-full pointer-events-none"></div>
         
         {editando ? (
-          <div className="space-y-6 max-w-md text-left relative z-10">
-            <div className="space-y-2">
-              <label className="text-[10px] font-bold text-zinc-600 uppercase ml-2">Elige tu Avatar</label>
-              <div className="flex gap-4 p-3 bg-zinc-950 rounded-2xl border border-zinc-800 justify-around">
+          <div className="relative z-10 flex flex-col gap-8 animate-in zoom-in-95 duration-300">
+            <div className="space-y-4">
+              <label className="text-[10px] font-black text-zinc-500 uppercase tracking-widest ml-2">Elige tu Identidad (Avatar)</label>
+              <div className="grid grid-cols-4 gap-4 p-4 bg-zinc-950/50 rounded-3xl border border-zinc-800">
                 {['guerrero', 'mago', 'esqueleto', 'goblin'].map(tipo => (
                   <button
                     key={tipo}
                     onClick={() => setPerfil({...perfil, avatar: tipo})}
-                    className={`w-14 h-14 rounded-full flex items-center justify-center text-3xl transition-all ${
-                      perfil.avatar === tipo ? 'bg-emerald-500 scale-110 shadow-[0_0_20px_rgba(16,185,129,0.4)]' : 'bg-zinc-800 hover:bg-zinc-700 opacity-50'
+                    className={`aspect-square rounded-2xl flex items-center justify-center text-3xl md:text-4xl transition-all ${
+                      perfil.avatar === tipo ? 'bg-emerald-500 scale-105 shadow-[0_0_25px_rgba(16,185,129,0.3)]' : 'bg-zinc-900 opacity-40 hover:opacity-100'
                     }`}
                   >
                     {tipo === 'guerrero' && '⚔️'}
@@ -183,52 +141,54 @@ function MisCronicas({ alActualizarUsuario }) {
               </div>
             </div>
             
-            <div className="space-y-2">
-              <label className="text-[10px] font-bold text-zinc-600 uppercase ml-2">Nombre</label>
-              <input name="nombre" className="w-full bg-zinc-950 border border-zinc-800 rounded-xl py-3 px-4 text-white focus:border-emerald-500 outline-none" value={perfil.nombre} onChange={manejarCambioPerfil} />
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="space-y-2">
+                <label className="text-[10px] font-black text-zinc-500 uppercase tracking-widest ml-2">Nombre en los anales</label>
+                <input name="nombre" className="w-full bg-zinc-950 border border-zinc-800 rounded-2xl py-4 px-6 text-white focus:border-emerald-500 outline-none transition-all font-bold" value={perfil.nombre} onChange={manejarCambioPerfil} />
+              </div>
+              <div className="space-y-2">
+                <label className="text-[10px] font-black text-zinc-500 uppercase tracking-widest ml-2">Mensajería (Email)</label>
+                <input name="email" className="w-full bg-zinc-950 border border-zinc-800 rounded-2xl py-4 px-6 text-white focus:border-emerald-500 outline-none transition-all font-mono" value={perfil.email} onChange={manejarCambioPerfil} />
+              </div>
             </div>
             
-            <div className="space-y-2">
-              <label className="text-[10px] font-bold text-zinc-600 uppercase ml-2">Email</label>
-              <input name="email" className="w-full bg-zinc-950 border border-zinc-800 rounded-xl py-3 px-4 text-white focus:border-emerald-500 outline-none" value={perfil.email} onChange={manejarCambioPerfil} />
-            </div>
-            
-            <div className="flex gap-3 pt-4">
-              <button onClick={guardarPerfil} className="flex-1 bg-emerald-600 hover:bg-emerald-500 text-white font-black py-3 rounded-xl uppercase text-xs transition-colors">Guardar Ficha</button>
-              <button onClick={() => setEditando(false)} className="px-6 bg-zinc-800 hover:bg-zinc-700 text-zinc-400 rounded-xl uppercase text-xs transition-colors">Cancelar</button>
+            <div className="flex flex-col sm:flex-row gap-3">
+              <button onClick={guardarPerfil} className="flex-1 bg-emerald-600 hover:bg-emerald-500 text-white font-black py-4 rounded-2xl uppercase text-xs tracking-widest transition-all shadow-lg shadow-emerald-900/20">Grabar Ficha</button>
+              <button onClick={() => setEditando(false)} className="px-8 bg-zinc-800 hover:bg-zinc-700 text-zinc-400 font-black py-4 rounded-2xl uppercase text-xs tracking-widest transition-all">Descartar</button>
             </div>
           </div>
         ) : (
-          <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 relative z-10">
-            <div className="flex items-center gap-6">
-               <div className="w-20 h-20 bg-zinc-800 rounded-full flex items-center justify-center text-4xl border-2 border-emerald-500 shadow-lg">
-                  {perfil.avatar === 'guerrero' && '⚔️'}
-                  {perfil.avatar === 'mago' && '🧙'}
-                  {perfil.avatar === 'esqueleto' && '💀'}
-                  {perfil.avatar === 'goblin' && '👺'}
-               </div>
-               <div>
-                  <p className="text-3xl font-black text-white">{perfil.nombre}</p>
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-8 relative z-10">
+            <div className="flex items-center gap-6 md:gap-8">
+                <div className="relative group">
+                    <div className="absolute inset-0 bg-emerald-500/20 blur-xl rounded-full group-hover:bg-emerald-500/40 transition-all"></div>
+                    <div className="w-24 h-24 md:w-32 md:h-32 bg-zinc-950 rounded-full flex items-center justify-center text-5xl md:text-6xl border-2 border-emerald-500/50 shadow-2xl relative z-10">
+                        {perfil.avatar === 'guerrero' && '⚔️'}
+                        {perfil.avatar === 'mago' && '🧙'}
+                        {perfil.avatar === 'esqueleto' && '💀'}
+                        {perfil.avatar === 'goblin' && '👺'}
+                    </div>
+                </div>
+                <div>
+                  <p className="text-4xl md:text-5xl font-black text-white tracking-tighter uppercase italic">{perfil.nombre}</p>
+                  <p className="text-emerald-500 font-black text-[10px] uppercase tracking-[0.4em] mb-2">{usuarioGuardado?.rol === 'admin' ? '👑 Administrador' : usuarioGuardado?.rol === 'dm' ? '🛡️ Dungeon Master' : '⚔️ Aventurero'}</p>
                   <p className="text-zinc-500 font-mono text-sm">{perfil.email}</p>
-               </div>
+                </div>
             </div>
             
-            <div className="flex flex-col gap-3">
-              <button onClick={() => setEditando(true)} className="bg-zinc-800 hover:bg-zinc-700 text-zinc-300 px-6 py-3 rounded-xl text-xs font-black uppercase transition-colors">
-                ✏️ Editar Ficha
+            <div className="flex flex-col gap-3 min-w-[200px]">
+              <button onClick={() => setEditando(true)} className="bg-zinc-800 hover:bg-zinc-700 text-zinc-200 px-6 py-4 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all border border-zinc-700">
+                ✏️ Editar Perfil
               </button>
               
               {esJugadorBase && (
                 peticionEnviada ? (
-                  <div className="bg-purple-900/20 border border-purple-500/30 text-purple-400 px-6 py-3 rounded-xl text-xs font-black uppercase text-center shadow-inner">
-                    ⏳ Los Altos Mandos evalúan tu petición...
+                  <div className="bg-purple-500/10 border border-purple-500/30 text-purple-400 px-6 py-4 rounded-2xl text-[9px] font-black uppercase tracking-widest text-center animate-pulse">
+                    ⏳ Evaluación en curso...
                   </div>
                 ) : (
-                  <button 
-                    onClick={enviarPeticionDM}
-                    className="bg-purple-600 hover:bg-purple-500 text-white px-6 py-3 rounded-xl text-xs font-black uppercase shadow-lg shadow-purple-900/20 transition-all active:scale-95"
-                  >
-                    🧙‍♂️ Ser Dungeon Master
+                  <button onClick={enviarPeticionDM} className="bg-purple-600 hover:bg-purple-500 text-white px-6 py-4 rounded-2xl text-[10px] font-black uppercase tracking-widest shadow-xl shadow-purple-900/40 transition-all active:scale-95">
+                    🧙‍♂️ Pedir Rango DM
                   </button>
                 )
               )}
@@ -237,33 +197,58 @@ function MisCronicas({ alActualizarUsuario }) {
         )}
       </section>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-8 text-left">
-        <div className="space-y-6">
-          <h3 className="text-xl font-black text-white flex items-center gap-3 uppercase"><span className="w-8 h-1 bg-emerald-500 rounded-full"></span>Jugando ({cronicas.jugando.length})</h3>
-          {cronicas.jugando.length === 0 ? (
-            <p className="text-zinc-600 italic text-sm">Aún no te has sentado en ninguna mesa...</p>
-          ) : (
-            cronicas.jugando.map(p => (
-              <div key={p.id} className="bg-zinc-900 border border-zinc-800 p-5 rounded-2xl hover:border-emerald-500/30 transition-colors">
-                <h4 className="font-bold text-white">{p.titulo}</h4>
-                <p className="text-zinc-500 text-xs mt-2 uppercase">{p.evento_nombre} | {formatearFecha(p.evento_fecha)}</p>
-              </div>
-            ))
-          )}
+      {/* ⚔️ LISTADO DE CRÓNICAS */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 md:gap-12">
+        {/* JUGANDO */}
+        <div className="space-y-8">
+          <div className="flex items-center gap-4">
+            <h3 className="text-2xl font-black text-white uppercase tracking-tighter italic">Jugando</h3>
+            <span className="h-px flex-grow bg-emerald-500/20"></span>
+            <span className="bg-emerald-500/10 text-emerald-500 px-3 py-1 rounded-lg text-xs font-black">{cronicas.jugando.length}</span>
+          </div>
+          
+          <div className="grid gap-4">
+            {cronicas.jugando.length === 0 ? (
+              <p className="text-zinc-600 italic text-sm py-4 border-2 border-dashed border-zinc-900 rounded-3xl text-center">Aún no has participado en ninguna mesa...</p>
+            ) : (
+              cronicas.jugando.map(p => (
+                <div key={p.id} className="group bg-zinc-900/40 border border-zinc-800 p-6 rounded-3xl hover:border-emerald-500/30 transition-all hover:bg-zinc-900">
+                  <h4 className="font-black text-lg text-white group-hover:text-emerald-400 transition-colors uppercase italic leading-tight">{p.titulo}</h4>
+                  <div className="flex items-center gap-2 mt-3">
+                    <span className="text-[10px] font-black text-zinc-500 uppercase tracking-widest">{p.evento_nombre}</span>
+                    <span className="w-1 h-1 bg-zinc-700 rounded-full"></span>
+                    <span className="text-[10px] font-black text-emerald-500/70 uppercase tracking-widest">{formatearFecha(p.evento_fecha)}</span>
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
         </div>
         
-        <div className="space-y-6">
-          <h3 className="text-xl font-black text-white flex items-center gap-3 uppercase"><span className="w-8 h-1 bg-amber-500 rounded-full"></span>Dirigiendo ({cronicas.dirigiendo.length})</h3>
-          {cronicas.dirigiendo.length === 0 ? (
-            <p className="text-zinc-600 italic text-sm">No has convocado ninguna aventura aún...</p>
-          ) : (
-            cronicas.dirigiendo.map(p => (
-              <div key={p.id} className="bg-zinc-900 border border-zinc-800 p-5 rounded-2xl hover:border-amber-500/30 transition-colors">
-                <h4 className="font-bold text-white">{p.titulo}</h4>
-                <p className="text-zinc-500 text-xs mt-2 uppercase">{p.evento_nombre} | {formatearFecha(p.evento_fecha)}</p>
-              </div>
-            ))
-          )}
+        {/* DIRIGIENDO */}
+        <div className="space-y-8">
+          <div className="flex items-center gap-4">
+            <h3 className="text-2xl font-black text-white uppercase tracking-tighter italic">Dirigiendo</h3>
+            <span className="h-px flex-grow bg-amber-500/20"></span>
+            <span className="bg-amber-500/10 text-amber-500 px-3 py-1 rounded-lg text-xs font-black">{cronicas.dirigiendo.length}</span>
+          </div>
+          
+          <div className="grid gap-4">
+            {cronicas.dirigiendo.length === 0 ? (
+              <p className="text-zinc-600 italic text-sm py-4 border-2 border-dashed border-zinc-900 rounded-3xl text-center">No has convocado ninguna aventura aún...</p>
+            ) : (
+              cronicas.dirigiendo.map(p => (
+                <div key={p.id} className="group bg-zinc-900/40 border border-zinc-800 p-6 rounded-3xl hover:border-amber-500/30 transition-all hover:bg-zinc-900">
+                  <h4 className="font-black text-lg text-white group-hover:text-amber-400 transition-colors uppercase italic leading-tight">{p.titulo}</h4>
+                  <div className="flex items-center gap-2 mt-3">
+                    <span className="text-[10px] font-black text-zinc-500 uppercase tracking-widest">{p.evento_nombre}</span>
+                    <span className="w-1 h-1 bg-zinc-700 rounded-full"></span>
+                    <span className="text-[10px] font-black text-amber-500/70 uppercase tracking-widest">{formatearFecha(p.evento_fecha)}</span>
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
         </div>
       </div>
     </div>
