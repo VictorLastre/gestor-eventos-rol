@@ -1,4 +1,5 @@
 import { useState, useRef } from 'react';
+import puertaDungeon from '../assets/puerta-dungeon.png'; // ✨ IMPORTAMOS LA PUERTA
 
 function Landing({ irALogin }) {
   const [indiceFundador, setIndiceFundador] = useState(null);
@@ -177,11 +178,26 @@ function Landing({ irALogin }) {
             
             <div className="h-6 w-px bg-zinc-800 hidden md:block"></div>
 
+            {/* ✨ AHORA TIENES LA PUERTA DE DUNGEON */}
             <button 
               onClick={irALogin}
-              className="bg-emerald-600 hover:bg-emerald-500 text-white px-6 py-2.5 rounded-xl font-black uppercase tracking-widest text-xs transition-all shadow-[0_0_15px_rgba(16,185,129,0.2)] hover:shadow-[0_0_25px_rgba(16,185,129,0.4)]"
+              className="relative group transition-all duration-300 hover:scale-110 focus:outline-none flex flex-col items-center"
+              title="Ingresar al Sistema"
             >
-              Ingresar
+              {/* El resplandor mágico detrás de la puerta */}
+              <div className="absolute inset-0 bg-emerald-500/20 blur-xl rounded-full group-hover:bg-emerald-500/40 transition-colors duration-300 opacity-0 group-hover:opacity-100"></div>
+              
+              {/* Tu imagen PNG */}
+              <img 
+                src={puertaDungeon} 
+                alt="Puerta de Ingreso" 
+                className="w-14 h-14 object-contain relative z-10 drop-shadow-xl group-hover:drop-shadow-[0_0_15px_rgba(16,185,129,0.8)] transition-all duration-300"
+              />
+              
+              {/* Texto chiquito abajo que aparece al pasar el mouse (opcional) */}
+              <span className="absolute -bottom-6 text-[9px] font-black uppercase tracking-widest text-emerald-500 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                Entrar
+              </span>
             </button>
           </div>
         </div>
