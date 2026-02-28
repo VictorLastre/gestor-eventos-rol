@@ -152,7 +152,7 @@ function Landing({ irALogin }) {
           >
             <span className="text-3xl">⚔️</span>
             <span className="text-xl font-black text-white uppercase tracking-tighter hidden sm:block">
-              Rol <span className="text-emerald-500">La Pampa</span>
+              Asociación de Rol <span className="text-emerald-500">La Pampa</span>
             </span>
           </div>
 
