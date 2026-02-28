@@ -56,24 +56,32 @@ router.post('/', verificarToken, (req, res) => {
   });
 });
 
-// 3. Obtener partidas de un evento específico
+// 3. Obtener partidas de un evento específico (✨ CORREGIDO PARA TRAER EL NOMBRE DEL SISTEMA)
 router.get('/:id/partidas', verificarToken, (req, res) => {
   const sql = `
     SELECT 
-      p.id, p.evento_id, p.dungeon_master_id, p.titulo, p.descripcion, p.requisitos, p.sistema, p.cupo, p.turno, p.estado, p.etiqueta, p.apta_novatos, p.materiales_pedidos,
+      p.id, p.evento_id, p.dungeon_master_id, p.titulo, p.descripcion, p.requisitos, 
+      p.sistema_id, s.nombre AS sistema, -- Traemos el nombre del sistema desde la tabla sistemas
+      p.cupo, p.turno, p.estado, p.etiqueta, p.apta_novatos, p.materiales_pedidos,
       u.nombre AS dmNombre, 
       (SELECT COUNT(*) FROM inscripciones WHERE partida_id = p.id) AS jugadoresIniciales,
       (SELECT COUNT(*) FROM inscripciones WHERE partida_id = p.id AND usuario_id = ?) AS anotadoInicialmente
-    FROM partidas p JOIN usuarios u ON p.dungeon_master_id = u.id
-    WHERE p.evento_id = ? GROUP BY p.id
+    FROM partidas p 
+    JOIN usuarios u ON p.dungeon_master_id = u.id
+    LEFT JOIN sistemas s ON p.sistema_id = s.id -- Hacemos el cruce de tablas
+    WHERE p.evento_id = ? 
+    GROUP BY p.id
   `;
   db.query(sql, [req.usuario.id, req.params.id], (err, resultados) => {
-    if (err) return res.status(500).json({ error: 'Error al consultar las mesas.' });
+    if (err) {
+      console.error(err);
+      return res.status(500).json({ error: 'Error al consultar las mesas.' });
+    }
     res.json(resultados);
   });
 });
 
-// 4. Crear una mesa en un evento (Con candado de participación única y MATERIALES)
+// 4. Crear una mesa en un evento (✨ CORREGIDO PARA GUARDAR sistema_id)
 router.post('/:id/partidas', verificarToken, (req, res) => {
   if (req.usuario.rol === 'jugador') return res.status(403).json({ error: 'Solo DMs y Admins pueden crear mesas.' });
   
@@ -94,15 +102,17 @@ router.post('/:id/partidas', verificarToken, (req, res) => {
     if (es_dm > 0) return res.status(400).json({ error: 'Ya estás dirigiendo una mesa en este evento.' });
     if (es_jugador > 0) return res.status(400).json({ error: 'No puedes crear una mesa porque ya estás anotado como jugador en este evento.' });
 
-    const { titulo, descripcion, requisitos, sistema, cupo, turno, etiqueta, apta_novatos, materiales_pedidos } = req.body;
+    // ✨ Ahora recibimos sistema_id del body, no sistema
+    const { titulo, descripcion, requisitos, sistema_id, cupo, turno, etiqueta, apta_novatos, materiales_pedidos } = req.body;
     
+    // ✨ Insertamos sistema_id
     const sqlInsert = `
         INSERT INTO partidas 
-        (evento_id, dungeon_master_id, titulo, descripcion, requisitos, sistema, cupo, turno, estado, etiqueta, apta_novatos, materiales_pedidos) 
+        (evento_id, dungeon_master_id, titulo, descripcion, requisitos, sistema_id, cupo, turno, estado, etiqueta, apta_novatos, materiales_pedidos) 
         VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'abierta', ?, ?, ?)
     `;
     
-    db.query(sqlInsert, [eventoId, usuarioId, titulo, descripcion, requisitos, sistema, cupo, turno, etiqueta, apta_novatos, materiales_pedidos], (err) => {
+    db.query(sqlInsert, [eventoId, usuarioId, titulo, descripcion, requisitos, sistema_id, cupo, turno, etiqueta, apta_novatos, materiales_pedidos], (err) => {
       if (err) {
         console.error(err);
         return res.status(500).json({ error: 'Error al crear la mesa.' });
