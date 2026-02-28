@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import Swal from 'sweetalert2'; 
-import { fetchProtegido } from '../utils/api'; // ✨ IMPORTAMOS AL GUARDIÁN
+import { fetchProtegido } from '../utils/api'; 
 
 function Partida(props) {
   const cantJugadores = props.jugadoresIniciales ?? props.jugadores_anotados ?? 0;
@@ -13,15 +13,21 @@ function Partida(props) {
   const [cargandoJugadores, setCargandoJugadores] = useState(false);
 
   const [modoEdicion, setModoEdicion] = useState(false);
+  
+  // ✨ NUEVO ESTADO PARA LA LISTA DE SISTEMAS EN EL EDITOR
+  const [sistemas, setSistemas] = useState([]);
+
+  // ✨ ACTUALIZAMOS EL ESTADO INICIAL PARA USAR sistema_id Y MATERIALES
   const [datosEdicion, setDatosEdicion] = useState({
     titulo: props.titulo || '',
     descripcion: props.descripcion || props.description || '',
     requisitos: props.requisitos || '',
-    sistema: props.sistema || '',
+    sistema_id: props.sistema_id || '', // Usamos ID en lugar de texto
     cupo: props.cupo || 4,
     turno: props.turno || 'Tarde',
     etiqueta: props.etiqueta || 'Fantasía Medieval',
-    apta_novatos: Boolean(props.apta_novatos)
+    apta_novatos: Boolean(props.apta_novatos),
+    materiales_pedidos: props.materiales_pedidos || '' // Permite editar los materiales
   });
 
   const iconoEtiqueta = {
@@ -62,11 +68,19 @@ function Partida(props) {
     if (modalAbierto || modoEdicion) {
       document.body.style.overflow = 'hidden';
       if (modalAbierto) cargarListaJugadores();
+      
+      // ✨ CARGAMOS LA LISTA DE SISTEMAS SOLO SI SE ABRE EL EDITOR
+      if (modoEdicion && sistemas.length === 0) {
+        fetch('https://gestor-eventos-rol.onrender.com/api/sistemas')
+          .then(res => res.json())
+          .then(data => setSistemas(Array.isArray(data) ? data : []))
+          .catch(err => console.error(err));
+      }
     } else {
       document.body.style.overflow = 'unset';
     }
     return () => { document.body.style.overflow = 'unset'; };
-  }, [modalAbierto, modoEdicion]);
+  }, [modalAbierto, modoEdicion, sistemas.length]);
 
   useEffect(() => {
     setJugadoresAnotados(cantJugadores);
@@ -75,7 +89,6 @@ function Partida(props) {
 
   const cargarListaJugadores = () => {
     setCargandoJugadores(true);
-    // ✨ USAMOS EL GUARDIÁN PARA VER QUIÉN ESTÁ EN LA MESA
     fetchProtegido(`https://gestor-eventos-rol.onrender.com/api/partidas/${props.id}/jugadores`)
       .then(res => res.json())
       .then(datos => {
@@ -97,7 +110,6 @@ function Partida(props) {
     const metodo = anotado ? 'DELETE' : 'POST';
 
     try {
-      // ✨ USAMOS EL GUARDIÁN PARA ANOTARNOS/BORRARNOS
       const res = await fetchProtegido(`https://gestor-eventos-rol.onrender.com/api/partidas/${props.id}/inscripciones`, {
         method: metodo
       });
@@ -148,7 +160,6 @@ function Partida(props) {
 
     if (result.isConfirmed) {
       try {
-        // ✨ USAMOS EL GUARDIÁN PARA DESTRUIR LA MESA
         const res = await fetchProtegido(`https://gestor-eventos-rol.onrender.com/api/partidas/${props.id}`, {
           method: 'DELETE'
         });
@@ -184,8 +195,11 @@ function Partida(props) {
   const guardarEdicion = async (e) => {
     e.preventDefault();
 
+    if (!datosEdicion.sistema_id) {
+        return Swal.fire({ title: 'Aviso', text: 'Debes seleccionar un sistema', icon: 'warning', background: '#18181b', color: '#fff' });
+    }
+
     try {
-      // ✨ USAMOS EL GUARDIÁN PARA REESCRIBIR LA MESA
       const res = await fetchProtegido(`https://gestor-eventos-rol.onrender.com/api/partidas/${props.id}`, {
         method: 'PUT',
         body: JSON.stringify(datosEdicion)
@@ -241,8 +255,9 @@ function Partida(props) {
                   {iconoEtiqueta} {props.etiqueta}
                 </span>
               )}
+              {/* ✨ AQUÍ MUESTRA EL NOMBRE BONITO DEL SISTEMA */}
               <span className="text-[9px] font-black text-zinc-300 uppercase tracking-widest bg-zinc-800 px-2 py-0.5 rounded border border-zinc-700">
-                🎲 {props.sistema}
+                🎲 {props.sistema || 'Sistema Desconocido'}
               </span>
               
               {soyElMaster && (
@@ -376,23 +391,52 @@ function Partida(props) {
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                {/* ✨ AQUÍ TRANSFORMAMOS EL INPUT DE SISTEMA EN UN SELECT */}
                 <div className="flex flex-col gap-1">
                   <label className="text-[10px] font-bold text-zinc-500 uppercase ml-2 tracking-widest">Sistema</label>
-                  <input type="text" value={datosEdicion.sistema} onChange={e => setDatosEdicion({...datosEdicion, sistema: e.target.value})} required className="bg-zinc-950 border border-zinc-800 rounded-xl py-3 px-4 text-white focus:border-amber-500 outline-none font-bold" />
+                  <select 
+                    value={datosEdicion.sistema_id} 
+                    onChange={e => setDatosEdicion({...datosEdicion, sistema_id: e.target.value})}
+                    required
+                    className="bg-zinc-950 border border-zinc-800 rounded-xl py-3 px-4 text-white focus:border-amber-500 outline-none font-bold cursor-pointer"
+                  >
+                    <option value="">Seleccionar...</option>
+                    {sistemas.map(s => (
+                      <option key={s.id} value={s.id} className="bg-zinc-900">
+                        {s.nombre}
+                      </option>
+                    ))}
+                  </select>
                 </div>
+                
                 <div className="flex flex-col gap-1">
                   <label className="text-[10px] font-bold text-zinc-500 uppercase ml-2 tracking-widest">Cupo</label>
                   <input type="number" value={datosEdicion.cupo} onChange={e => setDatosEdicion({...datosEdicion, cupo: e.target.value})} min="1" max="10" required className="bg-zinc-950 border border-zinc-800 rounded-xl py-3 px-4 text-white focus:border-amber-500 outline-none font-bold" />
                 </div>
+                
                 <div className="flex flex-col gap-1">
                   <label className="text-[10px] font-bold text-zinc-500 uppercase ml-2 tracking-widest">Turno</label>
-                  <select value={datosEdicion.turno} onChange={e => setDatosEdicion({...datosEdicion, turno: e.target.value})} className="bg-zinc-950 border border-zinc-800 rounded-xl py-3 px-4 text-white focus:border-amber-500 outline-none font-bold">
-                    <option value="Mañana">Mañana</option>
-                    <option value="Tarde">Tarde</option>
-                    <option value="Noche">Noche</option>
-                    <option value="Madrugada">Madrugada</option>
+                  <select value={datosEdicion.turno} onChange={e => setDatosEdicion({...datosEdicion, turno: e.target.value})} className="bg-zinc-950 border border-zinc-800 rounded-xl py-3 px-4 text-white focus:border-amber-500 outline-none font-bold cursor-pointer">
+                    <option value="Mañana" className="bg-zinc-900">Mañana</option>
+                    <option value="Tarde" className="bg-zinc-900">Tarde</option>
+                    <option value="Noche" className="bg-zinc-900">Noche</option>
+                    <option value="Madrugada" className="bg-zinc-900">Madrugada</option>
                   </select>
                 </div>
+              </div>
+
+              {/* ✨ AÑADIMOS MATERIALES AL EDITOR */}
+              <div className="space-y-1 mt-2">
+                <label className="text-[10px] font-black text-amber-500 uppercase ml-2 tracking-[0.2em] flex items-center gap-2">
+                  <span className="w-1.5 h-1.5 bg-amber-500 rounded-full animate-pulse"></span> 
+                  Pedido al Gremio (Logística)
+                </label>
+                <input 
+                  type="text" 
+                  value={datosEdicion.materiales_pedidos} 
+                  onChange={e => setDatosEdicion({...datosEdicion, materiales_pedidos: e.target.value})} 
+                  className="w-full bg-amber-500/5 border border-amber-500/20 rounded-xl py-3 px-4 text-amber-200 focus:border-amber-500 outline-none italic text-sm"
+                />
               </div>
 
               <button type="submit" className="bg-amber-500 hover:bg-amber-400 text-black font-black py-4 rounded-xl shadow-lg transition-all active:scale-95 text-xs uppercase tracking-widest mt-2">
@@ -445,8 +489,9 @@ function Partida(props) {
                   {iconoEtiqueta} {props.etiqueta}
                 </span>
               )}
+              {/* ✨ AQUÍ TAMBIÉN MUESTRA EL NOMBRE BONITO DENTRO DEL MODAL */}
               <span className="text-xs font-black text-zinc-300 uppercase tracking-widest bg-zinc-800 px-3 py-1 rounded-full border border-zinc-700">
-                🎲 {props.sistema}
+                🎲 {props.sistema || 'Sistema Desconocido'}
               </span>
               {soyElMaster && (
                 <span className="text-xs font-black text-amber-500 uppercase tracking-widest bg-amber-500/10 px-3 py-1 rounded-full border border-amber-500/20">
