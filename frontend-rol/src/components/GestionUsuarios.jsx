@@ -14,7 +14,7 @@ function GestionUsuarios() {
 
   const [todosLosUsuarios, setTodosLosUsuarios] = useState([]);
   const [paginaCenso, setPaginaCenso] = useState(1);
-  const [infoPaginacion, setInfoPaginacion] = useState({ totalPaginas: 1, totalUsuarios: 0 });
+  const usuariosPorPagina = 10; // ✨ LÍMITE DE 10 USUARIOS POR PÁGINA
 
   const cargarDatosPrincipales = () => {
     fetchProtegido('https://gestor-eventos-rol.onrender.com/api/usuarios/solicitudes-dm')
@@ -33,22 +33,26 @@ function GestionUsuarios() {
       .catch(err => console.error(err));
   };
 
-  const cargarCenso = (pagina) => {
-    fetchProtegido(`https://gestor-eventos-rol.onrender.com/api/usuarios?page=${pagina}&limit=10`)
+  const cargarCenso = () => {
+    // ✨ PEDIMOS TODOS LOS USUARIOS (limit alto) PARA ORDENAR Y FILTRAR EN EL CLIENTE
+    fetchProtegido(`https://gestor-eventos-rol.onrender.com/api/usuarios?limit=1000`)
       .then(res => res.json())
       .then(data => {
-        if (data.datos && data.paginacion) {
-          setTodosLosUsuarios(data.datos);
-          setInfoPaginacion(data.paginacion);
-        } else {
-          setTodosLosUsuarios(Array.isArray(data) ? data : []);
-        }
+        const usuarios = data.datos ? data.datos : (Array.isArray(data) ? data : []);
+        setTodosLosUsuarios(usuarios);
       })
       .catch(err => { if (err !== 'Sesión expirada') console.error(err); });
   };
 
-  useEffect(() => { cargarDatosPrincipales(); }, []);
-  useEffect(() => { cargarCenso(paginaCenso); }, [paginaCenso]);
+  useEffect(() => { 
+    cargarDatosPrincipales(); 
+    cargarCenso();
+  }, []);
+
+  // ✨ SI CAMBIA EL FILTRO O LA BÚSQUEDA, VOLVEMOS A LA PÁGINA 1
+  useEffect(() => {
+    setPaginaCenso(1);
+  }, [filtroRol, busqueda]);
 
   const exportarLogistica = async () => {
     if (eventos.length === 0) return Swal.fire({ title: 'Error', text: 'No hay eventos.', icon: 'error', background: '#18181b', color: '#fff' });
@@ -111,7 +115,57 @@ function GestionUsuarios() {
     });
     if (result.isConfirmed) {
       const res = await fetchProtegido(`https://gestor-eventos-rol.onrender.com/api/usuarios/${id}/promover`, { method: 'PUT' });
-      if (res.ok) { cargarDatosPrincipales(); cargarCenso(paginaCenso); Swal.fire({ title: '¡Ascenso Concedido!', icon: 'success', background: '#18181b', color: '#fff' }); }
+      if (res.ok) { cargarDatosPrincipales(); cargarCenso(); Swal.fire({ title: '¡Ascenso Concedido!', icon: 'success', background: '#18181b', color: '#fff' }); }
+    }
+  };
+
+  const rechazarUsuario = async (id, nombre) => {
+    const result = await Swal.fire({
+      title: 'Denegar Petición',
+      text: `¿Estás seguro de rechazar la solicitud de ${nombre.toUpperCase()}?`,
+      icon: 'error',
+      showCancelButton: true,
+      background: '#18181b', color: '#fff', confirmButtonColor: '#ef4444', confirmButtonText: '❌ Rechazar Petición'
+    });
+    if (result.isConfirmed) {
+      try {
+        const res = await fetchProtegido(`https://gestor-eventos-rol.onrender.com/api/usuarios/${id}/rechazar-dm`, { method: 'PUT' });
+        if (res.ok) { Swal.fire({ title: 'Petición Rechazada', icon: 'success', background: '#18181b', color: '#fff' }); cargarDatosPrincipales(); cargarCenso(); }
+      } catch (e) { if (e !== 'Sesión expirada') console.error(e); }
+    }
+  };
+
+  const cambiarRolDirecto = async (id, nombre, nuevoRol) => {
+    const result = await Swal.fire({
+      title: 'Alterar Rango',
+      text: `¿Convertir a ${nombre} en ${nuevoRol === 'dm' ? 'Dungeon Master' : 'Jugador'}?`,
+      icon: 'question',
+      showCancelButton: true,
+      background: '#18181b', color: '#fff', confirmButtonColor: '#0ea5e9', confirmButtonText: 'Sí, aplicar'
+    });
+    if (result.isConfirmed) {
+      try {
+        const res = await fetchProtegido(`https://gestor-eventos-rol.onrender.com/api/usuarios/${id}/rol`, { method: 'PUT', body: JSON.stringify({ rol: nuevoRol }) });
+        if (res.ok) { Swal.fire({ title: '¡Rango Alterado!', icon: 'success', background: '#18181b', color: '#fff' }); cargarCenso(); }
+      } catch (e) { if (e !== 'Sesión expirada') console.error(e); }
+    }
+  };
+
+  const proponerAdmin = async (id, nombre) => {
+    const result = await Swal.fire({
+      title: '👑 Convocar al Senado',
+      text: `¿Proponer a ${nombre} para formar parte de los Administradores?`,
+      icon: 'info',
+      showCancelButton: true,
+      background: '#18181b', color: '#fff', confirmButtonColor: '#f59e0b', confirmButtonText: 'Sí, abrir moción'
+    });
+    if (result.isConfirmed) {
+      try {
+        const res = await fetchProtegido(`https://gestor-eventos-rol.onrender.com/api/usuarios/${id}/proponer-admin`, { method: 'POST' });
+        const data = await res.json();
+        if (res.ok) { Swal.fire({ title: 'Senado Convocado', text: data.mensaje, icon: 'success', background: '#18181b', color: '#fff' }); setPestanaActiva('senado'); cargarDatosPrincipales(); } 
+        else { Swal.fire({ title: 'Aviso del Consejo', text: data.error, icon: 'warning', background: '#18181b', color: '#fff' }); }
+      } catch (e) { if (e !== 'Sesión expirada') console.error(e); }
     }
   };
 
@@ -120,13 +174,23 @@ function GestionUsuarios() {
       method: 'POST',
       body: JSON.stringify({ voto })
     });
-    if (res.ok) { cargarDatosPrincipales(); cargarCenso(paginaCenso); Swal.fire({ title: 'Voto Registrado', icon: 'info', background: '#18181b', color: '#fff' }); }
+    if (res.ok) { cargarDatosPrincipales(); cargarCenso(); Swal.fire({ title: 'Voto Registrado', icon: 'info', background: '#18181b', color: '#fff' }); }
   };
 
-  const usuariosFiltrados = todosLosUsuarios.filter(user => {
-    const coincideRol = filtroRol === 'todos' || user.rol === filtroRol;
-    return coincideRol && user.nombre.toLowerCase().includes(busqueda.toLowerCase());
-  });
+  // ✨ LÓGICA DE FILTRADO, ORDENAMIENTO (ADMIN > DM > JUGADOR) Y PAGINACIÓN
+  const jerarquiaRoles = { admin: 1, dm: 2, jugador: 3 };
+
+  const usuariosProcesados = todosLosUsuarios
+    .filter(user => {
+      const coincideRol = filtroRol === 'todos' || user.rol === filtroRol;
+      const coincideBusqueda = user.nombre.toLowerCase().includes(busqueda.toLowerCase());
+      return coincideRol && coincideBusqueda;
+    })
+    .sort((a, b) => jerarquiaRoles[a.rol] - jerarquiaRoles[b.rol]);
+
+  const totalPaginas = Math.ceil(usuariosProcesados.length / usuariosPorPagina) || 1;
+  const startIndex = (paginaCenso - 1) * usuariosPorPagina;
+  const usuariosPaginados = usuariosProcesados.slice(startIndex, startIndex + usuariosPorPagina);
 
   return (
     <div className="animate-in fade-in slide-in-from-bottom-4 duration-700">
@@ -178,16 +242,30 @@ function GestionUsuarios() {
       {/* 📜 SECCIÓN: CENSO */}
       {pestanaActiva === 'censo' && (
         <div className="animate-in fade-in duration-500">
-          <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6 mb-8">
+          <div className="flex flex-col xl:flex-row xl:items-center justify-between gap-6 mb-8">
             <div className="flex items-center gap-3">
               <div className="w-12 h-12 bg-emerald-500/10 text-emerald-400 flex items-center justify-center rounded-2xl border border-emerald-500/20 text-xl">📜</div>
               <h3 className="text-2xl font-black text-white uppercase tracking-tighter">Censo del Gremio</h3>
             </div>
             
-            <div className="flex flex-wrap gap-3">
-              <button onClick={exportarLogistica} className="bg-emerald-600 hover:bg-emerald-500 text-white font-black px-6 py-3 rounded-2xl text-[9px] uppercase tracking-widest transition-all shadow-xl shadow-emerald-950/20">📊 Exportar Logística</button>
+            <div className="flex flex-wrap items-center gap-3">
+              <button onClick={exportarLogistica} className="bg-emerald-600 hover:bg-emerald-500 text-white font-black px-6 py-3.5 rounded-2xl text-[9px] uppercase tracking-widest transition-all shadow-xl shadow-emerald-950/20">📊 Exportar Logística</button>
+              
+              {/* ✨ BOTONES DE FILTRO DE ROL AÑADIDOS */}
+              <div className="flex gap-1 bg-zinc-950 border border-zinc-800 p-1.5 rounded-2xl overflow-x-auto">
+                {['todos', 'admin', 'dm', 'jugador'].map(rol => (
+                  <button 
+                    key={rol} 
+                    onClick={() => setFiltroRol(rol)} 
+                    className={`px-4 py-2 text-[9px] font-black uppercase tracking-widest rounded-xl transition-all whitespace-nowrap ${filtroRol === rol ? 'bg-zinc-800 text-emerald-400 shadow-md' : 'text-zinc-500 hover:text-zinc-300'}`}
+                  >
+                    {rol === 'todos' ? 'Todos' : rol === 'admin' ? '👑 Admins' : rol === 'dm' ? '🛡️ DMs' : '⚔️ Jugadores'}
+                  </button>
+                ))}
+              </div>
+
               <div className="relative flex-1 sm:flex-none">
-                <input type="text" placeholder="Buscar por nombre..." value={busqueda} onChange={(e) => setPaginaCenso(1) || setBusqueda(e.target.value)} className="bg-zinc-950 border border-zinc-800 text-white text-xs font-bold rounded-2xl py-3 pl-10 pr-4 w-full sm:w-64 focus:border-emerald-500 outline-none transition-all" />
+                <input type="text" placeholder="Buscar héroe..." value={busqueda} onChange={(e) => setBusqueda(e.target.value)} className="bg-zinc-950 border border-zinc-800 text-white text-xs font-bold rounded-2xl py-3.5 pl-10 pr-4 w-full sm:w-56 focus:border-emerald-500 outline-none transition-all" />
                 <span className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-600">🔍</span>
               </div>
             </div>
@@ -204,39 +282,51 @@ function GestionUsuarios() {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-zinc-800/30">
-                  {usuariosFiltrados.map(user => (
-                    <tr key={user.id} className="hover:bg-white/[0.02] transition-colors group">
-                      <td className="p-6 flex items-center gap-4">
-                        <span className="w-12 h-12 bg-zinc-950 rounded-full flex items-center justify-center text-xl border border-zinc-800 group-hover:border-zinc-600 transition-all">
-                          {user.avatar === 'guerrero' ? '⚔️' : user.avatar === 'mago' ? '🧙' : user.avatar === 'esqueleto' ? '💀' : user.avatar === 'goblin' ? '👺' : '👤'}
-                        </span>
-                        <div>
-                          <p className="font-black text-zinc-200 uppercase italic tracking-tight">{user.nombre}</p>
-                          <p className="text-[10px] text-zinc-600 font-mono lowercase">{user.email}</p>
-                        </div>
-                      </td>
-                      <td className="p-6 hidden md:table-cell">
-                        <span className={`text-[9px] font-black uppercase tracking-widest px-4 py-1.5 rounded-full border ${user.rol === 'admin' ? 'bg-amber-500/10 text-amber-500 border-amber-500/20' : user.rol === 'dm' ? 'bg-purple-500/10 text-purple-400 border-purple-500/20' : 'bg-zinc-800/50 text-zinc-500 border-zinc-700/50'}`}>
-                          {user.rol === 'admin' ? '👑 Administrador' : user.rol === 'dm' ? '🛡️ Dungeon Master' : '⚔️ Aventurero'}
-                        </span>
-                      </td>
-                      <td className="p-6">
-                        <div className="flex items-center justify-center gap-3">
-                          {user.rol !== 'admin' && <button onClick={() => proponerAdmin(user.id, user.nombre)} className="w-10 h-10 bg-zinc-950 border border-zinc-800 rounded-xl hover:border-amber-500 hover:text-amber-500 transition-all text-sm" title="Proponer al Senado">👑</button>}
-                          {user.rol !== 'dm' && user.rol !== 'admin' && <button onClick={() => cambiarRolDirecto(user.id, user.nombre, 'dm')} className="w-10 h-10 bg-zinc-950 border border-zinc-800 rounded-xl hover:border-purple-500 hover:text-purple-400 transition-all text-sm" title="Ascender a DM">🛡️</button>}
-                          {user.rol !== 'jugador' && <button onClick={() => cambiarRolDirecto(user.id, user.nombre, 'jugador')} className="w-10 h-10 bg-zinc-950 border border-zinc-800 rounded-xl hover:border-red-500 hover:text-red-500 transition-all text-sm" title="Revocar Rango">✕</button>}
-                        </div>
+                  {usuariosPaginados.length === 0 ? (
+                    <tr>
+                      <td colSpan="3" className="p-12 text-center text-zinc-600 font-bold uppercase tracking-widest text-xs italic">
+                        No se encontraron registros en el archivo.
                       </td>
                     </tr>
-                  ))}
+                  ) : (
+                    usuariosPaginados.map(user => (
+                      <tr key={user.id} className="hover:bg-white/[0.02] transition-colors group">
+                        <td className="p-6 flex items-center gap-4">
+                          <span className="w-12 h-12 bg-zinc-950 rounded-full flex items-center justify-center text-xl border border-zinc-800 group-hover:border-zinc-600 transition-all">
+                            {user.avatar === 'guerrero' ? '⚔️' : user.avatar === 'mago' ? '🧙' : user.avatar === 'esqueleto' ? '💀' : user.avatar === 'goblin' ? '👺' : '👤'}
+                          </span>
+                          <div>
+                            <p className="font-black text-zinc-200 uppercase italic tracking-tight">{user.nombre}</p>
+                            <p className="text-[10px] text-zinc-600 font-mono lowercase">{user.email}</p>
+                          </div>
+                        </td>
+                        <td className="p-6 hidden md:table-cell">
+                          <span className={`text-[9px] font-black uppercase tracking-widest px-4 py-1.5 rounded-full border ${user.rol === 'admin' ? 'bg-amber-500/10 text-amber-500 border-amber-500/20' : user.rol === 'dm' ? 'bg-purple-500/10 text-purple-400 border-purple-500/20' : 'bg-zinc-800/50 text-zinc-500 border-zinc-700/50'}`}>
+                            {user.rol === 'admin' ? '👑 Administrador' : user.rol === 'dm' ? '🛡️ Dungeon Master' : '⚔️ Aventurero'}
+                          </span>
+                        </td>
+                        <td className="p-6">
+                          <div className="flex items-center justify-center gap-3">
+                            {user.rol !== 'admin' && <button onClick={() => proponerAdmin(user.id, user.nombre)} className="w-10 h-10 bg-zinc-950 border border-zinc-800 rounded-xl hover:border-amber-500 hover:text-amber-500 transition-all text-sm" title="Proponer al Senado">👑</button>}
+                            {user.rol !== 'dm' && user.rol !== 'admin' && <button onClick={() => cambiarRolDirecto(user.id, user.nombre, 'dm')} className="w-10 h-10 bg-zinc-950 border border-zinc-800 rounded-xl hover:border-purple-500 hover:text-purple-400 transition-all text-sm" title="Ascender a DM">🛡️</button>}
+                            {user.rol !== 'jugador' && <button onClick={() => cambiarRolDirecto(user.id, user.nombre, 'jugador')} className="w-10 h-10 bg-zinc-950 border border-zinc-800 rounded-xl hover:border-red-500 hover:text-red-500 transition-all text-sm" title="Revocar Rango">✕</button>}
+                          </div>
+                        </td>
+                      </tr>
+                    ))
+                  )}
                 </tbody>
               </table>
             </div>
-            <div className="flex justify-between items-center p-6 bg-zinc-950/30 border-t border-zinc-800">
-               <button onClick={() => setPaginaCenso(p => Math.max(1, p - 1))} disabled={paginaCenso === 1} className="px-6 py-2 bg-zinc-900 text-zinc-500 font-black text-[10px] uppercase tracking-widest rounded-xl disabled:opacity-20 transition-all hover:text-white">← Anterior</button>
-               <span className="text-zinc-600 text-[9px] font-black uppercase tracking-[0.3em]">Página {paginaCenso} de {infoPaginacion.totalPaginas}</span>
-               <button onClick={() => setPaginaCenso(p => Math.min(infoPaginacion.totalPaginas, p + 1))} disabled={paginaCenso >= infoPaginacion.totalPaginas} className="px-6 py-2 bg-zinc-900 text-zinc-500 font-black text-[10px] uppercase tracking-widest rounded-xl disabled:opacity-20 transition-all hover:text-white">Siguiente →</button>
-            </div>
+            
+            {/* ✨ CONTROLES DE PAGINACIÓN ACTUALIZADOS */}
+            {totalPaginas > 1 && (
+              <div className="flex justify-between items-center p-6 bg-zinc-950/30 border-t border-zinc-800">
+                 <button onClick={() => setPaginaCenso(p => Math.max(1, p - 1))} disabled={paginaCenso === 1} className="px-6 py-2 bg-zinc-900 text-zinc-500 font-black text-[10px] uppercase tracking-widest rounded-xl disabled:opacity-20 transition-all hover:text-white">← Anterior</button>
+                 <span className="text-zinc-600 text-[9px] font-black uppercase tracking-[0.3em]">Página {paginaCenso} de {totalPaginas} ({usuariosProcesados.length} héroes)</span>
+                 <button onClick={() => setPaginaCenso(p => Math.min(totalPaginas, p + 1))} disabled={paginaCenso >= totalPaginas} className="px-6 py-2 bg-zinc-900 text-zinc-500 font-black text-[10px] uppercase tracking-widest rounded-xl disabled:opacity-20 transition-all hover:text-white">Siguiente →</button>
+              </div>
+            )}
           </div>
         </div>
       )}
@@ -277,7 +367,6 @@ function GestionUsuarios() {
                       </div>
                     </div>
                     
-                    {/* Barra de progreso de votación */}
                     <div className="w-full h-3 bg-zinc-900 rounded-full overflow-hidden flex border border-zinc-800">
                       <div style={{ width: `${(v.votos_favor / (v.total_admins || 1)) * 100}%` }} className="bg-emerald-500 transition-all duration-1000 shadow-[0_0_10px_rgba(16,185,129,0.5)]"></div>
                       <div style={{ width: `${(v.votos_contra / (v.total_admins || 1)) * 100}%` }} className="bg-red-500 transition-all duration-1000 shadow-[0_0_10px_rgba(239,68,68,0.5)]"></div>
