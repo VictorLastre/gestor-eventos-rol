@@ -1,12 +1,12 @@
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 
 function Landing({ irALogin }) {
-  // ✨ ESTADO DEL CARRUSEL: Ahora guardamos el ÍNDICE (0 al 6) en lugar del objeto
   const [indiceFundador, setIndiceFundador] = useState(null);
-  
   const [seccionActiva, setSeccionActiva] = useState('inicio'); 
 
-  // 📜 LISTA DE LOS 7 FUNDADORES CON SUS COLORES FOIL
+  // ✨ REFERENCIA PARA EL CARRUSEL DE TARJETAS
+  const carruselRef = useRef(null);
+
   const fundadores = [
     {
       nombre: "Sterbern",
@@ -25,8 +25,8 @@ function Landing({ irALogin }) {
     },
     {
       nombre: "Martín",
-      titulo: "Maestre de Dados",
-      icono: "🎲",
+      titulo: "Forjador de Mundos",
+      icono: "🗺️",
       descripcion: "Aquí irá la historia de Martín, sus anécdotas en las mesas y los sistemas que domina...",
       color: {
         border: "group-hover:border-blue-500",
@@ -40,7 +40,7 @@ function Landing({ irALogin }) {
     },
     {
       nombre: "Diny",
-      titulo: "Guardián del Lore",
+      titulo: "Guardiána del Lore",
       icono: "📚",
       descripcion: "Aquí irá la historia de Diny, su conocimiento del trasfondo y sus mejores campañas...",
       color: {
@@ -55,8 +55,8 @@ function Landing({ irALogin }) {
     },
     {
       nombre: "Mati",
-      titulo: "Forjador de Mundos",
-      icono: "🗺️",
+      titulo: "Maestre de Dados",
+      icono: "🎲",
       descripcion: "Aquí irá la historia de Mati, cómo crea escenarios increíbles y sus mundos favoritos...",
       color: {
         border: "group-hover:border-amber-500",
@@ -85,8 +85,8 @@ function Landing({ irALogin }) {
     },
     {
       nombre: "Keith",
-      titulo: "Señor de las Sombras",
-      icono: "🥷",
+      titulo: "Tejedora de Tinta y Destinos",
+      icono: "✒️",
       descripcion: "Aquí irá la historia de Keith, sus estrategias en la mesa y personajes letales...",
       color: {
         border: "group-hover:border-indigo-500",
@@ -100,8 +100,8 @@ function Landing({ irALogin }) {
     },
     {
       nombre: "Chiquito",
-      titulo: "El Coloso",
-      icono: "🛡️",
+      titulo: "El Coloso Gentil",
+      icono: "🗿",
       descripcion: "Aquí irá la historia de Chiquito, su presencia en el Gremio y sus roles favoritos...",
       color: {
         border: "group-hover:border-rose-500",
@@ -115,7 +115,7 @@ function Landing({ irALogin }) {
     }
   ];
 
-  // Funciones del Carrusel
+  // Funciones del Modal
   const siguienteFundador = (e) => {
     e.stopPropagation();
     setIndiceFundador((prev) => (prev + 1) % fundadores.length);
@@ -124,6 +124,19 @@ function Landing({ irALogin }) {
   const anteriorFundador = (e) => {
     e.stopPropagation();
     setIndiceFundador((prev) => (prev - 1 + fundadores.length) % fundadores.length);
+  };
+
+  // ✨ Funciones del Carrusel de Tarjetas
+  const deslizarIzquierda = () => {
+    if (carruselRef.current) {
+      carruselRef.current.scrollBy({ left: -350, behavior: 'smooth' });
+    }
+  };
+
+  const deslizarDerecha = () => {
+    if (carruselRef.current) {
+      carruselRef.current.scrollBy({ left: 350, behavior: 'smooth' });
+    }
   };
 
   return (
@@ -228,9 +241,9 @@ function Landing({ irALogin }) {
           </section>
         )}
 
-        {/* 👑 PESTAÑA 3: FUNDADORES (CON EFECTO FOIL) */}
+        {/* 👑 PESTAÑA 3: FUNDADORES (CON CARRUSEL HORIZONTAL) */}
         {seccionActiva === 'fundadores' && (
-          <section className="py-12 px-6 max-w-6xl mx-auto flex-grow animate-in fade-in slide-in-from-bottom-8 duration-500">
+          <section className="py-12 px-6 w-full max-w-[1400px] mx-auto flex-grow animate-in fade-in slide-in-from-bottom-8 duration-500 flex flex-col justify-center">
             <div className="text-center mb-12">
               <h2 className="text-3xl md:text-5xl font-black text-white uppercase tracking-tighter mb-4 flex items-center justify-center gap-4">
                 <span className="text-purple-500">👑</span> Los Fundadores
@@ -240,45 +253,71 @@ function Landing({ irALogin }) {
               </p>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 justify-center">
-              {fundadores.map((fundador, index) => (
-                <div 
-                  key={index}
-                  onClick={() => setIndiceFundador(index)}
-                  className={`bg-zinc-900 border border-zinc-800 rounded-3xl p-6 cursor-pointer group transition-all duration-500 hover:-translate-y-2 flex flex-col items-center text-center relative overflow-hidden ${fundador.color.shadow} ${fundador.color.border}`}
-                >
-                  {/* EFECTO DE BRILLO FOIL DIAGONAL EN HOVER */}
-                  <div className={`absolute inset-0 bg-gradient-to-tr ${fundador.color.foil} opacity-0 group-hover:opacity-100 group-hover:translate-x-full transition-all duration-700 ease-in-out transform -translate-x-full skew-x-12 z-10 pointer-events-none`}></div>
-                  
-                  {/* CÍRCULO DEL ICONO QUE SE ILUMINA */}
-                  <div className={`w-20 h-20 bg-zinc-950 rounded-full border-2 border-zinc-800 flex items-center justify-center text-3xl mb-5 transition-all duration-300 relative z-20 ${fundador.color.bgIcon}`}>
-                    {fundador.icono}
+            {/* ✨ CONTENEDOR DEL CARRUSEL */}
+            <div className="relative group">
+              
+              {/* FLECHA IZQUIERDA */}
+              <button 
+                onClick={deslizarIzquierda}
+                className="absolute left-0 top-1/2 -translate-y-1/2 -translate-x-4 md:-translate-x-8 z-30 bg-zinc-900 border border-zinc-700 text-zinc-400 hover:text-white w-12 h-12 rounded-full flex items-center justify-center text-2xl shadow-xl transition-all hover:scale-110 opacity-0 group-hover:opacity-100 hidden md:flex"
+              >
+                ‹
+              </button>
+
+              {/* LISTA DESLIZABLE */}
+              <div 
+                ref={carruselRef}
+                className="flex gap-6 overflow-x-auto snap-x snap-mandatory scrollbar-hide py-8 px-4"
+                style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
+              >
+                {fundadores.map((fundador, index) => (
+                  <div 
+                    key={index}
+                    onClick={() => setIndiceFundador(index)}
+                    className={`min-w-[280px] md:min-w-[320px] snap-center shrink-0 bg-zinc-900 border border-zinc-800 rounded-[2rem] p-8 cursor-pointer group/card transition-all duration-500 hover:-translate-y-4 flex flex-col items-center text-center relative overflow-hidden ${fundador.color.shadow} ${fundador.color.border}`}
+                  >
+                    {/* EFECTO FOIL */}
+                    <div className={`absolute inset-0 bg-gradient-to-tr ${fundador.color.foil} opacity-0 group-hover/card:opacity-100 group-hover/card:translate-x-full transition-all duration-700 ease-in-out transform -translate-x-full skew-x-12 z-10 pointer-events-none`}></div>
+                    
+                    {/* ICONO */}
+                    <div className={`w-24 h-24 bg-zinc-950 rounded-full border-2 border-zinc-800 flex items-center justify-center text-4xl mb-6 transition-all duration-300 relative z-20 ${fundador.color.bgIcon}`}>
+                      {fundador.icono}
+                    </div>
+                    
+                    <h3 className={`text-2xl font-black text-white uppercase tracking-tight mb-2 transition-colors relative z-20 ${fundador.color.text.replace('group-hover:', 'group-hover/card:')}`}>
+                      {fundador.nombre}
+                    </h3>
+                    <p className="text-xs font-bold text-zinc-500 uppercase tracking-widest mb-8 relative z-20">
+                      {fundador.titulo}
+                    </p>
+                    
+                    <span className={`mt-auto text-[10px] font-black uppercase tracking-widest text-zinc-600 flex items-center gap-2 bg-zinc-950/50 px-4 py-2.5 rounded-xl border border-zinc-800/50 transition-colors relative z-20 ${fundador.color.text.replace('group-hover:', 'group-hover/card:')}`}>
+                      Ver Historia <span>→</span>
+                    </span>
                   </div>
-                  
-                  <h3 className={`text-xl font-black text-white uppercase tracking-tight mb-1 transition-colors relative z-20 ${fundador.color.text}`}>
-                    {fundador.nombre}
-                  </h3>
-                  <p className="text-xs font-bold text-zinc-500 uppercase tracking-widest mb-6 relative z-20">
-                    {fundador.titulo}
-                  </p>
-                  
-                  <span className={`mt-auto text-[9px] font-black uppercase tracking-widest text-zinc-600 flex items-center gap-2 bg-zinc-950/50 px-3 py-1.5 rounded-lg border border-zinc-800/50 transition-colors relative z-20 ${fundador.color.text}`}>
-                    Ver Historia <span>→</span>
-                  </span>
-                </div>
-              ))}
+                ))}
+              </div>
+
+              {/* FLECHA DERECHA */}
+              <button 
+                onClick={deslizarDerecha}
+                className="absolute right-0 top-1/2 -translate-y-1/2 translate-x-4 md:translate-x-8 z-30 bg-zinc-900 border border-zinc-700 text-zinc-400 hover:text-white w-12 h-12 rounded-full flex items-center justify-center text-2xl shadow-xl transition-all hover:scale-110 opacity-0 group-hover:opacity-100 hidden md:flex"
+              >
+                ›
+              </button>
             </div>
+            
+            <p className="text-center text-zinc-600 text-xs italic mt-4 md:hidden">Desliza para ver más</p>
           </section>
         )}
       </main>
 
-      {/* 🔄 MODAL DEL CARRUSEL DE FUNDADORES */}
+      {/* 🔄 MODAL DEL CARRUSEL DE HISTORIAS */}
       {indiceFundador !== null && (
         <div 
           className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/90 backdrop-blur-md animate-in fade-in duration-300" 
           onClick={() => setIndiceFundador(null)}
         >
-          {/* BOTÓN ANTERIOR */}
           <button 
             onClick={anteriorFundador}
             className="absolute left-4 md:left-12 text-zinc-500 hover:text-white text-4xl p-2 transition-transform hover:-translate-x-2 z-50 bg-black/50 rounded-full w-14 h-14 flex items-center justify-center border border-zinc-800"
@@ -286,9 +325,8 @@ function Landing({ irALogin }) {
             ‹
           </button>
 
-          {/* TARJETA DEL FUNDADOR SELECCIONADO (CON ANIMACIÓN DE CAMBIO) */}
           <div 
-            key={indiceFundador} // Esto fuerza la animación al cambiar de tarjeta
+            key={indiceFundador}
             className={`bg-zinc-900 border w-full max-w-lg rounded-[2.5rem] p-10 relative animate-in zoom-in-95 duration-300 ${fundadores[indiceFundador].color.modalGlow} ${fundadores[indiceFundador].color.modalBorder}`}
             onClick={(e) => e.stopPropagation()} 
           >
@@ -316,7 +354,6 @@ function Landing({ irALogin }) {
               "{fundadores[indiceFundador].descripcion}"
             </p>
 
-            {/* INDICADORES DEL CARRUSEL */}
             <div className="flex justify-center gap-2 mt-10">
               {fundadores.map((_, idx) => (
                 <div 
@@ -327,7 +364,6 @@ function Landing({ irALogin }) {
             </div>
           </div>
 
-          {/* BOTÓN SIGUIENTE */}
           <button 
             onClick={siguienteFundador}
             className="absolute right-4 md:right-12 text-zinc-500 hover:text-white text-4xl p-2 transition-transform hover:translate-x-2 z-50 bg-black/50 rounded-full w-14 h-14 flex items-center justify-center border border-zinc-800"
