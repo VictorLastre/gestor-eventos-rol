@@ -1,12 +1,14 @@
 import { useState, useEffect, useRef } from 'react';
 import Swal from 'sweetalert2';
 import { fetchProtegido } from '../utils/api';
-import LogoSVG from '../assets/Logo.svg'; // ✨ IMPORTAMOS EL ESCUDO
+import LogoSVG from '../assets/Logo.svg'; 
 
 function Navbar({ usuario, alCerrarSesion, setVista }) {
   const [notificaciones, setNotificaciones] = useState([]);
   const [mostrarCampana, setMostrarCampana] = useState(false);
-  const dropdownRef = useRef(null); // Para cerrar al hacer clic fuera
+  const dropdownRef = useRef(null); 
+
+  const esAdmin = usuario?.rol === 'admin';
 
   useEffect(() => {
     if (usuario) {
@@ -21,7 +23,6 @@ function Navbar({ usuario, alCerrarSesion, setVista }) {
     }
   }, [usuario]);
 
-  // Cerrar el dropdown si se hace clic fuera de él
   useEffect(() => {
     function handleClickOutside(event) {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
@@ -82,13 +83,11 @@ function Navbar({ usuario, alCerrarSesion, setVista }) {
 
   return (
     <nav className="bg-zinc-950/90 border-b border-zinc-800/80 px-4 md:px-6 py-4 mb-8 sticky top-0 z-[100] backdrop-blur-xl shadow-2xl transition-all">
-      <div className="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-center gap-4">
+      <div className="max-w-7xl mx-auto flex flex-col xl:flex-row justify-between items-center gap-4">
         
-        {/* 🛡️ SECCIÓN IZQUIERDA: IDENTIDAD Y NAVEGACIÓN */}
-        <div className="flex flex-col md:flex-row items-center gap-6 w-full md:w-auto">
+        <div className="flex flex-col md:flex-row items-center gap-6 w-full xl:w-auto">
           
           <div className="flex items-center gap-3 group cursor-pointer" onClick={() => setVista('eventos')}>
-            {/* Logo de la Asociación */}
             <div className="relative w-12 h-12 flex items-center justify-center transition-transform duration-500 group-hover:scale-110 group-hover:rotate-6">
                 <div className="absolute inset-0 bg-emerald-500/20 blur-xl rounded-full opacity-0 group-hover:opacity-100 transition-opacity"></div>
                 <img src={LogoSVG} alt="Logo" className="w-10 h-10 object-contain drop-shadow-[0_0_8px_rgba(16,185,129,0.3)] relative z-10" />
@@ -99,7 +98,7 @@ function Navbar({ usuario, alCerrarSesion, setVista }) {
             </div>
           </div>
           
-          <div className="flex gap-2 bg-zinc-900/50 p-1.5 rounded-2xl border border-zinc-800/50">
+          <div className="flex flex-wrap justify-center gap-2 bg-zinc-900/50 p-1.5 rounded-2xl border border-zinc-800/50">
             <button 
               onClick={() => setVista('eventos')}
               className="text-xs font-black uppercase tracking-widest text-zinc-400 hover:text-white transition-all py-3 px-6 rounded-xl hover:bg-zinc-800 hover:shadow-lg focus:outline-none flex items-center gap-2"
@@ -112,14 +111,20 @@ function Navbar({ usuario, alCerrarSesion, setVista }) {
             >
               <span className="text-lg">📖</span> Mi Diario
             </button>
+            {esAdmin && (
+              <button 
+                onClick={() => setVista('admin')}
+                className="text-xs font-black uppercase tracking-widest text-purple-400 hover:text-white transition-all py-3 px-6 rounded-xl bg-purple-500/10 border border-purple-500/20 hover:bg-purple-600 hover:shadow-[0_0_15px_rgba(168,85,247,0.4)] focus:outline-none flex items-center gap-2"
+              >
+                <span className="text-lg">👑</span> Mando
+              </button>
+            )}
           </div>
 
         </div>
 
-        {/* 👤 SECCIÓN DERECHA: USUARIO Y CONTROLES */}
-        <div className="flex items-center gap-4 md:gap-6 w-full md:w-auto justify-between md:justify-end">
+        <div className="flex items-center gap-4 md:gap-6 w-full xl:w-auto justify-between xl:justify-end">
           
-          {/* CAMPANITA DE NOTIFICACIONES */}
           <div className="relative" ref={dropdownRef}>
             <button 
               onClick={() => setMostrarCampana(!mostrarCampana)}
@@ -137,7 +142,6 @@ function Navbar({ usuario, alCerrarSesion, setVista }) {
               )}
             </button>
 
-            {/* DROPDOWN DE MENSAJES */}
             {mostrarCampana && (
               <div className="absolute top-[3.5rem] right-0 md:right-auto md:-left-32 w-80 bg-zinc-900/95 backdrop-blur-xl border border-zinc-700 rounded-3xl shadow-[0_20px_50px_rgba(0,0,0,0.5)] overflow-hidden z-[200] animate-in slide-in-from-top-2 fade-in duration-200">
                 <div className="bg-zinc-950/80 p-5 border-b border-zinc-800 flex justify-between items-center backdrop-blur-md">
@@ -180,7 +184,6 @@ function Navbar({ usuario, alCerrarSesion, setVista }) {
             )}
           </div>
 
-          {/* FICHA RESUMEN DEL USUARIO */}
           <div className={`flex items-center gap-3 bg-zinc-950 p-1.5 pr-6 rounded-full border shadow-inner transition-all ${esFundador ? 'border-amber-500/30 shadow-amber-900/10' : 'border-zinc-800'}`}>
             <div className={`w-10 h-10 bg-zinc-900 rounded-full flex items-center justify-center text-xl overflow-hidden transition-all duration-700 relative
               ${esFundador 
