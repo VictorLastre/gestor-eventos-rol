@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import Landing from './components/Landing'; // ✨ IMPORTAMOS LA LANDING
+import Landing from './components/Landing'; 
 import Login from './components/Login';
 import Registro from './components/Registro';
 import Eventos from './components/Eventos';
