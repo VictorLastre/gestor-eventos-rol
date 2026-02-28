@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
 import puertaDungeon from '../assets/dungeon_door.png'; 
 import forjaAventura from '../assets/forja_tu_aventura.png'; 
-import LogoSVG from '../assets/Logo.svg'; // ✨ Cambiado a importación estándar
+import LogoSVG from '../assets/Logo.svg'; 
 
 function Landing({ irALogin }) {
   const [indiceFundador, setIndiceFundador] = useState(null);
@@ -160,45 +160,42 @@ function Landing({ irALogin }) {
         `}
       </style>
 
-      {/* 🧭 NAV */}
+      {/* 🧭 NAV - Altura aumentada para el logo más grande */}
       <nav className="fixed top-0 w-full bg-zinc-950/90 backdrop-blur-md border-b border-zinc-800 z-50">
-        <div className="max-w-6xl mx-auto px-6 h-24 flex items-center justify-between">
-          <div className="flex items-center gap-4 cursor-pointer group" onClick={() => setSeccionActiva('inicio')}>
+        <div className="max-w-7xl mx-auto px-6 h-32 flex items-center justify-between">
+          <div className="flex items-center gap-6 cursor-pointer group" onClick={() => setSeccionActiva('inicio')}>
             
-            {/* ✨ CONTENEDOR DEL LOGO CORREGIDO */}
-            <div className="relative w-20 h-20 rounded-full flex items-center justify-center overflow-hidden border-2 border-zinc-800 group-hover:border-emerald-500/50 transition-colors duration-300 shadow-inner bg-zinc-950 img-glow">
-              <div className="absolute inset-0 bg-gradient-to-tr from-emerald-400/0 via-emerald-300/40 to-emerald-400/0 animate-foil z-10 pointer-events-none"></div>
-              
-              {/* Usamos etiqueta img estándar para evitar errores de Rollup */}
+            {/* ✨ LOGO AGRANDADO Y ESTÁTICO */}
+            <div className="relative w-28 h-28 flex items-center justify-center img-glow transition-transform duration-300 group-hover:scale-105">
               <img 
                 src={LogoSVG} 
-                alt="Logo" 
-                className="w-14 h-14 object-contain relative z-20 transition-transform duration-300 group-hover:scale-110" 
+                alt="Logo Asociación" 
+                className="w-20 h-20 object-contain relative z-20" 
               />
             </div>
 
-            <span className="text-2xl font-black text-white uppercase tracking-tighter hidden sm:block transition-colors group-hover:text-zinc-200">
-              Asociación de Rol <span className="text-emerald-500">La Pampa</span>
+            <span className="text-3xl font-black text-white uppercase tracking-tighter hidden lg:block transition-colors group-hover:text-emerald-500">
+              Asociación de Rol <span className="text-emerald-500 group-hover:text-white">La Pampa</span>
             </span>
           </div>
 
-          <div className="flex items-center gap-6">
+          <div className="flex items-center gap-8">
             <button onClick={() => setSeccionActiva('inicio')} className={`text-xs font-bold uppercase tracking-widest transition-colors ${seccionActiva === 'inicio' ? 'text-emerald-400 border-b-2 border-emerald-400 pb-1' : 'hover:text-emerald-400'}`}>Inicio</button>
             <button onClick={() => setSeccionActiva('nosotros')} className={`text-xs font-bold uppercase tracking-widest transition-colors ${seccionActiva === 'nosotros' ? 'text-emerald-400 border-b-2 border-emerald-400 pb-1' : 'hover:text-emerald-400'}`}>Nosotros</button>
             <button onClick={() => setSeccionActiva('fundadores')} className={`text-xs font-bold uppercase tracking-widest transition-colors ${seccionActiva === 'fundadores' ? 'text-emerald-400 border-b-2 border-emerald-400 pb-1' : 'hover:text-emerald-400'}`}>Fundadores</button>
-            <div className="h-6 w-px bg-zinc-800 hidden md:block"></div>
+            <div className="h-8 w-px bg-zinc-800 hidden md:block"></div>
             <button onClick={irALogin} className="relative group transition-all duration-300 hover:scale-110 flex flex-col items-center">
-              <img src={puertaDungeon} alt="Entrar" className="w-14 h-14 object-contain img-glow" />
-              <span className="absolute -bottom-6 text-[9px] font-black uppercase text-emerald-500 opacity-0 group-hover:opacity-100 transition-opacity">Entrar</span>
+              <img src={puertaDungeon} alt="Entrar" className="w-16 h-16 object-contain img-glow" />
+              <span className="absolute -bottom-6 text-[10px] font-black uppercase text-emerald-500 opacity-0 group-hover:opacity-100 transition-opacity">Entrar</span>
             </button>
           </div>
         </div>
       </nav>
 
-      <main className="flex-grow flex flex-col justify-center mt-24">
+      <main className="flex-grow flex flex-col justify-center mt-32">
         {seccionActiva === 'inicio' && (
           <header className="relative py-20 px-6 flex flex-col items-center justify-center text-center flex-grow animate-in fade-in zoom-in-95 duration-500">
-            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-emerald-500/10 blur-[120px] rounded-full pointer-events-none"></div>
+            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[400px] h-[400px] bg-emerald-500/10 blur-[150px] rounded-full pointer-events-none"></div>
             <div className="relative z-10 max-w-4xl flex flex-col items-center">
               <button onClick={irALogin} className="group relative transition-transform duration-500 hover:scale-105 active:scale-95 mb-8 outline-none">
                 <div className="absolute inset-0 bg-emerald-500/20 blur-3xl opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
@@ -215,9 +212,9 @@ function Landing({ irALogin }) {
           <section className="py-20 px-6 max-w-4xl mx-auto flex-grow flex flex-col justify-center animate-in fade-in slide-in-from-bottom-8 duration-500">
              <div className="text-center relative z-10">
               <h2 className="text-3xl md:text-5xl font-black text-white uppercase tracking-tighter mb-10 flex items-center justify-center gap-4">📜 Sobre el Gremio</h2>
-              <div className="space-y-8 text-lg text-zinc-400 leading-relaxed bg-zinc-900/50 p-8 md:p-12 rounded-[3rem] border border-zinc-800/50 shadow-2xl relative overflow-hidden">
+              <div className="space-y-8 text-lg text-zinc-400 leading-relaxed bg-zinc-900/50 p-8 md:p-12 rounded-[3rem] border border-zinc-800/50 shadow-2xl relative overflow-hidden text-justify md:text-center">
                 <div className="absolute top-0 right-0 w-32 h-32 bg-amber-500/5 blur-3xl rounded-full"></div>
-                <p>Nacimos con un propósito claro: reunir a los apasionados por el rol bajo un mismo estandarte en La Pampa. Somos un espacio creado por y para jugadores y Directores de Juego.</p>
+                <p>Nacimos con un propósito claro: reunir a los apasionados por el rol bajo un mismo estandarte en La Pampa. Somos un espacio creado por y para jugadores y Narradores.</p>
                 <p>Nuestra misión es que nadie se quede sin un grupo con el cual compartir una tarde de imaginación y estrategia.</p>
               </div>
             </div>
@@ -249,7 +246,6 @@ function Landing({ irALogin }) {
         )}
       </main>
 
-      {/* Modal e Indicadores se mantienen... */}
       {indiceFundador !== null && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/90 backdrop-blur-sm" onClick={() => setIndiceFundador(null)}>
           <button onClick={anteriorFundador} className="absolute left-4 md:left-12 text-zinc-500 hover:text-white text-4xl p-2 z-50">‹</button>
