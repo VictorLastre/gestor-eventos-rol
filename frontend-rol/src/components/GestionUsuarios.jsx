@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import Swal from 'sweetalert2'; 
 import { fetchProtegido } from '../utils/api'; 
 import * as XLSX from 'xlsx'; 
+import CertificadoBase from '../assets/CertificadoBase.png'; // ✨ IMPORTAMOS LA PLANTILLA DE CANVA
 
 function GestionUsuarios() {
   const [solicitudes, setSolicitudes] = useState([]);
@@ -14,7 +15,7 @@ function GestionUsuarios() {
 
   const [todosLosUsuarios, setTodosLosUsuarios] = useState([]);
   const [paginaCenso, setPaginaCenso] = useState(1);
-  const usuariosPorPagina = 10; // ✨ LÍMITE DE 10 USUARIOS POR PÁGINA
+  const usuariosPorPagina = 10; 
 
   const cargarDatosPrincipales = () => {
     fetchProtegido('https://gestor-eventos-rol.onrender.com/api/usuarios/solicitudes-dm')
@@ -34,7 +35,6 @@ function GestionUsuarios() {
   };
 
   const cargarCenso = () => {
-    // ✨ PEDIMOS TODOS LOS USUARIOS (limit alto) PARA ORDENAR Y FILTRAR EN EL CLIENTE
     fetchProtegido(`https://gestor-eventos-rol.onrender.com/api/usuarios?limit=1000`)
       .then(res => res.json())
       .then(data => {
@@ -49,13 +49,12 @@ function GestionUsuarios() {
     cargarCenso();
   }, []);
 
-  // ✨ SI CAMBIA EL FILTRO O LA BÚSQUEDA, VOLVEMOS A LA PÁGINA 1
   useEffect(() => {
     setPaginaCenso(1);
   }, [filtroRol, busqueda]);
 
   const exportarLogistica = async () => {
-    if (eventos.length === 0) return Swal.fire({ title: 'Error', text: 'No hay eventos.', icon: 'error', background: '#18181b', color: '#fff' });
+    if (eventos.length === 0) return Swal.fire({ title: 'Error', text: 'No hay eventos.', icon: 'error', background: '#09090b', color: '#fff' });
 
     const { value: eventoId } = await Swal.fire({
       title: '📊 Reporte Logístico',
@@ -64,10 +63,11 @@ function GestionUsuarios() {
       inputOptions: Object.fromEntries(eventos.map(e => [e.id, e.nombre])),
       inputPlaceholder: 'Seleccionar jornada...',
       showCancelButton: true,
-      background: '#18181b',
+      background: '#09090b',
       color: '#fff',
       confirmButtonColor: '#10b981',
       confirmButtonText: 'Descargar Pergamino (Excel)',
+      customClass: { popup: 'border border-zinc-800 rounded-[2rem]' },
       didOpen: () => {
         const select = Swal.getInput();
         if (select) {
@@ -84,7 +84,7 @@ function GestionUsuarios() {
       try {
         const res = await fetchProtegido(`https://gestor-eventos-rol.onrender.com/api/partidas/reporte-logistico/${eventoId}`);
         const datos = await res.json();
-        if (!datos || datos.length === 0) return Swal.fire({ title: 'Aviso', text: 'No hay partidas en este evento.', icon: 'info', background: '#18181b', color: '#fff' });
+        if (!datos || datos.length === 0) return Swal.fire({ title: 'Aviso', text: 'No hay partidas en este evento.', icon: 'info', background: '#09090b', color: '#fff' });
 
         const filas = datos.map(m => ({
           "ESTADO": m.es_dm_nuevo ? "⚠️ NUEVO (ENTREGAR CERTIFICADO)" : "VETERANO",
@@ -105,17 +105,102 @@ function GestionUsuarios() {
     }
   };
 
+  // ✨ EL ESCRIBA: FUNCIÓN PARA GENERAR EL CERTIFICADO
+  const generarCertificado = (nombreDM) => {
+    Swal.fire({
+      title: 'Forjando Certificado...',
+      text: `Preparando el pergamino oficial para ${nombreDM}`,
+      background: '#09090b',
+      color: '#fff',
+      allowOutsideClick: false,
+      customClass: { popup: 'border border-amber-500/30 rounded-[2rem]' },
+      didOpen: () => Swal.showLoading()
+    });
+
+    const canvas = document.createElement('canvas');
+    const ctx = canvas.getContext('2d');
+    const imagen = new Image();
+    
+    imagen.src = CertificadoBase;
+    
+    imagen.onload = () => {
+      // Configuramos el lienzo al tamaño exacto de tu diseño de Canva
+      canvas.width = imagen.width;
+      canvas.height = imagen.height;
+      
+      // Dibujamos el fondo
+      ctx.drawImage(imagen, 0, 0, canvas.width, canvas.height);
+      
+      // Configuración de la tipografía para el Nombre
+      ctx.font = 'bold 80px "Georgia", serif'; // Cambia el tamaño o fuente según prefieras
+      ctx.fillStyle = '#111827'; // Color del texto (Oscuro/Tinta)
+      ctx.textAlign = 'center';
+      
+      // Coordenadas para el Nombre (Ajusta estos valores según tu plantilla)
+      // canvas.width / 2 lo centra horizontalmente. El segundo valor es la altura (Y).
+      const centroX = canvas.width / 2;
+      const posicionY_Nombre = canvas.height * 0.55; 
+      
+      // Escribimos el nombre del Master
+      ctx.fillText(nombreDM.toUpperCase(), centroX, posicionY_Nombre);
+      
+      // Configuración y escritura de la Fecha
+      const opcionesFecha = { year: 'numeric', month: 'long', day: 'numeric' };
+      const fechaHoy = new Date().toLocaleDateString('es-ES', opcionesFecha);
+      
+      ctx.font = 'italic 40px "Georgia", serif';
+      ctx.fillStyle = '#374151'; // Un gris más suave para la fecha
+      const posicionY_Fecha = canvas.height * 0.75; // Más abajo
+      
+      ctx.fillText(`Otorgado en Santa Rosa, a ${fechaHoy}`, centroX, posicionY_Fecha);
+      
+      // Descargamos la imagen
+      const urlImagen = canvas.toDataURL('image/png');
+      const enlaceDescarga = document.createElement('a');
+      enlaceDescarga.href = urlImagen;
+      enlaceDescarga.download = `Certificado_DM_${nombreDM.replace(/\s+/g, '_')}.png`;
+      document.body.appendChild(enlaceDescarga);
+      enlaceDescarga.click();
+      document.body.removeChild(enlaceDescarga);
+
+      Swal.close();
+      Swal.fire({
+        title: '¡Pergamino Listo!',
+        text: 'El certificado ha sido descargado en tu dispositivo.',
+        icon: 'success',
+        background: '#09090b', color: '#fff', confirmButtonColor: '#10b981',
+        customClass: { popup: 'border border-emerald-500/30 rounded-[2rem]' }
+      });
+    };
+
+    imagen.onerror = () => {
+      Swal.close();
+      Swal.fire({
+        title: 'Error de Tinta',
+        text: 'No se encontró la plantilla "CertificadoBase.png" en la carpeta assets.',
+        icon: 'error',
+        background: '#09090b', color: '#fff', confirmButtonColor: '#ef4444',
+        customClass: { popup: 'border border-red-500/30 rounded-[2rem]' }
+      });
+    };
+  };
+
   const promoverUsuario = async (id, nombre) => {
     const result = await Swal.fire({
       title: 'Forjar un nuevo Director',
       text: `¿Ascender a ${nombre.toUpperCase()} al rango de Dungeon Master?`,
       icon: 'warning',
       showCancelButton: true,
-      background: '#18181b', color: '#fff', confirmButtonColor: '#f59e0b', confirmButtonText: '🪄 Ascender'
+      background: '#09090b', color: '#fff', confirmButtonColor: '#f59e0b', confirmButtonText: '🪄 Ascender',
+      customClass: { popup: 'border border-amber-500/30 rounded-[2rem]' }
     });
     if (result.isConfirmed) {
       const res = await fetchProtegido(`https://gestor-eventos-rol.onrender.com/api/usuarios/${id}/promover`, { method: 'PUT' });
-      if (res.ok) { cargarDatosPrincipales(); cargarCenso(); Swal.fire({ title: '¡Ascenso Concedido!', icon: 'success', background: '#18181b', color: '#fff' }); }
+      if (res.ok) { 
+        cargarDatosPrincipales(); 
+        cargarCenso(); 
+        Swal.fire({ title: '¡Ascenso Concedido!', text: 'Recuerda generarle su certificado en el Censo.', icon: 'success', background: '#09090b', color: '#fff', customClass: { popup: 'border border-emerald-500/30 rounded-[2rem]' } }); 
+      }
     }
   };
 
@@ -125,12 +210,13 @@ function GestionUsuarios() {
       text: `¿Estás seguro de rechazar la solicitud de ${nombre.toUpperCase()}?`,
       icon: 'error',
       showCancelButton: true,
-      background: '#18181b', color: '#fff', confirmButtonColor: '#ef4444', confirmButtonText: '❌ Rechazar Petición'
+      background: '#09090b', color: '#fff', confirmButtonColor: '#ef4444', confirmButtonText: '❌ Rechazar Petición',
+      customClass: { popup: 'border border-red-500/30 rounded-[2rem]' }
     });
     if (result.isConfirmed) {
       try {
         const res = await fetchProtegido(`https://gestor-eventos-rol.onrender.com/api/usuarios/${id}/rechazar-dm`, { method: 'PUT' });
-        if (res.ok) { Swal.fire({ title: 'Petición Rechazada', icon: 'success', background: '#18181b', color: '#fff' }); cargarDatosPrincipales(); cargarCenso(); }
+        if (res.ok) { Swal.fire({ title: 'Petición Rechazada', icon: 'success', background: '#09090b', color: '#fff', customClass: { popup: 'border border-zinc-700 rounded-[2rem]' } }); cargarDatosPrincipales(); cargarCenso(); }
       } catch (e) { if (e !== 'Sesión expirada') console.error(e); }
     }
   };
@@ -141,12 +227,13 @@ function GestionUsuarios() {
       text: `¿Convertir a ${nombre} en ${nuevoRol === 'dm' ? 'Dungeon Master' : 'Jugador'}?`,
       icon: 'question',
       showCancelButton: true,
-      background: '#18181b', color: '#fff', confirmButtonColor: '#0ea5e9', confirmButtonText: 'Sí, aplicar'
+      background: '#09090b', color: '#fff', confirmButtonColor: '#0ea5e9', confirmButtonText: 'Sí, aplicar',
+      customClass: { popup: 'border border-zinc-800 rounded-[2rem]' }
     });
     if (result.isConfirmed) {
       try {
         const res = await fetchProtegido(`https://gestor-eventos-rol.onrender.com/api/usuarios/${id}/rol`, { method: 'PUT', body: JSON.stringify({ rol: nuevoRol }) });
-        if (res.ok) { Swal.fire({ title: '¡Rango Alterado!', icon: 'success', background: '#18181b', color: '#fff' }); cargarCenso(); }
+        if (res.ok) { Swal.fire({ title: '¡Rango Alterado!', icon: 'success', background: '#09090b', color: '#fff', customClass: { popup: 'border border-emerald-500/30 rounded-[2rem]' } }); cargarCenso(); }
       } catch (e) { if (e !== 'Sesión expirada') console.error(e); }
     }
   };
@@ -157,14 +244,15 @@ function GestionUsuarios() {
       text: `¿Proponer a ${nombre} para formar parte de los Administradores?`,
       icon: 'info',
       showCancelButton: true,
-      background: '#18181b', color: '#fff', confirmButtonColor: '#f59e0b', confirmButtonText: 'Sí, abrir moción'
+      background: '#09090b', color: '#fff', confirmButtonColor: '#f59e0b', confirmButtonText: 'Sí, abrir moción',
+      customClass: { popup: 'border border-amber-500/30 rounded-[2rem]' }
     });
     if (result.isConfirmed) {
       try {
         const res = await fetchProtegido(`https://gestor-eventos-rol.onrender.com/api/usuarios/${id}/proponer-admin`, { method: 'POST' });
         const data = await res.json();
-        if (res.ok) { Swal.fire({ title: 'Senado Convocado', text: data.mensaje, icon: 'success', background: '#18181b', color: '#fff' }); setPestanaActiva('senado'); cargarDatosPrincipales(); } 
-        else { Swal.fire({ title: 'Aviso del Consejo', text: data.error, icon: 'warning', background: '#18181b', color: '#fff' }); }
+        if (res.ok) { Swal.fire({ title: 'Senado Convocado', text: data.mensaje, icon: 'success', background: '#09090b', color: '#fff', customClass: { popup: 'border border-amber-500/30 rounded-[2rem]' } }); setPestanaActiva('senado'); cargarDatosPrincipales(); } 
+        else { Swal.fire({ title: 'Aviso del Consejo', text: data.error, icon: 'warning', background: '#09090b', color: '#fff', customClass: { popup: 'border border-red-500/30 rounded-[2rem]' } }); }
       } catch (e) { if (e !== 'Sesión expirada') console.error(e); }
     }
   };
@@ -174,10 +262,9 @@ function GestionUsuarios() {
       method: 'POST',
       body: JSON.stringify({ voto })
     });
-    if (res.ok) { cargarDatosPrincipales(); cargarCenso(); Swal.fire({ title: 'Voto Registrado', icon: 'info', background: '#18181b', color: '#fff' }); }
+    if (res.ok) { cargarDatosPrincipales(); cargarCenso(); Swal.fire({ title: 'Voto Registrado', icon: 'info', background: '#09090b', color: '#fff', customClass: { popup: 'border border-emerald-500/30 rounded-[2rem]' } }); }
   };
 
-  // ✨ LÓGICA DE FILTRADO, ORDENAMIENTO (ADMIN > DM > JUGADOR) Y PAGINACIÓN
   const jerarquiaRoles = { admin: 1, dm: 2, jugador: 3 };
 
   const usuariosProcesados = todosLosUsuarios
@@ -195,7 +282,6 @@ function GestionUsuarios() {
   return (
     <div className="animate-in fade-in slide-in-from-bottom-4 duration-700">
       
-      {/* 🧭 NAVEGACIÓN DE PESTAÑAS */}
       <div className="flex flex-wrap gap-2 md:gap-4 mb-8 border-b border-zinc-800 pb-4">
         <button onClick={() => setPestanaActiva('peticiones')} className={`flex items-center gap-2 px-6 py-3 font-black text-[10px] uppercase tracking-[0.2em] transition-all rounded-xl ${pestanaActiva === 'peticiones' ? 'bg-purple-600 text-white shadow-lg shadow-purple-900/40' : 'text-zinc-500 hover:bg-zinc-900'}`}>
           🛡️ Peticiones DM {solicitudes.length > 0 && <span className="bg-white text-purple-600 px-2 py-0.5 rounded-full text-[9px]">{solicitudes.length}</span>}
@@ -208,7 +294,6 @@ function GestionUsuarios() {
         </button>
       </div>
 
-      {/* 🛡️ SECCIÓN: PETICIONES */}
       {pestanaActiva === 'peticiones' && (
         <div className="animate-in fade-in zoom-in-95 duration-500">
            <div className="flex items-center gap-3 mb-8">
@@ -239,7 +324,6 @@ function GestionUsuarios() {
         </div>
       )}
 
-      {/* 📜 SECCIÓN: CENSO */}
       {pestanaActiva === 'censo' && (
         <div className="animate-in fade-in duration-500">
           <div className="flex flex-col xl:flex-row xl:items-center justify-between gap-6 mb-8">
@@ -251,7 +335,6 @@ function GestionUsuarios() {
             <div className="flex flex-wrap items-center gap-3">
               <button onClick={exportarLogistica} className="bg-emerald-600 hover:bg-emerald-500 text-white font-black px-6 py-3.5 rounded-2xl text-[9px] uppercase tracking-widest transition-all shadow-xl shadow-emerald-950/20">📊 Exportar Logística</button>
               
-              {/* ✨ BOTONES DE FILTRO DE ROL AÑADIDOS */}
               <div className="flex gap-1 bg-zinc-950 border border-zinc-800 p-1.5 rounded-2xl overflow-x-auto">
                 {['todos', 'admin', 'dm', 'jugador'].map(rol => (
                   <button 
@@ -307,6 +390,11 @@ function GestionUsuarios() {
                         </td>
                         <td className="p-6">
                           <div className="flex items-center justify-center gap-3">
+                            {/* ✨ BOTÓN DEL CERTIFICADO PARA DMS Y ADMINS */}
+                            {(user.rol === 'dm' || user.rol === 'admin') && (
+                              <button onClick={() => generarCertificado(user.nombre)} className="w-10 h-10 bg-amber-500/10 border border-amber-500/30 text-amber-500 rounded-xl hover:bg-amber-500 hover:text-black transition-all text-sm shadow-[0_0_10px_rgba(245,158,11,0.2)]" title="Generar Certificado del Gremio">📜</button>
+                            )}
+
                             {user.rol !== 'admin' && <button onClick={() => proponerAdmin(user.id, user.nombre)} className="w-10 h-10 bg-zinc-950 border border-zinc-800 rounded-xl hover:border-amber-500 hover:text-amber-500 transition-all text-sm" title="Proponer al Senado">👑</button>}
                             {user.rol !== 'dm' && user.rol !== 'admin' && <button onClick={() => cambiarRolDirecto(user.id, user.nombre, 'dm')} className="w-10 h-10 bg-zinc-950 border border-zinc-800 rounded-xl hover:border-purple-500 hover:text-purple-400 transition-all text-sm" title="Ascender a DM">🛡️</button>}
                             {user.rol !== 'jugador' && <button onClick={() => cambiarRolDirecto(user.id, user.nombre, 'jugador')} className="w-10 h-10 bg-zinc-950 border border-zinc-800 rounded-xl hover:border-red-500 hover:text-red-500 transition-all text-sm" title="Revocar Rango">✕</button>}
@@ -319,7 +407,6 @@ function GestionUsuarios() {
               </table>
             </div>
             
-            {/* ✨ CONTROLES DE PAGINACIÓN ACTUALIZADOS */}
             {totalPaginas > 1 && (
               <div className="flex justify-between items-center p-6 bg-zinc-950/30 border-t border-zinc-800">
                  <button onClick={() => setPaginaCenso(p => Math.max(1, p - 1))} disabled={paginaCenso === 1} className="px-6 py-2 bg-zinc-900 text-zinc-500 font-black text-[10px] uppercase tracking-widest rounded-xl disabled:opacity-20 transition-all hover:text-white">← Anterior</button>
@@ -331,7 +418,6 @@ function GestionUsuarios() {
         </div>
       )}
 
-      {/* 🏛️ SECCIÓN: SENADO */}
       {pestanaActiva === 'senado' && (
         <div className="animate-in fade-in slide-in-from-right-4 duration-500">
           <div className="flex items-center gap-3 mb-10">
