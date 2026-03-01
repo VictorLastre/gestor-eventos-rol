@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import Swal from 'sweetalert2'; 
 import { fetchProtegido } from '../utils/api'; 
 import * as XLSX from 'xlsx'; 
-import CertificadoBase from '../assets/CertificadoBase.png'; // ✨ IMPORTAMOS LA PLANTILLA DE CANVA
+import CertificadoBase from '../assets/CertificadoBase.png'; 
 
 function GestionUsuarios() {
   const [solicitudes, setSolicitudes] = useState([]);
@@ -105,8 +105,8 @@ function GestionUsuarios() {
     }
   };
 
-  // ✨ EL ESCRIBA: FUNCIÓN PARA GENERAR EL CERTIFICADO
-  const generarCertificado = (nombreDM) => {
+  // ✨ AHORA RECIBE EL ID DEL USUARIO PARA QUITARLE EL ESTADO DE "NUEVO"
+  const generarCertificado = (idDM, nombreDM) => {
     Swal.fire({
       title: 'Forjando Certificado...',
       text: `Preparando el pergamino oficial para ${nombreDM}`,
@@ -123,35 +123,25 @@ function GestionUsuarios() {
     
     imagen.src = CertificadoBase;
     
-    imagen.onload = () => {
-      // Configuramos el lienzo al tamaño exacto de tu diseño de Canva
+    imagen.onload = async () => {
       canvas.width = imagen.width;
       canvas.height = imagen.height;
-      
-      // Dibujamos el fondo
       ctx.drawImage(imagen, 0, 0, canvas.width, canvas.height);
       
-      // Configuración de la tipografía para el Nombre
-      ctx.font = 'bold 80px "Georgia", serif'; // Cambia el tamaño o fuente según prefieras
-      ctx.fillStyle = '#111827'; // Color del texto (Oscuro/Tinta)
+      // Nombre
+      ctx.font = 'bold 80px "Georgia", serif'; 
+      ctx.fillStyle = '#111827'; 
       ctx.textAlign = 'center';
-      
-      // Coordenadas para el Nombre (Ajusta estos valores según tu plantilla)
-      // canvas.width / 2 lo centra horizontalmente. El segundo valor es la altura (Y).
       const centroX = canvas.width / 2;
       const posicionY_Nombre = canvas.height * 0.55; 
-      
-      // Escribimos el nombre del Master
       ctx.fillText(nombreDM.toUpperCase(), centroX, posicionY_Nombre);
       
-      // Configuración y escritura de la Fecha
+      // Fecha
       const opcionesFecha = { year: 'numeric', month: 'long', day: 'numeric' };
       const fechaHoy = new Date().toLocaleDateString('es-ES', opcionesFecha);
-      
       ctx.font = 'italic 40px "Georgia", serif';
-      ctx.fillStyle = '#374151'; // Un gris más suave para la fecha
-      const posicionY_Fecha = canvas.height * 0.75; // Más abajo
-      
+      ctx.fillStyle = '#374151'; 
+      const posicionY_Fecha = canvas.height * 0.75; 
       ctx.fillText(`Otorgado en Santa Rosa, a ${fechaHoy}`, centroX, posicionY_Fecha);
       
       // Descargamos la imagen
@@ -163,10 +153,20 @@ function GestionUsuarios() {
       enlaceDescarga.click();
       document.body.removeChild(enlaceDescarga);
 
+      // ✨ EL RITO DE INICIACIÓN: Llamamos a la API para convertirlo en Veterano
+      try {
+        await fetchProtegido(`https://gestor-eventos-rol.onrender.com/api/usuarios/${idDM}/certificado-entregado`, { 
+          method: 'PUT' 
+        });
+        cargarCenso(); // Recargamos el censo para que el botón 📜 desaparezca automáticamente
+      } catch (e) {
+        console.error("No se pudo actualizar el estado del DM:", e);
+      }
+
       Swal.close();
       Swal.fire({
-        title: '¡Pergamino Listo!',
-        text: 'El certificado ha sido descargado en tu dispositivo.',
+        title: '¡Pergamino Entregado!',
+        text: `${nombreDM} ahora es oficialmente un DM Veterano del Gremio.`,
         icon: 'success',
         background: '#09090b', color: '#fff', confirmButtonColor: '#10b981',
         customClass: { popup: 'border border-emerald-500/30 rounded-[2rem]' }
@@ -390,9 +390,10 @@ function GestionUsuarios() {
                         </td>
                         <td className="p-6">
                           <div className="flex items-center justify-center gap-3">
-                            {/* ✨ BOTÓN DEL CERTIFICADO PARA DMS Y ADMINS */}
-                            {(user.rol === 'dm' || user.rol === 'admin') && (
-                              <button onClick={() => generarCertificado(user.nombre)} className="w-10 h-10 bg-amber-500/10 border border-amber-500/30 text-amber-500 rounded-xl hover:bg-amber-500 hover:text-black transition-all text-sm shadow-[0_0_10px_rgba(245,158,11,0.2)]" title="Generar Certificado del Gremio">📜</button>
+                            
+                            {/* ✨ BOTÓN DEL CERTIFICADO: SOLO PARA DMS QUE SEAN NUEVOS */}
+                            {user.rol === 'dm' && user.es_dm_nuevo && (
+                              <button onClick={() => generarCertificado(user.id, user.nombre)} className="w-10 h-10 bg-amber-500/10 border border-amber-500/50 text-amber-500 rounded-xl hover:bg-amber-500 hover:text-black transition-all text-sm shadow-[0_0_15px_rgba(245,158,11,0.3)] animate-pulse" title="Generar Certificado del Gremio">📜</button>
                             )}
 
                             {user.rol !== 'admin' && <button onClick={() => proponerAdmin(user.id, user.nombre)} className="w-10 h-10 bg-zinc-950 border border-zinc-800 rounded-xl hover:border-amber-500 hover:text-amber-500 transition-all text-sm" title="Proponer al Senado">👑</button>}
