@@ -5,6 +5,7 @@ function Registro({ irALogin }) {
   const [nombre, setNombre] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [mostrarPassword, setMostrarPassword] = useState(false); // ✨ ESTADO PARA EL OJO MÁGICO
 
   const manejarRegistro = async (e) => {
     e.preventDefault();
@@ -129,14 +130,24 @@ function Registro({ irALogin }) {
             <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full"></span>
             Contraseña Segura
           </label>
-          <input 
-            type="password" 
-            className="w-full bg-zinc-950/50 border border-zinc-800 rounded-2xl py-4 px-5 text-white placeholder-zinc-700 focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500/50 transition-all shadow-inner"
-            placeholder="••••••••"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            required
-          />
+          <div className="relative">
+            <input 
+              type={mostrarPassword ? "text" : "password"} // ✨ ALTERNAMOS EL TIPO DE INPUT
+              className="w-full bg-zinc-950/50 border border-zinc-800 rounded-2xl py-4 pl-5 pr-14 text-white placeholder-zinc-700 focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500/50 transition-all shadow-inner"
+              placeholder="••••••••"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              required
+            />
+            <button
+              type="button"
+              onClick={() => setMostrarPassword(!mostrarPassword)}
+              className="absolute right-4 top-1/2 -translate-y-1/2 text-xl opacity-40 hover:opacity-100 transition-opacity focus:outline-none"
+              title={mostrarPassword ? "Ocultar runas" : "Revelar runas"}
+            >
+              {mostrarPassword ? '🙈' : '👁️'}
+            </button>
+          </div>
         </div>
 
         <button 
