@@ -105,7 +105,6 @@ function GestionUsuarios() {
     }
   };
 
-  // ✨ AHORA RECIBE EL ID DEL USUARIO PARA QUITARLE EL ESTADO DE "NUEVO"
   const generarCertificado = (idDM, nombreDM) => {
     Swal.fire({
       title: 'Forjando Certificado...',
@@ -128,7 +127,6 @@ function GestionUsuarios() {
       canvas.height = imagen.height;
       ctx.drawImage(imagen, 0, 0, canvas.width, canvas.height);
       
-      // Nombre
       ctx.font = 'bold 80px "Georgia", serif'; 
       ctx.fillStyle = '#111827'; 
       ctx.textAlign = 'center';
@@ -136,7 +134,6 @@ function GestionUsuarios() {
       const posicionY_Nombre = canvas.height * 0.55; 
       ctx.fillText(nombreDM.toUpperCase(), centroX, posicionY_Nombre);
       
-      // Fecha
       const opcionesFecha = { year: 'numeric', month: 'long', day: 'numeric' };
       const fechaHoy = new Date().toLocaleDateString('es-ES', opcionesFecha);
       ctx.font = 'italic 40px "Georgia", serif';
@@ -144,7 +141,6 @@ function GestionUsuarios() {
       const posicionY_Fecha = canvas.height * 0.75; 
       ctx.fillText(`Otorgado en Santa Rosa, a ${fechaHoy}`, centroX, posicionY_Fecha);
       
-      // Descargamos la imagen
       const urlImagen = canvas.toDataURL('image/png');
       const enlaceDescarga = document.createElement('a');
       enlaceDescarga.href = urlImagen;
@@ -153,12 +149,11 @@ function GestionUsuarios() {
       enlaceDescarga.click();
       document.body.removeChild(enlaceDescarga);
 
-      // ✨ EL RITO DE INICIACIÓN: Llamamos a la API para convertirlo en Veterano
       try {
         await fetchProtegido(`https://gestor-eventos-rol.onrender.com/api/usuarios/${idDM}/certificado-entregado`, { 
           method: 'PUT' 
         });
-        cargarCenso(); // Recargamos el censo para que el botón 📜 desaparezca automáticamente
+        cargarCenso(); 
       } catch (e) {
         console.error("No se pudo actualizar el estado del DM:", e);
       }
@@ -199,7 +194,14 @@ function GestionUsuarios() {
       if (res.ok) { 
         cargarDatosPrincipales(); 
         cargarCenso(); 
-        Swal.fire({ title: '¡Ascenso Concedido!', text: 'Recuerda generarle su certificado en el Censo.', icon: 'success', background: '#09090b', color: '#fff', customClass: { popup: 'border border-emerald-500/30 rounded-[2rem]' } }); 
+        // ✨ TEXTO ACTUALIZADO: AVISAMOS QUE DEBEN ESPERAR LA NOTIFICACIÓN
+        Swal.fire({ 
+          title: '¡Ascenso Concedido!', 
+          text: 'El gremio le notificará cuando abra su primera mesa para generarle el certificado.', 
+          icon: 'success', 
+          background: '#09090b', color: '#fff', 
+          customClass: { popup: 'border border-emerald-500/30 rounded-[2rem]' } 
+        }); 
       }
     }
   };
@@ -391,7 +393,7 @@ function GestionUsuarios() {
                         <td className="p-6">
                           <div className="flex items-center justify-center gap-3">
                             
-                            {/* ✨ BOTÓN DEL CERTIFICADO: SOLO PARA DMS QUE SEAN NUEVOS */}
+                            {/* ✨ BOTÓN DEL CERTIFICADO */}
                             {user.rol === 'dm' && user.es_dm_nuevo && (
                               <button onClick={() => generarCertificado(user.id, user.nombre)} className="w-10 h-10 bg-amber-500/10 border border-amber-500/50 text-amber-500 rounded-xl hover:bg-amber-500 hover:text-black transition-all text-sm shadow-[0_0_15px_rgba(245,158,11,0.3)] animate-pulse" title="Generar Certificado del Gremio">📜</button>
                             )}

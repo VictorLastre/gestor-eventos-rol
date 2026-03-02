@@ -4,11 +4,10 @@ const db = require('../config/db');
 const verificarToken = require('../middlewares/auth');
 const bcrypt = require('bcrypt'); 
 
-// 1. MIS CRÓNICAS (Corregido para evitar "Invalid Date" y desfase de días)
+// 1. MIS CRÓNICAS 
 router.get('/mis-cronicas', verificarToken, (req, res) => {
   const idUsuario = req.usuario.id;
 
-  // ✨ Usamos DATE_FORMAT para que la fecha llegue como String limpio al Frontend
   const sqlDirigiendo = `
     SELECT p.*, e.nombre as evento_nombre, DATE_FORMAT(e.fecha, '%Y-%m-%d') as fecha 
     FROM partidas p 
@@ -98,8 +97,8 @@ router.put('/perfil', verificarToken, async (req, res) => {
       
       db.query(sql, [nombre, email, avatar, idUsuario], (err) => {
         if (err) {
-            console.error(err);
-            return res.status(500).json({ error: 'Error al actualizar tu ficha en el gremio.' });
+          console.error(err);
+          return res.status(500).json({ error: 'Error al actualizar tu ficha en el gremio.' });
         }
         res.json({ mensaje: '¡Perfil y avatar actualizados con éxito!' });
       });
@@ -123,11 +122,28 @@ router.post('/solicitar-dm', verificarToken, (req, res) => {
   });
 });
 
+// ✨ BUG SOLUCIONADO: AL ASCENDER A DM, SE MARCA COMO NUEVO
 router.put('/:id/promover', verificarToken, (req, res) => {
   if (req.usuario.rol !== 'admin') return res.status(403).json({ error: 'Denegado.' });
-  db.query("UPDATE usuarios SET rol = 'dm', solicita_dm = 0 WHERE id = ?", [req.params.id], (err) => {
-    if (err) return res.status(500).send('Error.');
+  
+  // Agregamos es_dm_nuevo = 1
+  const sql = "UPDATE usuarios SET rol = 'dm', solicita_dm = 0, es_dm_nuevo = 1 WHERE id = ?";
+  
+  db.query(sql, [req.params.id], (err) => {
+    if (err) return res.status(500).send('Error al forjar el ascenso.');
     res.send('¡Ascenso completado!');
+  });
+});
+
+// ✨ NUEVA RUTA: MARCAR CERTIFICADO COMO ENTREGADO
+router.put('/:id/certificado-entregado', verificarToken, (req, res) => {
+  if (req.usuario.rol !== 'admin') return res.status(403).json({ error: 'Solo el Alto Mando puede realizar este rito.' });
+  
+  const sql = "UPDATE usuarios SET es_dm_nuevo = 0 WHERE id = ?";
+  
+  db.query(sql, [req.params.id], (err) => {
+    if (err) return res.status(500).json({ error: 'Error al actualizar el estado del DM.' });
+    res.json({ mensaje: 'Rito de iniciación completado.' });
   });
 });
 
@@ -140,7 +156,7 @@ router.put('/:id/rechazar-dm', verificarToken, (req, res) => {
   });
 });
 
-// RUTA PARA ASIGNAR ROL LIBREMENTE (DM O JUGADOR)
+// RUTA PARA ASIGNAR ROL LIBREMENTE
 router.put('/:id/rol', verificarToken, (req, res) => {
   if (req.usuario.rol !== 'admin') {
     return res.status(403).json({ error: 'No tienes autoridad para otorgar títulos.' });
@@ -153,7 +169,15 @@ router.put('/:id/rol', verificarToken, (req, res) => {
     return res.status(400).json({ error: 'Rango desconocido en el reino.' });
   }
 
-  const sqlUpdate = 'UPDATE usuarios SET rol = ?, solicita_dm = 0 WHERE id = ?';
+  // ✨ SI LO BAJAN A JUGADOR O LO SUBEN A ADMIN, LE QUITAMOS LA ETIQUETA DE NUEVO POR LAS DUDAS
+  let sqlUpdate = 'UPDATE usuarios SET rol = ?, solicita_dm = 0 WHERE id = ?';
+  if (rol !== 'dm') {
+      sqlUpdate = 'UPDATE usuarios SET rol = ?, solicita_dm = 0, es_dm_nuevo = 0 WHERE id = ?';
+  } else {
+      // Si un admin lo fuerza a ser DM manualmente (fuera de las peticiones), lo marcamos como nuevo
+      sqlUpdate = 'UPDATE usuarios SET rol = ?, solicita_dm = 0, es_dm_nuevo = 1 WHERE id = ?';
+  }
+
   db.query(sqlUpdate, [rol, usuarioId], (err) => {
     if (err) {
       console.error(err);
@@ -218,7 +242,7 @@ router.post('/votaciones/:id/votar', verificarToken, (req, res) => {
       const mayoria = Math.floor(total_admins / 2) + 1;
 
       if (votos_favor >= mayoria) {
-        db.query("UPDATE usuarios SET rol = 'admin', solicita_dm = 0 WHERE id = ?", [candidato_id]);
+        db.query("UPDATE usuarios SET rol = 'admin', solicita_dm = 0, es_dm_nuevo = 0 WHERE id = ?", [candidato_id]);
         db.query("UPDATE votaciones_admin SET estado = 'aprobada' WHERE id = ?", [votacionId]);
         return res.json({ mensaje: '¡La mayoría ha hablado! El aventurero ha sido ascendido a Administrador.', ascendido: true });
       } else if (votos_contra >= mayoria) {
@@ -231,7 +255,7 @@ router.post('/votaciones/:id/votar', verificarToken, (req, res) => {
   });
 });
 
-// ✨ NOTIFICACIONES 1: Obtener mensajes sin leer
+// ✨ NOTIFICACIONES 
 router.get('/notificaciones', verificarToken, (req, res) => {
   const sql = "SELECT id, mensaje, fecha FROM notificaciones WHERE usuario_id = ? AND leida = FALSE ORDER BY fecha DESC";
   
@@ -241,7 +265,6 @@ router.get('/notificaciones', verificarToken, (req, res) => {
   });
 });
 
-// ✨ NOTIFICACIONES 2: Marcar como leída
 router.put('/notificaciones/:id/leida', verificarToken, (req, res) => {
   const sql = "UPDATE notificaciones SET leida = TRUE WHERE id = ? AND usuario_id = ?";
   
@@ -251,7 +274,7 @@ router.put('/notificaciones/:id/leida', verificarToken, (req, res) => {
   });
 });
 
-// OBTENER CENSO (Con paginación)
+// ✨ OBTENER CENSO: AÑADIMOS es_dm_nuevo AL SELECT
 router.get('/', verificarToken, (req, res) => {
   if (req.usuario.rol !== 'admin') {
     return res.status(403).json({ error: 'Acceso denegado a los archivos secretos.' });
@@ -269,7 +292,8 @@ router.get('/', verificarToken, (req, res) => {
     const totalUsuarios = countResult[0].total;
     const totalPaginas = Math.ceil(totalUsuarios / limit);
 
-    const sql = `SELECT id, nombre, email, rol, avatar, solicita_dm FROM usuarios ORDER BY nombre ASC LIMIT ${limit} OFFSET ${offset}`;
+    // ✨ AÑADIMOS es_dm_nuevo AQUÍ
+    const sql = `SELECT id, nombre, email, rol, avatar, solicita_dm, es_dm_nuevo FROM usuarios ORDER BY nombre ASC LIMIT ${limit} OFFSET ${offset}`;
     
     db.query(sql, (err, resultados) => {
       if (err) return res.status(500).json({ error: 'Error al consultar el censo del gremio.' });
