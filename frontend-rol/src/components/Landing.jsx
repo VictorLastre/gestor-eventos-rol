@@ -205,7 +205,7 @@ function Landing({ irALogin }) {
               <button onClick={irALogin} className="group relative transition-transform duration-500 hover:scale-105 active:scale-95 mb-4 md:mb-6 outline-none w-full flex flex-col items-center">
                 
                 {/* ✨ IMAGEN REDUCIDA: Cambiamos a max-w-[180px] en móviles y max-w-[220px] en PC */}
-                <img src={forjaAventura} alt="Comenzar" className="w-full max-w-[180px] md:max-w-[220px] h-auto object-contain img-glow" />
+                <img src={forjaAventura} alt="Comenzar" className="w-full max-w-[160px] md:max-w-[200px] h-auto object-contain img-glow" />
                 
                 {/* ✨ MÁRGENES REDUCIDOS: Para acercar el texto a la imagen */}
                 <span className="mt-4 md:mt-5 block text-emerald-500 font-black uppercase tracking-[0.2em] md:tracking-[0.4em] text-[10px] md:text-xs animate-pulse">Haz clic para entrar →</span>
