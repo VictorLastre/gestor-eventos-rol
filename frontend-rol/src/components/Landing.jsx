@@ -203,7 +203,7 @@ function Landing({ irALogin }) {
             <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-[500px] h-[500px] bg-emerald-500/10 blur-[100px] rounded-full pointer-events-none"></div>
             <div className="relative z-10 w-full max-w-4xl flex flex-col items-center">
               <button onClick={irALogin} className="group relative transition-transform duration-500 hover:scale-105 active:scale-95 mb-8 md:mb-12 outline-none w-full flex flex-col items-center">
-                <img src={forjaAventura} alt="Comenzar" className="w-full max-w-[90%] md:max-w-[800px] h-auto object-contain img-glow" />
+                <img src={forjaAventura} alt="Comenzar" className="w-full max-w-[30%] md:max-w-[300px] h-auto object-contain img-glow" />
                 <span className="mt-6 md:mt-8 block text-emerald-500 font-black uppercase tracking-[0.2em] md:tracking-[0.4em] text-[10px] md:text-xs animate-pulse">Haz clic para entrar →</span>
               </button>
               <p className="text-lg md:text-2xl text-zinc-400 mb-10 max-w-2xl mx-auto leading-relaxed px-4">
