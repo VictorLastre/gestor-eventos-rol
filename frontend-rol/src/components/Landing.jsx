@@ -199,7 +199,7 @@ function Landing({ irALogin }) {
       <main className="flex-grow flex flex-col justify-center pt-24 md:pt-32">
         {/* SECCIÓN INICIO */}
         {seccionActiva === 'inicio' && (
-          <header className="relative py-12 md:py-20 px-6 flex flex-col items-center justify-center text-center flex-grow animate-in fade-in zoom-in-95 duration-500">
+          <header className="relative py-5 md:py-5 px-5 flex flex-col items-center justify-center text-center flex-grow animate-in fade-in zoom-in-95 duration-500">
             <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-[500px] h-[500px] bg-emerald-500/10 blur-[100px] rounded-full pointer-events-none"></div>
             <div className="relative z-10 w-full max-w-4xl flex flex-col items-center">
               <button onClick={irALogin} className="group relative transition-transform duration-500 hover:scale-105 active:scale-95 mb-4 md:mb-6 outline-none w-full flex flex-col items-center">
