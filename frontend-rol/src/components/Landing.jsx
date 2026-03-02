@@ -174,7 +174,7 @@ function Landing({ irALogin }) {
             <button onClick={() => setSeccionActiva('fundadores')} className={`text-xs font-bold uppercase tracking-widest transition-colors ${seccionActiva === 'fundadores' ? 'text-emerald-400 border-b-2 border-emerald-400' : 'hover:text-emerald-400'}`}>Fundadores</button>
             <div className="h-8 w-px bg-zinc-800"></div>
             <button onClick={irALogin} className="relative group transition-all duration-300 hover:scale-110 flex flex-col items-center">
-              <img src={puertaDungeon} alt="Entrar" className="w-16 h-16 object-contain img-glow" />
+              <img src={puertaDungeon} alt="Entrar" className="p-5 w-16 h-16 object-contain img-glow" />
               <span className="absolute -bottom-6 text-[10px] font-black uppercase text-emerald-500 opacity-0 group-hover:opacity-100 transition-opacity">Entrar</span>
             </button>
           </div>
