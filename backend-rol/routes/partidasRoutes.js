@@ -22,6 +22,56 @@ router.get('/estadisticas/sistemas', verificarToken, (req, res) => {
   });
 });
 
+// ✨ CREACIÓN: Forjar una nueva mesa/partida y notificar si es la primera
+router.post('/', verificarToken, (req, res) => {
+  const idUsuario = req.usuario.id;
+  const rolUsuario = req.usuario.rol;
+
+  if (rolUsuario !== 'dm' && rolUsuario !== 'admin') {
+    return res.status(403).json({ error: 'Solo los Directores de Juego pueden convocar aventuras.' });
+  }
+
+  const { titulo, descripcion, requisitos, sistema, cupo, turno, etiqueta, apta_novatos, materiales_pedidos, evento_id } = req.body;
+
+  const sqlInsert = `
+    INSERT INTO partidas 
+    (titulo, descripcion, requisitos, sistema, cupo, turno, etiqueta, apta_novatos, materiales_pedidos, evento_id, dungeon_master_id) 
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+  `;
+
+  db.query(sqlInsert, [titulo, descripcion, requisitos, sistema, cupo, turno, etiqueta, apta_novatos, materiales_pedidos, evento_id, idUsuario], (err, resultado) => {
+    if (err) {
+      console.error(err);
+      return res.status(500).json({ error: 'Error al forjar la mesa en la base de datos.' });
+    }
+
+    // ✨ MAGIA DE NOTIFICACIÓN: Verificamos si es la primera mesa de su vida
+    db.query("SELECT COUNT(*) AS total_mesas FROM partidas WHERE dungeon_master_id = ?", [idUsuario], (err, countResult) => {
+      if (err) console.error("Error al contar las mesas del DM:", err);
+      
+      // Si el total es 1 (la que acaba de crear), le avisamos a los admins
+      if (countResult && countResult[0].total_mesas === 1) {
+        
+        // Buscamos a todos los administradores
+        db.query("SELECT id FROM usuarios WHERE rol = 'admin'", (err, admins) => {
+          if (err || admins.length === 0) return; // Si no hay admins o hay error, seguimos en silencio
+          
+          const mensajeNotif = `¡El Escriba anuncia que el DM ${req.usuario.nombre} ha convocado su primera mesa ("${titulo}")! Recuerda forjar su Certificado del Gremio en el Censo.`;
+          
+          // Preparamos el array de valores para hacer un insert múltiple (uno por cada admin)
+          const notificacionesValues = admins.map(admin => [admin.id, mensajeNotif]);
+          
+          db.query("INSERT INTO notificaciones (usuario_id, mensaje) VALUES ?", [notificacionesValues], (err) => {
+             if(err) console.error("Error al enviar los cuervos a los admins:", err);
+          });
+        });
+      }
+    });
+
+    res.status(201).json({ mensaje: '¡Mesa forjada con éxito! Los aventureros ya pueden unirse.' });
+  });
+});
+
 // ✨ INSCRIPCIONES: Unirse a una aventura
 router.post('/:id/inscripciones', verificarToken, (req, res) => {
   const idPartida = req.params.id;
@@ -146,6 +196,7 @@ router.put('/:id', verificarToken, (req, res) => {
 });
 
 // ✨ LOGÍSTICA: Reporte completo para Fundadores (Excel)
+// Se corrigió u.solicita_dm por u.es_dm_nuevo
 router.get('/reporte-logistico/:eventoId', verificarToken, (req, res) => {
   if (req.usuario.rol !== 'admin') return res.status(403).json({ error: 'Acceso reservado a los fundadores.' });
 
@@ -156,7 +207,7 @@ router.get('/reporte-logistico/:eventoId', verificarToken, (req, res) => {
       p.turno, 
       p.materiales_pedidos,
       u.nombre as dm_nombre, 
-      u.solicita_dm as es_dm_nuevo,
+      u.es_dm_nuevo, 
       GROUP_CONCAT(uj.nombre SEPARATOR ', ') as jugadores
     FROM partidas p
     JOIN usuarios u ON p.dungeon_master_id = u.id

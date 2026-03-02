@@ -54,13 +54,43 @@ function GestionUsuarios() {
   }, [filtroRol, busqueda]);
 
   const exportarLogistica = async () => {
-    if (eventos.length === 0) return Swal.fire({ title: 'Error', text: 'No hay eventos.', icon: 'error', background: '#09090b', color: '#fff' });
+    if (eventos.length === 0) return Swal.fire({ title: 'Error', text: 'No hay eventos registrados.', icon: 'error', background: '#09090b', color: '#fff' });
+
+    // ✨ MAGIA DEL ESCRIBA: Filtrar solo los eventos de HOY que estén vigentes
+    const hoyObj = new Date();
+    const anio = hoyObj.getFullYear();
+    const mes = String(hoyObj.getMonth() + 1).padStart(2, '0');
+    const dia = String(hoyObj.getDate()).padStart(2, '0');
+    const fechaHoyLocal = `${anio}-${mes}-${dia}`;
+
+    const eventosExportables = eventos.filter(e => {
+      if (!e.fecha) return false;
+      
+      const fechaEvento = e.fecha.split('T')[0];
+      const esHoy = fechaEvento === fechaHoyLocal;
+      const estaActivo = e.estado !== 'Suspendido' && e.estado !== 'Finalizado';
+      
+      return esHoy && estaActivo;
+    });
+
+    // Si no hay eventos para hoy después de filtrar, lanzamos un aviso épico
+    if (eventosExportables.length === 0) {
+      return Swal.fire({ 
+        title: 'El Tablón está en calma', 
+        text: 'No hay jornadas activas programadas para el día de hoy.', 
+        icon: 'info', 
+        background: '#09090b', 
+        color: '#fff',
+        confirmButtonColor: '#10b981',
+        customClass: { popup: 'border border-zinc-800 rounded-[2rem]' }
+      });
+    }
 
     const { value: eventoId } = await Swal.fire({
       title: '📊 Reporte Logístico',
-      text: 'Selecciona la jornada para el reporte:',
+      text: 'Selecciona la jornada de hoy para el reporte:',
       input: 'select',
-      inputOptions: Object.fromEntries(eventos.map(e => [e.id, e.nombre])),
+      inputOptions: Object.fromEntries(eventosExportables.map(e => [e.id, e.nombre])),
       inputPlaceholder: 'Seleccionar jornada...',
       showCancelButton: true,
       background: '#09090b',
@@ -99,7 +129,7 @@ function GestionUsuarios() {
         const hoja = XLSX.utils.json_to_sheet(filas);
         const libro = XLSX.utils.book_new();
         XLSX.utils.book_append_sheet(libro, hoja, "Planilla Logística");
-        const nombreEvento = eventos.find(e => e.id == eventoId).nombre;
+        const nombreEvento = eventosExportables.find(e => e.id == eventoId).nombre;
         XLSX.writeFile(libro, `Logistica_${nombreEvento.replace(/\s+/g, '_')}.xlsx`);
       } catch (e) { console.error(e); }
     }
@@ -194,7 +224,6 @@ function GestionUsuarios() {
       if (res.ok) { 
         cargarDatosPrincipales(); 
         cargarCenso(); 
-        // ✨ TEXTO ACTUALIZADO: AVISAMOS QUE DEBEN ESPERAR LA NOTIFICACIÓN
         Swal.fire({ 
           title: '¡Ascenso Concedido!', 
           text: 'El gremio le notificará cuando abra su primera mesa para generarle el certificado.', 
@@ -393,7 +422,6 @@ function GestionUsuarios() {
                         <td className="p-6">
                           <div className="flex items-center justify-center gap-3">
                             
-                            {/* ✨ BOTÓN DEL CERTIFICADO */}
                             {user.rol === 'dm' && user.es_dm_nuevo && (
                               <button onClick={() => generarCertificado(user.id, user.nombre)} className="w-10 h-10 bg-amber-500/10 border border-amber-500/50 text-amber-500 rounded-xl hover:bg-amber-500 hover:text-black transition-all text-sm shadow-[0_0_15px_rgba(245,158,11,0.3)] animate-pulse" title="Generar Certificado del Gremio">📜</button>
                             )}
