@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
 import puertaDungeon from '../assets/dungeon_door.png'; 
-import forjaAventura from '../assets/forja_tu_aventura.png'; 
+import forjaAventura from '../assets/forja_tu_aventura.gif'; 
 import LogoSVG from '../assets/Logo.svg'; 
 
 function Landing({ irALogin }) {
