@@ -28,7 +28,7 @@ function Landing({ irALogin }) {
       nombre: "Sterbern",
       titulo: "El Arquitecto",
       icono: "💻",
-      descripcion: "Aquí irá tu historia, la creación del sistema web y tu visión para el Gremio...",
+      descripcion: "Aquí irá tu historia, la creación del sistema web y tu visión para la Asociación...",
       color: {
         border: "border-emerald-500/40 hover:border-emerald-500",
         shadow: "shadow-[0_0_25px_rgba(16,185,129,0.15)] hover:shadow-[0_0_40px_rgba(16,185,129,0.4)]",
@@ -118,7 +118,7 @@ function Landing({ irALogin }) {
       nombre: "Chiquito",
       titulo: "El Coloso Gentil",
       icono: "🗿",
-      descripcion: "Aquí irá la historia de Chiquito, su presencia en el Gremio y sus roles favoritos...",
+      descripcion: "Aquí irá la historia de Chiquito, su presencia en la Asociación y sus roles favoritos...",
       color: {
         border: "border-green-500/40 hover:border-green-500",
         shadow: "shadow-[0_0_25_rgba(34,197,94,0.15)]",
@@ -192,7 +192,7 @@ function Landing({ irALogin }) {
           <button onClick={() => {setSeccionActiva('inicio'); setMenuAbierto(false);}} className="text-2xl font-black uppercase tracking-widest text-white">Inicio</button>
           <button onClick={() => {setSeccionActiva('nosotros'); setMenuAbierto(false);}} className="text-2xl font-black uppercase tracking-widest text-white">Nosotros</button>
           <button onClick={() => {setSeccionActiva('fundadores'); setMenuAbierto(false);}} className="text-2xl font-black uppercase tracking-widest text-white">Fundadores</button>
-          <button onClick={irALogin} className="bg-emerald-600 text-white px-8 py-4 rounded-xl font-black uppercase tracking-widest">Ingresar al Gremio</button>
+          <button onClick={irALogin} className="bg-emerald-600 text-white px-8 py-4 rounded-xl font-black uppercase tracking-widest">Ingresar</button>
         </div>
       </nav>
 
@@ -223,7 +223,7 @@ function Landing({ irALogin }) {
         {seccionActiva === 'nosotros' && (
           <section className="py-12 md:py-20 px-6 max-w-4xl mx-auto flex-grow flex flex-col justify-center animate-in fade-in slide-in-from-bottom-8 duration-500">
              <div className="text-center">
-              <h2 className="text-3xl md:text-5xl font-black text-white uppercase tracking-tighter mb-8 md:mb-12 flex items-center justify-center gap-4">📜 El Gremio</h2>
+              <h2 className="text-3xl md:text-5xl font-black text-white uppercase tracking-tighter mb-8 md:mb-12 flex items-center justify-center gap-4">📜 Nosotros </h2>
               <div className="space-y-6 md:space-y-8 text-base md:text-lg text-zinc-400 leading-relaxed bg-zinc-900/50 p-6 md:p-12 rounded-[2rem] md:rounded-[3rem] border border-zinc-800/50 shadow-2xl text-justify md:text-center">
                 <p>Nacimos con un propósito claro: reunir a los apasionados por el rol bajo un mismo estandarte en La Pampa. Somos un espacio creado por y para jugadores y Narradores.</p>
                 <p>Nuestra misión es que nadie se quede sin un grupo con el cual compartir una tarde de imaginación y estrategia.</p>
