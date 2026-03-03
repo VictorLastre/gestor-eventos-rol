@@ -29,7 +29,6 @@ const CONFIG_TEMAS = {
 };
 
 function Partida(props) {
-  // ✨ TEMA DINÁMICO PARA LA TARJETA
   const tema = CONFIG_TEMAS[props.etiqueta] || CONFIG_TEMAS['Fantasía Medieval'];
 
   const cantJugadores = props.jugadoresIniciales ?? props.jugadores_anotados ?? 0;
@@ -44,14 +43,13 @@ function Partida(props) {
   const [modoEdicion, setModoEdicion] = useState(false);
   const [sistemas, setSistemas] = useState([]);
 
-  // ✨ ALMACENAMOS EL ID DEL SISTEMA TEMPORALMENTE PARA EL SELECTOR
-  const [sistemaSeleccionadoId, setSistemaSeleccionadoId] = useState('');
-
+  // ✨ EL ESTADO DE EDICIÓN
+  // Guardamos específicamente el ID numérico en `sistema_id` para controlarlo en el form
   const [datosEdicion, setDatosEdicion] = useState({
     titulo: props.titulo || '',
     descripcion: props.descripcion || props.description || '',
     requisitos: props.requisitos || '',
-    sistema: props.sistema || '', 
+    sistema_id: props.sistema_id || '', 
     cupo: props.cupo || 4,
     turno: props.turno || 'Tarde',
     etiqueta: props.etiqueta || 'Fantasía Medieval',
@@ -60,16 +58,8 @@ function Partida(props) {
   });
 
   const Toast = Swal.mixin({
-    toast: true,
-    position: 'top-end',
-    showConfirmButton: false,
-    timer: 3000,
-    timerProgressBar: true,
-    background: '#09090b', 
-    color: '#fff',
-    customClass: {
-      popup: 'border border-zinc-800 shadow-2xl rounded-2xl'
-    }
+    toast: true, position: 'top-end', showConfirmButton: false, timer: 3000, timerProgressBar: true, background: '#09090b', color: '#fff',
+    customClass: { popup: 'border border-zinc-800 shadow-2xl rounded-2xl' }
   });
 
   useEffect(() => {
@@ -84,10 +74,12 @@ function Partida(props) {
             const sistemasCargados = Array.isArray(data) ? data : [];
             setSistemas(sistemasCargados);
             
-            // Intenta pre-seleccionar el sistema actual en el desplegable
-            const sistemaActual = sistemasCargados.find(s => s.nombre === props.sistema);
-            if(sistemaActual) {
-              setSistemaSeleccionadoId(sistemaActual.id);
+            // ✨ BÚSQUEDA DE RESPALDO: Si no teníamos el ID pero sí el nombre del sistema, buscamos su ID numérico
+            if (!datosEdicion.sistema_id && props.sistema) {
+              const sistemaActual = sistemasCargados.find(s => s.nombre === props.sistema);
+              if(sistemaActual) {
+                setDatosEdicion(prev => ({ ...prev, sistema_id: sistemaActual.id }));
+              }
             }
           })
           .catch(err => console.error(err));
@@ -96,7 +88,7 @@ function Partida(props) {
       document.body.style.overflow = 'unset';
     }
     return () => { document.body.style.overflow = 'unset'; };
-  }, [modalAbierto, modoEdicion, sistemas.length, props.sistema]);
+  }, [modalAbierto, modoEdicion, sistemas.length, props.sistema, datosEdicion.sistema_id]);
 
   useEffect(() => {
     setJugadoresAnotados(cantJugadores);
@@ -107,15 +99,8 @@ function Partida(props) {
     setCargandoJugadores(true);
     fetchProtegido(`https://gestor-eventos-rol.onrender.com/api/partidas/${props.id}/jugadores`)
       .then(res => res.json())
-      .then(datos => {
-        setListaJugadores(datos);
-        setCargandoJugadores(false);
-      })
-      .catch(err => {
-        if (err === 'Sesión expirada') return;
-        console.error(err);
-        setCargandoJugadores(false);
-      });
+      .then(datos => { setListaJugadores(datos); setCargandoJugadores(false); })
+      .catch(err => { if (err !== 'Sesión expirada') console.error(err); setCargandoJugadores(false); });
   };
 
   const soyElMaster = props.esMiMesa; 
@@ -126,73 +111,51 @@ function Partida(props) {
     const metodo = anotado ? 'DELETE' : 'POST';
 
     try {
-      const res = await fetchProtegido(`https://gestor-eventos-rol.onrender.com/api/partidas/${props.id}/inscripciones`, {
-        method: metodo
-      });
-
+      const res = await fetchProtegido(`https://gestor-eventos-rol.onrender.com/api/partidas/${props.id}/inscripciones`, { method: metodo });
       if (res.ok) {
         setAnotado(!anotado);
         setJugadoresAnotados(anotado ? jugadoresAnotados - 1 : jugadoresAnotados + 1);
         cargarListaJugadores();
-        
-        Toast.fire({
-          icon: 'success',
-          title: anotado ? 'Has abandonado la mesa' : '¡Te has unido a la aventura!'
-        });
-        
+        Toast.fire({ icon: 'success', title: anotado ? 'Has abandonado la mesa' : '¡Te has unido a la aventura!' });
       } else {
         const mensaje = await res.text();
         Swal.fire({ title: 'Aviso del Gremio', text: mensaje, icon: 'warning', background: '#09090b', color: '#fff', confirmButtonColor: '#f59e0b' });
       }
-    } catch (err) { 
-      if (err === 'Sesión expirada') return;
-      console.error(err); 
-    }
+    } catch (err) { if (err !== 'Sesión expirada') console.error(err); }
   };
 
   const borrarMesa = async (e) => {
     if (e) e.stopPropagation(); 
-    
     const result = await Swal.fire({
-      title: '¿Disolver la Mesa?',
-      text: "Se cancelará la aventura y todos los aventureros inscritos perderán su lugar. Esta acción no se puede deshacer.",
-      icon: 'warning',
-      showCancelButton: true,
-      background: '#09090b', color: '#fff', confirmButtonColor: '#ef4444', cancelButtonColor: '#27272a', 
-      confirmButtonText: 'Sí, borrar mesa', cancelButtonText: 'Cancelar'
+      title: '¿Disolver la Mesa?', text: "Se cancelará la aventura y perderás a los aventureros. Es irreversible.", icon: 'warning', showCancelButton: true,
+      background: '#09090b', color: '#fff', confirmButtonColor: '#ef4444', cancelButtonColor: '#27272a', confirmButtonText: 'Sí, borrar mesa', cancelButtonText: 'Cancelar'
     });
 
     if (result.isConfirmed) {
       try {
         const res = await fetchProtegido(`https://gestor-eventos-rol.onrender.com/api/partidas/${props.id}`, { method: 'DELETE' });
         if (res.ok) {
-          Swal.fire({ title: 'Mesa Borrada', text: 'La aventura ha sido cancelada.', icon: 'success', background: '#09090b', color: '#fff', confirmButtonColor: '#10b981' })
+          Swal.fire({ title: 'Mesa Borrada', icon: 'success', background: '#09090b', color: '#fff', confirmButtonColor: '#10b981' })
           .then(() => { window.location.reload(); });
         } else {
           Swal.fire({ title: 'Error Mágico', text: 'No se pudo disolver la mesa.', icon: 'error', background: '#09090b', color: '#fff', confirmButtonColor: '#ef4444' });
         }
-      } catch (err) { 
-        if (err === 'Sesión expirada') return;
-        console.error(err); 
-      }
+      } catch (err) { if (err !== 'Sesión expirada') console.error(err); }
     }
   };
 
   const guardarEdicion = async (e) => {
     e.preventDefault();
 
-    if (!sistemaSeleccionadoId) {
+    if (!datosEdicion.sistema_id) {
         return Swal.fire({ title: 'Aviso', text: 'Debes seleccionar un sistema', icon: 'warning', background: '#09090b', color: '#fff' });
     }
 
-    // ✨ EL GRAN TRUCO MAGICO: Extraer el NOMBRE del sistema a partir de su ID antes de enviar al backend
-    const sistemaSeleccionadoObj = sistemas.find(s => s.id.toString() === sistemaSeleccionadoId.toString());
-    const nombreSistemaAEnviar = sistemaSeleccionadoObj ? sistemaSeleccionadoObj.nombre : datosEdicion.sistema;
-
-    // Preparamos el paquete exacto para el Backend
+    // ✨ EL PAQUETE PERFECTO:
+    // Tu backend hace "const { sistema } = req.body". Así que pasamos el ID numérico usando exactamente la palabra "sistema".
     const paqueteFinal = {
       ...datosEdicion,
-      sistema: nombreSistemaAEnviar // Enviamos el TEXTO (Ej: "Dungeons & Dragons 5e")
+      sistema: datosEdicion.sistema_id // ¡El ID numérico va aquí!
     };
 
     try {
@@ -209,8 +172,7 @@ function Partida(props) {
         Swal.fire({ title: 'Aviso del Gremio', text: data.error, icon: 'warning', background: '#09090b', color: '#fff' });
       }
     } catch (err) {
-      if (err === 'Sesión expirada') return;
-      console.error(err);
+      if (err !== 'Sesión expirada') console.error(err);
     }
   };
 
@@ -241,7 +203,6 @@ function Partida(props) {
                   🌱 Novatos
                 </span>
               )}
-              {/* ✨ ETIQUETA DE GÉNERO DINÁMICA */}
               {props.etiqueta && (
                 <span className={`text-[9px] font-black uppercase tracking-widest px-3 py-1 rounded-full border flex items-center gap-1.5 ${tema.color} ${tema.bg} ${tema.border}`}>
                   {tema.icon} {props.etiqueta}
@@ -376,8 +337,8 @@ function Partida(props) {
                 <div className="flex flex-col gap-2">
                   <label className="text-[10px] font-black text-zinc-500 uppercase tracking-widest ml-1">Sistema</label>
                   <select 
-                    value={sistemaSeleccionadoId} // ✨ Usamos el estado temporal para que el desplegable funcione bien
-                    onChange={e => setSistemaSeleccionadoId(e.target.value)}
+                    value={datosEdicion.sistema_id} 
+                    onChange={e => setDatosEdicion({...datosEdicion, sistema_id: e.target.value})}
                     required
                     className="bg-zinc-950 border border-zinc-800 rounded-2xl py-4 px-5 text-white focus:border-amber-500 outline-none font-bold cursor-pointer"
                   >
@@ -466,7 +427,6 @@ function Partida(props) {
                     🌱 Apta Novatos
                   </span>
                 )}
-                {/* ✨ ETIQUETA EN MODAL DETALLADO */}
                 {props.etiqueta && (
                   <span className={`text-[10px] font-black uppercase tracking-widest px-3 py-1.5 rounded-full border flex items-center gap-1.5 ${tema.color} ${tema.bg} ${tema.border}`}>
                     {tema.icon} {props.etiqueta}
