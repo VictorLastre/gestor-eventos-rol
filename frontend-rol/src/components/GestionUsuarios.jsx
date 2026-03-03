@@ -9,7 +9,7 @@ function GestionUsuarios() {
   const [votaciones, setVotaciones] = useState([]); 
   const [eventos, setEventos] = useState([]); 
   
-  // ✨ NUEVO ESTADO PARA EL TOP DE SISTEMAS
+  // ✨ ESTADO PARA EL TOP DE SISTEMAS
   const [topSistemas, setTopSistemas] = useState([]);
   
   const [pestanaActiva, setPestanaActiva] = useState('peticiones');
@@ -338,9 +338,9 @@ function GestionUsuarios() {
           🏛️ Senado {votaciones.length > 0 && <span className="bg-white text-amber-600 px-2 py-0.5 rounded-full text-[9px] animate-pulse">{votaciones.length}</span>}
         </button>
         
-        {/* ✨ NUEVO BOTÓN: ORÁCULO */}
+        {/* ✨ SECCIÓN ACOMODADA: ORÁCULO DE DATOS */}
         <button onClick={() => setPestanaActiva('oraculo')} className={`flex items-center gap-2 px-6 py-3 font-black text-[10px] uppercase tracking-[0.2em] transition-all rounded-xl ${pestanaActiva === 'oraculo' ? 'bg-blue-600 text-white shadow-lg shadow-blue-900/40' : 'text-zinc-500 hover:bg-zinc-900'}`}>
-          👁️ Oráculo (Top)
+          👁️ Oráculo de Datos
         </button>
       </div>
 
@@ -528,13 +528,13 @@ function GestionUsuarios() {
         </div>
       )}
 
-      {/* ✨ NUEVA PESTAÑA: ORÁCULO DE SISTEMAS */}
+      {/* ✨ SECCIÓN ACOMODADA: ORÁCULO DE DATOS (CON EL TOP DE SISTEMAS) */}
       {pestanaActiva === 'oraculo' && (
         <div className="animate-in fade-in slide-in-from-right-4 duration-500">
           <div className="flex items-center gap-3 mb-10">
             <div className="w-12 h-12 bg-blue-500/10 text-blue-400 flex items-center justify-center rounded-2xl border border-blue-500/20 text-xl">👁️</div>
             <div>
-              <h3 className="text-2xl font-black text-white uppercase tracking-tighter italic">Oráculo de Sistemas</h3>
+              <h3 className="text-2xl font-black text-white uppercase tracking-tighter italic">Oráculo de Datos</h3>
               <p className="text-[10px] text-blue-500/60 font-black uppercase tracking-[0.4em]">Los Tomos Más Jugados del Gremio</p>
             </div>
           </div>
@@ -548,7 +548,7 @@ function GestionUsuarios() {
               <div className="flex flex-col gap-6 relative z-10">
                 {topSistemas.map((sistema, index) => {
                   const esPrimero = index === 0;
-                  const porcentaje = (sistema.cantidad / maxMesaEnTop) * 100;
+                  const porcentaje = maxMesaEnTop > 0 ? (sistema.cantidad / maxMesaEnTop) * 100 : 0;
                   
                   return (
                     <div key={index} className="group relative">
@@ -583,5 +583,3 @@ function GestionUsuarios() {
 }
 
 export default GestionUsuarios;
-
-
