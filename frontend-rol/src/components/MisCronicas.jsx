@@ -12,8 +12,10 @@ function MisCronicas({ alActualizarUsuario }) {
   const [peticionEnviada, setPeticionEnviada] = useState(usuarioGuardado?.solicitudDmPendiente || false);
   const esJugadorBase = usuarioGuardado?.rol === 'jugador';
   
+  // ✨ AÑADIDO: nombre_completo para los certificados
   const [perfil, setPerfil] = useState({ 
     nombre: usuarioGuardado?.nombre || '', 
+    nombre_completo: usuarioGuardado?.nombre_completo || '', 
     email: usuarioGuardado?.email || '',
     avatar: usuarioGuardado?.avatar || 'guerrero'
   });
@@ -50,7 +52,7 @@ function MisCronicas({ alActualizarUsuario }) {
         
         Swal.fire({
           title: '¡Ficha Actualizada!',
-          text: 'Tus datos han sido grabados en los anales del gremio.',
+          text: 'Tus datos han sido grabados en los registros del gremio.',
           icon: 'success',
           background: '#09090b', 
           color: '#fff',
@@ -99,8 +101,17 @@ function MisCronicas({ alActualizarUsuario }) {
     } catch (e) { if (e !== 'Sesión expirada') console.error(e); }
   };
 
-  const formatearFecha = (fechaString) => {
-    return new Date(fechaString).toLocaleDateString('es-ES', { day: 'numeric', month: 'long', year: 'numeric' });
+  // ✨ CORRECCIÓN MAGNA: Formateador de fechas a prueba de fallos
+  const formatearFecha = (fechaStr) => {
+    if (!fechaStr) return "Fecha Desconocida";
+    try {
+      const soloFecha = fechaStr.split('T')[0];
+      const [anio, mes, dia] = soloFecha.split('-');
+      const meses = ["enero", "febrero", "marzo", "abril", "mayo", "junio", "julio", "agosto", "septiembre", "octubre", "noviembre", "diciembre"];
+      return `${parseInt(dia)} de ${meses[parseInt(mes) - 1]} de ${anio}`;
+    } catch (error) {
+      return "Fecha en el limbo";
+    }
   };
 
   if (cargando) return (
@@ -143,7 +154,7 @@ function MisCronicas({ alActualizarUsuario }) {
             
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div className="space-y-2">
-                <label className="text-[10px] font-black text-zinc-500 uppercase tracking-widest ml-2">Nombre en los anales</label>
+                <label className="text-[10px] font-black text-zinc-500 uppercase tracking-widest ml-2">Nombre en los registros (Alias)</label>
                 <input name="nombre" className="w-full bg-zinc-950 border border-zinc-800 rounded-2xl py-4 px-6 text-white focus:border-emerald-500 outline-none transition-all font-bold" value={perfil.nombre} onChange={manejarCambioPerfil} />
               </div>
               <div className="space-y-2">
@@ -151,8 +162,23 @@ function MisCronicas({ alActualizarUsuario }) {
                 <input name="email" className="w-full bg-zinc-950 border border-zinc-800 rounded-2xl py-4 px-6 text-white focus:border-emerald-500 outline-none transition-all font-mono" value={perfil.email} onChange={manejarCambioPerfil} />
               </div>
             </div>
+
+            {/* ✨ NUEVO CAMPO: NOMBRE COMPLETO */}
+            <div className="space-y-2">
+              <label className="text-[10px] font-black text-zinc-500 uppercase tracking-widest ml-2 flex items-center gap-2">
+                <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse"></span> 
+                Nombre Real (Requerido para Certificados)
+              </label>
+              <input 
+                name="nombre_completo" 
+                placeholder="Ej: Bilbo Bolsón" 
+                className="w-full bg-zinc-950 border border-zinc-800 rounded-2xl py-4 px-6 text-white focus:border-emerald-500 outline-none transition-all font-bold" 
+                value={perfil.nombre_completo} 
+                onChange={manejarCambioPerfil} 
+              />
+            </div>
             
-            <div className="flex flex-col sm:flex-row gap-3">
+            <div className="flex flex-col sm:flex-row gap-3 mt-2">
               <button onClick={guardarPerfil} className="flex-1 bg-emerald-600 hover:bg-emerald-500 text-white font-black py-4 rounded-2xl uppercase text-xs tracking-widest transition-all shadow-lg shadow-emerald-900/20">Grabar Ficha</button>
               <button onClick={() => setEditando(false)} className="px-8 bg-zinc-800 hover:bg-zinc-700 text-zinc-400 font-black py-4 rounded-2xl uppercase text-xs tracking-widest transition-all">Descartar</button>
             </div>
@@ -171,13 +197,21 @@ function MisCronicas({ alActualizarUsuario }) {
                 </div>
                 <div>
                   <p className="text-4xl md:text-5xl font-black text-white tracking-tighter uppercase italic">{perfil.nombre}</p>
+                  
+                  {/* ✨ MUESTRA EL NOMBRE REAL SI EXISTE */}
+                  {perfil.nombre_completo && (
+                    <p className="text-zinc-400 font-bold text-sm tracking-wide mb-2 flex items-center gap-2">
+                      📜 {perfil.nombre_completo}
+                    </p>
+                  )}
+
                   <p className="text-emerald-500 font-black text-[10px] uppercase tracking-[0.4em] mb-2">{usuarioGuardado?.rol === 'admin' ? '👑 Administrador' : usuarioGuardado?.rol === 'dm' ? '🛡️ Dungeon Master' : '⚔️ Aventurero'}</p>
                   <p className="text-zinc-500 font-mono text-sm">{perfil.email}</p>
                 </div>
             </div>
             
-            <div className="flex flex-col gap-3 min-w-[200px]">
-              <button onClick={() => setEditando(true)} className="bg-zinc-800 hover:bg-zinc-700 text-zinc-200 px-6 py-4 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all border border-zinc-700">
+            <div className="flex flex-col gap-3 min-w-50">
+              <button onClick={() => setEditando(true)} className="bg-zinc-800 hover:bg-zinc-700 text-zinc-200 px-6 py-4 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all border border-zinc-700 shadow-xl">
                 ✏️ Editar Perfil
               </button>
               
