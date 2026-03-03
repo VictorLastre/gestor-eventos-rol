@@ -22,7 +22,7 @@ router.get('/estadisticas/sistemas', verificarToken, (req, res) => {
   });
 });
 
-// ✨ CREACIÓN: Forjar una nueva mesa/partida y notificar si es la primera
+// ✨ CREACIÓN: Forjar una nueva mesa/partida
 router.post('/', verificarToken, (req, res) => {
   const idUsuario = req.usuario.id;
   const rolUsuario = req.usuario.rol;
@@ -31,34 +31,31 @@ router.post('/', verificarToken, (req, res) => {
     return res.status(403).json({ error: 'Solo los Directores de Juego pueden convocar aventuras.' });
   }
 
-  const { titulo, descripcion, requisitos, sistema, cupo, turno, etiqueta, apta_novatos, materiales_pedidos, evento_id } = req.body;
+  // Aceptamos tanto sistema como sistema_id si vienen del frontend
+  const { titulo, descripcion, requisitos, sistema, sistema_id, cupo, turno, etiqueta, apta_novatos, materiales_pedidos, evento_id } = req.body;
 
+  // Insertamos en ambas columnas por si acaso
   const sqlInsert = `
     INSERT INTO partidas 
-    (titulo, descripcion, requisitos, sistema, cupo, turno, etiqueta, apta_novatos, materiales_pedidos, evento_id, dungeon_master_id) 
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    (titulo, descripcion, requisitos, sistema, sistema_id, cupo, turno, etiqueta, apta_novatos, materiales_pedidos, evento_id, dungeon_master_id) 
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
   `;
 
-  db.query(sqlInsert, [titulo, descripcion, requisitos, sistema, cupo, turno, etiqueta, apta_novatos, materiales_pedidos, evento_id, idUsuario], (err, resultado) => {
+  db.query(sqlInsert, [titulo, descripcion, requisitos, sistema, sistema_id, cupo, turno, etiqueta, apta_novatos, materiales_pedidos, evento_id, idUsuario], (err, resultado) => {
     if (err) {
       console.error(err);
       return res.status(500).json({ error: 'Error al forjar la mesa en la base de datos.' });
     }
 
-    // ✨ MAGIA DE NOTIFICACIÓN: Verificamos si es la primera mesa de su vida
+    // ✨ MAGIA DE NOTIFICACIÓN
     db.query("SELECT COUNT(*) AS total_mesas FROM partidas WHERE dungeon_master_id = ?", [idUsuario], (err, countResult) => {
       if (err) console.error("Error al contar las mesas del DM:", err);
       
-      // Si el total es 1 (la que acaba de crear), le avisamos a los admins
       if (countResult && countResult[0].total_mesas === 1) {
-        
-        // Buscamos a todos los administradores
         db.query("SELECT id FROM usuarios WHERE rol = 'admin'", (err, admins) => {
-          if (err || admins.length === 0) return; // Si no hay admins o hay error, seguimos en silencio
+          if (err || admins.length === 0) return; 
           
           const mensajeNotif = `¡El Escriba anuncia que el DM ${req.usuario.nombre} ha convocado su primera mesa ("${titulo}")! Recuerda forjar su Certificado del Gremio en el Censo.`;
-          
-          // Preparamos el array de valores para hacer un insert múltiple (uno por cada admin)
           const notificacionesValues = admins.map(admin => [admin.id, mensajeNotif]);
           
           db.query("INSERT INTO notificaciones (usuario_id, mensaje) VALUES ?", [notificacionesValues], (err) => {
@@ -148,7 +145,6 @@ router.delete('/:id', verificarToken, (req, res) => {
       return res.status(403).send('No tienes autoridad para disolver esta mesa.');
     }
 
-    // Buscamos inscritos para avisarles por cuervo mensajero
     db.query("SELECT usuario_id FROM inscripciones WHERE partida_id = ?", [partidaId], (err, inscritos) => {
       if (inscritos && inscritos.length > 0) {
         const mensaje = `El Director de Juego ha disuelto la mesa de "${titulo}". Tu inscripción ha sido cancelada.`;
@@ -166,7 +162,7 @@ router.delete('/:id', verificarToken, (req, res) => {
   });
 });
 
-// ✨ EDICIÓN: Modificar detalles de la mesa
+// ✨ EDICIÓN: Modificar detalles de la mesa (¡ACTUALIZA AMBAS COLUMNAS!)
 router.put('/:id', verificarToken, (req, res) => {
   const partidaId = req.params.id;
   const usuarioId = req.usuario.id;
@@ -180,23 +176,23 @@ router.put('/:id', verificarToken, (req, res) => {
       return res.status(403).json({ error: 'Sin permisos.' });
     }
 
-    const { titulo, descripcion, requisitos, sistema, cupo, turno, etiqueta, apta_novatos, materiales_pedidos } = req.body;
+    // Recibimos ambas: el texto (sistema) y el número (sistema_id)
+    const { titulo, descripcion, requisitos, sistema, sistema_id, cupo, turno, etiqueta, apta_novatos, materiales_pedidos } = req.body;
 
     const sqlUpdate = `
       UPDATE partidas 
-      SET titulo = ?, descripcion = ?, requisitos = ?, sistema = ?, cupo = ?, turno = ?, etiqueta = ?, apta_novatos = ?, materiales_pedidos = ?
+      SET titulo = ?, descripcion = ?, requisitos = ?, sistema = ?, sistema_id = ?, cupo = ?, turno = ?, etiqueta = ?, apta_novatos = ?, materiales_pedidos = ?
       WHERE id = ?
     `;
 
-    db.query(sqlUpdate, [titulo, descripcion, requisitos, sistema, cupo, turno, etiqueta, apta_novatos, materiales_pedidos, partidaId], (err) => {
+    db.query(sqlUpdate, [titulo, descripcion, requisitos, sistema, sistema_id, cupo, turno, etiqueta, apta_novatos, materiales_pedidos, partidaId], (err) => {
       if (err) return res.status(500).json({ error: 'Error al actualizar.' });
       res.status(200).json({ mensaje: '¡Aventura actualizada!' });
     });
   });
 });
 
-// ✨ LOGÍSTICA: Reporte completo para Fundadores (Excel)
-// Se corrigió u.solicita_dm por u.es_dm_nuevo
+// ✨ LOGÍSTICA: Reporte completo para Fundadores
 router.get('/reporte-logistico/:eventoId', verificarToken, (req, res) => {
   if (req.usuario.rol !== 'admin') return res.status(403).json({ error: 'Acceso reservado a los fundadores.' });
 

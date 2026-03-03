@@ -43,8 +43,6 @@ function Partida(props) {
   const [modoEdicion, setModoEdicion] = useState(false);
   const [sistemas, setSistemas] = useState([]);
 
-  // ✨ EL ESTADO DE EDICIÓN
-  // Guardamos específicamente el ID numérico en `sistema_id` para controlarlo en el form
   const [datosEdicion, setDatosEdicion] = useState({
     titulo: props.titulo || '',
     descripcion: props.descripcion || props.description || '',
@@ -74,7 +72,7 @@ function Partida(props) {
             const sistemasCargados = Array.isArray(data) ? data : [];
             setSistemas(sistemasCargados);
             
-            // ✨ BÚSQUEDA DE RESPALDO: Si no teníamos el ID pero sí el nombre del sistema, buscamos su ID numérico
+            // Si falta el sistema_id pero tenemos el nombre (porque la DB estaba desincronizada), lo buscamos
             if (!datosEdicion.sistema_id && props.sistema) {
               const sistemaActual = sistemasCargados.find(s => s.nombre === props.sistema);
               if(sistemaActual) {
@@ -151,11 +149,14 @@ function Partida(props) {
         return Swal.fire({ title: 'Aviso', text: 'Debes seleccionar un sistema', icon: 'warning', background: '#09090b', color: '#fff' });
     }
 
-    // ✨ EL PAQUETE PERFECTO:
-    // Tu backend hace "const { sistema } = req.body". Así que pasamos el ID numérico usando exactamente la palabra "sistema".
+    // ✨ MAGIA PARA ALIMENTAR A LAS DOS COLUMNAS DE TU BASE DE DATOS
+    const sistemaObj = sistemas.find(s => s.id.toString() === datosEdicion.sistema_id.toString());
+    const nombreSistema = sistemaObj ? sistemaObj.nombre : props.sistema;
+
     const paqueteFinal = {
       ...datosEdicion,
-      sistema: datosEdicion.sistema_id // ¡El ID numérico va aquí!
+      sistema: nombreSistema,             // Va directo a la columna de texto vieja
+      sistema_id: datosEdicion.sistema_id // Va directo a la columna numérica nueva
     };
 
     try {
