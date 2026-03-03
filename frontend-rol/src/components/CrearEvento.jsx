@@ -10,15 +10,22 @@ function CrearEvento({ alCrearEvento }) {
   const [horaInicio, setHoraInicio] = useState('16:00');
   const [horaFin, setHoraFin] = useState('20:00');
 
+  // ✨ NUEVOS ESTADOS PARA UBICACIÓN
+  const [lugar, setLugar] = useState('Centro Cultural El Molino');
+  const [ciudad, setCiudad] = useState('Santa Rosa');
+
   const manejarCreacion = async (e) => {
     e.preventDefault();
     
+    // ✨ EMPAQUETAMOS LOS NUEVOS DATOS
     const nuevoEvento = { 
       nombre, 
       descripcion, 
       fecha, 
       hora_inicio: horaInicio, 
-      hora_fin: horaFin 
+      hora_fin: horaFin,
+      lugar,
+      ciudad
     };
 
     try {
@@ -40,8 +47,10 @@ function CrearEvento({ alCrearEvento }) {
           confirmButtonText: 'Excelente'
         });
 
+        // Limpiar el formulario
         setNombre(''); setDescripcion(''); setFecha(''); 
         setHoraInicio('16:00'); setHoraFin('20:00');
+        setLugar('Centro Cultural El Molino'); setCiudad('Santa Rosa');
         
         alCrearEvento(); 
 
@@ -129,6 +138,39 @@ function CrearEvento({ alCrearEvento }) {
                   onChange={e => setFecha(e.target.value)} 
                   required 
                   className="w-full bg-zinc-900/50 border border-zinc-800 rounded-2xl py-4 px-6 text-white focus:border-purple-500 focus:ring-1 focus:ring-purple-500/50 outline-none transition-all [color-scheme:dark] font-bold"
+                />
+              </div>
+            </div>
+
+            {/* ✨ NUEVOS CAMPOS: LUGAR Y CIUDAD */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+              <div className="space-y-3">
+                <label className="text-[11px] font-black text-zinc-400 uppercase ml-1 tracking-widest flex items-center gap-2">
+                  <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full"></span>
+                  Punto de Encuentro (Lugar)
+                </label>
+                <input 
+                  type="text" 
+                  placeholder="Ej: Centro Cultural El Molino" 
+                  value={lugar} 
+                  onChange={e => setLugar(e.target.value)} 
+                  required 
+                  className="w-full bg-zinc-900/50 border border-zinc-800 rounded-2xl py-4 px-6 text-white placeholder:text-zinc-700 focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500/50 outline-none transition-all font-bold shadow-inner"
+                />
+              </div>
+
+              <div className="space-y-3">
+                <label className="text-[11px] font-black text-zinc-400 uppercase ml-1 tracking-widest flex items-center gap-2">
+                  <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full"></span>
+                  Ciudad o Reino
+                </label>
+                <input 
+                  type="text" 
+                  placeholder="Ej: Santa Rosa" 
+                  value={ciudad} 
+                  onChange={e => setCiudad(e.target.value)} 
+                  required 
+                  className="w-full bg-zinc-900/50 border border-zinc-800 rounded-2xl py-4 px-6 text-white placeholder:text-zinc-700 focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500/50 outline-none transition-all font-bold shadow-inner"
                 />
               </div>
             </div>

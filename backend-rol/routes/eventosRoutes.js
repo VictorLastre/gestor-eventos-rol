@@ -23,11 +23,12 @@ router.get('/', (req, res) => {
     if (err) console.error("Error actualizando el reloj del gremio:", err);
     
     // ✨ TRUCO MAESTRO: DATE_FORMAT evita que el driver de JS reste horas por zona horaria
+    // ✨ AHORA TRAEMOS lugar Y ciudad
     const sqlSelect = `
       SELECT 
         id, nombre, descripcion, 
         DATE_FORMAT(fecha, '%Y-%m-%d') as fecha, 
-        hora_inicio, hora_fin, estado 
+        hora_inicio, hora_fin, estado, lugar, ciudad
       FROM eventos 
       ORDER BY fecha DESC
     `;
@@ -43,15 +44,28 @@ router.get('/', (req, res) => {
 router.post('/', verificarToken, (req, res) => {
   if (req.usuario.rol !== 'admin') return res.status(403).json({ error: 'Solo Admins.' });
   
-  let { nombre, descripcion, fecha, hora_inicio = '16:00', hora_fin = '20:00' } = req.body;
+  // ✨ CAPTURAMOS lugar y ciudad (Con valores por defecto para tu comodidad)
+  let { 
+    nombre, 
+    descripcion, 
+    fecha, 
+    hora_inicio = '16:00', 
+    hora_fin = '20:00',
+    lugar = 'Centro Cultural El Molino',
+    ciudad = 'Santa Rosa'
+  } = req.body;
   
   // Limpiamos la fecha por si viene con barras / la pasamos a guiones -
   const fechaLimpia = fecha.replace(/\//g, '-');
 
-  const sqlInsert = 'INSERT INTO eventos (nombre, descripcion, fecha, hora_inicio, hora_fin, estado) VALUES (?, ?, ?, ?, ?, ?)';
+  // ✨ AGREGAMOS LAS COLUMNAS AL INSERT
+  const sqlInsert = 'INSERT INTO eventos (nombre, descripcion, fecha, hora_inicio, hora_fin, estado, lugar, ciudad) VALUES (?, ?, ?, ?, ?, ?, ?, ?)';
   
-  db.query(sqlInsert, [nombre, descripcion, fechaLimpia, hora_inicio, hora_fin, 'Proximo'], (err) => {
-    if (err) return res.status(500).json({ error: 'Error al convocar el evento.' });
+  db.query(sqlInsert, [nombre, descripcion, fechaLimpia, hora_inicio, hora_fin, 'Proximo', lugar, ciudad], (err) => {
+    if (err) {
+      console.error(err);
+      return res.status(500).json({ error: 'Error al convocar el evento.' });
+    }
     res.status(201).json({ mensaje: '¡Evento convocado con éxito!' });
   });
 });
@@ -127,18 +141,20 @@ router.put('/:id', verificarToken, (req, res) => {
   if (req.usuario.rol !== 'admin') return res.status(403).json({ error: 'Solo los líderes del gremio pueden alterar la historia.' });
 
   const eventoId = req.params.id;
-  let { nombre, descripcion, fecha, hora_inicio, hora_fin, estado } = req.body;
+  // ✨ RECIBIMOS lugar y ciudad PARA LA EDICIÓN
+  let { nombre, descripcion, fecha, hora_inicio, hora_fin, estado, lugar, ciudad } = req.body;
 
   // Limpiamos la fecha por si viene con barras / la pasamos a guiones -
   const fechaLimpia = fecha.replace(/\//g, '-');
 
+  // ✨ ACTUALIZAMOS lugar y ciudad EN LA BASE DE DATOS
   const sqlUpdate = `
     UPDATE eventos 
-    SET nombre = ?, descripcion = ?, fecha = ?, hora_inicio = ?, hora_fin = ?, estado = ?
+    SET nombre = ?, descripcion = ?, fecha = ?, hora_inicio = ?, hora_fin = ?, estado = ?, lugar = ?, ciudad = ?
     WHERE id = ?
   `;
 
-  db.query(sqlUpdate, [nombre, descripcion, fechaLimpia, hora_inicio, hora_fin, estado, eventoId], (err) => {
+  db.query(sqlUpdate, [nombre, descripcion, fechaLimpia, hora_inicio, hora_fin, estado, lugar, ciudad, eventoId], (err) => {
     if (err) {
       console.error(err);
       return res.status(500).json({ error: 'Error al modificar los registros del evento.' });
