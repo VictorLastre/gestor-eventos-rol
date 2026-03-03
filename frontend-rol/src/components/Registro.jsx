@@ -12,8 +12,8 @@ function Registro({ irALogin }) {
     e.preventDefault();
     
     Swal.fire({
-      title: 'Inscribiendo en los anales...',
-      text: 'Los escribas están registrando tu nombre en el Gremio.',
+      title: 'Tu nombre está siendo registrado...',
+      text: 'Los escribas te están registrando en el Gremio.',
       background: '#09090b',
       color: '#fff',
       allowOutsideClick: false,

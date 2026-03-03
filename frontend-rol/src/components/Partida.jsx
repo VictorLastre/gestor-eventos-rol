@@ -44,12 +44,14 @@ function Partida(props) {
   const [modoEdicion, setModoEdicion] = useState(false);
   const [sistemas, setSistemas] = useState([]);
 
-  // ✨ CORRECCIÓN DEL BUG: Usamos 'sistema' en lugar de 'sistema_id' para coincidir con el Backend
+  // ✨ ALMACENAMOS EL ID DEL SISTEMA TEMPORALMENTE PARA EL SELECTOR
+  const [sistemaSeleccionadoId, setSistemaSeleccionadoId] = useState('');
+
   const [datosEdicion, setDatosEdicion] = useState({
     titulo: props.titulo || '',
     descripcion: props.descripcion || props.description || '',
     requisitos: props.requisitos || '',
-    sistema: props.sistema_id || props.sistema || '', 
+    sistema: props.sistema || '', 
     cupo: props.cupo || 4,
     turno: props.turno || 'Tarde',
     etiqueta: props.etiqueta || 'Fantasía Medieval',
@@ -78,14 +80,23 @@ function Partida(props) {
       if (modoEdicion && sistemas.length === 0) {
         fetch('https://gestor-eventos-rol.onrender.com/api/sistemas')
           .then(res => res.json())
-          .then(data => setSistemas(Array.isArray(data) ? data : []))
+          .then(data => {
+            const sistemasCargados = Array.isArray(data) ? data : [];
+            setSistemas(sistemasCargados);
+            
+            // Intenta pre-seleccionar el sistema actual en el desplegable
+            const sistemaActual = sistemasCargados.find(s => s.nombre === props.sistema);
+            if(sistemaActual) {
+              setSistemaSeleccionadoId(sistemaActual.id);
+            }
+          })
           .catch(err => console.error(err));
       }
     } else {
       document.body.style.overflow = 'unset';
     }
     return () => { document.body.style.overflow = 'unset'; };
-  }, [modalAbierto, modoEdicion, sistemas.length]);
+  }, [modalAbierto, modoEdicion, sistemas.length, props.sistema]);
 
   useEffect(() => {
     setJugadoresAnotados(cantJugadores);
@@ -170,14 +181,24 @@ function Partida(props) {
   const guardarEdicion = async (e) => {
     e.preventDefault();
 
-    if (!datosEdicion.sistema) {
+    if (!sistemaSeleccionadoId) {
         return Swal.fire({ title: 'Aviso', text: 'Debes seleccionar un sistema', icon: 'warning', background: '#09090b', color: '#fff' });
     }
+
+    // ✨ EL GRAN TRUCO MAGICO: Extraer el NOMBRE del sistema a partir de su ID antes de enviar al backend
+    const sistemaSeleccionadoObj = sistemas.find(s => s.id.toString() === sistemaSeleccionadoId.toString());
+    const nombreSistemaAEnviar = sistemaSeleccionadoObj ? sistemaSeleccionadoObj.nombre : datosEdicion.sistema;
+
+    // Preparamos el paquete exacto para el Backend
+    const paqueteFinal = {
+      ...datosEdicion,
+      sistema: nombreSistemaAEnviar // Enviamos el TEXTO (Ej: "Dungeons & Dragons 5e")
+    };
 
     try {
       const res = await fetchProtegido(`https://gestor-eventos-rol.onrender.com/api/partidas/${props.id}`, {
         method: 'PUT',
-        body: JSON.stringify(datosEdicion)
+        body: JSON.stringify(paqueteFinal)
       });
 
       if (res.ok) {
@@ -355,8 +376,8 @@ function Partida(props) {
                 <div className="flex flex-col gap-2">
                   <label className="text-[10px] font-black text-zinc-500 uppercase tracking-widest ml-1">Sistema</label>
                   <select 
-                    value={datosEdicion.sistema} // ✨ Ahora usa 'sistema' correctamente
-                    onChange={e => setDatosEdicion({...datosEdicion, sistema: e.target.value})}
+                    value={sistemaSeleccionadoId} // ✨ Usamos el estado temporal para que el desplegable funcione bien
+                    onChange={e => setSistemaSeleccionadoId(e.target.value)}
                     required
                     className="bg-zinc-950 border border-zinc-800 rounded-2xl py-4 px-5 text-white focus:border-amber-500 outline-none font-bold cursor-pointer"
                   >
