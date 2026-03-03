@@ -336,12 +336,8 @@ function GestionUsuarios() {
         </button>
         <button onClick={() => setPestanaActiva('senado')} className={`flex items-center gap-2 px-6 py-3 font-black text-[10px] uppercase tracking-[0.2em] transition-all rounded-xl ${pestanaActiva === 'senado' ? 'bg-amber-600 text-white shadow-lg shadow-amber-900/40' : 'text-zinc-500 hover:bg-zinc-900'}`}>
           🏛️ Senado {votaciones.length > 0 && <span className="bg-white text-amber-600 px-2 py-0.5 rounded-full text-[9px] animate-pulse">{votaciones.length}</span>}
-        </button>
+        </button>       
         
-        {/* ✨ SECCIÓN ACOMODADA: ORÁCULO DE DATOS */}
-        <button onClick={() => setPestanaActiva('oraculo')} className={`flex items-center gap-2 px-6 py-3 font-black text-[10px] uppercase tracking-[0.2em] transition-all rounded-xl ${pestanaActiva === 'oraculo' ? 'bg-blue-600 text-white shadow-lg shadow-blue-900/40' : 'text-zinc-500 hover:bg-zinc-900'}`}>
-          👁️ Oráculo de Datos
-        </button>
       </div>
 
       {pestanaActiva === 'peticiones' && (
