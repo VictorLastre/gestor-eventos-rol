@@ -2,6 +2,21 @@ import { useState, useEffect } from 'react';
 import Swal from 'sweetalert2'; 
 import { fetchProtegido } from '../utils/api'; 
 
+// ✨ CONFIGURACIÓN DE ESTILOS POR ETIQUETA
+const CONFIG_ETIQUETAS = {
+  "Fantasía Medieval": { color: "text-amber-400", bg: "bg-amber-500/10", border: "border-amber-500/30", icon: "🏰" },
+  "Fantasía Oscura": { color: "text-purple-400", bg: "bg-purple-500/10", border: "border-purple-500/30", icon: "🌑" },
+  "Fantasía Urbana": { color: "text-blue-400", bg: "bg-blue-500/10", border: "border-blue-500/30", icon: "🏙️" },
+  "Terror / Horror": { color: "text-red-500", bg: "bg-red-500/10", border: "border-red-500/30", icon: "🩸" },
+  "Horror Cósmico": { color: "text-emerald-400", bg: "bg-emerald-500/10", border: "border-emerald-500/30", icon: "🐙" },
+  "Ciencia Ficción": { color: "text-cyan-400", bg: "bg-cyan-500/10", border: "border-cyan-500/30", icon: "🚀" },
+  "Cyberpunk": { color: "text-fuchsia-500", bg: "bg-fuchsia-500/10", border: "border-fuchsia-500/30", icon: "🦾" },
+  "Post-Apocalíptico": { color: "text-orange-500", bg: "bg-orange-500/10", border: "border-orange-500/30", icon: "☢️" },
+  "Misterio / Investigación": { color: "text-zinc-300", bg: "bg-zinc-500/10", border: "border-zinc-500/30", icon: "🔎" },
+  "Anime / Manga": { color: "text-pink-400", bg: "bg-pink-500/10", border: "border-pink-500/30", icon: "🌸" },
+  "Escape Room": { color: "text-lime-400", bg: "bg-lime-500/10", border: "border-lime-500/30", icon: "🗝️" }
+};
+
 function CrearMesa({ idEvento, alCrearMesa }) {
   const [titulo, setTitulo] = useState('');
   const [descripcion, setDescripcion] = useState('');
@@ -16,7 +31,6 @@ function CrearMesa({ idEvento, alCrearMesa }) {
   const [aptaNovatos, setAptaNovatos] = useState(false);
   const [materialesPedidos, setMaterialesPedidos] = useState('');
 
-  // ✨ CARGAMOS LOS SISTEMAS AL INICIAR
   useEffect(() => {
     fetch('https://gestor-eventos-rol.onrender.com/api/sistemas')
       .then(res => res.json())
@@ -74,7 +88,6 @@ function CrearMesa({ idEvento, alCrearMesa }) {
         setTitulo(''); setDescripcion(''); setRequisitos(''); 
         setSistemaId(''); setCupo(4); setEtiqueta('Fantasía Medieval'); 
         setAptaNovatos(false); setMaterialesPedidos('');
-        
         alCrearMesa(); 
 
       } else {
@@ -90,44 +103,37 @@ function CrearMesa({ idEvento, alCrearMesa }) {
     } catch (error) {
       if (error === 'Sesión expirada') return;
       console.error("Error:", error);
-      Swal.fire({
-        title: 'Error Mágico',
-        text: 'Los pergaminos no pudieron llegar al servidor.',
-        icon: 'error',
-        background: '#18181b',
-        color: '#fff',
-        confirmButtonColor: '#ef4444' 
-      });
+      Swal.fire({ title: 'Error Mágico', text: 'Los pergaminos no pudieron llegar al servidor.', icon: 'error', background: '#18181b', color: '#fff', confirmButtonColor: '#ef4444' });
     }
   };
+
+  // Obtener estilo actual basado en la etiqueta seleccionada
+  const estiloActual = CONFIG_ETIQUETAS[etiqueta] || CONFIG_ETIQUETAS["Fantasía Medieval"];
 
   return (
     <div className="animate-in fade-in slide-in-from-right-4 duration-500 max-w-4xl mx-auto">
       
-      {/* 🧭 CABECERA DE LA MESA */}
       <div className="flex items-center gap-4 mb-8">
-        <div className="w-12 h-12 bg-amber-500/10 text-amber-500 flex items-center justify-center rounded-2xl border border-amber-500/30 text-2xl shadow-[0_0_15px_rgba(245,158,11,0.2)]">
-          📜
+        <div className={`w-12 h-12 ${estiloActual.bg} ${estiloActual.color} flex items-center justify-center rounded-2xl border ${estiloActual.border} text-2xl shadow-lg transition-all duration-500`}>
+          {estiloActual.icon}
         </div>
         <div>
           <h3 className="text-2xl font-black text-white uppercase tracking-tighter leading-none">
             Forjar Nueva Mesa
           </h3>
-          <p className="text-[10px] text-amber-500/70 font-black uppercase tracking-[0.3em] mt-1">
-            Convocatoria de Aventuras
+          <p className={`text-[10px] ${estiloActual.color} font-black uppercase tracking-[0.3em] mt-1 transition-colors duration-500`}>
+            {etiqueta}
           </p>
         </div>
       </div>
 
       <div className="relative group">
-        {/* Glow ámbar de fondo */}
-        <div className="absolute -inset-1 bg-amber-500/10 rounded-[2.5rem] blur-2xl opacity-50 group-hover:opacity-100 transition duration-1000"></div>
+        <div className={`absolute -inset-1 ${estiloActual.bg} rounded-[2.5rem] blur-2xl opacity-20 group-hover:opacity-40 transition duration-1000`}></div>
 
         <div className="relative bg-zinc-900/90 border border-zinc-800 p-6 md:p-10 rounded-[2.5rem] shadow-2xl overflow-hidden">
           
           <form onSubmit={manejarCreacion} className="relative z-10 flex flex-col gap-6">
             
-            {/* TÍTULO */}
             <div className="space-y-2">
               <label className="text-[11px] font-black text-zinc-500 uppercase ml-1 tracking-widest">Nombre de la Gesta</label>
               <input 
@@ -140,7 +146,6 @@ function CrearMesa({ idEvento, alCrearMesa }) {
               />
             </div>
 
-            {/* DESCRIPCIÓN */}
             <div className="space-y-2">
               <label className="text-[11px] font-black text-zinc-500 uppercase ml-1 tracking-widest">Resumen de la Aventura</label>
               <textarea 
@@ -153,25 +158,17 @@ function CrearMesa({ idEvento, alCrearMesa }) {
               />
             </div>
 
-            {/* GÉNERO Y APTA NOVATOS */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div className="space-y-2">
-                <label className="text-[11px] font-black text-zinc-500 uppercase ml-1 tracking-widest">Género Principal</label>
+                <label className="text-[11px] font-black text-zinc-500 uppercase ml-1 tracking-widest">Ambientación / Etiqueta</label>
                 <select 
                   value={etiqueta} 
-                  onChange={e => setTurno(e.target.value)} // Corregido: antes apuntaba a setEtiqueta en el render del usuario
-                  className="w-full bg-zinc-950 border border-zinc-800 rounded-2xl py-4 px-6 text-white focus:border-amber-500 outline-none font-bold [color-scheme:dark]"
+                  onChange={e => setEtiqueta(e.target.value)} // ✨ CORREGIDO: Antes era setTurno
+                  className={`w-full bg-zinc-950 border border-zinc-800 rounded-2xl py-4 px-6 text-white focus:ring-1 outline-none font-bold [color-scheme:dark] transition-all ${estiloActual.color}`}
                 >
-                  <option value="Fantasía Medieval">🏰 Fantasía Medieval</option>
-                  <option value="Fantasía Oscura">🌑 Fantasía Oscura</option>
-                  <option value="Fantasía Urbana">🏙️ Fantasía Urbana</option>
-                  <option value="Terror / Horror">🩸 Terror / Horror</option>
-                  <option value="Horror Cósmico">🐙 Horror Cósmico</option>
-                  <option value="Ciencia Ficción">Ciencia Ficción</option>
-                  <option value="Cyberpunk">🦾 Cyberpunk</option>
-                  <option value="Post-Apocalíptico">☢️ Post-Apocalíptico</option>
-                  <option value="Misterio / Investigación">🔎 Misterio / Investigación</option>
-                  <option value="Anime / Manga">🌸 Anime / Manga</option>
+                  {Object.keys(CONFIG_ETIQUETAS).map(opcion => (
+                    <option key={opcion} value={opcion}>{CONFIG_ETIQUETAS[opcion].icon} {opcion}</option>
+                  ))}
                 </select>
               </div>
 
@@ -187,7 +184,6 @@ function CrearMesa({ idEvento, alCrearMesa }) {
                   <span className={`text-xl ${aptaNovatos ? 'opacity-100' : 'opacity-30'}`}>🌱</span>
                   <div>
                     <h4 className={`font-black uppercase tracking-widest text-[11px] ${aptaNovatos ? 'text-emerald-400' : 'text-zinc-500'}`}>Apta Novatos</h4>
-                    <p className="text-[9px] font-bold text-zinc-600 uppercase">Sin experiencia previa</p>
                   </div>
                 </div>
                 <div className={`w-5 h-5 rounded-md flex items-center justify-center border-2 transition-colors ${aptaNovatos ? 'bg-emerald-500 border-emerald-500 text-black' : 'border-zinc-700'}`}>
@@ -196,7 +192,6 @@ function CrearMesa({ idEvento, alCrearMesa }) {
               </div>
             </div>
 
-            {/* SISTEMA, CUPO Y TURNO */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               <div className="space-y-2">
                 <label className="text-[11px] font-black text-zinc-500 uppercase ml-1 tracking-widest">Sistema</label>
@@ -238,7 +233,6 @@ function CrearMesa({ idEvento, alCrearMesa }) {
               </div>
             </div>
 
-            {/* REQUISITOS Y MATERIALES */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div className="space-y-2">
                 <label className="text-[11px] font-black text-zinc-500 uppercase ml-1 tracking-widest">Requisitos de PJ</label>
@@ -266,13 +260,12 @@ function CrearMesa({ idEvento, alCrearMesa }) {
               </div>
             </div>
 
-            {/* BOTÓN DE CREACIÓN */}
             <button 
               type="submit" 
-              className="mt-4 relative group/btn overflow-hidden rounded-2xl shadow-xl"
+              className="mt-4 relative group/btn overflow-hidden rounded-2xl shadow-xl transition-all active:scale-95"
             >
               <div className="absolute inset-0 bg-gradient-to-r from-amber-600 to-orange-600 transition-transform group-hover/btn:scale-105 duration-500"></div>
-              <div className="relative flex items-center justify-center gap-3 py-5 font-black text-black text-sm uppercase tracking-[0.3em] active:scale-95 transition-transform border border-white/20">
+              <div className="relative flex items-center justify-center gap-3 py-5 font-black text-black text-sm uppercase tracking-[0.3em] border border-white/20">
                 <span>⚔️</span> Forjar Mesa de Rol
               </div>
             </button>
