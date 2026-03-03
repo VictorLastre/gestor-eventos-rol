@@ -4,19 +4,19 @@ const db = require('../config/db');
 const verificarToken = require('../middlewares/auth');
 const bcrypt = require('bcrypt'); 
 
-// 1. MIS CRÓNICAS 
+// 1. MIS CRÓNICAS (✨ FIX: Ahora se llama evento_fecha para que React lo lea bien)
 router.get('/mis-cronicas', verificarToken, (req, res) => {
   const idUsuario = req.usuario.id;
 
   const sqlDirigiendo = `
-    SELECT p.*, e.nombre as evento_nombre, DATE_FORMAT(e.fecha, '%Y-%m-%d') as fecha 
+    SELECT p.*, e.nombre as evento_nombre, DATE_FORMAT(e.fecha, '%Y-%m-%d') as evento_fecha 
     FROM partidas p 
     JOIN eventos e ON p.evento_id = e.id 
     WHERE p.dungeon_master_id = ?
   `;
   
   const sqlJugando = `
-    SELECT p.*, e.nombre as evento_nombre, DATE_FORMAT(e.fecha, '%Y-%m-%d') as fecha 
+    SELECT p.*, e.nombre as evento_nombre, DATE_FORMAT(e.fecha, '%Y-%m-%d') as evento_fecha 
     FROM inscripciones i 
     JOIN partidas p ON i.partida_id = p.id 
     JOIN eventos e ON p.evento_id = e.id 
@@ -79,23 +79,24 @@ router.get('/estadisticas', verificarToken, (req, res) => {
   });
 });
 
+// ✨ FIX: ACTUALIZAR PERFIL AHORA RECIBE Y GUARDA nombre_completo
 router.put('/perfil', verificarToken, async (req, res) => {
-  const { nombre, email, password, avatar } = req.body;
+  const { nombre, nombre_completo, email, password, avatar } = req.body;
   const idUsuario = req.usuario.id;
 
   try {
     if (password && password.trim() !== '') {
       const hash = await bcrypt.hash(password, 10);
-      const sql = "UPDATE usuarios SET nombre = ?, email = ?, password = ?, avatar = ? WHERE id = ?";
+      const sql = "UPDATE usuarios SET nombre = ?, nombre_completo = ?, email = ?, password = ?, avatar = ? WHERE id = ?";
       
-      db.query(sql, [nombre, email, hash, avatar, idUsuario], (err) => {
+      db.query(sql, [nombre, nombre_completo, email, hash, avatar, idUsuario], (err) => {
         if (err) return res.status(500).json({ error: 'Error al actualizar tu ficha en el gremio.' });
         res.json({ mensaje: '¡Perfil, avatar y contraseña actualizados con éxito!' });
       });
     } else {
-      const sql = "UPDATE usuarios SET nombre = ?, email = ?, avatar = ? WHERE id = ?";
+      const sql = "UPDATE usuarios SET nombre = ?, nombre_completo = ?, email = ?, avatar = ? WHERE id = ?";
       
-      db.query(sql, [nombre, email, avatar, idUsuario], (err) => {
+      db.query(sql, [nombre, nombre_completo, email, avatar, idUsuario], (err) => {
         if (err) {
           console.error(err);
           return res.status(500).json({ error: 'Error al actualizar tu ficha en el gremio.' });
@@ -274,7 +275,7 @@ router.put('/notificaciones/:id/leida', verificarToken, (req, res) => {
   });
 });
 
-// ✨ OBTENER CENSO: AÑADIMOS es_dm_nuevo AL SELECT
+// ✨ OBTENER CENSO: AÑADIMOS es_dm_nuevo AL SELECT Y nombre_completo
 router.get('/', verificarToken, (req, res) => {
   if (req.usuario.rol !== 'admin') {
     return res.status(403).json({ error: 'Acceso denegado a los archivos secretos.' });
@@ -292,8 +293,8 @@ router.get('/', verificarToken, (req, res) => {
     const totalUsuarios = countResult[0].total;
     const totalPaginas = Math.ceil(totalUsuarios / limit);
 
-    // ✨ AÑADIMOS es_dm_nuevo AQUÍ
-    const sql = `SELECT id, nombre, email, rol, avatar, solicita_dm, es_dm_nuevo FROM usuarios ORDER BY nombre ASC LIMIT ${limit} OFFSET ${offset}`;
+    // ✨ AÑADIMOS nombre_completo y es_dm_nuevo AQUÍ
+    const sql = `SELECT id, nombre, nombre_completo, email, rol, avatar, solicita_dm, es_dm_nuevo FROM usuarios ORDER BY nombre ASC LIMIT ${limit} OFFSET ${offset}`;
     
     db.query(sql, (err, resultados) => {
       if (err) return res.status(500).json({ error: 'Error al consultar el censo del gremio.' });
