@@ -3,9 +3,10 @@ import Swal from 'sweetalert2';
 
 function Registro({ irALogin }) {
   const [nombre, setNombre] = useState('');
+  const [nombreCompleto, setNombreCompleto] = useState(''); // ✨ NUEVO ESTADO
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [mostrarPassword, setMostrarPassword] = useState(false); // ✨ ESTADO PARA EL OJO MÁGICO
+  const [mostrarPassword, setMostrarPassword] = useState(false); 
 
   const manejarRegistro = async (e) => {
     e.preventDefault();
@@ -28,10 +29,11 @@ function Registro({ irALogin }) {
       const res = await fetch('https://gestor-eventos-rol.onrender.com/api/registro', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ nombre, email, password })
+        // ✨ INCLUIMOS nombre_completo EN EL ENVÍO
+        body: JSON.stringify({ nombre, nombre_completo: nombreCompleto, email, password })
       });
       
-      const texto = await res.text();
+      const datos = await res.json();
       Swal.close();
 
       if (res.ok) {
@@ -52,12 +54,12 @@ function Registro({ irALogin }) {
           }
         });
         
-        setNombre(''); setEmail(''); setPassword('');
+        setNombre(''); setNombreCompleto(''); setEmail(''); setPassword('');
         
       } else {
         Swal.fire({
           title: 'Rechazo del Gremio',
-          text: texto,
+          text: datos.error || 'Error en el registro',
           icon: 'warning',
           background: '#09090b',
           color: '#fff',
@@ -94,11 +96,13 @@ function Registro({ irALogin }) {
           Forjar Nueva Identidad
       </h2>
       
-      <form onSubmit={manejarRegistro} className="space-y-6 relative z-10">
+      <form onSubmit={manejarRegistro} className="space-y-5 relative z-10">
+        
+        {/* NICKNAME / NOMBRE DE HÉROE */}
         <div className="space-y-2">
           <label className="block text-[10px] font-black text-emerald-500/70 uppercase tracking-widest ml-1 flex items-center gap-2">
             <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse"></span>
-            Nombre del Héroe
+            Apodo del Héroe (Nickname)
           </label>
           <input 
             type="text" 
@@ -110,6 +114,23 @@ function Registro({ irALogin }) {
           />
         </div>
 
+        {/* ✨ NOMBRE COMPLETO (NUEVO CAMPO) */}
+        <div className="space-y-2">
+          <label className="block text-[10px] font-black text-emerald-500/70 uppercase tracking-widest ml-1 flex items-center gap-2">
+            <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full"></span>
+            Nombre Real Completo
+          </label>
+          <input 
+            type="text" 
+            className="w-full bg-zinc-950/50 border border-zinc-800 rounded-2xl py-4 px-5 text-white placeholder-zinc-700 focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500/50 transition-all shadow-inner italic"
+            placeholder="Ej: Víctor Lastre"
+            value={nombreCompleto}
+            onChange={(e) => setNombreCompleto(e.target.value)}
+            required
+          />
+        </div>
+
+        {/* EMAIL */}
         <div className="space-y-2">
           <label className="block text-[10px] font-black text-emerald-500/70 uppercase tracking-widest ml-1 flex items-center gap-2">
             <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full"></span>
@@ -125,6 +146,7 @@ function Registro({ irALogin }) {
           />
         </div>
 
+        {/* CONTRASEÑA */}
         <div className="space-y-2">
           <label className="block text-[10px] font-black text-emerald-500/70 uppercase tracking-widest ml-1 flex items-center gap-2">
             <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full"></span>
@@ -132,7 +154,7 @@ function Registro({ irALogin }) {
           </label>
           <div className="relative">
             <input 
-              type={mostrarPassword ? "text" : "password"} // ✨ ALTERNAMOS EL TIPO DE INPUT
+              type={mostrarPassword ? "text" : "password"} 
               className="w-full bg-zinc-950/50 border border-zinc-800 rounded-2xl py-4 pl-5 pr-14 text-white placeholder-zinc-700 focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500/50 transition-all shadow-inner"
               placeholder="••••••••"
               value={password}
@@ -150,13 +172,14 @@ function Registro({ irALogin }) {
           </div>
         </div>
 
+        {/* BOTÓN SUBMIT */}
         <button 
           type="submit" 
           className="group relative w-full overflow-hidden rounded-2xl mt-4"
         >
           <div className="absolute inset-0 bg-gradient-to-r from-emerald-600 to-teal-600 group-hover:scale-105 transition-transform duration-500"></div>
           <div className="relative py-5 font-black text-white text-xs uppercase tracking-[0.3em] transition-all active:scale-95 flex items-center justify-center gap-3">
-             <span>📜</span> Sellar Contrato
+              <span>📜</span> Sellar Contrato
           </div>
         </button>
 

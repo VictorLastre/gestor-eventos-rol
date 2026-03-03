@@ -56,7 +56,6 @@ function GestionUsuarios() {
   const exportarLogistica = async () => {
     if (eventos.length === 0) return Swal.fire({ title: 'Error', text: 'No hay eventos registrados.', icon: 'error', background: '#09090b', color: '#fff' });
 
-    // ✨ MAGIA DEL ESCRIBA: Filtrar solo los eventos de HOY que estén vigentes
     const hoyObj = new Date();
     const anio = hoyObj.getFullYear();
     const mes = String(hoyObj.getMonth() + 1).padStart(2, '0');
@@ -65,15 +64,12 @@ function GestionUsuarios() {
 
     const eventosExportables = eventos.filter(e => {
       if (!e.fecha) return false;
-      
       const fechaEvento = e.fecha.split('T')[0];
       const esHoy = fechaEvento === fechaHoyLocal;
       const estaActivo = e.estado !== 'Suspendido' && e.estado !== 'Finalizado';
-      
       return esHoy && estaActivo;
     });
 
-    // Si no hay eventos para hoy después de filtrar, lanzamos un aviso épico
     if (eventosExportables.length === 0) {
       return Swal.fire({ 
         title: 'El Tablón está en calma', 
@@ -118,7 +114,7 @@ function GestionUsuarios() {
 
         const filas = datos.map(m => ({
           "ESTADO": m.es_dm_nuevo ? "⚠️ NUEVO (ENTREGAR CERTIFICADO)" : "VETERANO",
-          "DIRECTOR": m.dm_nombre.toUpperCase(),
+          "DIRECTOR": (m.nombre_completo || m.dm_nombre).toUpperCase(), // ✨ Priorizamos nombre real
           "TURNO": m.turno,
           "MESA": m.mesa,
           "SISTEMA": m.sistema,
@@ -135,10 +131,13 @@ function GestionUsuarios() {
     }
   };
 
-  const generarCertificado = (idDM, nombreDM) => {
+  const generarCertificado = (idDM, nombreDM, nombreReal) => {
+    // ✨ Usamos el nombre real si existe para el pergamino, si no el nick
+    const nombreAFijar = nombreReal || nombreDM;
+
     Swal.fire({
       title: 'Forjando Certificado...',
-      text: `Preparando el pergamino oficial para ${nombreDM}`,
+      text: `Preparando el pergamino oficial para ${nombreAFijar}`,
       background: '#09090b',
       color: '#fff',
       allowOutsideClick: false,
@@ -162,7 +161,7 @@ function GestionUsuarios() {
       ctx.textAlign = 'center';
       const centroX = canvas.width / 2;
       const posicionY_Nombre = canvas.height * 0.55; 
-      ctx.fillText(nombreDM.toUpperCase(), centroX, posicionY_Nombre);
+      ctx.fillText(nombreAFijar.toUpperCase(), centroX, posicionY_Nombre);
       
       const opcionesFecha = { year: 'numeric', month: 'long', day: 'numeric' };
       const fechaHoy = new Date().toLocaleDateString('es-ES', opcionesFecha);
@@ -174,7 +173,7 @@ function GestionUsuarios() {
       const urlImagen = canvas.toDataURL('image/png');
       const enlaceDescarga = document.createElement('a');
       enlaceDescarga.href = urlImagen;
-      enlaceDescarga.download = `Certificado_DM_${nombreDM.replace(/\s+/g, '_')}.png`;
+      enlaceDescarga.download = `Certificado_DM_${nombreAFijar.replace(/\s+/g, '_')}.png`;
       document.body.appendChild(enlaceDescarga);
       enlaceDescarga.click();
       document.body.removeChild(enlaceDescarga);
@@ -191,7 +190,7 @@ function GestionUsuarios() {
       Swal.close();
       Swal.fire({
         title: '¡Pergamino Entregado!',
-        text: `${nombreDM} ahora es oficialmente un DM Veterano del Gremio.`,
+        text: `${nombreAFijar} ahora es oficialmente un DM Veterano del Gremio.`,
         icon: 'success',
         background: '#09090b', color: '#fff', confirmButtonColor: '#10b981',
         customClass: { popup: 'border border-emerald-500/30 rounded-[2rem]' }
@@ -301,7 +300,12 @@ function GestionUsuarios() {
   const usuariosProcesados = todosLosUsuarios
     .filter(user => {
       const coincideRol = filtroRol === 'todos' || user.rol === filtroRol;
-      const coincideBusqueda = user.nombre.toLowerCase().includes(busqueda.toLowerCase());
+      // ✨ Buscamos tanto por nick como por nombre real
+      const busquedaMinus = busqueda.toLowerCase();
+      const coincideBusqueda = 
+        user.nombre.toLowerCase().includes(busquedaMinus) || 
+        (user.nombre_completo && user.nombre_completo.toLowerCase().includes(busquedaMinus));
+      
       return coincideRol && coincideBusqueda;
     })
     .sort((a, b) => jerarquiaRoles[a.rol] - jerarquiaRoles[b.rol]);
@@ -390,7 +394,7 @@ function GestionUsuarios() {
               <table className="w-full text-left">
                 <thead>
                   <tr className="bg-zinc-950/50 text-[10px] uppercase tracking-[0.2em] text-zinc-600 font-black border-b border-zinc-800">
-                    <th className="p-6">Héroe</th>
+                    <th className="p-6">Héroe / Identidad Real</th>
                     <th className="p-6 hidden md:table-cell">Rango Actual</th>
                     <th className="p-6 text-center">Acciones de Comando</th>
                   </tr>
@@ -410,7 +414,10 @@ function GestionUsuarios() {
                             {user.avatar === 'guerrero' ? '⚔️' : user.avatar === 'mago' ? '🧙' : user.avatar === 'esqueleto' ? '💀' : user.avatar === 'goblin' ? '👺' : '👤'}
                           </span>
                           <div>
-                            <p className="font-black text-zinc-200 uppercase italic tracking-tight">{user.nombre}</p>
+                            <p className="font-black text-zinc-200 uppercase italic tracking-tight">
+                              {user.nombre}
+                              {user.nombre_completo && <span className="ml-2 text-[10px] text-emerald-500/50 not-italic font-bold tracking-widest border-l border-zinc-800 pl-2">{user.nombre_completo.toUpperCase()}</span>}
+                            </p>
                             <p className="text-[10px] text-zinc-600 font-mono lowercase">{user.email}</p>
                           </div>
                         </td>
@@ -423,7 +430,7 @@ function GestionUsuarios() {
                           <div className="flex items-center justify-center gap-3">
                             
                             {user.rol === 'dm' && user.es_dm_nuevo && (
-                              <button onClick={() => generarCertificado(user.id, user.nombre)} className="w-10 h-10 bg-amber-500/10 border border-amber-500/50 text-amber-500 rounded-xl hover:bg-amber-500 hover:text-black transition-all text-sm shadow-[0_0_15px_rgba(245,158,11,0.3)] animate-pulse" title="Generar Certificado del Gremio">📜</button>
+                              <button onClick={() => generarCertificado(user.id, user.nombre, user.nombre_completo)} className="w-10 h-10 bg-amber-500/10 border border-amber-500/50 text-amber-500 rounded-xl hover:bg-amber-500 hover:text-black transition-all text-sm shadow-[0_0_15px_rgba(245,158,11,0.3)] animate-pulse" title="Generar Certificado del Gremio">📜</button>
                             )}
 
                             {user.rol !== 'admin' && <button onClick={() => proponerAdmin(user.id, user.nombre)} className="w-10 h-10 bg-zinc-950 border border-zinc-800 rounded-xl hover:border-amber-500 hover:text-amber-500 transition-all text-sm" title="Proponer al Senado">👑</button>}
