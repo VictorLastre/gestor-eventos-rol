@@ -2,7 +2,36 @@ import { useState, useEffect } from 'react';
 import Swal from 'sweetalert2'; 
 import { fetchProtegido } from '../utils/api'; 
 
+// ✨ DICCIONARIO DE TEMÁTICAS Y COLORES
+const CONFIG_TEMAS = {
+  "Fantasía Medieval": { color: "text-amber-400", bg: "bg-amber-500/10", border: "border-amber-500/30", icon: "🏰" },
+  "Fantasía Oscura": { color: "text-purple-400", bg: "bg-purple-500/10", border: "border-purple-500/30", icon: "🌑" },
+  "Fantasía Urbana": { color: "text-blue-400", bg: "bg-blue-500/10", border: "border-blue-500/30", icon: "🏙️" },
+  "Terror / Horror": { color: "text-red-500", bg: "bg-red-500/10", border: "border-red-500/30", icon: "🩸" },
+  "Horror Cósmico": { color: "text-emerald-400", bg: "bg-emerald-500/10", border: "border-emerald-500/30", icon: "🐙" },
+  "Terror Espacial": { color: "text-rose-500", bg: "bg-rose-500/10", border: "border-rose-500/30", icon: "🛰️" },
+  "Ciencia Ficción": { color: "text-cyan-400", bg: "bg-cyan-500/10", border: "border-cyan-500/30", icon: "🚀" },
+  "Cyberpunk": { color: "text-fuchsia-500", bg: "bg-fuchsia-500/10", border: "border-fuchsia-500/30", icon: "🦾" },
+  "Steampunk": { color: "text-orange-400", bg: "bg-orange-500/10", border: "border-orange-500/30", icon: "⚙️" },
+  "Post-Apocalíptico": { color: "text-orange-600", bg: "bg-orange-600/10", border: "border-orange-600/30", icon: "☢️" },
+  "Misterio / Investigación": { color: "text-zinc-300", bg: "bg-zinc-500/10", border: "border-zinc-500/30", icon: "🔎" },
+  "Mundo de Tinieblas": { color: "text-red-600", bg: "bg-red-600/10", border: "border-red-600/30", icon: "🦇" },
+  "Superhéroes": { color: "text-yellow-400", bg: "bg-yellow-500/10", border: "border-yellow-500/30", icon: "🦸" },
+  "Western / Weird West": { color: "text-amber-700", bg: "bg-amber-800/10", border: "border-amber-800/30", icon: "🤠" },
+  "Piratas / Naval": { color: "text-teal-400", bg: "bg-teal-500/10", border: "border-teal-500/30", icon: "🏴‍☠️" },
+  "Space Opera": { color: "text-indigo-400", bg: "bg-indigo-500/10", border: "border-indigo-500/30", icon: "🛸" },
+  "Histórico": { color: "text-stone-400", bg: "bg-stone-500/10", border: "border-stone-500/30", icon: "📜" },
+  "Anime / Manga": { color: "text-pink-400", bg: "bg-pink-500/10", border: "border-pink-500/30", icon: "🌸" },
+  "Espionaje / Acción": { color: "text-zinc-400", bg: "bg-zinc-500/10", border: "border-zinc-500/30", icon: "🕶️" },
+  "Rol Infantil / Familiar": { color: "text-sky-400", bg: "bg-sky-500/10", border: "border-sky-500/30", icon: "🧸" },
+  "Comedia": { color: "text-yellow-300", bg: "bg-yellow-500/10", border: "border-yellow-500/30", icon: "🎭" },
+  "Escape Room": { color: "text-lime-400", bg: "bg-lime-500/10", border: "border-lime-500/30", icon: "🗝️" }
+};
+
 function Partida(props) {
+  // ✨ TEMA DINÁMICO PARA LA TARJETA
+  const tema = CONFIG_TEMAS[props.etiqueta] || CONFIG_TEMAS['Fantasía Medieval'];
+
   const cantJugadores = props.jugadoresIniciales ?? props.jugadores_anotados ?? 0;
   const yaEstaAnotado = Boolean(props.anotadoInicialmente || props.estoy_anotado || false);
 
@@ -13,44 +42,20 @@ function Partida(props) {
   const [cargandoJugadores, setCargandoJugadores] = useState(false);
 
   const [modoEdicion, setModoEdicion] = useState(false);
-  
   const [sistemas, setSistemas] = useState([]);
 
+  // ✨ CORRECCIÓN DEL BUG: Usamos 'sistema' en lugar de 'sistema_id' para coincidir con el Backend
   const [datosEdicion, setDatosEdicion] = useState({
     titulo: props.titulo || '',
     descripcion: props.descripcion || props.description || '',
     requisitos: props.requisitos || '',
-    sistema_id: props.sistema_id || '', 
+    sistema: props.sistema_id || props.sistema || '', 
     cupo: props.cupo || 4,
     turno: props.turno || 'Tarde',
     etiqueta: props.etiqueta || 'Fantasía Medieval',
     apta_novatos: Boolean(props.apta_novatos),
     materiales_pedidos: props.materiales_pedidos || '' 
   });
-
-  const iconoEtiqueta = {
-    'Fantasía Medieval': '🏰',
-    'Fantasía Oscura': '🌑',
-    'Fantasía Urbana': '🏙️',
-    'Terror / Horror': '🩸',
-    'Horror Cósmico': '🐙', 
-    'Terror Espacial': '🛰️', 
-    'Ciencia Ficción': '🚀',
-    'Cyberpunk': '🦾',
-    'Steampunk': '⚙️',
-    'Post-Apocalíptico': '☢️',
-    'Misterio / Investigación': '🔎',
-    'Mundo de Tinieblas': '🦇', 
-    'Superhéroes': '🦸',
-    'Western / Weird West': '🤠',
-    'Piratas / Naval': '🏴‍☠️',
-    'Space Opera': '🛸',
-    'Histórico': '📜',
-    'Anime / Manga': '🌸',
-    'Espionaje / Acción': '🕶️',
-    'Rol Infantil / Familiar': '🧸', 
-    'Comedia': '🎭'
-  }[props.etiqueta] || '🏷️';
 
   const Toast = Swal.mixin({
     toast: true,
@@ -126,15 +131,7 @@ function Partida(props) {
         
       } else {
         const mensaje = await res.text();
-        Swal.fire({
-          title: 'Aviso del Gremio',
-          text: mensaje,
-          icon: 'warning',
-          background: '#09090b',
-          color: '#fff',
-          confirmButtonColor: '#f59e0b',
-          confirmButtonText: 'Entendido'
-        });
+        Swal.fire({ title: 'Aviso del Gremio', text: mensaje, icon: 'warning', background: '#09090b', color: '#fff', confirmButtonColor: '#f59e0b' });
       }
     } catch (err) { 
       if (err === 'Sesión expirada') return;
@@ -150,40 +147,18 @@ function Partida(props) {
       text: "Se cancelará la aventura y todos los aventureros inscritos perderán su lugar. Esta acción no se puede deshacer.",
       icon: 'warning',
       showCancelButton: true,
-      background: '#09090b', 
-      color: '#fff',
-      confirmButtonColor: '#ef4444', 
-      cancelButtonColor: '#27272a', 
-      confirmButtonText: 'Sí, borrar mesa',
-      cancelButtonText: 'Cancelar'
+      background: '#09090b', color: '#fff', confirmButtonColor: '#ef4444', cancelButtonColor: '#27272a', 
+      confirmButtonText: 'Sí, borrar mesa', cancelButtonText: 'Cancelar'
     });
 
     if (result.isConfirmed) {
       try {
-        const res = await fetchProtegido(`https://gestor-eventos-rol.onrender.com/api/partidas/${props.id}`, {
-          method: 'DELETE'
-        });
-
+        const res = await fetchProtegido(`https://gestor-eventos-rol.onrender.com/api/partidas/${props.id}`, { method: 'DELETE' });
         if (res.ok) {
-          Swal.fire({
-            title: 'Mesa Borrada',
-            text: 'La aventura ha sido cancelada.',
-            icon: 'success',
-            background: '#09090b',
-            color: '#fff',
-            confirmButtonColor: '#10b981'
-          }).then(() => {
-            window.location.reload(); 
-          });
+          Swal.fire({ title: 'Mesa Borrada', text: 'La aventura ha sido cancelada.', icon: 'success', background: '#09090b', color: '#fff', confirmButtonColor: '#10b981' })
+          .then(() => { window.location.reload(); });
         } else {
-          Swal.fire({
-            title: 'Error Mágico',
-            text: 'No se pudo disolver la mesa.',
-            icon: 'error',
-            background: '#09090b',
-            color: '#fff',
-            confirmButtonColor: '#ef4444'
-          });
+          Swal.fire({ title: 'Error Mágico', text: 'No se pudo disolver la mesa.', icon: 'error', background: '#09090b', color: '#fff', confirmButtonColor: '#ef4444' });
         }
       } catch (err) { 
         if (err === 'Sesión expirada') return;
@@ -195,7 +170,7 @@ function Partida(props) {
   const guardarEdicion = async (e) => {
     e.preventDefault();
 
-    if (!datosEdicion.sistema_id) {
+    if (!datosEdicion.sistema) {
         return Swal.fire({ title: 'Aviso', text: 'Debes seleccionar un sistema', icon: 'warning', background: '#09090b', color: '#fff' });
     }
 
@@ -206,16 +181,8 @@ function Partida(props) {
       });
 
       if (res.ok) {
-        Swal.fire({
-          title: '¡Aventura Reescríta!',
-          text: 'Los detalles de la mesa han sido actualizados.',
-          icon: 'success',
-          background: '#09090b',
-          color: '#fff',
-          confirmButtonColor: '#f59e0b'
-        }).then(() => {
-          window.location.reload(); 
-        });
+        Swal.fire({ title: '¡Aventura Reescríta!', text: 'Los detalles de la mesa han sido actualizados.', icon: 'success', background: '#09090b', color: '#fff', confirmButtonColor: '#f59e0b' })
+        .then(() => { window.location.reload(); });
       } else {
         const data = await res.json();
         Swal.fire({ title: 'Aviso del Gremio', text: data.error, icon: 'warning', background: '#09090b', color: '#fff' });
@@ -239,11 +206,11 @@ function Partida(props) {
         onClick={() => setModalAbierto(true)}
         className={`relative p-8 rounded-[2rem] border transition-all duration-500 shadow-2xl flex flex-col h-[450px] cursor-pointer group overflow-hidden ${
           soyElMaster 
-          ? 'border-amber-500/50 bg-gradient-to-br from-amber-500/10 to-zinc-950 hover:shadow-[0_0_30px_rgba(245,158,11,0.2)]' 
-          : 'border-zinc-800 bg-zinc-900/60 hover:bg-zinc-900 hover:border-emerald-500/40 hover:shadow-[0_0_30px_rgba(16,185,129,0.1)]'
+          ? `border-${tema.color.split('-')[1]}-500/50 bg-gradient-to-br ${tema.bg} to-zinc-950 hover:shadow-[0_0_30px_rgba(245,158,11,0.2)]` 
+          : `border-zinc-800 bg-zinc-900/60 hover:bg-zinc-900 hover:${tema.border} hover:shadow-xl`
         }`}
       >
-        {soyElMaster && <div className="absolute top-0 right-0 w-32 h-32 bg-amber-500/20 blur-[60px] rounded-full pointer-events-none"></div>}
+        {soyElMaster && <div className={`absolute top-0 right-0 w-32 h-32 ${tema.bg} blur-[60px] rounded-full pointer-events-none`}></div>}
 
         <div className="flex justify-between items-start mb-6 relative z-10">
           <div className="max-w-[75%] space-y-3">
@@ -253,9 +220,10 @@ function Partida(props) {
                   🌱 Novatos
                 </span>
               )}
+              {/* ✨ ETIQUETA DE GÉNERO DINÁMICA */}
               {props.etiqueta && (
-                <span className="text-[9px] font-black text-purple-400 uppercase tracking-widest bg-purple-500/10 px-3 py-1 rounded-full border border-purple-500/30 flex items-center gap-1.5">
-                  {iconoEtiqueta} {props.etiqueta}
+                <span className={`text-[9px] font-black uppercase tracking-widest px-3 py-1 rounded-full border flex items-center gap-1.5 ${tema.color} ${tema.bg} ${tema.border}`}>
+                  {tema.icon} {props.etiqueta}
                 </span>
               )}
               <span className="text-[9px] font-black text-zinc-300 uppercase tracking-widest bg-zinc-800 px-3 py-1 rounded-full border border-zinc-700 shadow-inner">
@@ -263,13 +231,13 @@ function Partida(props) {
               </span>
               
               {soyElMaster && (
-                <span className="text-[9px] font-black text-amber-500 uppercase tracking-widest bg-amber-500/10 px-3 py-1 rounded-full border border-amber-500/30 shadow-[0_0_10px_rgba(245,158,11,0.2)]">
+                <span className={`text-[9px] font-black uppercase tracking-widest px-3 py-1 rounded-full border shadow-lg ${tema.color} ${tema.bg} ${tema.border}`}>
                   ✨ Tu Mesa
                 </span>
               )}
             </div>
 
-            <h3 className="text-2xl font-black text-white italic uppercase tracking-tighter leading-none line-clamp-2 drop-shadow-md group-hover:text-emerald-400 transition-colors">
+            <h3 className={`text-2xl font-black text-white italic uppercase tracking-tighter leading-none line-clamp-2 drop-shadow-md transition-colors group-hover:${tema.color}`}>
               {props.titulo}
             </h3>
           </div>
@@ -303,7 +271,7 @@ function Partida(props) {
             <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
               <button 
                 onClick={abrirEdicion}
-                className="w-8 h-8 bg-zinc-800 hover:bg-amber-500 text-zinc-400 hover:text-black rounded-xl flex items-center justify-center transition-colors border border-transparent hover:border-amber-500/50 shadow-lg"
+                className={`w-8 h-8 bg-zinc-800 ${tema.color} hover:text-black rounded-xl flex items-center justify-center transition-colors border border-transparent hover:${tema.border} hover:bg-zinc-300 shadow-lg`}
                 title="Editar Mesa"
               >
                 ✏️
@@ -341,48 +309,30 @@ function Partida(props) {
       {/* ✏️ MODAL DE EDICIÓN */}
       {modoEdicion && (
         <div className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-black/95 backdrop-blur-md animate-in fade-in zoom-in-95 duration-300">
-          <div className="bg-zinc-900 border border-amber-500/30 w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-[2.5rem] p-8 md:p-10 relative shadow-[0_0_80px_rgba(245,158,11,0.15)] scrollbar-hide" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
+          <div className={`bg-zinc-900 border ${CONFIG_TEMAS[datosEdicion.etiqueta]?.border || 'border-amber-500/30'} w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-[2.5rem] p-8 md:p-10 relative shadow-[0_0_80px_rgba(0,0,0,0.5)] scrollbar-hide`} style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
             <button onClick={() => setModoEdicion(false)} className="absolute top-6 right-6 w-10 h-10 bg-zinc-950 flex items-center justify-center rounded-full text-zinc-500 hover:text-white hover:bg-zinc-800 transition-colors border border-zinc-800">✕</button>
             <h3 className="text-3xl font-black text-white uppercase tracking-tighter mb-8 flex items-center gap-3 italic">
-              <span className="text-amber-500 drop-shadow-[0_0_10px_rgba(245,158,11,0.5)]">📜</span> Reescribir Aventura
+              <span className={`${CONFIG_TEMAS[datosEdicion.etiqueta]?.color || 'text-amber-500'} drop-shadow-md`}>📜</span> Reescribir Aventura
             </h3>
             
             <form onSubmit={guardarEdicion} className="flex flex-col gap-6">
               <div className="space-y-2">
                 <label className="text-[10px] font-black text-zinc-500 uppercase tracking-widest ml-1">Título de la Gesta</label>
-                <input type="text" value={datosEdicion.titulo} onChange={e => setDatosEdicion({...datosEdicion, titulo: e.target.value})} required className="w-full bg-zinc-950 border border-zinc-800 rounded-2xl py-4 px-5 text-white focus:border-amber-500 focus:ring-1 focus:ring-amber-500/30 outline-none transition-all font-bold shadow-inner" />
+                <input type="text" value={datosEdicion.titulo} onChange={e => setDatosEdicion({...datosEdicion, titulo: e.target.value})} required className="w-full bg-zinc-950 border border-zinc-800 rounded-2xl py-4 px-5 text-white focus:border-amber-500 outline-none transition-all font-bold shadow-inner" />
               </div>
 
               <div className="space-y-2">
                 <label className="text-[10px] font-black text-zinc-500 uppercase tracking-widest ml-1">Sinopsis</label>
-                <textarea value={datosEdicion.descripcion} onChange={e => setDatosEdicion({...datosEdicion, descripcion: e.target.value})} required rows="4" className="w-full bg-zinc-950 border border-zinc-800 rounded-2xl py-4 px-5 text-white focus:border-amber-500 focus:ring-1 focus:ring-amber-500/30 outline-none transition-all resize-none italic font-medium shadow-inner" />
+                <textarea value={datosEdicion.descripcion} onChange={e => setDatosEdicion({...datosEdicion, descripcion: e.target.value})} required rows="4" className="w-full bg-zinc-950 border border-zinc-800 rounded-2xl py-4 px-5 text-white focus:border-amber-500 outline-none transition-all resize-none italic font-medium shadow-inner" />
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div className="flex flex-col gap-2">
                   <label className="text-[10px] font-black text-zinc-500 uppercase tracking-widest ml-1">Género</label>
-                  <select value={datosEdicion.etiqueta} onChange={e => setDatosEdicion({...datosEdicion, etiqueta: e.target.value})} className="bg-zinc-950 border border-zinc-800 rounded-2xl py-4 px-5 text-white focus:border-amber-500 outline-none font-bold appearance-none cursor-pointer">
-                    <option value="Fantasía Medieval">🏰 Fantasía Medieval</option>
-                    <option value="Fantasía Oscura">🌑 Fantasía Oscura</option>
-                    <option value="Fantasía Urbana">🏙️ Fantasía Urbana</option>
-                    <option value="Terror / Horror">🩸 Terror / Horror</option>
-                    <option value="Horror Cósmico">🐙 Horror Cósmico</option>
-                    <option value="Terror Espacial">🛰️ Terror Espacial</option>
-                    <option value="Ciencia Ficción">🚀 Ciencia Ficción</option>
-                    <option value="Cyberpunk">🦾 Cyberpunk</option>
-                    <option value="Steampunk">⚙️ Steampunk</option>
-                    <option value="Post-Apocalíptico">☢️ Post-Apocalíptico</option>
-                    <option value="Misterio / Investigación">🔎 Misterio / Investigación</option>
-                    <option value="Mundo de Tinieblas">🦇 Mundo de Tinieblas</option>
-                    <option value="Superhéroes">🦸 Superhéroes</option>
-                    <option value="Western / Weird West">🤠 Western / Weird West</option>
-                    <option value="Piratas / Naval">🏴‍☠️ Piratas / Naval</option>
-                    <option value="Space Opera">🛸 Space Opera</option>
-                    <option value="Histórico">📜 Histórico</option>
-                    <option value="Anime / Manga">🌸 Anime / Manga</option>
-                    <option value="Espionaje / Acción">🕶️ Espionaje / Acción</option>
-                    <option value="Rol Infantil / Familiar">🧸 Rol Infantil / Familiar</option>
-                    <option value="Comedia">🎭 Comedia</option>
+                  <select value={datosEdicion.etiqueta} onChange={e => setDatosEdicion({...datosEdicion, etiqueta: e.target.value})} className={`bg-zinc-950 border border-zinc-800 rounded-2xl py-4 px-5 text-white outline-none font-bold appearance-none cursor-pointer ${CONFIG_TEMAS[datosEdicion.etiqueta]?.color || ''}`}>
+                    {Object.keys(CONFIG_TEMAS).map(opcion => (
+                       <option key={opcion} value={opcion}>{CONFIG_TEMAS[opcion].icon} {opcion}</option>
+                    ))}
                   </select>
                 </div>
                 
@@ -398,23 +348,21 @@ function Partida(props) {
 
               <div className="space-y-2">
                 <label className="text-[10px] font-black text-zinc-500 uppercase tracking-widest ml-1">Requisitos de Personaje</label>
-                <input type="text" value={datosEdicion.requisitos} onChange={e => setDatosEdicion({...datosEdicion, requisitos: e.target.value})} className="w-full bg-zinc-950 border border-zinc-800 rounded-2xl py-4 px-5 text-white focus:border-amber-500 focus:ring-1 focus:ring-amber-500/30 outline-none font-medium shadow-inner" />
+                <input type="text" value={datosEdicion.requisitos} onChange={e => setDatosEdicion({...datosEdicion, requisitos: e.target.value})} className="w-full bg-zinc-950 border border-zinc-800 rounded-2xl py-4 px-5 text-white focus:border-amber-500 outline-none font-medium shadow-inner" />
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                 <div className="flex flex-col gap-2">
                   <label className="text-[10px] font-black text-zinc-500 uppercase tracking-widest ml-1">Sistema</label>
                   <select 
-                    value={datosEdicion.sistema_id} 
-                    onChange={e => setDatosEdicion({...datosEdicion, sistema_id: e.target.value})}
+                    value={datosEdicion.sistema} // ✨ Ahora usa 'sistema' correctamente
+                    onChange={e => setDatosEdicion({...datosEdicion, sistema: e.target.value})}
                     required
                     className="bg-zinc-950 border border-zinc-800 rounded-2xl py-4 px-5 text-white focus:border-amber-500 outline-none font-bold cursor-pointer"
                   >
                     <option value="">Seleccionar...</option>
                     {sistemas.map(s => (
-                      <option key={s.id} value={s.id} className="bg-zinc-900">
-                        {s.nombre}
-                      </option>
+                      <option key={s.id} value={s.id} className="bg-zinc-900">{s.nombre}</option>
                     ))}
                   </select>
                 </div>
@@ -436,8 +384,8 @@ function Partida(props) {
               </div>
 
               <div className="space-y-2 mt-4">
-                <label className="text-[10px] font-black text-amber-500 uppercase tracking-[0.2em] ml-1 flex items-center gap-2">
-                  <span className="w-1.5 h-1.5 bg-amber-500 rounded-full animate-pulse"></span> 
+                <label className={`text-[10px] font-black uppercase tracking-[0.2em] ml-1 flex items-center gap-2 ${CONFIG_TEMAS[datosEdicion.etiqueta]?.color || 'text-amber-500'}`}>
+                  <span className={`w-1.5 h-1.5 rounded-full animate-pulse ${CONFIG_TEMAS[datosEdicion.etiqueta]?.bg || 'bg-amber-500'}`}></span> 
                   Petición Logística
                 </label>
                 <input 
@@ -445,12 +393,12 @@ function Partida(props) {
                   value={datosEdicion.materiales_pedidos} 
                   onChange={e => setDatosEdicion({...datosEdicion, materiales_pedidos: e.target.value})} 
                   placeholder="Manuales, mapas, dados extras..."
-                  className="w-full bg-amber-500/5 border border-amber-500/30 rounded-2xl py-4 px-5 text-amber-200 focus:border-amber-500 focus:ring-1 focus:ring-amber-500/30 outline-none italic text-sm shadow-inner"
+                  className={`w-full bg-zinc-950 border ${CONFIG_TEMAS[datosEdicion.etiqueta]?.border || 'border-amber-500/30'} rounded-2xl py-4 px-5 text-white outline-none italic text-sm shadow-inner`}
                 />
               </div>
 
-              <button type="submit" className="group relative overflow-hidden bg-amber-500 text-black font-black py-5 rounded-2xl shadow-xl transition-all active:scale-95 text-xs uppercase tracking-[0.2em] mt-4 border border-amber-400">
-                <div className="absolute inset-0 bg-gradient-to-r from-amber-400 to-orange-500 opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
+              <button type="submit" className={`group relative overflow-hidden font-black py-5 rounded-2xl shadow-xl transition-all active:scale-95 text-xs uppercase tracking-[0.2em] mt-4 border ${CONFIG_TEMAS[datosEdicion.etiqueta]?.border || 'border-amber-400'} ${CONFIG_TEMAS[datosEdicion.etiqueta]?.bg || 'bg-amber-500'} ${CONFIG_TEMAS[datosEdicion.etiqueta]?.color || 'text-amber-500'}`}>
+                <div className="absolute inset-0 bg-white/5 opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
                 <span className="relative z-10">💾 Consagrar Cambios</span>
               </button>
             </form>
@@ -470,13 +418,13 @@ function Partida(props) {
                 <>
                   <button 
                     onClick={abrirEdicion}
-                    className="bg-amber-500/10 text-amber-500 hover:bg-amber-500 hover:text-black border border-amber-500/30 font-black uppercase tracking-widest text-[9px] px-4 py-2 rounded-xl transition-colors shadow-lg shadow-amber-900/10"
+                    className={`bg-zinc-900 text-zinc-400 hover:${tema.color} border border-zinc-800 hover:${tema.border} font-black uppercase tracking-widest text-[9px] px-4 py-2 rounded-xl transition-colors shadow-lg`}
                   >
                     ✏️ Editar
                   </button>
                   <button 
                     onClick={borrarMesa}
-                    className="bg-red-500/10 text-red-500 hover:bg-red-500 hover:text-white border border-red-500/30 font-black uppercase tracking-widest text-[9px] px-4 py-2 rounded-xl transition-colors shadow-lg shadow-red-900/10"
+                    className="bg-zinc-900 text-zinc-400 hover:text-red-500 border border-zinc-800 hover:border-red-500/50 font-black uppercase tracking-widest text-[9px] px-4 py-2 rounded-xl transition-colors shadow-lg"
                   >
                     🗑️ Borrar
                   </button>
@@ -497,16 +445,17 @@ function Partida(props) {
                     🌱 Apta Novatos
                   </span>
                 )}
+                {/* ✨ ETIQUETA EN MODAL DETALLADO */}
                 {props.etiqueta && (
-                  <span className="text-[10px] font-black text-purple-400 uppercase tracking-widest bg-purple-500/10 px-3 py-1.5 rounded-full border border-purple-500/30 flex items-center gap-1.5">
-                    {iconoEtiqueta} {props.etiqueta}
+                  <span className={`text-[10px] font-black uppercase tracking-widest px-3 py-1.5 rounded-full border flex items-center gap-1.5 ${tema.color} ${tema.bg} ${tema.border}`}>
+                    {tema.icon} {props.etiqueta}
                   </span>
                 )}
                 <span className="text-[10px] font-black text-zinc-300 uppercase tracking-widest bg-zinc-800 px-3 py-1.5 rounded-full border border-zinc-700">
                   🎲 {props.sistema || 'Sistema Desconocido'}
                 </span>
                 {soyElMaster && (
-                  <span className="text-[10px] font-black text-amber-500 uppercase tracking-widest bg-amber-500/10 px-3 py-1.5 rounded-full border border-amber-500/20 shadow-[0_0_10px_rgba(245,158,11,0.2)]">
+                  <span className={`text-[10px] font-black uppercase tracking-widest px-3 py-1.5 rounded-full border ${tema.color} ${tema.bg} ${tema.border} shadow-[0_0_10px_rgba(255,255,255,0.1)]`}>
                     ✨ Tu Mesa
                   </span>
                 )}
@@ -586,8 +535,8 @@ function Partida(props) {
               </div>
 
               {props.requisitos && (
-                <div className="mb-10 p-8 bg-amber-500/5 border border-amber-500/20 rounded-[2rem]">
-                  <h4 className="text-[10px] font-black text-amber-500 uppercase tracking-[0.3em] mb-3 flex items-center gap-2">
+                <div className={`mb-10 p-8 ${tema.bg} border ${tema.border} rounded-[2rem]`}>
+                  <h4 className={`text-[10px] font-black uppercase tracking-[0.3em] mb-3 flex items-center gap-2 ${tema.color}`}>
                     <span>⚠️</span> Condiciones del Gremio
                   </h4>
                   <p className="text-zinc-300 text-sm font-medium leading-relaxed">
