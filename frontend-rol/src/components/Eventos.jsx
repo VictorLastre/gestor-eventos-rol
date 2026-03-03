@@ -101,6 +101,12 @@ function Eventos() {
   if (eventoSeleccionado) {
     const yaParticipa = partidasDelEvento.some(p => p.dungeon_master_id === usuarioGuardado?.id || p.anotadoInicialmente === 1);
 
+    // ✨ CONTROL FECHA LÍMITE: ¿Es hoy o ya pasó la fecha del evento?
+    const tzOffset = -3 * 60 * 60 * 1000;
+    const hoyArg = new Date(Date.now() + tzOffset).toISOString().split('T')[0];
+    const fechaEventoStr = eventoSeleccionado.fecha.split('T')[0];
+    const convocatoriaCerrada = hoyArg >= fechaEventoStr;
+
     return (
       <div className="max-w-6xl mx-auto p-4 md:p-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
         <button onClick={() => setEventoSeleccionado(null)} className="group flex items-center gap-2 text-zinc-500 hover:text-emerald-400 transition-colors font-black text-[10px] uppercase tracking-[0.3em] mb-8">
@@ -118,7 +124,6 @@ function Eventos() {
           <h2 className="text-4xl md:text-6xl font-black text-white mb-4 tracking-tighter uppercase italic">{eventoSeleccionado.nombre}</h2>
           <p className="text-zinc-400 text-lg italic mb-10 border-l-4 border-emerald-500/30 pl-6 max-w-2xl leading-relaxed">"{eventoSeleccionado.descripcion}"</p>
           
-          {/* ✨ DATOS DEL EVENTO: FECHA, HORA, LUGAR, CIUDAD */}
           <div className="flex flex-wrap gap-4">
             <div className="bg-zinc-950 px-5 py-3 rounded-2xl border border-zinc-800 flex items-center gap-3">
               <span className="text-emerald-500">📅</span>
@@ -140,17 +145,28 @@ function Eventos() {
 
         {esDungeonMaster && (eventoSeleccionado.estado !== 'Finalizado' && eventoSeleccionado.estado !== 'Suspendido') && !yaParticipa && (
           <div className="mb-12">
-            <button 
-              onClick={() => setMostrarFormularioMesa(!mostrarFormularioMesa)}
-              className={`w-full py-5 rounded-[2rem] font-black transition-all shadow-xl flex items-center justify-center gap-3 tracking-widest text-xs uppercase ${mostrarFormularioMesa ? 'bg-zinc-800 text-zinc-500 border border-zinc-700' : 'bg-amber-500 text-black hover:scale-[1.01] hover:shadow-amber-500/20'}`}
-            >
-              {mostrarFormularioMesa ? '✕ Cancelar Convocatoria' : '⚔️ Convocar Nueva Mesa de Rol'}
-            </button>
-            {mostrarFormularioMesa && (
-              <div className="mt-8 p-1 bg-gradient-to-b from-amber-500/20 to-transparent rounded-[2.5rem]">
-                <div className="bg-zinc-900 p-8 rounded-[2.5rem] border border-zinc-800 shadow-3xl">
-                  <CrearMesa idEvento={eventoSeleccionado.id} alCrearMesa={() => {setMostrarFormularioMesa(false); entrarAlEvento(eventoSeleccionado);}} />
-                </div>
+            {/* ✨ SI LA CONVOCATORIA CERRÓ MOSTRAMOS AVISO, SI NO, MOSTRAMOS EL BOTÓN */}
+            {!convocatoriaCerrada ? (
+              <>
+                <button 
+                  onClick={() => setMostrarFormularioMesa(!mostrarFormularioMesa)}
+                  className={`w-full py-5 rounded-[2rem] font-black transition-all shadow-xl flex items-center justify-center gap-3 tracking-widest text-xs uppercase ${mostrarFormularioMesa ? 'bg-zinc-800 text-zinc-500 border border-zinc-700' : 'bg-amber-500 text-black hover:scale-[1.01] hover:shadow-amber-500/20'}`}
+                >
+                  {mostrarFormularioMesa ? '✕ Cancelar Convocatoria' : '⚔️ Convocar Nueva Mesa de Rol'}
+                </button>
+                {mostrarFormularioMesa && (
+                  <div className="mt-8 p-1 bg-gradient-to-b from-amber-500/20 to-transparent rounded-[2.5rem]">
+                    <div className="bg-zinc-900 p-8 rounded-[2.5rem] border border-zinc-800 shadow-3xl">
+                      <CrearMesa idEvento={eventoSeleccionado.id} alCrearMesa={() => {setMostrarFormularioMesa(false); entrarAlEvento(eventoSeleccionado);}} />
+                    </div>
+                  </div>
+                )}
+              </>
+            ) : (
+              <div className="bg-amber-500/10 border border-amber-500/30 p-8 rounded-[2.5rem] flex flex-col items-center justify-center text-center shadow-inner">
+                <span className="text-3xl mb-3">🛡️</span>
+                <h4 className="text-amber-500 font-black uppercase tracking-widest text-sm mb-2">Convocatoria Cerrada</h4>
+                <p className="text-zinc-400 text-sm italic max-w-lg">Ya nos encontramos en la fecha del evento. La organización está finalizando los preparativos logísticos y no es posible registrar nuevas mesas.</p>
               </div>
             )}
           </div>
@@ -205,7 +221,6 @@ function Eventos() {
                 </select>
               </div>
 
-              {/* ✨ CAMPOS LUGAR Y CIUDAD EN EDICIÓN */}
               <div className="grid grid-cols-2 gap-4">
                 <input type="text" placeholder="Lugar" value={eventoEditando.lugar || ''} onChange={e => setEventoEditando({...eventoEditando, lugar: e.target.value})} className="bg-zinc-950 border border-zinc-800 rounded-2xl py-4 px-6 text-white text-sm outline-none focus:border-purple-500" />
                 <input type="text" placeholder="Ciudad" value={eventoEditando.ciudad || ''} onChange={e => setEventoEditando({...eventoEditando, ciudad: e.target.value})} className="bg-zinc-950 border border-zinc-800 rounded-2xl py-4 px-6 text-white text-sm outline-none focus:border-purple-500" />
@@ -248,7 +263,6 @@ function Eventos() {
                   <p className="text-zinc-500 text-sm mb-8 line-clamp-3 italic leading-relaxed">"{evento.descripcion}"</p>
                 </div>
 
-                {/* ✨ NUEVA SECCIÓN DE DATOS EN LA TARJETA */}
                 <div className="space-y-4 mb-8">
                   <div className="flex items-center gap-3">
                     <div className="w-8 h-8 rounded-full bg-zinc-950 flex items-center justify-center border border-zinc-800 text-xs shadow-inner">📅</div>

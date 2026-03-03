@@ -23,7 +23,6 @@ router.get('/', (req, res) => {
     if (err) console.error("Error actualizando el reloj del gremio:", err);
     
     // ✨ TRUCO MAESTRO: DATE_FORMAT evita que el driver de JS reste horas por zona horaria
-    // ✨ AHORA TRAEMOS lugar Y ciudad
     const sqlSelect = `
       SELECT 
         id, nombre, descripcion, 
@@ -44,7 +43,6 @@ router.get('/', (req, res) => {
 router.post('/', verificarToken, (req, res) => {
   if (req.usuario.rol !== 'admin') return res.status(403).json({ error: 'Solo Admins.' });
   
-  // ✨ CAPTURAMOS lugar y ciudad (Con valores por defecto para tu comodidad)
   let { 
     nombre, 
     descripcion, 
@@ -58,7 +56,6 @@ router.post('/', verificarToken, (req, res) => {
   // Limpiamos la fecha por si viene con barras / la pasamos a guiones -
   const fechaLimpia = fecha.replace(/\//g, '-');
 
-  // ✨ AGREGAMOS LAS COLUMNAS AL INSERT
   const sqlInsert = 'INSERT INTO eventos (nombre, descripcion, fecha, hora_inicio, hora_fin, estado, lugar, ciudad) VALUES (?, ?, ?, ?, ?, ?, ?, ?)';
   
   db.query(sqlInsert, [nombre, descripcion, fechaLimpia, hora_inicio, hora_fin, 'Proximo', lugar, ciudad], (err) => {
@@ -70,19 +67,19 @@ router.post('/', verificarToken, (req, res) => {
   });
 });
 
-// 3. Obtener partidas de un evento específico (✨ CORREGIDO PARA TRAER EL NOMBRE DEL SISTEMA)
+// 3. Obtener partidas de un evento específico
 router.get('/:id/partidas', verificarToken, (req, res) => {
   const sql = `
     SELECT 
       p.id, p.evento_id, p.dungeon_master_id, p.titulo, p.descripcion, p.requisitos, 
-      p.sistema_id, s.nombre AS sistema, -- Traemos el nombre del sistema desde la tabla sistemas
+      p.sistema_id, s.nombre AS sistema,
       p.cupo, p.turno, p.estado, p.etiqueta, p.apta_novatos, p.materiales_pedidos,
       u.nombre AS dmNombre, 
       (SELECT COUNT(*) FROM inscripciones WHERE partida_id = p.id) AS jugadoresIniciales,
       (SELECT COUNT(*) FROM inscripciones WHERE partida_id = p.id AND usuario_id = ?) AS anotadoInicialmente
     FROM partidas p 
     JOIN usuarios u ON p.dungeon_master_id = u.id
-    LEFT JOIN sistemas s ON p.sistema_id = s.id -- Hacemos el cruce de tablas
+    LEFT JOIN sistemas s ON p.sistema_id = s.id 
     WHERE p.evento_id = ? 
     GROUP BY p.id
   `;
@@ -95,31 +92,41 @@ router.get('/:id/partidas', verificarToken, (req, res) => {
   });
 });
 
-// 4. Crear una mesa en un evento (✨ CORREGIDO PARA GUARDAR sistema_id)
+// 4. Crear una mesa en un evento (✨ CONTROL DE FECHA LÍMITE AGREGADO)
 router.post('/:id/partidas', verificarToken, (req, res) => {
   if (req.usuario.rol === 'jugador') return res.status(403).json({ error: 'Solo DMs y Admins pueden crear mesas.' });
   
   const eventoId = req.params.id;
   const usuarioId = req.usuario.id;
 
+  // Modificamos la consulta para traer también la fecha del evento
   const sqlCheck = `
     SELECT 
+      DATE_FORMAT(e.fecha, '%Y-%m-%d') as evento_fecha,
       (SELECT COUNT(*) FROM partidas WHERE evento_id = ? AND dungeon_master_id = ?) as es_dm,
       (SELECT COUNT(*) FROM inscripciones i JOIN partidas p ON i.partida_id = p.id WHERE p.evento_id = ? AND i.usuario_id = ?) as es_jugador
+    FROM eventos e WHERE e.id = ?
   `;
   
-  db.query(sqlCheck, [eventoId, usuarioId, eventoId, usuarioId], (err, resultados) => {
+  db.query(sqlCheck, [eventoId, usuarioId, eventoId, usuarioId, eventoId], (err, resultados) => {
     if (err) return res.status(500).json({ error: 'Error al consultar los registros del gremio.' });
+    if (resultados.length === 0) return res.status(404).json({ error: 'El evento no existe.' });
     
-    const { es_dm, es_jugador } = resultados[0];
+    const { evento_fecha, es_dm, es_jugador } = resultados[0];
+
+    // ✨ BLOQUEO LOGÍSTICO: Si hoy es el día del evento (o posterior), se bloquea la creación
+    const tzOffset = -3 * 60 * 60 * 1000; // Hora Argentina
+    const hoyArg = new Date(Date.now() + tzOffset).toISOString().split('T')[0];
+
+    if (hoyArg >= evento_fecha) {
+      return res.status(400).json({ error: 'La convocatoria ha cerrado. Ya estamos en la fecha del evento y la organización está preparando la logística.' });
+    }
 
     if (es_dm > 0) return res.status(400).json({ error: 'Ya estás dirigiendo una mesa en este evento.' });
     if (es_jugador > 0) return res.status(400).json({ error: 'No puedes crear una mesa porque ya estás anotado como jugador en este evento.' });
 
-    // ✨ Ahora recibimos sistema_id del body, no sistema
     const { titulo, descripcion, requisitos, sistema_id, cupo, turno, etiqueta, apta_novatos, materiales_pedidos } = req.body;
     
-    // ✨ Insertamos sistema_id
     const sqlInsert = `
         INSERT INTO partidas 
         (evento_id, dungeon_master_id, titulo, descripcion, requisitos, sistema_id, cupo, turno, estado, etiqueta, apta_novatos, materiales_pedidos) 
@@ -141,13 +148,10 @@ router.put('/:id', verificarToken, (req, res) => {
   if (req.usuario.rol !== 'admin') return res.status(403).json({ error: 'Solo los líderes del gremio pueden alterar la historia.' });
 
   const eventoId = req.params.id;
-  // ✨ RECIBIMOS lugar y ciudad PARA LA EDICIÓN
   let { nombre, descripcion, fecha, hora_inicio, hora_fin, estado, lugar, ciudad } = req.body;
 
-  // Limpiamos la fecha por si viene con barras / la pasamos a guiones -
   const fechaLimpia = fecha.replace(/\//g, '-');
 
-  // ✨ ACTUALIZAMOS lugar y ciudad EN LA BASE DE DATOS
   const sqlUpdate = `
     UPDATE eventos 
     SET nombre = ?, descripcion = ?, fecha = ?, hora_inicio = ?, hora_fin = ?, estado = ?, lugar = ?, ciudad = ?
