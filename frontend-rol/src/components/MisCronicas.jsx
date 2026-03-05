@@ -8,7 +8,8 @@ function MisCronicas({ alActualizarUsuario }) {
   const [cronicas, setCronicas] = useState({ dirigiendo: [], jugando: [] });
   const [cargando, setCargando] = useState(true);
   
-  const usuarioGuardado = JSON.parse(localStorage.getItem('usuario'));
+  // Guardamos el usuario en estado para que el renderizado reaccione a los cambios
+  const [usuarioGuardado, setUsuarioGuardado] = useState(JSON.parse(localStorage.getItem('usuario')));
   const [editando, setEditando] = useState(false);
   
   const [peticionEnviada, setPeticionEnviada] = useState(usuarioGuardado?.solicitudDmPendiente || false);
@@ -36,6 +37,24 @@ function MisCronicas({ alActualizarUsuario }) {
       });
   };
 
+  // ✨ FUNCIÓN PARA ACTUALIZAR EL PERFIL DESDE LA DB SI HAY UN ASCENSO
+  const actualizarPerfilDesdeDB = () => {
+    fetchProtegido('https://gestor-eventos-rol.onrender.com/api/usuarios/yo') // Asumiendo que tienes este endpoint para obtener tu propio usuario. Si no, usa el que traiga la info del usuario.
+      .then(res => res.json())
+      .then(datosUsuario => {
+         // Si hubo un cambio de rol (fue ascendido a DM)
+         if(datosUsuario.rol !== usuarioGuardado.rol) {
+            const nuevoUsuario = { ...usuarioGuardado, rol: datosUsuario.rol, solicitudDmPendiente: false };
+            localStorage.setItem('usuario', JSON.stringify(nuevoUsuario));
+            setUsuarioGuardado(nuevoUsuario);
+            setPeticionEnviada(false); // Reiniciamos el estado visual
+            if (alActualizarUsuario) alActualizarUsuario(nuevoUsuario);
+         }
+      })
+      .catch(err => console.error("Error verificando ascenso:", err));
+  };
+
+
   useEffect(() => {
     // 1. Cargamos las crónicas al entrar
     cargarCronicas();
@@ -53,11 +72,16 @@ function MisCronicas({ alActualizarUsuario }) {
       cargarCronicas();
     });
 
+    // ✨ Escuchamos si hay cambios en los usuarios (ej: si un admin te ascendió a DM)
+    socket.on('actualizacion-usuarios', () => {
+      actualizarPerfilDesdeDB();
+    });
+
     // Limpieza al salir de la vista
     return () => {
       socket.disconnect();
     };
-  }, []);
+  }, [usuarioGuardado.rol]); // Añadimos la dependencia para que no haya problemas con el scope
 
   const manejarCambioPerfil = (e) => {
     setPerfil({ ...perfil, [e.target.name]: e.target.value });
@@ -73,6 +97,7 @@ function MisCronicas({ alActualizarUsuario }) {
       if (res.ok) {
         const nuevoUsuario = { ...usuarioGuardado, ...perfil };
         localStorage.setItem('usuario', JSON.stringify(nuevoUsuario));
+        setUsuarioGuardado(nuevoUsuario);
         if (alActualizarUsuario) alActualizarUsuario(nuevoUsuario);
         setEditando(false);
         
@@ -114,6 +139,7 @@ function MisCronicas({ alActualizarUsuario }) {
         setPeticionEnviada(true);
         const usuarioActualizado = { ...usuarioGuardado, solicitudDmPendiente: true };
         localStorage.setItem('usuario', JSON.stringify(usuarioActualizado));
+        setUsuarioGuardado(usuarioActualizado);
         if (alActualizarUsuario) alActualizarUsuario(usuarioActualizado);
 
         Swal.fire({

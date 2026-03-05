@@ -46,6 +46,12 @@ app.use(cors({
 
 app.use(express.json());
 
+// ✨ 7. RUTA DE SUPERVIVENCIA (HEALTH CHECK) PARA RENDER
+// Cuando Render golpee la puerta "/", le responderemos que todo está perfecto (200 OK)
+app.get('/', (req, res) => {
+  res.status(200).send('🏰 ¡La fortaleza del Gremio está en pie y los servidores respiran!');
+});
+
 // Importamos las rutas modulares
 const authRoutes = require('./routes/authRoutes');
 const eventosRoutes = require('./routes/eventosRoutes');

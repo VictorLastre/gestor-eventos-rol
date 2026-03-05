@@ -356,4 +356,18 @@ router.get('/', verificarToken, (req, res) => {
   });
 });
 
+// ✨ NUEVA RUTA: OBTENER DATOS DEL USUARIO ACTUAL
+router.get('/yo', verificarToken, (req, res) => {
+  const idUsuario = req.usuario.id;
+  
+  const sql = "SELECT id, nombre, nombre_completo, email, rol, avatar, solicita_dm, es_dm_nuevo FROM usuarios WHERE id = ?";
+  
+  db.query(sql, [idUsuario], (err, resultados) => {
+    if (err) return res.status(500).json({ error: 'Error al consultar el perfil.' });
+    if (resultados.length === 0) return res.status(404).json({ error: 'Usuario no encontrado.' });
+    
+    res.json(resultados[0]);
+  });
+});
+
 module.exports = router;
