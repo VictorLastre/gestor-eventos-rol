@@ -23,6 +23,11 @@ router.post('/', verificarToken, (req, res) => {
             if (err.code === 'ER_DUP_ENTRY') return res.status(400).json({ error: 'Este sistema ya existe.' });
             return res.status(500).json({ error: 'Error al registrar el sistema.' });
         }
+        
+        // ✨ WEBSOCKETS: Avisar a todos que hay un nuevo sistema en la biblioteca
+        const io = req.app.get('io');
+        if (io) io.emit('actualizacion-sistemas');
+
         res.status(201).json({ mensaje: '¡Nuevo sistema incorporado al gremio!' });
     });
 });
@@ -36,6 +41,11 @@ router.put('/:id', verificarToken, (req, res) => {
 
     db.query('UPDATE sistemas SET nombre = ? WHERE id = ?', [nombre, id], (err) => {
         if (err) return res.status(500).json({ error: 'Error al actualizar el sistema.' });
+        
+        // ✨ WEBSOCKETS: Avisar del cambio en los pergaminos
+        const io = req.app.get('io');
+        if (io) io.emit('actualizacion-sistemas');
+
         res.json({ mensaje: 'Sistema actualizado correctamente.' });
     });
 });
@@ -54,6 +64,11 @@ router.delete('/:id', verificarToken, (req, res) => {
             }
             return res.status(500).json({ error: 'Error al eliminar el sistema.' });
         }
+        
+        // ✨ WEBSOCKETS: Avisar de la eliminación
+        const io = req.app.get('io');
+        if (io) io.emit('actualizacion-sistemas');
+
         res.json({ mensaje: 'Sistema eliminado de los archivos.' });
     });
 });

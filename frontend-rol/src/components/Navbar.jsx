@@ -2,6 +2,8 @@ import { useState, useEffect, useRef } from 'react';
 import Swal from 'sweetalert2';
 import { fetchProtegido } from '../utils/api';
 import LogoSVG from '../assets/Logo.svg'; 
+// ✨ IMPORTAMOS EL RECEPTOR TELEPÁTICO PARA LOS CUERVOS
+import { io } from 'socket.io-client';
 
 function Navbar({ usuario, alCerrarSesion, setVista }) {
   const [notificaciones, setNotificaciones] = useState([]);
@@ -10,7 +12,8 @@ function Navbar({ usuario, alCerrarSesion, setVista }) {
 
   const esAdmin = usuario?.rol === 'admin';
 
-  useEffect(() => {
+  // ✨ SEPARAMOS LA FUNCIÓN DE CARGA PARA PODER REUSARLA
+  const cargarNotificaciones = () => {
     if (usuario) {
       fetchProtegido('https://gestor-eventos-rol.onrender.com/api/usuarios/notificaciones')
         .then(res => res.json())
@@ -21,7 +24,31 @@ function Navbar({ usuario, alCerrarSesion, setVista }) {
           if (err !== 'Sesión expirada') console.error('Error con los cuervos:', err);
         });
     }
-  }, [usuario]);
+  };
+
+  useEffect(() => {
+    // 1. Cargamos los mensajes iniciales
+    cargarNotificaciones();
+
+    // ✨ 2. EL RITUAL DE CONEXIÓN A LA RED TELEPÁTICA PARA NOTIFICACIONES
+    const socket = io('https://gestor-eventos-rol.onrender.com');
+
+    // Escuchamos si llegan nuevos cuervos (notificaciones) para este usuario en particular
+    // (Aprovechamos los mismos eventos que ya tenemos en el servidor que suelen generar notificaciones)
+    socket.on('actualizacion-usuarios', () => {
+      cargarNotificaciones();
+    });
+    
+    // Si una mesa se disuelve, suele haber notificación
+    socket.on('actualizacion-mesas', () => {
+      cargarNotificaciones();
+    });
+
+    // Limpieza
+    return () => {
+      socket.disconnect();
+    };
+  }, [usuario]); // Volver a ejecutar si el usuario cambia (ej: hace login)
 
   useEffect(() => {
     function handleClickOutside(event) {

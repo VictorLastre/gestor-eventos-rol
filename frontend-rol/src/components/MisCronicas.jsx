@@ -1,6 +1,8 @@
 import { useState, useEffect } from 'react';
 import Swal from 'sweetalert2'; 
 import { fetchProtegido } from '../utils/api'; 
+// ✨ IMPORTAMOS EL RECEPTOR TELEPÁTICO
+import { io } from 'socket.io-client';
 
 function MisCronicas({ alActualizarUsuario }) { 
   const [cronicas, setCronicas] = useState({ dirigiendo: [], jugando: [] });
@@ -20,7 +22,8 @@ function MisCronicas({ alActualizarUsuario }) {
     avatar: usuarioGuardado?.avatar || 'guerrero'
   });
 
-  useEffect(() => {
+  // ✨ FUNCIÓN SEPARADA PARA PODER LLAMARLA CON LA TELEPATÍA
+  const cargarCronicas = () => {
     fetchProtegido('https://gestor-eventos-rol.onrender.com/api/usuarios/mis-cronicas')
       .then(res => res.json())
       .then(datos => {
@@ -31,6 +34,29 @@ function MisCronicas({ alActualizarUsuario }) {
         if (err === 'Sesión expirada') return;
         console.error("Error cargando crónicas:", err);
       });
+  };
+
+  useEffect(() => {
+    // 1. Cargamos las crónicas al entrar
+    cargarCronicas();
+
+    // ✨ 2. EL RITUAL DE CONEXIÓN A LA RED TELEPÁTICA
+    const socket = io('https://gestor-eventos-rol.onrender.com');
+
+    // Escuchamos si hay cambios en las mesas (ej: si se disuelve una mesa en la que juegas)
+    socket.on('actualizacion-mesas', () => {
+      cargarCronicas();
+    });
+
+    // Escuchamos si hay cambios en los eventos (ej: si cambian la fecha de tu evento)
+    socket.on('actualizacion-eventos', () => {
+      cargarCronicas();
+    });
+
+    // Limpieza al salir de la vista
+    return () => {
+      socket.disconnect();
+    };
   }, []);
 
   const manejarCambioPerfil = (e) => {

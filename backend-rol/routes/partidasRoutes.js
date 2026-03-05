@@ -65,6 +65,10 @@ router.post('/', verificarToken, (req, res) => {
       }
     });
 
+    // ✨ WEBSOCKETS: Avisar que se forjó una nueva mesa
+    const io = req.app.get('io');
+    if (io) io.emit('actualizacion-mesas', { eventoId: parseInt(evento_id) });
+
     res.status(201).json({ mensaje: '¡Mesa forjada con éxito! Los aventureros ya pueden unirse.' });
   });
 });
@@ -84,6 +88,7 @@ router.post('/:id/inscripciones', verificarToken, (req, res) => {
 
     if (anotados >= cupo) return res.status(400).send('❌ ¡Mesa llena! No quedan lugares.');
 
+    // Verificamos si ya es DM en este evento o si ya está anotado en otra mesa
     const sqlValidarParticipacion = `
       SELECT 
         (SELECT COUNT(*) FROM partidas WHERE evento_id = ? AND dungeon_master_id = ?) as es_dm,
@@ -100,6 +105,11 @@ router.post('/:id/inscripciones', verificarToken, (req, res) => {
 
       db.query("INSERT INTO inscripciones (usuario_id, partida_id) VALUES (?, ?)", [idUsuario, idPartida], (err) => {
         if (err) return res.status(400).send('Error al anotarse.');
+        
+        // ✨ WEBSOCKETS: Avisar a todos que alguien ocupó un lugar
+        const io = req.app.get('io');
+        if (io) io.emit('actualizacion-mesas', { eventoId: parseInt(evento_id) });
+        
         res.status(201).send('¡Te has unido a la aventura!');
       });
     });
@@ -111,12 +121,22 @@ router.delete('/:id/inscripciones', verificarToken, (req, res) => {
   const idPartida = req.params.id;
   const idUsuario = req.usuario.id;
 
-  const sqlDelete = 'DELETE FROM inscripciones WHERE partida_id = ? AND usuario_id = ?';
-  
-  db.query(sqlDelete, [idPartida, idUsuario], (err, resultado) => {
-    if (err) return res.status(500).send('Error al abandonar la mesa.');
-    if (resultado.affectedRows === 0) return res.status(400).send('No figurabas en los registros.');
-    res.status(200).send('Has abandonado la mesa exitosamente.');
+  // Primero necesitamos saber a qué evento pertenecía esta partida para avisar al frontend
+  db.query("SELECT evento_id FROM partidas WHERE id = ?", [idPartida], (err, resultados) => {
+    if (err || resultados.length === 0) return res.status(500).send('Error en los registros.');
+    const evento_id = resultados[0].evento_id;
+
+    const sqlDelete = 'DELETE FROM inscripciones WHERE partida_id = ? AND usuario_id = ?';
+    db.query(sqlDelete, [idPartida, idUsuario], (err, resultado) => {
+      if (err) return res.status(500).send('Error al abandonar la mesa.');
+      if (resultado.affectedRows === 0) return res.status(400).send('No figurabas en los registros.');
+      
+      // ✨ WEBSOCKETS: Avisar a todos que se liberó un cupo
+      const io = req.app.get('io');
+      if (io) io.emit('actualizacion-mesas', { eventoId: parseInt(evento_id) });
+
+      res.status(200).send('Has abandonado la mesa exitosamente.');
+    });
   });
 });
 
@@ -135,11 +155,11 @@ router.delete('/:id', verificarToken, (req, res) => {
   const usuarioId = req.usuario.id;
   const rolUsuario = req.usuario.rol;
 
-  db.query("SELECT dungeon_master_id, titulo FROM partidas WHERE id = ?", [partidaId], (err, resultados) => {
+  db.query("SELECT dungeon_master_id, titulo, evento_id FROM partidas WHERE id = ?", [partidaId], (err, resultados) => {
     if (err) return res.status(500).send('Error de servidor.');
     if (resultados.length === 0) return res.status(404).send('La mesa no existe.');
 
-    const { dungeon_master_id: dmId, titulo } = resultados[0];
+    const { dungeon_master_id: dmId, titulo, evento_id } = resultados[0];
 
     if (dmId !== usuarioId && rolUsuario !== 'admin') {
       return res.status(403).send('No tienes autoridad para disolver esta mesa.');
@@ -156,6 +176,11 @@ router.delete('/:id', verificarToken, (req, res) => {
 
       db.query("DELETE FROM partidas WHERE id = ?", [partidaId], (err) => {
         if (err) return res.status(500).send('Error al disolver la mesa.');
+        
+        // ✨ WEBSOCKETS: Avisar que una mesa desapareció del tablón
+        const io = req.app.get('io');
+        if (io) io.emit('actualizacion-mesas', { eventoId: parseInt(evento_id) });
+
         res.send('Mesa disuelta correctamente y aventureros notificados.');
       });
     });
@@ -168,10 +193,12 @@ router.put('/:id', verificarToken, (req, res) => {
   const usuarioId = req.usuario.id;
   const rolUsuario = req.usuario.rol;
 
-  db.query("SELECT dungeon_master_id FROM partidas WHERE id = ?", [partidaId], (err, resultados) => {
+  db.query("SELECT dungeon_master_id, evento_id FROM partidas WHERE id = ?", [partidaId], (err, resultados) => {
     if (err || resultados.length === 0) return res.status(404).json({ error: 'Mesa no encontrada.' });
 
     const dmId = resultados[0].dungeon_master_id;
+    const evento_id = resultados[0].evento_id;
+
     if (dmId !== usuarioId && rolUsuario !== 'admin') {
       return res.status(403).json({ error: 'Sin permisos.' });
     }
@@ -187,6 +214,11 @@ router.put('/:id', verificarToken, (req, res) => {
 
     db.query(sqlUpdate, [titulo, descripcion, requisitos, sistema, sistema_id, cupo, turno, etiqueta, apta_novatos, materiales_pedidos, partidaId], (err) => {
       if (err) return res.status(500).json({ error: 'Error al actualizar.' });
+      
+      // ✨ WEBSOCKETS: Avisar que los detalles de la mesa cambiaron
+      const io = req.app.get('io');
+      if (io) io.emit('actualizacion-mesas', { eventoId: parseInt(evento_id) });
+
       res.status(200).json({ mensaje: '¡Aventura actualizada!' });
     });
   });

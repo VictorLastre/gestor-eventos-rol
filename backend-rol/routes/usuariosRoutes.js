@@ -119,6 +119,11 @@ router.post('/solicitar-dm', verificarToken, (req, res) => {
   
   db.query(sql, [req.usuario.id], (err) => {
     if (err) return res.status(500).json({ error: 'Error al enviar la petición.' });
+    
+    // ✨ WEBSOCKETS: Avisar a los admins que hay una nueva petición
+    const io = req.app.get('io');
+    if (io) io.emit('actualizacion-solicitudes');
+
     res.status(200).send('¡Tu solicitud ha sido enviada al gremio!');
   });
 });
@@ -132,6 +137,14 @@ router.put('/:id/promover', verificarToken, (req, res) => {
   
   db.query(sql, [req.params.id], (err) => {
     if (err) return res.status(500).send('Error al forjar el ascenso.');
+    
+    // ✨ WEBSOCKETS
+    const io = req.app.get('io');
+    if (io) {
+      io.emit('actualizacion-usuarios');
+      io.emit('actualizacion-solicitudes');
+    }
+
     res.send('¡Ascenso completado!');
   });
 });
@@ -144,6 +157,11 @@ router.put('/:id/certificado-entregado', verificarToken, (req, res) => {
   
   db.query(sql, [req.params.id], (err) => {
     if (err) return res.status(500).json({ error: 'Error al actualizar el estado del DM.' });
+    
+    // ✨ WEBSOCKETS
+    const io = req.app.get('io');
+    if (io) io.emit('actualizacion-usuarios');
+
     res.json({ mensaje: 'Rito de iniciación completado.' });
   });
 });
@@ -153,6 +171,11 @@ router.put('/:id/rechazar-dm', verificarToken, (req, res) => {
   
   db.query("UPDATE usuarios SET solicita_dm = 0 WHERE id = ?", [req.params.id], (err) => {
     if (err) return res.status(500).send('Error al rechazar la petición.');
+    
+    // ✨ WEBSOCKETS
+    const io = req.app.get('io');
+    if (io) io.emit('actualizacion-solicitudes');
+
     res.status(200).send('La petición ha sido denegada correctamente.');
   });
 });
@@ -184,6 +207,11 @@ router.put('/:id/rol', verificarToken, (req, res) => {
       console.error(err);
       return res.status(500).json({ error: 'Error al forjar el nuevo rango.' });
     }
+    
+    // ✨ WEBSOCKETS
+    const io = req.app.get('io');
+    if (io) io.emit('actualizacion-usuarios');
+
     res.status(200).json({ mensaje: '¡El rango ha sido modificado con éxito!' });
   });
 });
@@ -205,6 +233,11 @@ router.post('/:id/proponer-admin', verificarToken, (req, res) => {
       const votacionId = result.insertId;
       db.query("INSERT INTO votos_admin (votacion_id, admin_id, voto) VALUES (?, ?, 'a favor')", [votacionId, proponenteId], (err) => {
         if (err) return res.status(500).json({ error: 'Votación creada, pero falló el registro de tu voto.' });
+        
+        // ✨ WEBSOCKETS
+        const io = req.app.get('io');
+        if (io) io.emit('actualizacion-senado');
+
         res.json({ mensaje: '¡El Senado ha sido convocado! La votación está abierta.' });
       });
     });
@@ -241,16 +274,27 @@ router.post('/votaciones/:id/votar', verificarToken, (req, res) => {
 
       const { candidato_id, votos_favor, votos_contra, total_admins } = results[0];
       const mayoria = Math.floor(total_admins / 2) + 1;
+      
+      const io = req.app.get('io');
 
       if (votos_favor >= mayoria) {
         db.query("UPDATE usuarios SET rol = 'admin', solicita_dm = 0, es_dm_nuevo = 0 WHERE id = ?", [candidato_id]);
         db.query("UPDATE votaciones_admin SET estado = 'aprobada' WHERE id = ?", [votacionId]);
+        
+        if (io) {
+          io.emit('actualizacion-senado');
+          io.emit('actualizacion-usuarios');
+        }
         return res.json({ mensaje: '¡La mayoría ha hablado! El aventurero ha sido ascendido a Administrador.', ascendido: true });
       } else if (votos_contra >= mayoria) {
         db.query("UPDATE votaciones_admin SET estado = 'rechazada' WHERE id = ?", [votacionId]);
+        
+        if (io) io.emit('actualizacion-senado');
         return res.json({ mensaje: 'La moción ha sido rechazada por mayoría del consejo.', rechazado: true });
       }
 
+      // Voto normal sin definir aún
+      if (io) io.emit('actualizacion-senado');
       res.json({ mensaje: 'Voto registrado con éxito en los archivos del Senado.' });
     });
   });

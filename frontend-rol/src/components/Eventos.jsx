@@ -3,6 +3,8 @@ import Swal from 'sweetalert2';
 import Partida from './Partida'; 
 import CrearMesa from './CrearMesa'; 
 import { fetchProtegido } from '../utils/api'; 
+// ✨ IMPORTAMOS EL RECEPTOR TELEPÁTICO
+import { io } from 'socket.io-client';
 
 function Eventos() {
   const [eventos, setEventos] = useState([]);
@@ -33,7 +35,43 @@ function Eventos() {
       .catch(err => console.error("Error:", err));
   };
 
-  useEffect(() => { cargarEventos(); }, []);
+  // Función separada para recargar las mesas del evento actual
+  const cargarMesasDelEvento = (idEvento) => {
+    fetchProtegido(`https://gestor-eventos-rol.onrender.com/api/eventos/${idEvento}/partidas`)
+      .then(res => res.json())
+      .then(setPartidasDelEvento)
+      .catch(err => { if (err !== 'Sesión expirada') console.error(err); });
+  };
+
+  // ✨ EL RITUAL DE CONEXIÓN A LA RED TELEPÁTICA
+  useEffect(() => { 
+    cargarEventos(); 
+
+    // 1. Conectamos con el servidor
+    const socket = io('https://gestor-eventos-rol.onrender.com');
+
+    // 2. Escuchamos cambios en los Eventos generales
+    socket.on('actualizacion-eventos', () => {
+      cargarEventos();
+    });
+
+    // 3. Escuchamos cambios en las Mesas (Inscripciones, nuevas mesas, etc)
+    socket.on('actualizacion-mesas', (data) => {
+      // Si recibimos un aviso, recargamos la lista de partidas, 
+      // pero solo SI el usuario tiene el evento abierto (para no gastar recursos a lo tonto)
+      setEventoSeleccionado(estadoPrevio => {
+        if (estadoPrevio && estadoPrevio.id === data.eventoId) {
+          cargarMesasDelEvento(data.eventoId);
+        }
+        return estadoPrevio; // Retornamos el estado tal cual para no romper nada
+      });
+    });
+
+    // 4. Limpieza: Nos desconectamos si el usuario se va de esta pantalla
+    return () => {
+      socket.disconnect();
+    };
+  }, []); // Se ejecuta una sola vez al cargar la página
 
   const borrarEvento = async (id, e) => {
     e.stopPropagation();
@@ -56,7 +94,7 @@ function Eventos() {
         if (res.ok) {
           Swal.fire({ title: '¡Evento Borrado!', icon: 'success', background: '#09090b', color: '#fff', customClass: { popup: 'border border-emerald-500/30 rounded-[2rem]' } });
           if (eventoSeleccionado && eventoSeleccionado.id === id) setEventoSeleccionado(null);
-          cargarEventos();
+          // cargarEventos() ya no hace falta aquí porque el Socket avisará a todos (incluyéndote a ti)
         }
       } catch (err) { if (err !== 'Sesión expirada') console.error(err); }
     }
@@ -73,7 +111,7 @@ function Eventos() {
         Swal.fire({ title: '¡Jornada Reescrita!', icon: 'success', background: '#09090b', color: '#fff', customClass: { popup: 'border border-emerald-500/30 rounded-[2rem]' } });
         if (eventoSeleccionado && eventoSeleccionado.id === eventoEditando.id) setEventoSeleccionado(eventoEditando);
         setEventoEditando(null); 
-        cargarEventos(); 
+        // cargarEventos() se llama por socket
       }
     } catch (err) { if (err !== 'Sesión expirada') console.error(err); }
   };
@@ -86,10 +124,7 @@ function Eventos() {
 
   const entrarAlEvento = (evento) => {
     setEventoSeleccionado(evento);
-    fetchProtegido(`https://gestor-eventos-rol.onrender.com/api/eventos/${evento.id}/partidas`)
-      .then(res => res.json())
-      .then(setPartidasDelEvento)
-      .catch(err => { if (err !== 'Sesión expirada') console.error(err); });
+    cargarMesasDelEvento(evento.id);
   };
 
   const eventosProximos = eventos.filter(e => e.estado === 'Proximo' || e.estado === 'En Curso').sort((a, b) => a.fecha.localeCompare(b.fecha));
@@ -157,7 +192,8 @@ function Eventos() {
                 {mostrarFormularioMesa && (
                   <div className="mt-8 p-1 bg-gradient-to-b from-amber-500/20 to-transparent rounded-[2.5rem]">
                     <div className="bg-zinc-900 p-8 rounded-[2.5rem] border border-zinc-800 shadow-3xl">
-                      <CrearMesa idEvento={eventoSeleccionado.id} alCrearMesa={() => {setMostrarFormularioMesa(false); entrarAlEvento(eventoSeleccionado);}} />
+                      {/* Le quitamos el entrarAlEvento porque el socket lo recargará solo */}
+                      <CrearMesa idEvento={eventoSeleccionado.id} alCrearMesa={() => {setMostrarFormularioMesa(false);}} />
                     </div>
                   </div>
                 )}

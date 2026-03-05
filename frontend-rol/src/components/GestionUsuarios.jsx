@@ -3,6 +3,8 @@ import Swal from 'sweetalert2';
 import { fetchProtegido } from '../utils/api'; 
 import * as XLSX from 'xlsx'; 
 import CertificadoBase from '../assets/CertificadoBase.png'; 
+// ✨ IMPORTAMOS EL RECEPTOR TELEPÁTICO PARA EL SENADO
+import { io } from 'socket.io-client';
 
 function GestionUsuarios() {
   const [solicitudes, setSolicitudes] = useState([]);
@@ -53,9 +55,36 @@ function GestionUsuarios() {
       .catch(err => { if (err !== 'Sesión expirada') console.error(err); });
   };
 
+  // ✨ EL RITUAL DE CONEXIÓN A LA RED TELEPÁTICA PARA EL ÁREA DE COMANDO
   useEffect(() => { 
     cargarDatosPrincipales(); 
     cargarCenso();
+
+    const socket = io('https://gestor-eventos-rol.onrender.com');
+
+    // Escuchamos si alguien nuevo pide ser DM
+    socket.on('actualizacion-solicitudes', () => {
+      cargarDatosPrincipales();
+    });
+
+    // Escuchamos si un Admin emite un voto o crea una moción en el Senado
+    socket.on('actualizacion-senado', () => {
+      cargarDatosPrincipales();
+    });
+
+    // Escuchamos si algún aventurero es ascendido o cambia su rol (Para el Censo)
+    socket.on('actualizacion-usuarios', () => {
+      cargarCenso();
+    });
+    
+    // Escuchamos si hay un nuevo sistema para actualizar el Oráculo (opcional)
+    socket.on('actualizacion-sistemas', () => {
+      cargarDatosPrincipales();
+    });
+
+    return () => {
+      socket.disconnect();
+    };
   }, []);
 
   useEffect(() => {
@@ -336,8 +365,10 @@ function GestionUsuarios() {
         </button>
         <button onClick={() => setPestanaActiva('senado')} className={`flex items-center gap-2 px-6 py-3 font-black text-[10px] uppercase tracking-[0.2em] transition-all rounded-xl ${pestanaActiva === 'senado' ? 'bg-amber-600 text-white shadow-lg shadow-amber-900/40' : 'text-zinc-500 hover:bg-zinc-900'}`}>
           🏛️ Senado {votaciones.length > 0 && <span className="bg-white text-amber-600 px-2 py-0.5 rounded-full text-[9px] animate-pulse">{votaciones.length}</span>}
-        </button>       
-        
+        </button>      
+        <button onClick={() => setPestanaActiva('oraculo')} className={`flex items-center gap-2 px-6 py-3 font-black text-[10px] uppercase tracking-[0.2em] transition-all rounded-xl ${pestanaActiva === 'oraculo' ? 'bg-blue-600 text-white shadow-lg shadow-blue-900/40' : 'text-zinc-500 hover:bg-zinc-900'}`}>
+          👁️ Oráculo de Datos
+        </button>
       </div>
 
       {pestanaActiva === 'peticiones' && (

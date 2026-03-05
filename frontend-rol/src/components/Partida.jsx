@@ -1,6 +1,8 @@
 import { useState, useEffect } from 'react';
 import Swal from 'sweetalert2'; 
 import { fetchProtegido } from '../utils/api'; 
+// ✨ IMPORTAMOS LA TELEPATÍA
+import { io } from 'socket.io-client';
 
 // ✨ DICCIONARIO DE TEMÁTICAS Y COLORES
 const CONFIG_TEMAS = {
@@ -93,6 +95,19 @@ function Partida(props) {
     setAnotado(yaEstaAnotado);
   }, [cantJugadores, yaEstaAnotado]);
 
+  // ✨ TELEPATÍA PARA LA LISTA DE JUGADORES EN EL MODAL
+  useEffect(() => {
+    if (!modalAbierto) return; // Solo escuchamos si el pergamino está abierto
+    
+    const socket = io('https://gestor-eventos-rol.onrender.com');
+    socket.on('actualizacion-mesas', () => {
+       // Si alguien se anota mientras miras la lista, se refresca sola
+       cargarListaJugadores();
+    });
+
+    return () => socket.disconnect();
+  }, [modalAbierto]);
+
   const cargarListaJugadores = () => {
     setCargandoJugadores(true);
     fetchProtegido(`https://gestor-eventos-rol.onrender.com/api/partidas/${props.id}/jugadores`)
@@ -133,8 +148,9 @@ function Partida(props) {
       try {
         const res = await fetchProtegido(`https://gestor-eventos-rol.onrender.com/api/partidas/${props.id}`, { method: 'DELETE' });
         if (res.ok) {
-          Swal.fire({ title: 'Mesa Borrada', icon: 'success', background: '#09090b', color: '#fff', confirmButtonColor: '#10b981' })
-          .then(() => { window.location.reload(); });
+          // ✨ ELIMINAMOS EL RELOAD FORZADO. El componente padre se actualizará por WebSockets
+          Swal.fire({ title: 'Mesa Borrada', icon: 'success', background: '#09090b', color: '#fff', confirmButtonColor: '#10b981' });
+          setModalAbierto(false); // Solo cerramos el modal
         } else {
           Swal.fire({ title: 'Error Mágico', text: 'No se pudo disolver la mesa.', icon: 'error', background: '#09090b', color: '#fff', confirmButtonColor: '#ef4444' });
         }
@@ -166,8 +182,9 @@ function Partida(props) {
       });
 
       if (res.ok) {
-        Swal.fire({ title: '¡Aventura Reescríta!', text: 'Los detalles de la mesa han sido actualizados.', icon: 'success', background: '#09090b', color: '#fff', confirmButtonColor: '#f59e0b' })
-        .then(() => { window.location.reload(); });
+        // ✨ ELIMINAMOS EL RELOAD FORZADO. 
+        Swal.fire({ title: '¡Aventura Reescríta!', text: 'Los detalles de la mesa han sido actualizados.', icon: 'success', background: '#09090b', color: '#fff', confirmButtonColor: '#f59e0b' });
+        setModoEdicion(false); // Solo cerramos el modo edición
       } else {
         const data = await res.json();
         Swal.fire({ title: 'Aviso del Gremio', text: data.error, icon: 'warning', background: '#09090b', color: '#fff' });

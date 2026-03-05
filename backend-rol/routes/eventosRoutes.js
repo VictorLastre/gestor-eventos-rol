@@ -63,6 +63,11 @@ router.post('/', verificarToken, (req, res) => {
       console.error(err);
       return res.status(500).json({ error: 'Error al convocar el evento.' });
     }
+    
+    // ✨ WEBSOCKETS: Avisar a todos que hay un nuevo evento
+    const io = req.app.get('io');
+    if (io) io.emit('actualizacion-eventos');
+    
     res.status(201).json({ mensaje: '¡Evento convocado con éxito!' });
   });
 });
@@ -138,6 +143,11 @@ router.post('/:id/partidas', verificarToken, (req, res) => {
         console.error(err);
         return res.status(500).json({ error: 'Error al crear la mesa.' });
       }
+      
+      // ✨ WEBSOCKETS: Avisar que se creó una mesa nueva en este evento específico
+      const io = req.app.get('io');
+      if (io) io.emit('actualizacion-mesas', { eventoId: parseInt(eventoId) });
+      
       res.status(201).json({ mensaje: '¡Mesa creada con éxito!' });
     });
   });
@@ -163,6 +173,11 @@ router.put('/:id', verificarToken, (req, res) => {
       console.error(err);
       return res.status(500).json({ error: 'Error al modificar los registros del evento.' });
     }
+    
+    // ✨ WEBSOCKETS: Avisar a todos que el evento cambió (horario, nombre, estado, etc.)
+    const io = req.app.get('io');
+    if (io) io.emit('actualizacion-eventos');
+    
     res.status(200).json({ mensaje: '¡La jornada ha sido reescrita con éxito!' });
   });
 });
@@ -172,6 +187,11 @@ router.delete('/:id', verificarToken, (req, res) => {
   if (req.usuario.rol !== 'admin') return res.status(403).json({ error: 'Sin autorización.' });
   db.query("DELETE FROM eventos WHERE id = ?", [req.params.id], (err) => {
     if (err) return res.status(500).send('Error');
+    
+    // ✨ WEBSOCKETS: Avisar que un evento desapareció
+    const io = req.app.get('io');
+    if (io) io.emit('actualizacion-eventos');
+    
     res.send('Evento borrado');
   });
 });
