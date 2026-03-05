@@ -205,11 +205,11 @@ function MisCronicas({ alActualizarUsuario }) {
                 </button>
               </div>
 
-              {/* El componente del Picker */}
+              {/* El componente del Picker - ✨ ¡CORREGIDO AQUÍ! */}
               {mostrarBuscadorEmojis && (
                 <div className="absolute z-50 top-[110%] left-0 shadow-[0_20px_50px_rgba(0,0,0,0.5)] rounded-2xl overflow-hidden border border-zinc-700 animate-in fade-in slide-in-from-top-4">
                   <EmojiPicker 
-                    onEmojiClick={atrarapEmoji} 
+                    onEmojiClick={atraparEmoji} 
                     theme="dark" 
                     searchPlaceHolder="Buscar identidad..."
                     skinTonesDisabled={false}
