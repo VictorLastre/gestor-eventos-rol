@@ -1,21 +1,23 @@
 import { useState, useEffect } from 'react';
 import Swal from 'sweetalert2'; 
 import { fetchProtegido } from '../utils/api'; 
-// ✨ IMPORTAMOS EL RECEPTOR TELEPÁTICO
 import { io } from 'socket.io-client';
+// ✨ 1. IMPORTAMOS EL CATÁLOGO DE EMOJIS
+import EmojiPicker from 'emoji-picker-react';
 
 function MisCronicas({ alActualizarUsuario }) { 
   const [cronicas, setCronicas] = useState({ dirigiendo: [], jugando: [] });
   const [cargando, setCargando] = useState(true);
   
-  // Guardamos el usuario en estado para que el renderizado reaccione a los cambios
   const [usuarioGuardado, setUsuarioGuardado] = useState(JSON.parse(localStorage.getItem('usuario')));
   const [editando, setEditando] = useState(false);
+  
+  // ✨ 2. ESTADO PARA MOSTRAR/OCULTAR EL PANEL DE EMOJIS
+  const [mostrarBuscadorEmojis, setMostrarBuscadorEmojis] = useState(false);
   
   const [peticionEnviada, setPeticionEnviada] = useState(usuarioGuardado?.solicitudDmPendiente || false);
   const esJugadorBase = usuarioGuardado?.rol === 'jugador';
   
-  // ✨ AÑADIDO: nombre_completo para los certificados
   const [perfil, setPerfil] = useState({ 
     nombre: usuarioGuardado?.nombre || '', 
     nombre_completo: usuarioGuardado?.nombre_completo || '', 
@@ -23,7 +25,6 @@ function MisCronicas({ alActualizarUsuario }) {
     avatar: usuarioGuardado?.avatar || 'guerrero'
   });
 
-  // ✨ FUNCIÓN SEPARADA PARA PODER LLAMARLA CON LA TELEPATÍA
   const cargarCronicas = () => {
     fetchProtegido('https://gestor-eventos-rol.onrender.com/api/usuarios/mis-cronicas')
       .then(res => res.json())
@@ -37,54 +38,51 @@ function MisCronicas({ alActualizarUsuario }) {
       });
   };
 
-  // ✨ FUNCIÓN PARA ACTUALIZAR EL PERFIL DESDE LA DB SI HAY UN ASCENSO
   const actualizarPerfilDesdeDB = () => {
-    fetchProtegido('https://gestor-eventos-rol.onrender.com/api/usuarios/yo') // Asumiendo que tienes este endpoint para obtener tu propio usuario. Si no, usa el que traiga la info del usuario.
+    fetchProtegido('https://gestor-eventos-rol.onrender.com/api/usuarios/yo') 
       .then(res => res.json())
       .then(datosUsuario => {
-         // Si hubo un cambio de rol (fue ascendido a DM)
          if(datosUsuario.rol !== usuarioGuardado.rol) {
             const nuevoUsuario = { ...usuarioGuardado, rol: datosUsuario.rol, solicitudDmPendiente: false };
             localStorage.setItem('usuario', JSON.stringify(nuevoUsuario));
             setUsuarioGuardado(nuevoUsuario);
-            setPeticionEnviada(false); // Reiniciamos el estado visual
+            setPeticionEnviada(false); 
             if (alActualizarUsuario) alActualizarUsuario(nuevoUsuario);
          }
       })
       .catch(err => console.error("Error verificando ascenso:", err));
   };
 
-
   useEffect(() => {
-    // 1. Cargamos las crónicas al entrar
     cargarCronicas();
 
-    // ✨ 2. EL RITUAL DE CONEXIÓN A LA RED TELEPÁTICA
     const socket = io('https://gestor-eventos-rol.onrender.com');
 
-    // Escuchamos si hay cambios en las mesas (ej: si se disuelve una mesa en la que juegas)
     socket.on('actualizacion-mesas', () => {
       cargarCronicas();
     });
 
-    // Escuchamos si hay cambios en los eventos (ej: si cambian la fecha de tu evento)
     socket.on('actualizacion-eventos', () => {
       cargarCronicas();
     });
 
-    // ✨ Escuchamos si hay cambios en los usuarios (ej: si un admin te ascendió a DM)
     socket.on('actualizacion-usuarios', () => {
       actualizarPerfilDesdeDB();
     });
 
-    // Limpieza al salir de la vista
     return () => {
       socket.disconnect();
     };
-  }, [usuarioGuardado.rol]); // Añadimos la dependencia para que no haya problemas con el scope
+  }, [usuarioGuardado.rol]); 
 
   const manejarCambioPerfil = (e) => {
     setPerfil({ ...perfil, [e.target.name]: e.target.value });
+  };
+
+  // ✨ 3. FUNCIÓN PARA ATRAPAR EL EMOJI SELECCIONADO
+  const atraparEmoji = (emojiObject) => {
+    setPerfil({ ...perfil, avatar: emojiObject.emoji });
+    setMostrarBuscadorEmojis(false); // Cerramos el panel después de elegir
   };
 
   const guardarPerfil = async () => {
@@ -153,7 +151,6 @@ function MisCronicas({ alActualizarUsuario }) {
     } catch (e) { if (e !== 'Sesión expirada') console.error(e); }
   };
 
-  // ✨ CORRECCIÓN MAGNA: Formateador de fechas a prueba de fallos
   const formatearFecha = (fechaStr) => {
     if (!fechaStr) return "Fecha Desconocida";
     try {
@@ -164,6 +161,12 @@ function MisCronicas({ alActualizarUsuario }) {
     } catch (error) {
       return "Fecha en el limbo";
     }
+  };
+
+  // ✨ FUNCIÓN PARA RENDERIZAR EL AVATAR (Adaptador por si tienen guardado "mago" en lugar del emoji)
+  const renderAvatar = (avatarString) => {
+    const viejosIconos = { guerrero: '⚔️', mago: '🧙', esqueleto: '💀', goblin: '👺' };
+    return viejosIconos[avatarString] || avatarString || '👤';
   };
 
   if (cargando) return (
@@ -184,24 +187,35 @@ function MisCronicas({ alActualizarUsuario }) {
         
         {editando ? (
           <div className="relative z-10 flex flex-col gap-8 animate-in zoom-in-95 duration-300">
-            <div className="space-y-4">
+            
+            {/* ✨ 4. NUEVA ZONA DE SELECCIÓN DE EMOJIS */}
+            <div className="space-y-4 relative">
               <label className="text-[10px] font-black text-zinc-500 uppercase tracking-widest ml-2">Elige tu Identidad (Avatar)</label>
-              <div className="grid grid-cols-4 gap-4 p-4 bg-zinc-950/50 rounded-3xl border border-zinc-800">
-                {['guerrero', 'mago', 'esqueleto', 'goblin'].map(tipo => (
-                  <button
-                    key={tipo}
-                    onClick={() => setPerfil({...perfil, avatar: tipo})}
-                    className={`aspect-square rounded-2xl flex items-center justify-center text-3xl md:text-4xl transition-all ${
-                      perfil.avatar === tipo ? 'bg-emerald-500 scale-105 shadow-[0_0_25px_rgba(16,185,129,0.3)]' : 'bg-zinc-900 opacity-40 hover:opacity-100'
-                    }`}
-                  >
-                    {tipo === 'guerrero' && '⚔️'}
-                    {tipo === 'mago' && '🧙'}
-                    {tipo === 'esqueleto' && '💀'}
-                    {tipo === 'goblin' && '👺'}
-                  </button>
-                ))}
+              
+              <div className="flex items-center gap-6">
+                <div className="w-20 h-20 bg-zinc-950 rounded-3xl border-2 border-emerald-500/50 flex items-center justify-center text-4xl shadow-[0_0_20px_rgba(16,185,129,0.2)]">
+                  {renderAvatar(perfil.avatar)}
+                </div>
+                
+                <button 
+                  onClick={() => setMostrarBuscadorEmojis(!mostrarBuscadorEmojis)}
+                  className="bg-zinc-800 hover:bg-zinc-700 text-white px-6 py-4 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all border border-zinc-700"
+                >
+                  {mostrarBuscadorEmojis ? 'Ocultar Catálogo ✕' : 'Explorar Catálogo de Emojis 🔍'}
+                </button>
               </div>
+
+              {/* El componente del Picker */}
+              {mostrarBuscadorEmojis && (
+                <div className="absolute z-50 top-[110%] left-0 shadow-[0_20px_50px_rgba(0,0,0,0.5)] rounded-2xl overflow-hidden border border-zinc-700 animate-in fade-in slide-in-from-top-4">
+                  <EmojiPicker 
+                    onEmojiClick={atrarapEmoji} 
+                    theme="dark" 
+                    searchPlaceHolder="Buscar identidad..."
+                    skinTonesDisabled={false}
+                  />
+                </div>
+              )}
             </div>
             
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -215,7 +229,6 @@ function MisCronicas({ alActualizarUsuario }) {
               </div>
             </div>
 
-            {/* ✨ NUEVO CAMPO: NOMBRE COMPLETO */}
             <div className="space-y-2">
               <label className="text-[10px] font-black text-zinc-500 uppercase tracking-widest ml-2 flex items-center gap-2">
                 <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse"></span> 
@@ -232,7 +245,7 @@ function MisCronicas({ alActualizarUsuario }) {
             
             <div className="flex flex-col sm:flex-row gap-3 mt-2">
               <button onClick={guardarPerfil} className="flex-1 bg-emerald-600 hover:bg-emerald-500 text-white font-black py-4 rounded-2xl uppercase text-xs tracking-widest transition-all shadow-lg shadow-emerald-900/20">Grabar Ficha</button>
-              <button onClick={() => setEditando(false)} className="px-8 bg-zinc-800 hover:bg-zinc-700 text-zinc-400 font-black py-4 rounded-2xl uppercase text-xs tracking-widest transition-all">Descartar</button>
+              <button onClick={() => { setEditando(false); setMostrarBuscadorEmojis(false); }} className="px-8 bg-zinc-800 hover:bg-zinc-700 text-zinc-400 font-black py-4 rounded-2xl uppercase text-xs tracking-widest transition-all">Descartar</button>
             </div>
           </div>
         ) : (
@@ -241,16 +254,12 @@ function MisCronicas({ alActualizarUsuario }) {
                 <div className="relative group">
                     <div className="absolute inset-0 bg-emerald-500/20 blur-xl rounded-full group-hover:bg-emerald-500/40 transition-all"></div>
                     <div className="w-24 h-24 md:w-32 md:h-32 bg-zinc-950 rounded-full flex items-center justify-center text-5xl md:text-6xl border-2 border-emerald-500/50 shadow-2xl relative z-10">
-                        {perfil.avatar === 'guerrero' && '⚔️'}
-                        {perfil.avatar === 'mago' && '🧙'}
-                        {perfil.avatar === 'esqueleto' && '💀'}
-                        {perfil.avatar === 'goblin' && '👺'}
+                        {renderAvatar(perfil.avatar)}
                     </div>
                 </div>
                 <div>
                   <p className="text-4xl md:text-5xl font-black text-white tracking-tighter uppercase italic">{perfil.nombre}</p>
                   
-                  {/* ✨ MUESTRA EL NOMBRE REAL SI EXISTE */}
                   {perfil.nombre_completo && (
                     <p className="text-zinc-400 font-bold text-sm tracking-wide mb-2 flex items-center gap-2">
                       📜 {perfil.nombre_completo}

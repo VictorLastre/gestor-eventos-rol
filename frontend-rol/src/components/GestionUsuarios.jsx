@@ -100,6 +100,16 @@ function GestionUsuarios() {
     setPaginaCenso(1);
   }, [filtroRol, busqueda]);
 
+  // ✨ LA FUNCIÓN MÁGICA PARA ENTENDER TODOS LOS AVATARES
+  const renderAvatar = (avatarString) => {
+    // Si viene nulo, devolvemos el misterioso
+    if (!avatarString) return '👤';
+    // Diccionario de los viejos tiempos
+    const viejosIconos = { guerrero: '⚔️', mago: '🧙', esqueleto: '💀', goblin: '👺' };
+    // Si está en el diccionario lo traduce, sino, pinta el emoji nuevo directamente
+    return viejosIconos[avatarString] || avatarString;
+  };
+
   const exportarLogistica = async () => {
     if (eventos.length === 0) return Swal.fire({ title: 'Error', text: 'No hay eventos registrados.', icon: 'error', background: '#09090b', color: '#fff' });
 
@@ -393,7 +403,10 @@ function GestionUsuarios() {
                {solicitudes.map(user => (
                  <div key={user.id} className="bg-zinc-900 border border-zinc-800 p-6 rounded-3xl flex flex-col sm:flex-row justify-between items-center gap-4 transition-all hover:border-purple-500/30 group">
                    <div className="flex items-center gap-4">
-                     <div className="w-14 h-14 bg-zinc-950 rounded-full flex items-center justify-center text-2xl border border-zinc-800 group-hover:border-purple-500/50 transition-colors">👤</div>
+                     {/* ✨ AQUÍ USAMOS LA FUNCIÓN MÁGICA DE AVATARES */}
+                     <div className="w-14 h-14 bg-zinc-950 rounded-full flex items-center justify-center text-2xl border border-zinc-800 group-hover:border-purple-500/50 transition-colors">
+                        {renderAvatar(user.avatar)}
+                     </div>
                      <div>
                        <p className="text-xl font-black text-white tracking-tighter uppercase italic">{user.nombre}</p>
                        <p className="text-xs text-zinc-500 font-mono italic">{user.email}</p>
@@ -461,8 +474,9 @@ function GestionUsuarios() {
                     usuariosPaginados.map(user => (
                       <tr key={user.id} className="hover:bg-white/[0.02] transition-colors group">
                         <td className="p-6 flex items-center gap-4">
+                          {/* ✨ AQUÍ TAMBIÉN USAMOS LA FUNCIÓN MÁGICA DE AVATARES */}
                           <span className="w-12 h-12 bg-zinc-950 rounded-full flex items-center justify-center text-xl border border-zinc-800 group-hover:border-zinc-600 transition-all">
-                            {user.avatar === 'guerrero' ? '⚔️' : user.avatar === 'mago' ? '🧙' : user.avatar === 'esqueleto' ? '💀' : user.avatar === 'goblin' ? '👺' : '👤'}
+                            {renderAvatar(user.avatar)}
                           </span>
                           <div>
                             <p className="font-black text-zinc-200 uppercase italic tracking-tight">

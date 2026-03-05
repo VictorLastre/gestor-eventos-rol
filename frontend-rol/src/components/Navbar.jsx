@@ -74,10 +74,13 @@ function Navbar({ usuario, alCerrarSesion, setVista }) {
     }
   };
 
+  // ✨ LA FUNCIÓN MÁGICA PARA ENTENDER TODOS LOS AVATARES
   const renderAvatar = () => {
-    const avatar = usuario?.avatar || 'guerrero';
-    const iconos = { guerrero: '⚔️', mago: '🧙', esqueleto: '💀', goblin: '👺' };
-    return iconos[avatar] || '👤';
+    const avatarStr = usuario?.avatar || '👤';
+    const viejosIconos = { guerrero: '⚔️', mago: '🧙', esqueleto: '💀', goblin: '👺' };
+    
+    // Si el valor está en el diccionario viejo, lo traduce. Si no, lo asume como emoji directo.
+    return viejosIconos[avatarStr] || avatarStr;
   };
 
   const confirmarCierreSesion = () => {
@@ -219,6 +222,7 @@ function Navbar({ usuario, alCerrarSesion, setVista }) {
               }`}
             >
               {esFundador && <div className="absolute inset-0 bg-amber-500/20 animate-pulse"></div>}
+              {/* ✨ AQUÍ INVOCAMOS LA FUNCIÓN MÁGICA */}
               <span className="relative z-10">{renderAvatar()}</span>
             </div>
             
