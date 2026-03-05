@@ -37,8 +37,10 @@ function GestionUsuarios() {
       .then(res => res.json())
       .then(datos => setEventos(Array.isArray(datos) ? datos : []))
       .catch(err => console.error(err));
+  };
 
-    // ✨ CONSULTA AL ORÁCULO DE SISTEMAS
+  // ✨ SEPARAMOS LA CARGA DEL ORÁCULO PARA LLAMARLA CON TELEPATÍA
+  const cargarOraculo = () => {
     fetchProtegido('https://gestor-eventos-rol.onrender.com/api/partidas/estadisticas/sistemas')
       .then(res => res.json())
       .then(datos => setTopSistemas(Array.isArray(datos) ? datos : []))
@@ -58,6 +60,7 @@ function GestionUsuarios() {
   // ✨ EL RITUAL DE CONEXIÓN A LA RED TELEPÁTICA PARA EL ÁREA DE COMANDO
   useEffect(() => { 
     cargarDatosPrincipales(); 
+    cargarOraculo();
     cargarCenso();
 
     const socket = io('https://gestor-eventos-rol.onrender.com');
@@ -80,6 +83,12 @@ function GestionUsuarios() {
     // Escuchamos si hay un nuevo sistema para actualizar el Oráculo (opcional)
     socket.on('actualizacion-sistemas', () => {
       cargarDatosPrincipales();
+      cargarOraculo(); // Recarga si añaden un manual nuevo
+    });
+
+    // ✨ Escuchamos cuando se crea o borra una partida para que el Top de Sistemas se actualice vivo
+    socket.on('actualizacion-mesas', () => {
+      cargarOraculo(); 
     });
 
     return () => {

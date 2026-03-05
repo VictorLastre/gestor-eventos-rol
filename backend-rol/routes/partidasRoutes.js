@@ -3,12 +3,16 @@ const router = express.Router();
 const db = require('../config/db');
 const verificarToken = require('../middlewares/auth');
 
-// ✨ ESTADÍSTICAS: Obtener el Top de Sistemas Más Jugados
+// ✨ ESTADÍSTICAS: Obtener el Top de Sistemas Más Jugados (CORREGIDO)
 router.get('/estadisticas/sistemas', verificarToken, (req, res) => {
+  // Ahora cruzamos con la tabla sistemas usando sistema_id para mayor precisión
   const sql = `
-    SELECT sistema, COUNT(*) as cantidad 
-    FROM partidas 
-    GROUP BY sistema 
+    SELECT 
+      s.nombre as sistema, 
+      COUNT(p.id) as cantidad 
+    FROM partidas p
+    JOIN sistemas s ON p.sistema_id = s.id
+    GROUP BY p.sistema_id, s.nombre
     ORDER BY cantidad DESC 
     LIMIT 5
   `;
@@ -16,7 +20,12 @@ router.get('/estadisticas/sistemas', verificarToken, (req, res) => {
   db.query(sql, (err, resultados) => {
     if (err) {
       console.error("Error al consultar el Oráculo de Sistemas:", err);
-      return res.status(500).json({ error: 'Error leyendo los sistemas más jugados.' });
+      // Fallback: Si la nueva query falla por algún motivo de estructura, volvemos a la vieja
+      const sqlFallback = `SELECT sistema, COUNT(*) as cantidad FROM partidas GROUP BY sistema ORDER BY cantidad DESC LIMIT 5`;
+      return db.query(sqlFallback, (errFB, resFB) => {
+        if(errFB) return res.status(500).json({ error: 'Error leyendo los sistemas más jugados.' });
+        res.json(resFB);
+      });
     }
     res.json(resultados);
   });
@@ -123,7 +132,9 @@ router.delete('/:id/inscripciones', verificarToken, (req, res) => {
 
   // Primero necesitamos saber a qué evento pertenecía esta partida para avisar al frontend
   db.query("SELECT evento_id FROM partidas WHERE id = ?", [idPartida], (err, resultados) => {
-    if (err || resultados.length === 0) return res.status(500).send('Error en los registros.');
+    if (err) return res.status(500).send('Error en los registros.');
+    if (resultados.length === 0) return res.status(404).send('La mesa no existe.');
+    
     const evento_id = resultados[0].evento_id;
 
     const sqlDelete = 'DELETE FROM inscripciones WHERE partida_id = ? AND usuario_id = ?';
@@ -235,6 +246,7 @@ router.get('/reporte-logistico/:eventoId', verificarToken, (req, res) => {
       p.turno, 
       p.materiales_pedidos,
       u.nombre as dm_nombre, 
+      u.nombre_completo,
       u.es_dm_nuevo, 
       GROUP_CONCAT(uj.nombre SEPARATOR ', ') as jugadores
     FROM partidas p
