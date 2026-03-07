@@ -3,6 +3,14 @@ const router = express.Router();
 const db = require('../config/db');
 const verificarToken = require('../middlewares/auth');
 
+// ✨ FUNCIÓN DEL ESCRIBA: REGISTRO EN LA BITÁCORA
+const registrarLog = (usuario, accion, descripcion) => {
+  const sql = "INSERT INTO logs_actividad (usuario_id, nombre_usuario, accion, descripcion) VALUES (?, ?, ?, ?)";
+  db.query(sql, [usuario.id, usuario.nombre, accion, descripcion], (err) => {
+    if (err) console.error("❌ Error en bitácora:", err);
+  });
+};
+
 // ✨ ESTADÍSTICAS: Obtener el Top de Sistemas Más Jugados (CORREGIDO)
 router.get('/estadisticas/sistemas', verificarToken, (req, res) => {
   // Ahora cruzamos con la tabla sistemas usando sistema_id para mayor precisión
@@ -56,6 +64,9 @@ router.post('/', verificarToken, (req, res) => {
       return res.status(500).json({ error: 'Error al forjar la mesa en la base de datos.' });
     }
 
+    // ✨ REGISTRO EN BITÁCORA
+    registrarLog(req.usuario, 'CREAR_MESA', `Abrió la mesa "${titulo}" usando el sistema "${sistema}".`);
+
     // ✨ MAGIA DE NOTIFICACIÓN
     db.query("SELECT COUNT(*) AS total_mesas FROM partidas WHERE dungeon_master_id = ?", [idUsuario], (err, countResult) => {
       if (err) console.error("Error al contar las mesas del DM:", err);
@@ -87,13 +98,13 @@ router.post('/:id/inscripciones', verificarToken, (req, res) => {
   const idPartida = req.params.id;
   const idUsuario = req.usuario.id;
 
-  const sqlInfoMesa = `SELECT evento_id, cupo, (SELECT COUNT(*) FROM inscripciones WHERE partida_id = ?) as anotados FROM partidas WHERE id = ?`;
+  const sqlInfoMesa = `SELECT evento_id, cupo, titulo, (SELECT COUNT(*) FROM inscripciones WHERE partida_id = ?) as anotados FROM partidas WHERE id = ?`;
 
   db.query(sqlInfoMesa, [idPartida, idPartida], (err, resultados) => {
     if (err) return res.status(500).send('Error de servidor.');
     if (resultados.length === 0) return res.status(404).send('La mesa ya no existe.');
     
-    const { evento_id, cupo, anotados } = resultados[0];
+    const { evento_id, cupo, anotados, titulo } = resultados[0];
 
     if (anotados >= cupo) return res.status(400).send('❌ ¡Mesa llena! No quedan lugares.');
 
@@ -115,6 +126,9 @@ router.post('/:id/inscripciones', verificarToken, (req, res) => {
       db.query("INSERT INTO inscripciones (usuario_id, partida_id) VALUES (?, ?)", [idUsuario, idPartida], (err) => {
         if (err) return res.status(400).send('Error al anotarse.');
         
+        // ✨ REGISTRO EN BITÁCORA
+        registrarLog(req.usuario, 'INSCRIPCION_MESA', `Se unió a la mesa "${titulo}".`);
+
         // ✨ WEBSOCKETS: Avisar a todos que alguien ocupó un lugar
         const io = req.app.get('io');
         if (io) io.emit('actualizacion-mesas', { eventoId: parseInt(evento_id) });
@@ -130,18 +144,22 @@ router.delete('/:id/inscripciones', verificarToken, (req, res) => {
   const idPartida = req.params.id;
   const idUsuario = req.usuario.id;
 
-  // Primero necesitamos saber a qué evento pertenecía esta partida para avisar al frontend
-  db.query("SELECT evento_id FROM partidas WHERE id = ?", [idPartida], (err, resultados) => {
+  // Primero necesitamos saber a qué evento pertenecía esta partida para avisar al frontend y obtener el título para el log
+  db.query("SELECT evento_id, titulo FROM partidas WHERE id = ?", [idPartida], (err, resultados) => {
     if (err) return res.status(500).send('Error en los registros.');
     if (resultados.length === 0) return res.status(404).send('La mesa no existe.');
     
     const evento_id = resultados[0].evento_id;
+    const titulo = resultados[0].titulo;
 
     const sqlDelete = 'DELETE FROM inscripciones WHERE partida_id = ? AND usuario_id = ?';
     db.query(sqlDelete, [idPartida, idUsuario], (err, resultado) => {
       if (err) return res.status(500).send('Error al abandonar la mesa.');
       if (resultado.affectedRows === 0) return res.status(400).send('No figurabas en los registros.');
       
+      // ✨ REGISTRO EN BITÁCORA
+      registrarLog(req.usuario, 'ABANDONAR_MESA', `Se retiró de la mesa "${titulo}".`);
+
       // ✨ WEBSOCKETS: Avisar a todos que se liberó un cupo
       const io = req.app.get('io');
       if (io) io.emit('actualizacion-mesas', { eventoId: parseInt(evento_id) });
@@ -188,6 +206,9 @@ router.delete('/:id', verificarToken, (req, res) => {
       db.query("DELETE FROM partidas WHERE id = ?", [partidaId], (err) => {
         if (err) return res.status(500).send('Error al disolver la mesa.');
         
+        // ✨ REGISTRO EN BITÁCORA
+        registrarLog(req.usuario, 'ELIMINAR_MESA', `Disolvió la mesa "${titulo}"${dmId !== usuarioId ? ' (Acción de Administrador)' : ''}.`);
+
         // ✨ WEBSOCKETS: Avisar que una mesa desapareció del tablón
         const io = req.app.get('io');
         if (io) io.emit('actualizacion-mesas', { eventoId: parseInt(evento_id) });
@@ -204,11 +225,12 @@ router.put('/:id', verificarToken, (req, res) => {
   const usuarioId = req.usuario.id;
   const rolUsuario = req.usuario.rol;
 
-  db.query("SELECT dungeon_master_id, evento_id FROM partidas WHERE id = ?", [partidaId], (err, resultados) => {
+  db.query("SELECT dungeon_master_id, evento_id, titulo as titulo_viejo FROM partidas WHERE id = ?", [partidaId], (err, resultados) => {
     if (err || resultados.length === 0) return res.status(404).json({ error: 'Mesa no encontrada.' });
 
     const dmId = resultados[0].dungeon_master_id;
     const evento_id = resultados[0].evento_id;
+    const titulo_viejo = resultados[0].titulo_viejo;
 
     if (dmId !== usuarioId && rolUsuario !== 'admin') {
       return res.status(403).json({ error: 'Sin permisos.' });
@@ -226,6 +248,9 @@ router.put('/:id', verificarToken, (req, res) => {
     db.query(sqlUpdate, [titulo, descripcion, requisitos, sistema, sistema_id, cupo, turno, etiqueta, apta_novatos, materiales_pedidos, partidaId], (err) => {
       if (err) return res.status(500).json({ error: 'Error al actualizar.' });
       
+      // ✨ REGISTRO EN BITÁCORA
+      registrarLog(req.usuario, 'EDITAR_MESA', `Modificó los detalles de la mesa "${titulo_viejo}" (Ahora: "${titulo}").`);
+
       // ✨ WEBSOCKETS: Avisar que los detalles de la mesa cambiaron
       const io = req.app.get('io');
       if (io) io.emit('actualizacion-mesas', { eventoId: parseInt(evento_id) });
@@ -263,6 +288,13 @@ router.get('/reporte-logistico/:eventoId', verificarToken, (req, res) => {
       console.error(err);
       return res.status(500).json({ error: 'Error al generar el reporte logístico.' });
     }
+    
+    // Opcional: registrar quién y cuándo exportó la logística
+    db.query("SELECT nombre FROM eventos WHERE id = ?", [req.params.eventoId], (err2, result2) => {
+       const nombreEv = result2 && result2[0] ? result2[0].nombre : 'Desconocido';
+       registrarLog(req.usuario, 'REPORTE_LOGISTICA', `Exportó la planilla logística de la jornada "${nombreEv}".`);
+    });
+
     res.json(resultados);
   });
 });

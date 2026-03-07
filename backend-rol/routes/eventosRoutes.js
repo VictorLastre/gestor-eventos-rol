@@ -3,6 +3,14 @@ const router = express.Router();
 const db = require('../config/db');
 const verificarToken = require('../middlewares/auth');
 
+// ✨ FUNCIÓN DEL ESCRIBA: REGISTRO EN LA BITÁCORA
+const registrarLog = (usuario, accion, descripcion) => {
+  const sql = "INSERT INTO logs_actividad (usuario_id, nombre_usuario, accion, descripcion) VALUES (?, ?, ?, ?)";
+  db.query(sql, [usuario.id, usuario.nombre, accion, descripcion], (err) => {
+    if (err) console.error("❌ Error en bitácora:", err);
+  });
+};
+
 // 1. Obtener todos los eventos (Con actualización de estados y formateo de fecha SEGURO)
 router.get('/', (req, res) => {
   // Ajuste para Argentina (UTC-3) para la lógica de comparación de estados
@@ -64,6 +72,9 @@ router.post('/', verificarToken, (req, res) => {
       return res.status(500).json({ error: 'Error al convocar el evento.' });
     }
     
+    // ✨ REGISTRO EN BITÁCORA
+    registrarLog(req.usuario, 'CREAR_EVENTO', `Ha convocado una nueva jornada: "${nombre}" para el ${fechaLimpia}.`);
+
     // ✨ WEBSOCKETS: Avisar a todos que hay un nuevo evento
     const io = req.app.get('io');
     if (io) io.emit('actualizacion-eventos');
@@ -108,6 +119,7 @@ router.post('/:id/partidas', verificarToken, (req, res) => {
   const sqlCheck = `
     SELECT 
       DATE_FORMAT(e.fecha, '%Y-%m-%d') as evento_fecha,
+      e.nombre as nombre_evento,
       (SELECT COUNT(*) FROM partidas WHERE evento_id = ? AND dungeon_master_id = ?) as es_dm,
       (SELECT COUNT(*) FROM inscripciones i JOIN partidas p ON i.partida_id = p.id WHERE p.evento_id = ? AND i.usuario_id = ?) as es_jugador
     FROM eventos e WHERE e.id = ?
@@ -117,7 +129,7 @@ router.post('/:id/partidas', verificarToken, (req, res) => {
     if (err) return res.status(500).json({ error: 'Error al consultar los registros del gremio.' });
     if (resultados.length === 0) return res.status(404).json({ error: 'El evento no existe.' });
     
-    const { evento_fecha, es_dm, es_jugador } = resultados[0];
+    const { evento_fecha, nombre_evento, es_dm, es_jugador } = resultados[0];
 
     // ✨ BLOQUEO LOGÍSTICO: Si hoy es el día del evento (o posterior), se bloquea la creación
     const tzOffset = -3 * 60 * 60 * 1000; // Hora Argentina
@@ -144,6 +156,9 @@ router.post('/:id/partidas', verificarToken, (req, res) => {
         return res.status(500).json({ error: 'Error al crear la mesa.' });
       }
       
+      // ✨ REGISTRO EN BITÁCORA
+      registrarLog(req.usuario, 'CREAR_MESA', `Abrió la mesa "${titulo}" para la jornada "${nombre_evento}".`);
+
       // ✨ WEBSOCKETS: Avisar que se creó una mesa nueva en este evento específico
       const io = req.app.get('io');
       if (io) io.emit('actualizacion-mesas', { eventoId: parseInt(eventoId) });
@@ -174,6 +189,9 @@ router.put('/:id', verificarToken, (req, res) => {
       return res.status(500).json({ error: 'Error al modificar los registros del evento.' });
     }
     
+    // ✨ REGISTRO EN BITÁCORA
+    registrarLog(req.usuario, 'MODIFICAR_EVENTO', `Alteró los registros de la jornada: "${nombre}".`);
+
     // ✨ WEBSOCKETS: Avisar a todos que el evento cambió (horario, nombre, estado, etc.)
     const io = req.app.get('io');
     if (io) io.emit('actualizacion-eventos');
@@ -185,14 +203,23 @@ router.put('/:id', verificarToken, (req, res) => {
 // 6. Eliminar un evento (Solo Admins)
 router.delete('/:id', verificarToken, (req, res) => {
   if (req.usuario.rol !== 'admin') return res.status(403).json({ error: 'Sin autorización.' });
-  db.query("DELETE FROM eventos WHERE id = ?", [req.params.id], (err) => {
-    if (err) return res.status(500).send('Error');
-    
-    // ✨ WEBSOCKETS: Avisar que un evento desapareció
-    const io = req.app.get('io');
-    if (io) io.emit('actualizacion-eventos');
-    
-    res.send('Evento borrado');
+  
+  // Primero sacamos el nombre del evento para poder registrarlo en el log
+  db.query("SELECT nombre FROM eventos WHERE id = ?", [req.params.id], (err, result) => {
+      const nombreEvento = result[0]?.nombre || 'Desconocido';
+
+      db.query("DELETE FROM eventos WHERE id = ?", [req.params.id], (err) => {
+        if (err) return res.status(500).send('Error');
+        
+        // ✨ REGISTRO EN BITÁCORA
+        registrarLog(req.usuario, 'ELIMINAR_EVENTO', `Canceló y borró la jornada: "${nombreEvento}".`);
+
+        // ✨ WEBSOCKETS: Avisar que un evento desapareció
+        const io = req.app.get('io');
+        if (io) io.emit('actualizacion-eventos');
+        
+        res.send('Evento borrado');
+      });
   });
 });
 
