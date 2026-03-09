@@ -162,7 +162,7 @@ function Eventos() {
           <span className="group-hover:-translate-x-1 transition-transform">←</span> Volver al Tablón
         </button>
 
-        <header className="relative bg-zinc-900 border border-zinc-800 p-8 md:p-12 rounded-[2.5rem] shadow-2xl mb-8 overflow-hidden">
+        <header className="relative bg-zinc-900 border border-zinc-800 p-8 md:p-12 rounded-[2.5rem] shadow-2xl mb-12 overflow-hidden">
           <div className={`absolute top-6 right-6 px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest border ${
             eventoSeleccionado.estado === 'En Curso' ? 'bg-blue-500/20 text-blue-400 border-blue-500/30 animate-pulse' : 
             eventoSeleccionado.estado === 'Suspendido' ? 'bg-red-500/20 text-red-400 border-red-500/30' : 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30'
@@ -192,31 +192,41 @@ function Eventos() {
           </div>
         </header>
 
-        <div className="flex flex-wrap gap-4 mb-10 border-b border-zinc-800 pb-4">
-          <button 
-            onClick={() => setVistaActiva('rol')} 
-            className={`flex items-center gap-2 px-6 py-3 font-black text-[10px] uppercase tracking-[0.2em] transition-all rounded-xl ${vistaActiva === 'rol' ? 'bg-emerald-600 text-white shadow-lg shadow-emerald-900/40' : 'text-zinc-500 hover:bg-zinc-900'}`}
-          >
-            🎲 Mesas de Rol
-          </button>
-          <button 
-            onClick={() => setVistaActiva('escape')} 
-            className={`flex items-center gap-2 px-6 py-3 font-black text-[10px] uppercase tracking-[0.2em] transition-all rounded-xl ${vistaActiva === 'escape' ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-900/40' : 'text-zinc-500 hover:bg-zinc-900'}`}
-          >
-            🔐 Escape Rooms
-          </button>
+        {/* ✨ PESTAÑAS CENTRADAS Y VISUALMENTE IMPACTANTES */}
+        <div className="flex justify-center mb-16">
+          <div className="bg-zinc-950/80 p-2 rounded-full border border-zinc-800 flex flex-col md:flex-row gap-2 shadow-2xl backdrop-blur-sm">
+            <button 
+              onClick={() => setVistaActiva('rol')} 
+              className={`flex justify-center items-center gap-3 px-8 py-4 font-black text-[10px] md:text-xs uppercase tracking-[0.2em] transition-all rounded-full ${
+                vistaActiva === 'rol' 
+                  ? 'bg-gradient-to-r from-amber-500 to-orange-500 text-black shadow-lg shadow-amber-500/30 transform scale-105' 
+                  : 'text-zinc-500 hover:text-white hover:bg-zinc-900'
+              }`}
+            >
+              <span className="text-lg">🎲</span> Mesas de Rol
+            </button>
+            <button 
+              onClick={() => setVistaActiva('escape')} 
+              className={`flex justify-center items-center gap-3 px-8 py-4 font-black text-[10px] md:text-xs uppercase tracking-[0.2em] transition-all rounded-full ${
+                vistaActiva === 'escape' 
+                  ? 'bg-gradient-to-r from-indigo-500 to-purple-600 text-white shadow-lg shadow-indigo-500/30 transform scale-105' 
+                  : 'text-zinc-500 hover:text-white hover:bg-zinc-900'
+              }`}
+            >
+              <span className="text-lg">🔐</span> Escape Rooms
+            </button>
+          </div>
         </div>
 
         {/* ========================================= */}
         {/* 🎲 VISTA: MESAS DE ROL                    */}
         {/* ========================================= */}
         {vistaActiva === 'rol' && (
-          <div className="animate-in fade-in duration-500">
+          <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
             {esDungeonMaster && (eventoSeleccionado.estado !== 'Finalizado' && eventoSeleccionado.estado !== 'Suspendido') && !yaParticipa && (
               <div className="mb-12">
                 {!convocatoriaCerrada ? (
                   <>
-                    {/* ✨ BOTÓN DE ROL MEJORADO Y CENTRADO */}
                     <div className="flex justify-center w-full">
                       <button 
                         onClick={() => setMostrarFormularioMesa(!mostrarFormularioMesa)}
@@ -276,12 +286,11 @@ function Eventos() {
         {/* 🔐 VISTA: ESCAPE ROOMS                    */}
         {/* ========================================= */}
         {vistaActiva === 'escape' && (
-          <div className="animate-in fade-in duration-500">
+          <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
             {esDungeonMaster && (eventoSeleccionado.estado !== 'Finalizado' && eventoSeleccionado.estado !== 'Suspendido') && (
               <div className="mb-12">
                 {!convocatoriaCerrada ? (
                   <>
-                    {/* ✨ BOTÓN DE ESCAPE ROOM MEJORADO Y CENTRADO */}
                     <div className="flex justify-center w-full">
                       <button 
                         onClick={() => setMostrarFormularioEscape(!mostrarFormularioEscape)}
@@ -317,8 +326,9 @@ function Eventos() {
               <h3 className="text-2xl font-black text-white uppercase tracking-tighter italic">Salas Disponibles</h3>
             </div>
 
+            {/* ✨ GRILLA CAMBIADA A 1 SOLA COLUMNA PARA QUE SEAN GIGANTES */}
             {escapesDelEvento.length > 0 ? (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pb-12">
+              <div className="grid grid-cols-1 gap-10 pb-12 max-w-5xl mx-auto">
                 {escapesDelEvento.map(sala => (
                   <TarjetaEscape 
                     key={sala.id} 
