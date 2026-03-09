@@ -2,7 +2,6 @@ import { useState, useEffect, useRef } from 'react';
 import Swal from 'sweetalert2'; 
 import Partida from './Partida'; 
 import CrearMesa from './CrearMesa'; 
-// ✨ IMPORTAMOS EL NUEVO FORMULARIO DE ESCAPE Y LA TARJETA
 import FormularioEscape from './FormularioEscape'; 
 import TarjetaEscape from './TarjetaEscape'; 
 import { fetchProtegido } from '../utils/api'; 
@@ -14,8 +13,7 @@ function Eventos() {
   const [partidasDelEvento, setPartidasDelEvento] = useState([]);
   const [eventoEditando, setEventoEditando] = useState(null);
   
-  // ✨ ESTADOS PARA EL SISTEMA DE PESTAÑAS Y ESCAPES
-  const [vistaActiva, setVistaActiva] = useState('rol'); // 'rol' o 'escape'
+  const [vistaActiva, setVistaActiva] = useState('rol'); 
   const [escapesDelEvento, setEscapesDelEvento] = useState([]);
   const [mostrarFormularioMesa, setMostrarFormularioMesa] = useState(false);
   const [mostrarFormularioEscape, setMostrarFormularioEscape] = useState(false);
@@ -35,21 +33,22 @@ function Eventos() {
     return `${parseInt(dia)} de ${meses[parseInt(mes) - 1]} de ${anio}`;
   };
 
+  // ✨ ESCUDO 1: Aseguramos que 'datos' siempre sea un Array
   const cargarEventos = () => {
     fetch('https://gestor-eventos-rol.onrender.com/api/eventos')
       .then(res => res.json())
-      .then(datos => setEventos(datos))
+      .then(datos => setEventos(Array.isArray(datos) ? datos : []))
       .catch(err => console.error("Error:", err));
   };
 
+  // ✨ ESCUDO 2: Aseguramos que las partidas siempre sean un Array
   const cargarMesasDelEvento = (idEvento) => {
     fetchProtegido(`https://gestor-eventos-rol.onrender.com/api/eventos/${idEvento}/partidas`)
       .then(res => res.json())
-      .then(setPartidasDelEvento)
+      .then(datos => setPartidasDelEvento(Array.isArray(datos) ? datos : []))
       .catch(err => { if (err !== 'Sesión expirada') console.error(err); });
   };
 
-  // ✨ NUEVA FUNCIÓN PARA CARGAR LAS SALAS DE ESCAPE
   const cargarEscapesDelEvento = (idEvento) => {
     fetchProtegido(`https://gestor-eventos-rol.onrender.com/api/escapes/${idEvento}`)
       .then(res => res.json())
@@ -60,7 +59,11 @@ function Eventos() {
   useEffect(() => { 
     cargarEventos(); 
 
-    const socket = io('https://gestor-eventos-rol.onrender.com');
+    // ✨ ESTABILIZADOR: Forzamos websockets y polling para evitar cortes abruptos en Render
+    const socket = io('https://gestor-eventos-rol.onrender.com', {
+      transports: ['websocket', 'polling'],
+      reconnectionAttempts: 5
+    });
 
     socket.on('actualizacion-eventos', () => {
       cargarEventos();
@@ -75,7 +78,6 @@ function Eventos() {
       });
     });
 
-    // ✨ ESCUCHAMOS SI HAY NOVEDADES EN LOS ESCAPE ROOMS
     socket.on('actualizacion-escapes', (data) => {
       setEventoSeleccionado(estadoPrevio => {
         if (estadoPrevio && estadoPrevio.id === data.eventoId) {
@@ -136,11 +138,11 @@ function Eventos() {
 
   const entrarAlEvento = (evento) => {
     setEventoSeleccionado(evento);
-    setVistaActiva('rol'); // Reiniciamos la vista a Rol por defecto
+    setVistaActiva('rol'); 
     setMostrarFormularioMesa(false);
     setMostrarFormularioEscape(false);
     cargarMesasDelEvento(evento.id);
-    cargarEscapesDelEvento(evento.id); // Cargamos los escapes también
+    cargarEscapesDelEvento(evento.id); 
   };
 
   const eventosProximos = eventos.filter(e => e.estado === 'Proximo' || e.estado === 'En Curso').sort((a, b) => a.fecha.localeCompare(b.fecha));
@@ -193,7 +195,6 @@ function Eventos() {
           </div>
         </header>
 
-        {/* ✨ SISTEMA DE PESTAÑAS GEMELAS */}
         <div className="flex flex-wrap gap-4 mb-10 border-b border-zinc-800 pb-4">
           <button 
             onClick={() => setVistaActiva('rol')} 
@@ -209,9 +210,6 @@ function Eventos() {
           </button>
         </div>
 
-        {/* ========================================= */}
-        {/* 🎲 VISTA: MESAS DE ROL                    */}
-        {/* ========================================= */}
         {vistaActiva === 'rol' && (
           <div className="animate-in fade-in duration-500">
             {esDungeonMaster && (eventoSeleccionado.estado !== 'Finalizado' && eventoSeleccionado.estado !== 'Suspendido') && !yaParticipa && (
@@ -266,9 +264,6 @@ function Eventos() {
           </div>
         )}
 
-        {/* ========================================= */}
-        {/* 🔐 VISTA: ESCAPE ROOMS                    */}
-        {/* ========================================= */}
         {vistaActiva === 'escape' && (
           <div className="animate-in fade-in duration-500">
             {esDungeonMaster && (eventoSeleccionado.estado !== 'Finalizado' && eventoSeleccionado.estado !== 'Suspendido') && (
@@ -303,7 +298,6 @@ function Eventos() {
               <h3 className="text-2xl font-black text-white uppercase tracking-tighter italic">Salas Disponibles</h3>
             </div>
 
-            {/* ✨ AQUÍ INYECTAMOS LA NUEVA TARJETA DE ESCAPE */}
             {escapesDelEvento.length > 0 ? (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pb-12">
                 {escapesDelEvento.map(sala => (
@@ -329,7 +323,6 @@ function Eventos() {
   return (
     <div className="max-w-7xl mx-auto p-4 md:p-12 animate-in fade-in duration-700">
       
-      {/* ✏️ MODAL DE EDICIÓN ADMIN */}
       {eventoEditando && (
         <div className="fixed inset-0 z-[300] flex items-center justify-center p-4 bg-black/95 backdrop-blur-md">
           <div className="bg-zinc-900 border border-purple-500/30 w-full max-w-lg rounded-[2.5rem] p-10 shadow-3xl">
@@ -365,7 +358,6 @@ function Eventos() {
         </div>
       )}
 
-      {/* 📌 TABLÓN DE MISIONES PRINCIPAL */}
       <section className="mb-20 relative">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-12">
           <h2 className="text-4xl md:text-6xl font-black text-white tracking-tighter uppercase italic leading-none">
@@ -426,7 +418,6 @@ function Eventos() {
         ) : <p className="text-center py-24 bg-zinc-900/20 border-2 border-dashed border-zinc-800 rounded-[3rem] text-zinc-600 font-black uppercase tracking-widest text-xs italic">No hay pergaminos convocados por el momento</p>}
       </section>
 
-      {/* 📜 HISTORIAL DE EVENTOS */}
       <section className="opacity-60 hover:opacity-100 transition-opacity duration-500">
         <h3 className="text-xl font-black text-zinc-600 uppercase tracking-[0.3em] mb-10 italic">Anales del Pasado</h3>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
