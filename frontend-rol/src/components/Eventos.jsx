@@ -33,7 +33,6 @@ function Eventos() {
     return `${parseInt(dia)} de ${meses[parseInt(mes) - 1]} de ${anio}`;
   };
 
-  // ✨ ESCUDO 1: Aseguramos que 'datos' siempre sea un Array
   const cargarEventos = () => {
     fetch('https://gestor-eventos-rol.onrender.com/api/eventos')
       .then(res => res.json())
@@ -41,7 +40,6 @@ function Eventos() {
       .catch(err => console.error("Error:", err));
   };
 
-  // ✨ ESCUDO 2: Aseguramos que las partidas siempre sean un Array
   const cargarMesasDelEvento = (idEvento) => {
     fetchProtegido(`https://gestor-eventos-rol.onrender.com/api/eventos/${idEvento}/partidas`)
       .then(res => res.json())
@@ -59,7 +57,6 @@ function Eventos() {
   useEffect(() => { 
     cargarEventos(); 
 
-    // ✨ ESTABILIZADOR: Forzamos websockets y polling para evitar cortes abruptos en Render
     const socket = io('https://gestor-eventos-rol.onrender.com', {
       transports: ['websocket', 'polling'],
       reconnectionAttempts: 5
@@ -210,18 +207,29 @@ function Eventos() {
           </button>
         </div>
 
+        {/* ========================================= */}
+        {/* 🎲 VISTA: MESAS DE ROL                    */}
+        {/* ========================================= */}
         {vistaActiva === 'rol' && (
           <div className="animate-in fade-in duration-500">
             {esDungeonMaster && (eventoSeleccionado.estado !== 'Finalizado' && eventoSeleccionado.estado !== 'Suspendido') && !yaParticipa && (
               <div className="mb-12">
                 {!convocatoriaCerrada ? (
                   <>
-                    <button 
-                      onClick={() => setMostrarFormularioMesa(!mostrarFormularioMesa)}
-                      className={`w-full py-5 rounded-[2rem] font-black transition-all shadow-xl flex items-center justify-center gap-3 tracking-widest text-xs uppercase ${mostrarFormularioMesa ? 'bg-zinc-800 text-zinc-500 border border-zinc-700' : 'bg-amber-500 text-black hover:scale-[1.01] hover:shadow-amber-500/20'}`}
-                    >
-                      {mostrarFormularioMesa ? '✕ Cancelar Convocatoria' : '⚔️ Convocar Nueva Mesa de Rol'}
-                    </button>
+                    {/* ✨ BOTÓN DE ROL MEJORADO Y CENTRADO */}
+                    <div className="flex justify-center w-full">
+                      <button 
+                        onClick={() => setMostrarFormularioMesa(!mostrarFormularioMesa)}
+                        className={`w-full max-w-md py-5 rounded-full font-black transition-all duration-300 flex items-center justify-center gap-3 tracking-widest text-xs md:text-sm uppercase transform hover:-translate-y-1 ${
+                          mostrarFormularioMesa 
+                            ? 'bg-zinc-900 text-zinc-500 border border-zinc-800 hover:text-white hover:bg-red-500/20 hover:border-red-500/50' 
+                            : 'bg-gradient-to-r from-amber-500 to-orange-500 text-black shadow-lg shadow-amber-500/20 hover:shadow-amber-500/40'
+                        }`}
+                      >
+                        {mostrarFormularioMesa ? '✕ Cancelar Convocatoria' : '⚔️ Convocar Nueva Mesa'}
+                      </button>
+                    </div>
+
                     {mostrarFormularioMesa && (
                       <div className="mt-8 p-1 bg-gradient-to-b from-amber-500/20 to-transparent rounded-[2.5rem]">
                         <div className="bg-zinc-900 p-8 rounded-[2.5rem] border border-zinc-800 shadow-3xl">
@@ -264,18 +272,29 @@ function Eventos() {
           </div>
         )}
 
+        {/* ========================================= */}
+        {/* 🔐 VISTA: ESCAPE ROOMS                    */}
+        {/* ========================================= */}
         {vistaActiva === 'escape' && (
           <div className="animate-in fade-in duration-500">
             {esDungeonMaster && (eventoSeleccionado.estado !== 'Finalizado' && eventoSeleccionado.estado !== 'Suspendido') && (
               <div className="mb-12">
                 {!convocatoriaCerrada ? (
                   <>
-                    <button 
-                      onClick={() => setMostrarFormularioEscape(!mostrarFormularioEscape)}
-                      className="w-full bg-indigo-600 text-white hover:bg-indigo-500 py-5 rounded-[2rem] font-black transition-all shadow-xl shadow-indigo-900/20 flex items-center justify-center gap-3 tracking-widest text-xs uppercase"
-                    >
-                      🔐 Habilitar Nueva Sala de Escape
-                    </button>
+                    {/* ✨ BOTÓN DE ESCAPE ROOM MEJORADO Y CENTRADO */}
+                    <div className="flex justify-center w-full">
+                      <button 
+                        onClick={() => setMostrarFormularioEscape(!mostrarFormularioEscape)}
+                        className={`w-full max-w-md py-5 rounded-full font-black transition-all duration-300 flex items-center justify-center gap-3 tracking-widest text-xs md:text-sm uppercase transform hover:-translate-y-1 ${
+                          mostrarFormularioEscape 
+                            ? 'bg-zinc-900 text-zinc-500 border border-zinc-800 hover:text-white hover:bg-red-500/20 hover:border-red-500/50' 
+                            : 'bg-gradient-to-r from-indigo-500 to-purple-600 text-white shadow-lg shadow-indigo-500/20 hover:shadow-indigo-500/40'
+                        }`}
+                      >
+                        {mostrarFormularioEscape ? '✕ Cancelar Instalación' : '🔐 Habilitar Nueva Sala'}
+                      </button>
+                    </div>
+
                     {mostrarFormularioEscape && (
                       <FormularioEscape 
                         eventoId={eventoSeleccionado.id} 

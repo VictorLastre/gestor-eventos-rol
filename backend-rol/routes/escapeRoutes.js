@@ -11,11 +11,10 @@ const registrarLog = (usuario, accion, descripcion) => {
   });
 };
 
-// 1. OBTENER TODOS LOS ESCAPES DE UN EVENTO (Con sus turnos y cupos)
+// 1. OBTENER TODOS LOS ESCAPES DE UN EVENTO (Añadido: Nombres de los jugadores)
 router.get('/:eventoId', verificarToken, (req, res) => {
   const eventoId = req.params.eventoId;
   
-  // Obtenemos las salas
   const sqlSalas = `
     SELECT er.*, u.nombre as organizador_nombre 
     FROM escape_rooms er 
@@ -27,12 +26,19 @@ router.get('/:eventoId', verificarToken, (req, res) => {
     if (err) return res.status(500).json({ error: 'Error al buscar las salas.' });
     if (salas.length === 0) return res.json([]);
 
-    // Obtenemos los turnos de esas salas
     const salasIds = salas.map(s => s.id);
+    
+    // ✨ MAGIA AÑADIDA: GROUP_CONCAT para traer los nombres de los aventureros en un solo texto separado por comas
     const sqlTurnos = `
       SELECT et.*, 
         (SELECT COUNT(*) FROM escape_inscripciones WHERE escape_turno_id = et.id) as anotados,
-        (SELECT COUNT(*) FROM escape_inscripciones WHERE escape_turno_id = et.id AND usuario_id = ?) as estoy_anotado
+        (SELECT COUNT(*) FROM escape_inscripciones WHERE escape_turno_id = et.id AND usuario_id = ?) as estoy_anotado,
+        (
+            SELECT GROUP_CONCAT(u.nombre SEPARATOR ', ') 
+            FROM escape_inscripciones ei
+            JOIN usuarios u ON ei.usuario_id = u.id
+            WHERE ei.escape_turno_id = et.id
+        ) as nombres_jugadores
       FROM escape_turnos et 
       WHERE et.escape_room_id IN (?)
       ORDER BY et.hora_inicio ASC
@@ -41,7 +47,6 @@ router.get('/:eventoId', verificarToken, (req, res) => {
     db.query(sqlTurnos, [req.usuario.id, salasIds], (err, turnos) => {
       if (err) return res.status(500).json({ error: 'Error al cargar los horarios.' });
 
-      // Combinamos la información (A cada sala le metemos su array de turnos)
       const salasConTurnos = salas.map(sala => {
         sala.turnos = turnos.filter(t => t.escape_room_id === sala.id);
         return sala;
@@ -60,7 +65,6 @@ router.post('/:eventoId', verificarToken, (req, res) => {
   const organizadorId = req.usuario.id;
   const { titulo, descripcion, dificultad, edad_minima, cupo_por_turno, materiales_pedidos, turnos } = req.body;
 
-  // turnos debe ser un array de objetos: [{hora_inicio: '16:00', hora_fin: '16:40'}, ...]
   if (!turnos || turnos.length === 0) {
     return res.status(400).json({ error: 'Debes habilitar al menos un horario para la sala.' });
   }
@@ -76,7 +80,6 @@ router.post('/:eventoId', verificarToken, (req, res) => {
 
     const roomId = result.insertId;
 
-    // Preparamos los turnos para insertarlos todos de golpe
     const valoresTurnos = turnos.map(t => [roomId, t.hora_inicio, t.hora_fin]);
     const sqlInsertTurnos = "INSERT INTO escape_turnos (escape_room_id, hora_inicio, hora_fin) VALUES ?";
 
@@ -93,39 +96,55 @@ router.post('/:eventoId', verificarToken, (req, res) => {
   });
 });
 
-// 3. INSCRIBIRSE A UN TURNO DE ESCAPE
+// 3. INSCRIBIRSE A UN TURNO DE ESCAPE (✨ BLOQUEOS LOGÍSTICOS APLICADOS)
 router.post('/turnos/:turnoId/inscripciones', verificarToken, (req, res) => {
   const turnoId = req.params.turnoId;
   const usuarioId = req.usuario.id;
 
-  // Verificamos cupo consultando la sala padre
-  const sqlCheck = `
-    SELECT er.cupo_por_turno, er.titulo, et.hora_inicio, er.evento_id,
-      (SELECT COUNT(*) FROM escape_inscripciones WHERE escape_turno_id = ?) as anotados
+  // Paso 1: Obtener información del turno y la sala
+  const sqlInfo = `
+    SELECT er.id as room_id, er.evento_id, er.cupo_por_turno, er.titulo, et.hora_inicio
     FROM escape_turnos et
     JOIN escape_rooms er ON et.escape_room_id = er.id
     WHERE et.id = ?
   `;
 
-  db.query(sqlCheck, [turnoId, turnoId], (err, resultados) => {
-    if (err || resultados.length === 0) return res.status(404).json({ error: 'Horario no encontrado.' });
+  db.query(sqlInfo, [turnoId], (err, resInfo) => {
+    if (err || resInfo.length === 0) return res.status(404).json({ error: 'Horario no encontrado.' });
 
-    const { cupo_por_turno, anotados, titulo, hora_inicio, evento_id } = resultados[0];
+    const { room_id, evento_id, cupo_por_turno, titulo, hora_inicio } = resInfo[0];
 
-    if (anotados >= cupo_por_turno) return res.status(400).json({ error: 'Ese horario ya está lleno.' });
+    // Paso 2: Ejecutar todas las validaciones del Gremio en una sola consulta
+    const sqlValidar = `
+      SELECT 
+        (SELECT COUNT(*) FROM partidas WHERE evento_id = ? AND dungeon_master_id = ?) as es_dm_rol,
+        (SELECT COUNT(*) FROM inscripciones i JOIN partidas p ON i.partida_id = p.id WHERE p.evento_id = ? AND i.usuario_id = ?) as es_jugador_rol,
+        (SELECT COUNT(*) FROM escape_inscripciones ei JOIN escape_turnos et ON ei.escape_turno_id = et.id WHERE et.escape_room_id = ? AND ei.usuario_id = ?) as ya_en_este_escape,
+        (SELECT COUNT(*) FROM escape_inscripciones WHERE escape_turno_id = ?) as anotados_turno
+    `;
 
-    db.query("INSERT INTO escape_inscripciones (escape_turno_id, usuario_id) VALUES (?, ?)", [turnoId, usuarioId], (err) => {
-      if (err) {
-        if (err.code === 'ER_DUP_ENTRY') return res.status(400).json({ error: 'Ya estás anotado en este horario.' });
-        return res.status(500).json({ error: 'Error al firmar el contrato del escape.' });
-      }
+    db.query(sqlValidar, [evento_id, usuarioId, evento_id, usuarioId, room_id, usuarioId, turnoId], (err, resValidar) => {
+      if (err) return res.status(500).json({ error: 'Error al consultar las leyes del gremio.' });
 
-      registrarLog(req.usuario, 'INSCRIPCION_ESCAPE', `Se anotó al Escape "${titulo}" (Turno: ${hora_inicio}).`);
+      const { es_dm_rol, es_jugador_rol, ya_en_este_escape, anotados_turno } = resValidar[0];
 
-      const io = req.app.get('io');
-      if (io) io.emit('actualizacion-escapes', { eventoId: parseInt(evento_id) });
+      // Aplicamos las Reglas:
+      if (anotados_turno >= cupo_por_turno) return res.status(400).json({ error: 'Ese horario ya está lleno.' });
+      if (es_dm_rol > 0) return res.status(400).json({ error: '⚠️ No puedes jugar, ya estás dirigiendo una mesa de rol en este evento.' });
+      if (es_jugador_rol > 0) return res.status(400).json({ error: '⚠️ Ya estás anotado en una mesa de rol en este evento.' });
+      if (ya_en_este_escape > 0) return res.status(400).json({ error: '⚠️ Solo puedes anotarte a un horario por Escape Room para dar lugar a otros.' });
 
-      res.status(201).json({ mensaje: '¡Estás dentro! No llegues tarde.' });
+      // Si pasa todas las pruebas, lo inscribimos
+      db.query("INSERT INTO escape_inscripciones (escape_turno_id, usuario_id) VALUES (?, ?)", [turnoId, usuarioId], (err) => {
+        if (err) return res.status(500).json({ error: 'Error al firmar el contrato del escape.' });
+
+        registrarLog(req.usuario, 'INSCRIPCION_ESCAPE', `Se anotó al Escape "${titulo}" (Turno: ${hora_inicio}).`);
+
+        const io = req.app.get('io');
+        if (io) io.emit('actualizacion-escapes', { eventoId: parseInt(evento_id) });
+
+        res.status(201).json({ mensaje: '¡Estás dentro! No llegues tarde.' });
+      });
     });
   });
 });
@@ -167,7 +186,6 @@ router.delete('/:id', verificarToken, (req, res) => {
       return res.status(403).json({ error: 'No puedes destruir una sala que no creaste.' });
     }
 
-    // La base de datos borrará los turnos y las inscripciones automáticamente por el "ON DELETE CASCADE"
     db.query("DELETE FROM escape_rooms WHERE id = ?", [roomId], (err) => {
       if (err) return res.status(500).json({ error: 'Error al clausurar la sala.' });
 
@@ -181,7 +199,7 @@ router.delete('/:id', verificarToken, (req, res) => {
   });
 });
 
-// ✨ 6. REPORTE LOGÍSTICO POR HORARIOS (Lo que pediste para Excel)
+// 6. REPORTE LOGÍSTICO POR HORARIOS
 router.get('/reporte-logistico/:eventoId', verificarToken, (req, res) => {
   if (req.usuario.rol !== 'admin') return res.status(403).json({ error: 'Solo para el consejo.' });
 
