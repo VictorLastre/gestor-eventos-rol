@@ -135,7 +135,7 @@ function Landing({ irALogin }) {
   const anteriorFundador = (e) => { e.stopPropagation(); setIndiceFundador((prev) => (prev - 1 + fundadores.length) % fundadores.length); };
 
   return (
-    <div className="min-h-screen bg-zinc-950 text-zinc-300 font-sans selection:bg-emerald-500/30 overflow-x-hidden relative flex flex-col">
+    <div className="h-screen max-h-screen bg-zinc-950 text-zinc-300 font-sans selection:bg-emerald-500/30 overflow-hidden relative flex flex-col">
       
       <style>
         {`
@@ -153,29 +153,29 @@ function Landing({ irALogin }) {
       </style>
 
       {/* 🧭 NAVBAR RESPONSIVE */}
-      <nav className="fixed top-0 w-full bg-zinc-950/95 backdrop-blur-md border-b border-zinc-900 z-[100]">
-        <div className="max-w-7xl mx-auto px-4 md:px-6 h-24 md:h-32 flex items-center justify-between">
+      <nav className="fixed top-0 w-full bg-zinc-950/95 backdrop-blur-md border-b border-zinc-900 z-[100] h-20 md:h-24">
+        <div className="max-w-7xl mx-auto px-4 md:px-6 h-full flex items-center justify-between">
           
           {/* Logo y Nombre */}
-          <div className="flex items-center gap-3 md:gap-6 cursor-pointer group" onClick={() => {setSeccionActiva('inicio'); setMenuAbierto(false);}}>
-            <div className="relative w-16 h-16 md:w-28 md:h-28 flex items-center justify-center img-glow transition-transform duration-300 group-hover:scale-105">
-              <img src={LogoSVG} alt="Logo" className="w-12 h-12 md:w-20 md:h-20 object-contain" />
+          <div className="flex items-center gap-3 cursor-pointer group" onClick={() => {setSeccionActiva('inicio'); setMenuAbierto(false);}}>
+            <div className="relative w-12 h-12 md:w-16 md:h-16 flex items-center justify-center img-glow transition-transform duration-300 group-hover:scale-105">
+              <img src={LogoSVG} alt="Logo" className="w-10 h-10 md:w-14 md:h-14 object-contain" />
             </div>
             <div className="flex flex-col leading-none">
-              <span className="text-lg md:text-3xl font-black text-white uppercase tracking-tighter">Asociación de Rol</span>
-              <span className="text-emerald-500 text-sm md:text-xl font-black uppercase tracking-[0.2em]">La Pampa</span>
+              <span className="text-sm md:text-2xl font-black text-white uppercase tracking-tighter">Asociación de Rol</span>
+              <span className="text-emerald-500 text-[10px] md:text-sm font-black uppercase tracking-[0.2em]">La Pampa</span>
             </div>
           </div>
 
           {/* Menú Desktop */}
-          <div className="hidden md:flex items-center gap-8">
-            <button onClick={() => setSeccionActiva('inicio')} className={`text-xs font-bold uppercase tracking-widest transition-colors ${seccionActiva === 'inicio' ? 'text-emerald-400 border-b-2 border-emerald-400' : 'hover:text-emerald-400'}`}>Inicio</button>
-            <button onClick={() => setSeccionActiva('nosotros')} className={`text-xs font-bold uppercase tracking-widest transition-colors ${seccionActiva === 'nosotros' ? 'text-emerald-400 border-b-2 border-emerald-400' : 'hover:text-emerald-400'}`}>Nosotros</button>
-            <button onClick={() => setSeccionActiva('fundadores')} className={`text-xs font-bold uppercase tracking-widest transition-colors ${seccionActiva === 'fundadores' ? 'text-emerald-400 border-b-2 border-emerald-400' : 'hover:text-emerald-400'}`}>Fundadores</button>
-            <div className="h-8 w-px bg-zinc-800"></div>
-            <button onClick={irALogin} className="relative group transition-all duration-300 hover:scale-110 flex flex-col items-center">
-              <img src={puertaDungeon} alt="Entrar" className="mr-5 w-16 h-16 object-contain img-glow" />
-              <span className="absolute -bottom-6 text-[10px] font-black uppercase text-emerald-500 opacity-0 group-hover:opacity-100 transition-opacity">Entrar</span>
+          <div className="hidden md:flex items-center gap-6">
+            <button onClick={() => setSeccionActiva('inicio')} className={`text-[10px] font-bold uppercase tracking-widest transition-colors ${seccionActiva === 'inicio' ? 'text-emerald-400 border-b-2 border-emerald-400' : 'hover:text-emerald-400'}`}>Inicio</button>
+            <button onClick={() => setSeccionActiva('nosotros')} className={`text-[10px] font-bold uppercase tracking-widest transition-colors ${seccionActiva === 'nosotros' ? 'text-emerald-400 border-b-2 border-emerald-400' : 'hover:text-emerald-400'}`}>Nosotros</button>
+            <button onClick={() => setSeccionActiva('fundadores')} className={`text-[10px] font-bold uppercase tracking-widest transition-colors ${seccionActiva === 'fundadores' ? 'text-emerald-400 border-b-2 border-emerald-400' : 'hover:text-emerald-400'}`}>Fundadores</button>
+            <div className="h-6 w-px bg-zinc-800"></div>
+            <button onClick={irALogin} className="relative group transition-all duration-300 hover:scale-110 flex flex-col items-center justify-center h-full">
+              <img src={puertaDungeon} alt="Entrar" className="w-12 h-12 object-contain img-glow" />
+              <span className="absolute -bottom-4 text-[8px] font-black uppercase text-emerald-500 opacity-0 group-hover:opacity-100 transition-opacity">Entrar</span>
             </button>
           </div>
 
@@ -188,38 +188,40 @@ function Landing({ irALogin }) {
         </div>
 
         {/* Menú Móvil Desplegable */}
-        <div className={`fixed inset-0 bg-zinc-950/98 z-[105] flex flex-col items-center justify-center gap-10 transition-transform duration-500 md:hidden ${menuAbierto ? 'translate-x-0' : 'translate-x-full'}`}>
-          <button onClick={() => {setSeccionActiva('inicio'); setMenuAbierto(false);}} className="text-2xl font-black uppercase tracking-widest text-white">Inicio</button>
-          <button onClick={() => {setSeccionActiva('nosotros'); setMenuAbierto(false);}} className="text-2xl font-black uppercase tracking-widest text-white">Nosotros</button>
-          <button onClick={() => {setSeccionActiva('fundadores'); setMenuAbierto(false);}} className="text-2xl font-black uppercase tracking-widest text-white">Fundadores</button>
-          <button onClick={irALogin} className="bg-emerald-600 text-white px-8 py-4 rounded-xl font-black uppercase tracking-widest">Ingresar</button>
+        <div className={`fixed inset-0 bg-zinc-950/98 z-[105] flex flex-col items-center justify-center gap-8 transition-transform duration-500 md:hidden ${menuAbierto ? 'translate-x-0' : 'translate-x-full'}`}>
+          <button onClick={() => {setSeccionActiva('inicio'); setMenuAbierto(false);}} className="text-xl font-black uppercase tracking-widest text-white">Inicio</button>
+          <button onClick={() => {setSeccionActiva('nosotros'); setMenuAbierto(false);}} className="text-xl font-black uppercase tracking-widest text-white">Nosotros</button>
+          <button onClick={() => {setSeccionActiva('fundadores'); setMenuAbierto(false);}} className="text-xl font-black uppercase tracking-widest text-white">Fundadores</button>
+          <button onClick={irALogin} className="bg-emerald-600 text-white px-8 py-3 rounded-xl font-black uppercase tracking-widest">Ingresar</button>
         </div>
       </nav>
 
-      <main className="flex-grow flex flex-col justify-center pt-24 md:pt-32">
+      {/* CONTENIDO PRINCIPAL: Ocupa el espacio restante sin generar scroll */}
+      <main className="flex-1 flex flex-col justify-center pt-20 md:pt-24 pb-4 overflow-hidden">
+        
         {/* SECCIÓN INICIO */}
         {seccionActiva === 'inicio' && (
-          <header className="relative py-5 md:py-5 px-5 flex flex-col items-center justify-center text-center flex-grow animate-in fade-in zoom-in-95 duration-500">
-            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-[500px] h-[500px] bg-emerald-500/10 blur-[100px] rounded-full pointer-events-none"></div>
-            <div className="relative z-10 w-full max-w-4xl flex flex-col items-center">
-              <button onClick={irALogin} className="group relative transition-transform duration-500 hover:scale-105 active:scale-95 mb-4 md:mb-6 outline-none w-full flex flex-col items-center">
-                <img src={forjaAventura} alt="Comenzar" className="w-full max-w-[160px] md:max-w-[200px] h-auto object-contain img-glow" />
-                <span className="mt-4 md:mt-5 block text-emerald-500 font-black uppercase tracking-[0.2em] md:tracking-[0.4em] text-[10px] md:text-xs animate-pulse">Haz clic para entrar →</span>
-              </button>
-              
-              <p className="text-base md:text-xl text-zinc-400 mb-6 max-w-2xl mx-auto leading-relaxed px-4 text-center">
-                Únete a la Asociación de Rol. Encuentra mesas, descubre nuevos sistemas y comparte aventuras épicas con la comunidad.
-              </p>
-            </div>
+          <header className="relative w-full h-full flex flex-col items-center justify-center text-center animate-in fade-in zoom-in-95 duration-500 px-4">
+            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[300px] md:w-[400px] h-[300px] md:h-[400px] bg-emerald-500/10 blur-[80px] rounded-full pointer-events-none"></div>
+            
+            <button onClick={irALogin} className="group relative transition-transform duration-500 hover:scale-105 active:scale-95 mb-4 outline-none flex flex-col items-center z-10">
+              {/* Imagen más pequeña para ahorrar espacio vertical */}
+              <img src={forjaAventura} alt="Comenzar" className="w-[120px] md:w-[150px] h-auto object-contain img-glow" />
+              <span className="mt-2 text-emerald-500 font-black uppercase tracking-[0.2em] md:tracking-[0.4em] text-[9px] md:text-[10px] animate-pulse">Haz clic para entrar →</span>
+            </button>
+            
+            <p className="text-sm md:text-base text-zinc-400 max-w-xl mx-auto leading-relaxed z-10">
+              Únete a la Asociación de Rol. Encuentra mesas, descubre nuevos sistemas y comparte aventuras épicas con la comunidad.
+            </p>
           </header>
         )}
 
         {/* SECCIÓN NOSOTROS */}
         {seccionActiva === 'nosotros' && (
-          <section className="py-12 md:py-20 px-6 max-w-4xl mx-auto flex-grow flex flex-col justify-center animate-in fade-in slide-in-from-bottom-8 duration-500">
-             <div className="text-center">
-              <h2 className="text-3xl md:text-5xl font-black text-white uppercase tracking-tighter mb-8 md:mb-12 flex items-center justify-center gap-4">📜 Nosotros </h2>
-              <div className="space-y-6 md:space-y-8 text-base md:text-lg text-zinc-400 leading-relaxed bg-zinc-900/50 p-6 md:p-12 rounded-[2rem] md:rounded-[3rem] border border-zinc-800/50 shadow-2xl text-justify md:text-center">
+          <section className="h-full flex flex-col justify-center items-center px-4 animate-in fade-in slide-in-from-bottom-8 duration-500">
+             <div className="text-center w-full max-w-3xl">
+              <h2 className="text-2xl md:text-4xl font-black text-white uppercase tracking-tighter mb-4 md:mb-6 flex items-center justify-center gap-3">📜 Nosotros </h2>
+              <div className="space-y-4 text-sm md:text-base text-zinc-400 leading-relaxed bg-zinc-900/50 p-6 md:p-8 rounded-[2rem] border border-zinc-800/50 shadow-2xl">
                 <p>Nacimos con un propósito claro: reunir a los apasionados por el rol bajo un mismo estandarte en La Pampa. Somos un espacio creado por y para jugadores y Narradores.</p>
                 <p>Nuestra misión es que nadie se quede sin un grupo con el cual compartir una tarde de imaginación y estrategia.</p>
               </div>
@@ -229,92 +231,98 @@ function Landing({ irALogin }) {
 
         {/* SECCIÓN FUNDADORES */}
         {seccionActiva === 'fundadores' && (
-          <section className="py-12 px-4 md:px-6 w-full max-w-[1400px] mx-auto flex-grow animate-in fade-in slide-in-from-bottom-8 duration-500 flex flex-col justify-center">
-            <div className="text-center mb-8 md:mb-12">
-              <h2 className="text-3xl md:text-5xl font-black text-white uppercase tracking-tighter mb-4">👑 Fundadores</h2>
-              <p className="text-zinc-500 font-bold uppercase tracking-widest text-[10px] md:text-sm">Héroes de la Primera Era</p>
+          <section className="h-full w-full max-w-[1400px] mx-auto flex flex-col justify-center animate-in fade-in slide-in-from-bottom-8 duration-500">
+            <div className="text-center mb-4 md:mb-6 px-4">
+              <h2 className="text-2xl md:text-4xl font-black text-white uppercase tracking-tighter mb-1">👑 Fundadores</h2>
+              <p className="text-zinc-500 font-bold uppercase tracking-widest text-[9px] md:text-[10px]">Héroes de la Primera Era</p>
             </div>
-            <div className="relative group/carrusel">
-              <div ref={carruselRef} className="flex gap-4 md:gap-6 overflow-x-auto snap-x snap-mandatory scrollbar-hide py-6 md:py-8 px-2 md:px-4">
+            
+            {/* Contenedor del Carrusel: Centrado en PC, Scroll en Móvil */}
+            <div className="relative group/carrusel w-full px-2">
+              <div ref={carruselRef} className="flex gap-4 md:gap-5 overflow-x-auto snap-x snap-mandatory scrollbar-hide py-4 items-center md:justify-center">
                 {fundadores.map((fundador, index) => (
-                  <div key={index} onClick={() => setIndiceFundador(index)} className={`min-w-[260px] md:min-w-[320px] snap-center shrink-0 bg-zinc-900 border rounded-[2rem] p-6 md:p-8 cursor-pointer transition-all duration-500 relative overflow-hidden ${fundador.color.shadow} ${fundador.color.border}`}>
+                  <div key={index} onClick={() => setIndiceFundador(index)} className={`w-[220px] md:w-[260px] flex-shrink-0 snap-center bg-zinc-900 border rounded-[1.5rem] p-5 md:p-6 cursor-pointer transition-all duration-500 relative overflow-hidden flex flex-col items-center text-center ${fundador.color.shadow} ${fundador.color.border}`}>
                     <div className={`absolute inset-0 bg-gradient-to-tr ${fundador.color.foil} animate-foil z-10 pointer-events-none`}></div>
-                    <div className={`w-20 h-20 md:w-24 md:h-24 bg-zinc-950 rounded-full border-2 flex items-center justify-center text-3xl md:text-4xl mb-6 relative z-20 ${fundador.color.bgIcon}`}>{fundador.icono}</div>
-                    <h3 className={`text-xl md:text-2xl font-black uppercase mb-1 relative z-20 ${fundador.color.text}`}>{fundador.nombre}</h3>
-                    <p className="text-[10px] md:text-xs font-bold text-zinc-500 uppercase tracking-widest mb-6 relative z-20">{fundador.titulo}</p>
-                    <span className={`mt-auto text-[9px] md:text-[10px] font-black uppercase bg-zinc-950/50 px-4 py-2 rounded-xl border border-zinc-800/50 relative z-20 ${fundador.color.text}`}>Ver Historia →</span>
+                    
+                    <div className={`w-14 h-14 md:w-16 md:h-16 bg-zinc-950 rounded-full border-2 flex items-center justify-center text-2xl md:text-3xl mb-3 relative z-20 ${fundador.color.bgIcon}`}>
+                      {fundador.icono}
+                    </div>
+                    
+                    <h3 className={`text-lg md:text-xl font-black uppercase mb-1 relative z-20 ${fundador.color.text}`}>{fundador.nombre}</h3>
+                    <p className="text-[9px] md:text-[10px] font-bold text-zinc-500 uppercase tracking-widest mb-4 relative z-20">{fundador.titulo}</p>
+                    
+                    <span className={`mt-auto text-[8px] md:text-[9px] font-black uppercase bg-zinc-950/50 px-3 py-1.5 rounded-lg border border-zinc-800/50 relative z-20 ${fundador.color.text}`}>
+                      Ver Historia →
+                    </span>
                   </div>
                 ))}
               </div>
             </div>
-            <p className="text-center text-zinc-600 text-[10px] italic mt-4 md:hidden">Desliza para conocerlos</p>
+            <p className="text-center text-zinc-600 text-[9px] italic mt-2 md:hidden">Desliza para conocerlos</p>
           </section>
         )}
       </main>
 
-      {/* PIE DE PÁGINA CON REDES SOCIALES */}
-      <footer className="py-8 mt-auto flex flex-col items-center justify-center border-t border-zinc-900 bg-zinc-950 px-4 gap-6 relative z-10">
+      {/* PIE DE PÁGINA: Altura fija y compacta */}
+      <footer className="h-24 md:h-28 flex flex-col items-center justify-center border-t border-zinc-900 bg-zinc-950 px-4 z-10">
         
-        {/* Enlaces a Redes */}
-        <div className="flex gap-4 md:gap-6">
-          {/* Instagram */}
+        {/* Enlaces a Redes (Más compactos) */}
+        <div className="flex gap-4 mb-3">
           <a 
             href="https://www.instagram.com/asociacionderollapampa/" 
             target="_blank" 
             rel="noopener noreferrer"
-            className="w-12 h-12 flex items-center justify-center rounded-2xl bg-zinc-900 border border-zinc-800 text-zinc-400 transition-all duration-300 hover:text-white hover:bg-gradient-to-tr hover:from-orange-500 hover:via-red-500 hover:to-fuchsia-500 hover:border-transparent hover:shadow-[0_0_15px_rgba(236,72,153,0.5)] group"
+            className="w-10 h-10 flex items-center justify-center rounded-xl bg-zinc-900 border border-zinc-800 text-zinc-400 transition-all duration-300 hover:text-white hover:bg-gradient-to-tr hover:from-orange-500 hover:via-red-500 hover:to-fuchsia-500 hover:border-transparent hover:shadow-[0_0_15px_rgba(236,72,153,0.5)] group"
             title="Instagram"
           >
-            <svg className="w-6 h-6 transition-transform group-hover:scale-110" fill="currentColor" viewBox="0 0 24 24">
+            <svg className="w-5 h-5 transition-transform group-hover:scale-110" fill="currentColor" viewBox="0 0 24 24">
               <path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z"/>
             </svg>
           </a>
 
-          {/* Facebook */}
           <a 
             href="https://www.facebook.com/AsociacionDeRolLaPampa/" 
             target="_blank" 
             rel="noopener noreferrer"
-            className="w-12 h-12 flex items-center justify-center rounded-2xl bg-zinc-900 border border-zinc-800 text-zinc-400 transition-all duration-300 hover:text-white hover:bg-[#1877F2] hover:border-transparent hover:shadow-[0_0_15px_rgba(24,119,242,0.5)] group"
+            className="w-10 h-10 flex items-center justify-center rounded-xl bg-zinc-900 border border-zinc-800 text-zinc-400 transition-all duration-300 hover:text-white hover:bg-[#1877F2] hover:border-transparent hover:shadow-[0_0_15px_rgba(24,119,242,0.5)] group"
             title="Facebook"
           >
-            <svg className="w-6 h-6 transition-transform group-hover:scale-110" fill="currentColor" viewBox="0 0 24 24">
+            <svg className="w-5 h-5 transition-transform group-hover:scale-110" fill="currentColor" viewBox="0 0 24 24">
               <path d="M9 8h-3v4h3v12h5v-12h3.642l.358-4h-4v-1.667c0-.955.192-1.333 1.115-1.333h2.885v-5h-3.808c-3.596 0-5.192 1.583-5.192 4.615v3.385z"/>
             </svg>
           </a>
 
-          {/* WhatsApp */}
           <a 
             href="https://chat.whatsapp.com/FIiKyN8QkZd0DEXs8pRZzC" 
             target="_blank" 
             rel="noopener noreferrer"
-            className="w-12 h-12 flex items-center justify-center rounded-2xl bg-zinc-900 border border-zinc-800 text-zinc-400 transition-all duration-300 hover:text-white hover:bg-[#25D366] hover:border-transparent hover:shadow-[0_0_15px_rgba(37,211,102,0.5)] group"
+            className="w-10 h-10 flex items-center justify-center rounded-xl bg-zinc-900 border border-zinc-800 text-zinc-400 transition-all duration-300 hover:text-white hover:bg-[#25D366] hover:border-transparent hover:shadow-[0_0_15px_rgba(37,211,102,0.5)] group"
             title="Grupo de WhatsApp"
           >
-            <svg className="w-6 h-6 transition-transform group-hover:scale-110" fill="currentColor" viewBox="0 0 24 24">
+            <svg className="w-5 h-5 transition-transform group-hover:scale-110" fill="currentColor" viewBox="0 0 24 24">
               <path d="M.057 24l1.687-6.163c-1.041-1.804-1.588-3.849-1.587-5.946.003-6.556 5.338-11.891 11.893-11.891 3.181.001 6.167 1.24 8.413 3.488 2.245 2.248 3.481 5.236 3.48 8.414-.003 6.557-5.338 11.892-11.893 11.892-1.99-.001-3.951-.5-5.688-1.448l-6.305 1.654zm6.597-3.807c1.676.995 3.276 1.591 5.392 1.592 5.448 0 9.886-4.434 9.889-9.885.002-5.462-4.415-9.89-9.881-9.892-5.452 0-9.887 4.434-9.889 9.884-.001 2.225.651 3.891 1.746 5.634l-.999 3.648 3.742-.981zm11.387-5.464c-.074-.124-.272-.198-.57-.347-.297-.149-1.758-.868-2.031-.967-.272-.099-.47-.149-.669.149-.198.297-.768.967-.941 1.165-.173.198-.347.223-.644.074-.297-.149-1.255-.462-2.39-1.475-.88-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.297-.347.446-.521.151-.172.2-.296.3-.495.099-.198.05-.372-.025-.521-.075-.148-.669-1.611-.916-2.206-.242-.579-.487-.501-.669-.51l-.57-.01c-.198 0-.52.074-.792.347-.272.297-1.04 1.016-1.04 2.479 0 1.463 1.065 2.876 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.263.489 1.694.626.712.226 1.36.194 1.872.118.571-.085 1.758-.719 2.006-1.413.248-.695.248-1.29.173-1.414z"/>
             </svg>
           </a>
         </div>
 
-        <p className="text-zinc-600 text-[10px] md:text-xs font-bold uppercase tracking-widest border-t border-zinc-900/50 pt-4 w-full">
+        <p className="text-zinc-600 text-[9px] md:text-[10px] font-bold uppercase tracking-widest text-center">
           Asociación de Rol La Pampa © 2026
         </p>
       </footer>
 
-      {/* MODAL (AJUSTADO PARA MÓVIL) */}
+      {/* MODAL FUNDADORES */}
       {indiceFundador !== null && (
         <div className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-black/95 backdrop-blur-md animate-in fade-in duration-300" onClick={() => setIndiceFundador(null)}>
-          <div className={`bg-zinc-900 border w-full max-w-lg rounded-[2rem] md:rounded-[2.5rem] p-6 md:p-10 relative ${fundadores[indiceFundador].color.modalGlow} ${fundadores[indiceFundador].color.modalBorder}`} onClick={(e) => e.stopPropagation()}>
+          <div className={`bg-zinc-900 border w-full max-w-[400px] md:max-w-md rounded-[2rem] p-6 relative ${fundadores[indiceFundador].color.modalGlow} ${fundadores[indiceFundador].color.modalBorder}`} onClick={(e) => e.stopPropagation()}>
             <button onClick={() => setIndiceFundador(null)} className="absolute top-4 right-4 text-zinc-500 hover:text-white text-lg w-8 h-8 flex items-center justify-center border border-zinc-800 rounded-full">✕</button>
-            <div className={`w-20 h-20 md:w-24 md:h-24 bg-zinc-950 rounded-full border-2 flex items-center justify-center text-3xl md:text-4xl mb-6 mx-auto ${fundadores[indiceFundador].color.modalBorder}`}>{fundadores[indiceFundador].icono}</div>
-            <h3 className="text-2xl md:text-4xl font-black text-white text-center uppercase tracking-tighter mb-1">{fundadores[indiceFundador].nombre}</h3>
-            <p className={`text-center font-black uppercase tracking-widest text-[10px] md:text-xs mb-6 ${fundadores[indiceFundador].color.text}`}>{fundadores[indiceFundador].titulo}</p>
-            <p className="text-zinc-300 leading-relaxed italic text-center text-base md:text-lg px-2">"{fundadores[indiceFundador].descripcion}"</p>
+            <div className={`w-16 h-16 md:w-20 md:h-20 bg-zinc-950 rounded-full border-2 flex items-center justify-center text-2xl md:text-3xl mb-4 mx-auto ${fundadores[indiceFundador].color.modalBorder}`}>{fundadores[indiceFundador].icono}</div>
+            <h3 className="text-2xl md:text-3xl font-black text-white text-center uppercase tracking-tighter mb-1">{fundadores[indiceFundador].nombre}</h3>
+            <p className={`text-center font-black uppercase tracking-widest text-[9px] md:text-[10px] mb-4 ${fundadores[indiceFundador].color.text}`}>{fundadores[indiceFundador].titulo}</p>
+            <p className="text-zinc-300 leading-relaxed italic text-center text-sm md:text-base px-2">"{fundadores[indiceFundador].descripcion}"</p>
             
-            <div className="flex justify-between mt-8">
-               <button onClick={anteriorFundador} className="text-emerald-500 font-black uppercase text-[10px] tracking-widest hover:text-emerald-400 transition-colors">‹ Anterior</button>
-               <button onClick={siguienteFundador} className="text-emerald-500 font-black uppercase text-[10px] tracking-widest hover:text-emerald-400 transition-colors">Siguiente ›</button>
+            <div className="flex justify-between mt-6 pt-4 border-t border-zinc-800">
+               <button onClick={anteriorFundador} className="text-emerald-500 font-black uppercase text-[9px] tracking-widest hover:text-emerald-400 transition-colors">‹ Anterior</button>
+               <button onClick={siguienteFundador} className="text-emerald-500 font-black uppercase text-[9px] tracking-widest hover:text-emerald-400 transition-colors">Siguiente ›</button>
             </div>
           </div>
         </div>
