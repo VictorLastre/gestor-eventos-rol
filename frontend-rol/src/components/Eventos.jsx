@@ -151,10 +151,25 @@ function Eventos() {
   if (eventoSeleccionado) {
     const yaParticipa = partidasDelEvento.some(p => p.dungeon_master_id === usuarioGuardado?.id || p.anotadoInicialmente === 1);
     
+    // Control de DMs (Si ya pasó la fecha, no arman más mesas)
     const tzOffset = -3 * 60 * 60 * 1000;
     const hoyArg = new Date(Date.now() + tzOffset).toISOString().split('T')[0];
     const fechaEventoStr = eventoSeleccionado.fecha.split('T')[0];
     const convocatoriaCerrada = hoyArg >= fechaEventoStr;
+
+    // ✨ MAGIA DE TIEMPO: Control de Jugadores (Se cierra 1 hora antes del evento)
+    let inscripcionesCerradas = false;
+    if (eventoSeleccionado.fecha && eventoSeleccionado.hora_inicio) {
+      const [anio, mes, dia] = eventoSeleccionado.fecha.split('T')[0].split('-');
+      const [hora, minuto] = eventoSeleccionado.hora_inicio.split(':');
+      
+      const fechaHoraEvento = new Date(anio, mes - 1, dia, hora, minuto);
+      // Restamos 1 hora (60 min * 60 seg * 1000 ms)
+      const limiteInscripcion = new Date(fechaHoraEvento.getTime() - (60 * 60 * 1000));
+      const ahora = new Date();
+      
+      inscripcionesCerradas = ahora >= limiteInscripcion;
+    }
 
     return (
       <div className="max-w-6xl mx-auto p-4 md:p-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
@@ -270,7 +285,13 @@ function Eventos() {
               <div ref={carruselPartidasRef} className="flex gap-6 overflow-x-auto pb-12 scrollbar-hide snap-x" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
                 {partidasDelEvento.map(p => (
                   <div key={p.id} className="min-w-[300px] md:min-w-[400px] snap-center">
-                    <Partida {...p} eventoEsPasado={eventoSeleccionado.estado === 'Finalizado' || eventoSeleccionado.estado === 'Suspendido'} esAdmin={esAdmin} esMiMesa={usuarioGuardado?.id === p.dungeon_master_id} />
+                    <Partida 
+                      {...p} 
+                      eventoEsPasado={eventoSeleccionado.estado === 'Finalizado' || eventoSeleccionado.estado === 'Suspendido'} 
+                      esAdmin={esAdmin} 
+                      esMiMesa={usuarioGuardado?.id === p.dungeon_master_id} 
+                      inscripcionesCerradas={inscripcionesCerradas} 
+                    />
                   </div>
                 ))}
               </div>
@@ -326,7 +347,6 @@ function Eventos() {
               <h3 className="text-2xl font-black text-white uppercase tracking-tighter italic">Salas Disponibles</h3>
             </div>
 
-            {/* ✨ GRILLA CAMBIADA A 1 SOLA COLUMNA PARA QUE SEAN GIGANTES */}
             {escapesDelEvento.length > 0 ? (
               <div className="grid grid-cols-1 gap-10 pb-12 max-w-5xl mx-auto">
                 {escapesDelEvento.map(sala => (
@@ -335,6 +355,7 @@ function Eventos() {
                     sala={sala} 
                     usuarioGuardado={usuarioGuardado} 
                     esAdmin={esAdmin} 
+                    inscripcionesCerradas={inscripcionesCerradas}
                   />
                 ))}
               </div>

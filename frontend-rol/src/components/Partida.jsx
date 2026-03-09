@@ -3,7 +3,6 @@ import Swal from 'sweetalert2';
 import { fetchProtegido } from '../utils/api'; 
 import { io } from 'socket.io-client';
 
-// ✨ DICCIONARIO CORREGIDO: Clases completas para evitar el purgado de Tailwind
 const CONFIG_TEMAS = {
   "Fantasía Medieval": { color: "text-amber-400", bg: "bg-amber-500/10", border: "border-amber-500/30", hoverBorder: "hover:border-amber-500/30", hoverText: "group-hover:text-amber-400", icon: "🏰" },
   "Fantasía Oscura": { color: "text-purple-400", bg: "bg-purple-500/10", border: "border-purple-500/30", hoverBorder: "hover:border-purple-500/30", hoverText: "group-hover:text-purple-400", icon: "🌑" },
@@ -195,7 +194,6 @@ function Partida(props) {
 
   return (
     <>
-      {/* 🃏 TARJETA DE LA MESA */}
       <div 
         onClick={() => setModalAbierto(true)}
         className={`relative p-8 rounded-[2rem] border transition-all duration-500 shadow-2xl flex flex-col h-[450px] cursor-pointer group overflow-hidden ${
@@ -284,16 +282,18 @@ function Partida(props) {
           {!soyElMaster && !props.eventoEsPasado && (
             <button 
               onClick={alternarInscripcion}
-              disabled={cargandoJugadores || (jugadoresAnotados >= props.cupo && !anotado)}
+              disabled={cargandoJugadores || (props.inscripcionesCerradas && !anotado) || (jugadoresAnotados >= props.cupo && !anotado)}
               className={`flex-1 py-4 rounded-2xl font-black text-[10px] uppercase tracking-[0.2em] transition-all shadow-xl ${
                 anotado 
                 ? 'bg-red-500/10 text-red-500 border border-red-500/40 hover:bg-red-600 hover:text-white' 
-                : jugadoresAnotados >= props.cupo
+                : props.inscripcionesCerradas
                   ? 'bg-zinc-950 text-zinc-600 border border-zinc-800 cursor-not-allowed'
-                  : 'bg-emerald-600 text-white border border-emerald-500 hover:bg-emerald-500 shadow-emerald-900/40 active:scale-95'
+                  : jugadoresAnotados >= props.cupo
+                    ? 'bg-zinc-950 text-zinc-600 border border-zinc-800 cursor-not-allowed'
+                    : 'bg-emerald-600 text-white border border-emerald-500 hover:bg-emerald-500 shadow-emerald-900/40 active:scale-95'
               }`}
             >
-              {anotado ? 'Abandonar' : jugadoresAnotados >= props.cupo ? 'Llena' : 'Alistarse'}
+              {anotado ? 'Abandonar' : props.inscripcionesCerradas ? 'Cerrado' : jugadoresAnotados >= props.cupo ? 'Llena' : 'Alistarse'}
             </button>
           )}
           <div className={`px-6 flex items-center justify-center bg-zinc-950 text-zinc-500 rounded-2xl border transition-all ${soyElMaster || props.eventoEsPasado ? 'w-full py-4 text-xs tracking-widest hover:text-white hover:bg-zinc-800 uppercase font-black border-zinc-800 cursor-pointer' : 'border-zinc-800/80 group-hover:border-zinc-700 group-hover:text-zinc-300'}`}>
@@ -302,7 +302,6 @@ function Partida(props) {
         </div>
       </div>
 
-      {/* ✏️ MODAL DE EDICIÓN */}
       {modoEdicion && (
         <div className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-black/95 backdrop-blur-md animate-in fade-in zoom-in-95 duration-300">
           <div className={`bg-zinc-900 border ${CONFIG_TEMAS[datosEdicion.etiqueta]?.border || 'border-amber-500/30'} w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-[2.5rem] p-8 md:p-10 relative shadow-[0_0_80px_rgba(0,0,0,0.5)] scrollbar-hide`} style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
@@ -402,7 +401,6 @@ function Partida(props) {
         </div>
       )}
 
-      {/* 📖 MODAL DE VISTA DETALLADA */}
       {modalAbierto && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 md:p-6 bg-black/95 backdrop-blur-md animate-in fade-in duration-300">
           <div 
@@ -544,15 +542,18 @@ function Partida(props) {
                 {!soyElMaster && !props.eventoEsPasado && (
                   <button 
                     onClick={alternarInscripcion}
+                    disabled={cargandoJugadores || (props.inscripcionesCerradas && !anotado) || (jugadoresAnotados >= props.cupo && !anotado)}
                     className={`flex-1 py-5 rounded-2xl font-black text-xs uppercase tracking-[0.2em] transition-all shadow-xl flex items-center justify-center gap-3 ${
                       anotado 
                       ? 'bg-red-500/10 text-red-500 border-red-500/40 hover:bg-red-500 hover:text-white' 
-                      : jugadoresAnotados >= props.cupo
+                      : props.inscripcionesCerradas
                         ? 'bg-zinc-950 text-zinc-600 border border-zinc-800 cursor-not-allowed'
-                        : 'bg-emerald-600 text-white hover:bg-emerald-500 shadow-emerald-900/40 border border-emerald-500 active:scale-95'
+                        : jugadoresAnotados >= props.cupo
+                          ? 'bg-zinc-950 text-zinc-600 border border-zinc-800 cursor-not-allowed'
+                          : 'bg-emerald-600 text-white hover:bg-emerald-500 shadow-emerald-900/40 border border-emerald-500 active:scale-95'
                     }`}
                   >
-                    {anotado ? 'Abandonar Expedición' : jugadoresAnotados >= props.cupo ? 'Mesa Llena' : 'Firmar el Contrato (Unirse)'}
+                    {anotado ? 'Abandonar Expedición' : props.inscripcionesCerradas ? 'Inscripciones Cerradas' : jugadoresAnotados >= props.cupo ? 'Mesa Llena' : 'Firmar el Contrato (Unirse)'}
                   </button>
                 )}
                 <button 
