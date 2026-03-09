@@ -59,6 +59,8 @@ const partidasRoutes = require('./routes/partidasRoutes');
 const usuariosRoutes = require('./routes/usuariosRoutes');
 // ✨ AQUÍ IMPORTAMOS EL NUEVO PERGAMINO DE SISTEMAS
 const sistemasRoutes = require('./routes/sistemasRoutes'); 
+// ✨ IMPORTAMOS EL NUEVO PERGAMINO DE ESCAPE ROOMS
+const escapeRoutes = require('./routes/escapeRoutes'); 
 
 // Usamos las rutas
 app.use('/api', authRoutes); 
@@ -67,6 +69,8 @@ app.use('/api/partidas', partidasRoutes);
 app.use('/api/usuarios', usuariosRoutes); 
 // ✨ AQUÍ LE DECIMOS AL SERVIDOR QUE ABRA LAS PUERTAS A LOS SISTEMAS
 app.use('/api/sistemas', sistemasRoutes);
+// ✨ ABRIMOS LAS PUERTAS DEL LABERINTO (RUTAS DE ESCAPE ROOMS)
+app.use('/api/escapes', escapeRoutes);
 
 const PUERTO = process.env.PORT || 3001;
 

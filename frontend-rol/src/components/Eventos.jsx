@@ -2,16 +2,22 @@ import { useState, useEffect, useRef } from 'react';
 import Swal from 'sweetalert2'; 
 import Partida from './Partida'; 
 import CrearMesa from './CrearMesa'; 
+// ✨ IMPORTAMOS EL NUEVO FORMULARIO DE ESCAPE
+import FormularioEscape from './FormularioEscape'; 
 import { fetchProtegido } from '../utils/api'; 
-// ✨ IMPORTAMOS EL RECEPTOR TELEPÁTICO
 import { io } from 'socket.io-client';
 
 function Eventos() {
   const [eventos, setEventos] = useState([]);
   const [eventoSeleccionado, setEventoSeleccionado] = useState(null);
   const [partidasDelEvento, setPartidasDelEvento] = useState([]);
-  const [mostrarFormularioMesa, setMostrarFormularioMesa] = useState(false);
   const [eventoEditando, setEventoEditando] = useState(null);
+  
+  // ✨ ESTADOS PARA EL SISTEMA DE PESTAÑAS Y ESCAPES
+  const [vistaActiva, setVistaActiva] = useState('rol'); // 'rol' o 'escape'
+  const [escapesDelEvento, setEscapesDelEvento] = useState([]);
+  const [mostrarFormularioMesa, setMostrarFormularioMesa] = useState(false);
+  const [mostrarFormularioEscape, setMostrarFormularioEscape] = useState(false);
   
   const carruselEventosRef = useRef(null);
   const carruselPartidasRef = useRef(null); 
@@ -35,7 +41,6 @@ function Eventos() {
       .catch(err => console.error("Error:", err));
   };
 
-  // Función separada para recargar las mesas del evento actual
   const cargarMesasDelEvento = (idEvento) => {
     fetchProtegido(`https://gestor-eventos-rol.onrender.com/api/eventos/${idEvento}/partidas`)
       .then(res => res.json())
@@ -43,35 +48,46 @@ function Eventos() {
       .catch(err => { if (err !== 'Sesión expirada') console.error(err); });
   };
 
-  // ✨ EL RITUAL DE CONEXIÓN A LA RED TELEPÁTICA
+  // ✨ NUEVA FUNCIÓN PARA CARGAR LAS SALAS DE ESCAPE
+  const cargarEscapesDelEvento = (idEvento) => {
+    fetchProtegido(`https://gestor-eventos-rol.onrender.com/api/escapes/${idEvento}`)
+      .then(res => res.json())
+      .then(data => setEscapesDelEvento(Array.isArray(data) ? data : []))
+      .catch(err => { if (err !== 'Sesión expirada') console.error(err); });
+  };
+
   useEffect(() => { 
     cargarEventos(); 
 
-    // 1. Conectamos con el servidor
     const socket = io('https://gestor-eventos-rol.onrender.com');
 
-    // 2. Escuchamos cambios en los Eventos generales
     socket.on('actualizacion-eventos', () => {
       cargarEventos();
     });
 
-    // 3. Escuchamos cambios en las Mesas (Inscripciones, nuevas mesas, etc)
     socket.on('actualizacion-mesas', (data) => {
-      // Si recibimos un aviso, recargamos la lista de partidas, 
-      // pero solo SI el usuario tiene el evento abierto (para no gastar recursos a lo tonto)
       setEventoSeleccionado(estadoPrevio => {
         if (estadoPrevio && estadoPrevio.id === data.eventoId) {
           cargarMesasDelEvento(data.eventoId);
         }
-        return estadoPrevio; // Retornamos el estado tal cual para no romper nada
+        return estadoPrevio; 
       });
     });
 
-    // 4. Limpieza: Nos desconectamos si el usuario se va de esta pantalla
+    // ✨ ESCUCHAMOS SI HAY NOVEDADES EN LOS ESCAPE ROOMS
+    socket.on('actualizacion-escapes', (data) => {
+      setEventoSeleccionado(estadoPrevio => {
+        if (estadoPrevio && estadoPrevio.id === data.eventoId) {
+          cargarEscapesDelEvento(data.eventoId);
+        }
+        return estadoPrevio;
+      });
+    });
+
     return () => {
       socket.disconnect();
     };
-  }, []); // Se ejecuta una sola vez al cargar la página
+  }, []);
 
   const borrarEvento = async (id, e) => {
     e.stopPropagation();
@@ -80,10 +96,7 @@ function Eventos() {
       text: "⚠️ Se perderán todos los datos, mesas y aventureros inscritos.",
       icon: 'warning',
       showCancelButton: true,
-      background: '#09090b', 
-      color: '#fff',
-      confirmButtonColor: '#ef4444', 
-      cancelButtonColor: '#27272a',
+      background: '#09090b', color: '#fff', confirmButtonColor: '#ef4444', cancelButtonColor: '#27272a',
       confirmButtonText: 'Sí, destruir evento',
       customClass: { popup: 'border border-zinc-800 rounded-[2rem]' }
     });
@@ -94,7 +107,6 @@ function Eventos() {
         if (res.ok) {
           Swal.fire({ title: '¡Evento Borrado!', icon: 'success', background: '#09090b', color: '#fff', customClass: { popup: 'border border-emerald-500/30 rounded-[2rem]' } });
           if (eventoSeleccionado && eventoSeleccionado.id === id) setEventoSeleccionado(null);
-          // cargarEventos() ya no hace falta aquí porque el Socket avisará a todos (incluyéndote a ti)
         }
       } catch (err) { if (err !== 'Sesión expirada') console.error(err); }
     }
@@ -111,7 +123,6 @@ function Eventos() {
         Swal.fire({ title: '¡Jornada Reescrita!', icon: 'success', background: '#09090b', color: '#fff', customClass: { popup: 'border border-emerald-500/30 rounded-[2rem]' } });
         if (eventoSeleccionado && eventoSeleccionado.id === eventoEditando.id) setEventoSeleccionado(eventoEditando);
         setEventoEditando(null); 
-        // cargarEventos() se llama por socket
       }
     } catch (err) { if (err !== 'Sesión expirada') console.error(err); }
   };
@@ -124,7 +135,11 @@ function Eventos() {
 
   const entrarAlEvento = (evento) => {
     setEventoSeleccionado(evento);
+    setVistaActiva('rol'); // Reiniciamos la vista a Rol por defecto
+    setMostrarFormularioMesa(false);
+    setMostrarFormularioEscape(false);
     cargarMesasDelEvento(evento.id);
+    cargarEscapesDelEvento(evento.id); // Cargamos los escapes también
   };
 
   const eventosProximos = eventos.filter(e => e.estado === 'Proximo' || e.estado === 'En Curso').sort((a, b) => a.fecha.localeCompare(b.fecha));
@@ -135,8 +150,7 @@ function Eventos() {
 
   if (eventoSeleccionado) {
     const yaParticipa = partidasDelEvento.some(p => p.dungeon_master_id === usuarioGuardado?.id || p.anotadoInicialmente === 1);
-
-    // ✨ CONTROL FECHA LÍMITE: ¿Es hoy o ya pasó la fecha del evento?
+    
     const tzOffset = -3 * 60 * 60 * 1000;
     const hoyArg = new Date(Date.now() + tzOffset).toISOString().split('T')[0];
     const fechaEventoStr = eventoSeleccionado.fecha.split('T')[0];
@@ -148,7 +162,7 @@ function Eventos() {
           <span className="group-hover:-translate-x-1 transition-transform">←</span> Volver al Tablón
         </button>
 
-        <header className="relative bg-zinc-900 border border-zinc-800 p-8 md:p-12 rounded-[2.5rem] shadow-2xl mb-12 overflow-hidden">
+        <header className="relative bg-zinc-900 border border-zinc-800 p-8 md:p-12 rounded-[2.5rem] shadow-2xl mb-8 overflow-hidden">
           <div className={`absolute top-6 right-6 px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest border ${
             eventoSeleccionado.estado === 'En Curso' ? 'bg-blue-500/20 text-blue-400 border-blue-500/30 animate-pulse' : 
             eventoSeleccionado.estado === 'Suspendido' ? 'bg-red-500/20 text-red-400 border-red-500/30' : 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30'
@@ -178,55 +192,148 @@ function Eventos() {
           </div>
         </header>
 
-        {esDungeonMaster && (eventoSeleccionado.estado !== 'Finalizado' && eventoSeleccionado.estado !== 'Suspendido') && !yaParticipa && (
-          <div className="mb-12">
-            {/* ✨ SI LA CONVOCATORIA CERRÓ MOSTRAMOS AVISO, SI NO, MOSTRAMOS EL BOTÓN */}
-            {!convocatoriaCerrada ? (
-              <>
-                <button 
-                  onClick={() => setMostrarFormularioMesa(!mostrarFormularioMesa)}
-                  className={`w-full py-5 rounded-[2rem] font-black transition-all shadow-xl flex items-center justify-center gap-3 tracking-widest text-xs uppercase ${mostrarFormularioMesa ? 'bg-zinc-800 text-zinc-500 border border-zinc-700' : 'bg-amber-500 text-black hover:scale-[1.01] hover:shadow-amber-500/20'}`}
-                >
-                  {mostrarFormularioMesa ? '✕ Cancelar Convocatoria' : '⚔️ Convocar Nueva Mesa de Rol'}
-                </button>
-                {mostrarFormularioMesa && (
-                  <div className="mt-8 p-1 bg-gradient-to-b from-amber-500/20 to-transparent rounded-[2.5rem]">
-                    <div className="bg-zinc-900 p-8 rounded-[2.5rem] border border-zinc-800 shadow-3xl">
-                      {/* Le quitamos el entrarAlEvento porque el socket lo recargará solo */}
-                      <CrearMesa idEvento={eventoSeleccionado.id} alCrearMesa={() => {setMostrarFormularioMesa(false);}} />
-                    </div>
+        {/* ✨ SISTEMA DE PESTAÑAS GEMELAS */}
+        <div className="flex flex-wrap gap-4 mb-10 border-b border-zinc-800 pb-4">
+          <button 
+            onClick={() => setVistaActiva('rol')} 
+            className={`flex items-center gap-2 px-6 py-3 font-black text-[10px] uppercase tracking-[0.2em] transition-all rounded-xl ${vistaActiva === 'rol' ? 'bg-emerald-600 text-white shadow-lg shadow-emerald-900/40' : 'text-zinc-500 hover:bg-zinc-900'}`}
+          >
+            🎲 Mesas de Rol
+          </button>
+          <button 
+            onClick={() => setVistaActiva('escape')} 
+            className={`flex items-center gap-2 px-6 py-3 font-black text-[10px] uppercase tracking-[0.2em] transition-all rounded-xl ${vistaActiva === 'escape' ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-900/40' : 'text-zinc-500 hover:bg-zinc-900'}`}
+          >
+            🔐 Escape Rooms
+          </button>
+        </div>
+
+        {/* ========================================= */}
+        {/* 🎲 VISTA: MESAS DE ROL                    */}
+        {/* ========================================= */}
+        {vistaActiva === 'rol' && (
+          <div className="animate-in fade-in duration-500">
+            {esDungeonMaster && (eventoSeleccionado.estado !== 'Finalizado' && eventoSeleccionado.estado !== 'Suspendido') && !yaParticipa && (
+              <div className="mb-12">
+                {!convocatoriaCerrada ? (
+                  <>
+                    <button 
+                      onClick={() => setMostrarFormularioMesa(!mostrarFormularioMesa)}
+                      className={`w-full py-5 rounded-[2rem] font-black transition-all shadow-xl flex items-center justify-center gap-3 tracking-widest text-xs uppercase ${mostrarFormularioMesa ? 'bg-zinc-800 text-zinc-500 border border-zinc-700' : 'bg-amber-500 text-black hover:scale-[1.01] hover:shadow-amber-500/20'}`}
+                    >
+                      {mostrarFormularioMesa ? '✕ Cancelar Convocatoria' : '⚔️ Convocar Nueva Mesa de Rol'}
+                    </button>
+                    {mostrarFormularioMesa && (
+                      <div className="mt-8 p-1 bg-gradient-to-b from-amber-500/20 to-transparent rounded-[2.5rem]">
+                        <div className="bg-zinc-900 p-8 rounded-[2.5rem] border border-zinc-800 shadow-3xl">
+                          <CrearMesa idEvento={eventoSeleccionado.id} alCrearMesa={() => {setMostrarFormularioMesa(false);}} />
+                        </div>
+                      </div>
+                    )}
+                  </>
+                ) : (
+                  <div className="bg-amber-500/10 border border-amber-500/30 p-8 rounded-[2.5rem] flex flex-col items-center justify-center text-center shadow-inner">
+                    <span className="text-3xl mb-3">🛡️</span>
+                    <h4 className="text-amber-500 font-black uppercase tracking-widest text-sm mb-2">Convocatoria Cerrada</h4>
+                    <p className="text-zinc-400 text-sm italic max-w-lg">Ya nos encontramos en la fecha del evento. La organización está finalizando los preparativos logísticos y no es posible registrar nuevas mesas.</p>
                   </div>
                 )}
-              </>
+              </div>
+            )}
+
+            <div className="flex items-center justify-between mb-8">
+              <h3 className="text-2xl font-black text-white uppercase tracking-tighter italic">Mesas de la Jornada</h3>
+              <div className="flex gap-2">
+                <button onClick={() => carruselPartidasRef.current?.scrollBy({left: -350, behavior: 'smooth'})} className="w-10 h-10 bg-zinc-900 border border-zinc-800 rounded-full flex items-center justify-center hover:bg-zinc-800 text-zinc-500 transition-colors">‹</button>
+                <button onClick={() => carruselPartidasRef.current?.scrollBy({left: 350, behavior: 'smooth'})} className="w-10 h-10 bg-zinc-900 border border-zinc-800 rounded-full flex items-center justify-center hover:bg-zinc-800 text-zinc-500 transition-colors">›</button>
+              </div>
+            </div>
+
+            {partidasDelEvento.length > 0 ? (
+              <div ref={carruselPartidasRef} className="flex gap-6 overflow-x-auto pb-12 scrollbar-hide snap-x" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
+                {partidasDelEvento.map(p => (
+                  <div key={p.id} className="min-w-[300px] md:min-w-[400px] snap-center">
+                    <Partida {...p} eventoEsPasado={eventoSeleccionado.estado === 'Finalizado' || eventoSeleccionado.estado === 'Suspendido'} esAdmin={esAdmin} esMiMesa={usuarioGuardado?.id === p.dungeon_master_id} />
+                  </div>
+                ))}
+              </div>
             ) : (
-              <div className="bg-amber-500/10 border border-amber-500/30 p-8 rounded-[2.5rem] flex flex-col items-center justify-center text-center shadow-inner">
-                <span className="text-3xl mb-3">🛡️</span>
-                <h4 className="text-amber-500 font-black uppercase tracking-widest text-sm mb-2">Convocatoria Cerrada</h4>
-                <p className="text-zinc-400 text-sm italic max-w-lg">Ya nos encontramos en la fecha del evento. La organización está finalizando los preparativos logísticos y no es posible registrar nuevas mesas.</p>
+              <div className="text-center py-24 bg-zinc-900/30 border-2 border-dashed border-zinc-800 rounded-[2.5rem]">
+                <p className="text-zinc-600 font-black uppercase tracking-widest text-xs">No hay expediciones registradas para este evento</p>
               </div>
             )}
           </div>
         )}
 
-        <div className="flex items-center justify-between mb-8">
-          <h3 className="text-2xl font-black text-white uppercase tracking-tighter italic">Mesas de la Jornada</h3>
-          <div className="flex gap-2">
-            <button onClick={() => carruselPartidasRef.current?.scrollBy({left: -350, behavior: 'smooth'})} className="w-10 h-10 bg-zinc-900 border border-zinc-800 rounded-full flex items-center justify-center hover:bg-zinc-800 text-zinc-500 transition-colors">‹</button>
-            <button onClick={() => carruselPartidasRef.current?.scrollBy({left: 350, behavior: 'smooth'})} className="w-10 h-10 bg-zinc-900 border border-zinc-800 rounded-full flex items-center justify-center hover:bg-zinc-800 text-zinc-500 transition-colors">›</button>
-          </div>
-        </div>
-
-        {partidasDelEvento.length > 0 ? (
-          <div ref={carruselPartidasRef} className="flex gap-6 overflow-x-auto pb-12 scrollbar-hide snap-x" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
-            {partidasDelEvento.map(p => (
-              <div key={p.id} className="min-w-[300px] md:min-w-[400px] snap-center">
-                <Partida {...p} eventoEsPasado={eventoSeleccionado.estado === 'Finalizado' || eventoSeleccionado.estado === 'Suspendido'} esAdmin={esAdmin} esMiMesa={usuarioGuardado?.id === p.dungeon_master_id} />
+        {/* ========================================= */}
+        {/* 🔐 VISTA: ESCAPE ROOMS                    */}
+        {/* ========================================= */}
+        {vistaActiva === 'escape' && (
+          <div className="animate-in fade-in duration-500">
+            {esDungeonMaster && (eventoSeleccionado.estado !== 'Finalizado' && eventoSeleccionado.estado !== 'Suspendido') && (
+              <div className="mb-12">
+                {!convocatoriaCerrada ? (
+                  <>
+                    <button 
+                      onClick={() => setMostrarFormularioEscape(!mostrarFormularioEscape)}
+                      className="w-full bg-indigo-600 text-white hover:bg-indigo-500 py-5 rounded-[2rem] font-black transition-all shadow-xl shadow-indigo-900/20 flex items-center justify-center gap-3 tracking-widest text-xs uppercase"
+                    >
+                      🔐 Habilitar Nueva Sala de Escape
+                    </button>
+                    {mostrarFormularioEscape && (
+                      <FormularioEscape 
+                        eventoId={eventoSeleccionado.id} 
+                        onClose={() => setMostrarFormularioEscape(false)} 
+                        onSuccess={() => cargarEscapesDelEvento(eventoSeleccionado.id)} 
+                      />
+                    )}
+                  </>
+                ) : (
+                  <div className="bg-indigo-500/10 border border-indigo-500/30 p-8 rounded-[2.5rem] flex flex-col items-center justify-center text-center shadow-inner">
+                    <span className="text-3xl mb-3">⏳</span>
+                    <h4 className="text-indigo-400 font-black uppercase tracking-widest text-sm mb-2">Convocatoria Cerrada</h4>
+                    <p className="text-zinc-400 text-sm italic max-w-lg">La jornada ya comenzó y los espacios físicos están asignados. No se pueden armar nuevas salas.</p>
+                  </div>
+                )}
               </div>
-            ))}
-          </div>
-        ) : (
-          <div className="text-center py-24 bg-zinc-900/30 border-2 border-dashed border-zinc-800 rounded-[2.5rem]">
-            <p className="text-zinc-600 font-black uppercase tracking-widest text-xs">No hay expediciones registradas para este evento</p>
+            )}
+
+            <div className="flex items-center justify-between mb-8">
+              <h3 className="text-2xl font-black text-white uppercase tracking-tighter italic">Salas Disponibles</h3>
+            </div>
+
+            {escapesDelEvento.length > 0 ? (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pb-12">
+                {escapesDelEvento.map(sala => (
+                  <div key={sala.id} className="bg-zinc-900 border border-zinc-800 p-8 rounded-[2.5rem] relative overflow-hidden group">
+                    <div className="absolute top-0 right-0 w-32 h-32 bg-indigo-500/5 blur-[60px] rounded-full pointer-events-none group-hover:bg-indigo-500/10 transition-colors"></div>
+                    
+                    <div className="flex justify-between items-start mb-4">
+                      <h4 className="text-2xl font-black text-white uppercase tracking-tighter italic pr-8">{sala.titulo}</h4>
+                      <span className="w-10 h-10 bg-zinc-950 rounded-xl border border-zinc-800 flex items-center justify-center flex-shrink-0">🔐</span>
+                    </div>
+                    
+                    <p className="text-zinc-400 text-sm mb-6 line-clamp-3 leading-relaxed">"{sala.descripcion}"</p>
+                    
+                    <div className="space-y-2 mb-6 border-l-2 border-indigo-500/30 pl-4">
+                      <p className="text-[10px] text-zinc-400 font-black uppercase tracking-widest">🧠 Dificultad: <span className="text-white">{sala.dificultad}</span></p>
+                      <p className="text-[10px] text-zinc-400 font-black uppercase tracking-widest">👥 Grupos de: <span className="text-white">{sala.cupo_por_turno} Aventureros</span></p>
+                      <p className="text-[10px] text-zinc-400 font-black uppercase tracking-widest">👤 Organiza: <span className="text-indigo-400">{sala.organizador_nombre}</span></p>
+                    </div>
+
+                    <div className="bg-zinc-950 border border-zinc-800 rounded-2xl p-4">
+                      <p className="text-center text-zinc-500 font-black uppercase tracking-[0.2em] text-[9px] mb-2">Horarios Habilitados ({sala.turnos?.length || 0})</p>
+                      {/* Aquí luego inyectaremos el componente "TarjetaEscape" o la lista de turnos para inscribirse */}
+                      <p className="text-center text-indigo-500/50 text-xs italic font-bold py-2 animate-pulse">En construcción...</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="text-center py-24 bg-zinc-900/30 border-2 border-dashed border-zinc-800 rounded-[2.5rem]">
+                <p className="text-zinc-600 font-black uppercase tracking-widest text-xs">No hay salas de escape en construcción para esta jornada</p>
+              </div>
+            )}
           </div>
         )}
       </div>
