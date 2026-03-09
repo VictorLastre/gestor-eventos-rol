@@ -2,8 +2,9 @@ import { useState, useEffect, useRef } from 'react';
 import Swal from 'sweetalert2'; 
 import Partida from './Partida'; 
 import CrearMesa from './CrearMesa'; 
-// ✨ IMPORTAMOS EL NUEVO FORMULARIO DE ESCAPE
+// ✨ IMPORTAMOS EL NUEVO FORMULARIO DE ESCAPE Y LA TARJETA
 import FormularioEscape from './FormularioEscape'; 
+import TarjetaEscape from './TarjetaEscape'; 
 import { fetchProtegido } from '../utils/api'; 
 import { io } from 'socket.io-client';
 
@@ -302,31 +303,16 @@ function Eventos() {
               <h3 className="text-2xl font-black text-white uppercase tracking-tighter italic">Salas Disponibles</h3>
             </div>
 
+            {/* ✨ AQUÍ INYECTAMOS LA NUEVA TARJETA DE ESCAPE */}
             {escapesDelEvento.length > 0 ? (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pb-12">
                 {escapesDelEvento.map(sala => (
-                  <div key={sala.id} className="bg-zinc-900 border border-zinc-800 p-8 rounded-[2.5rem] relative overflow-hidden group">
-                    <div className="absolute top-0 right-0 w-32 h-32 bg-indigo-500/5 blur-[60px] rounded-full pointer-events-none group-hover:bg-indigo-500/10 transition-colors"></div>
-                    
-                    <div className="flex justify-between items-start mb-4">
-                      <h4 className="text-2xl font-black text-white uppercase tracking-tighter italic pr-8">{sala.titulo}</h4>
-                      <span className="w-10 h-10 bg-zinc-950 rounded-xl border border-zinc-800 flex items-center justify-center flex-shrink-0">🔐</span>
-                    </div>
-                    
-                    <p className="text-zinc-400 text-sm mb-6 line-clamp-3 leading-relaxed">"{sala.descripcion}"</p>
-                    
-                    <div className="space-y-2 mb-6 border-l-2 border-indigo-500/30 pl-4">
-                      <p className="text-[10px] text-zinc-400 font-black uppercase tracking-widest">🧠 Dificultad: <span className="text-white">{sala.dificultad}</span></p>
-                      <p className="text-[10px] text-zinc-400 font-black uppercase tracking-widest">👥 Grupos de: <span className="text-white">{sala.cupo_por_turno} Aventureros</span></p>
-                      <p className="text-[10px] text-zinc-400 font-black uppercase tracking-widest">👤 Organiza: <span className="text-indigo-400">{sala.organizador_nombre}</span></p>
-                    </div>
-
-                    <div className="bg-zinc-950 border border-zinc-800 rounded-2xl p-4">
-                      <p className="text-center text-zinc-500 font-black uppercase tracking-[0.2em] text-[9px] mb-2">Horarios Habilitados ({sala.turnos?.length || 0})</p>
-                      {/* Aquí luego inyectaremos el componente "TarjetaEscape" o la lista de turnos para inscribirse */}
-                      <p className="text-center text-indigo-500/50 text-xs italic font-bold py-2 animate-pulse">En construcción...</p>
-                    </div>
-                  </div>
+                  <TarjetaEscape 
+                    key={sala.id} 
+                    sala={sala} 
+                    usuarioGuardado={usuarioGuardado} 
+                    esAdmin={esAdmin} 
+                  />
                 ))}
               </div>
             ) : (
