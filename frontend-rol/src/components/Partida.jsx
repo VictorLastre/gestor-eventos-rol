@@ -1,39 +1,38 @@
 import { useState, useEffect } from 'react';
 import Swal from 'sweetalert2'; 
 import { fetchProtegido } from '../utils/api'; 
-// ✨ IMPORTAMOS LA TELEPATÍA
 import { io } from 'socket.io-client';
 
-// ✨ DICCIONARIO DE TEMÁTICAS Y COLORES
+// ✨ DICCIONARIO CORREGIDO: Clases completas para evitar el purgado de Tailwind
 const CONFIG_TEMAS = {
-  "Fantasía Medieval": { color: "text-amber-400", bg: "bg-amber-500/10", border: "border-amber-500/30", icon: "🏰" },
-  "Fantasía Oscura": { color: "text-purple-400", bg: "bg-purple-500/10", border: "border-purple-500/30", icon: "🌑" },
-  "Fantasía Urbana": { color: "text-blue-400", bg: "bg-blue-500/10", border: "border-blue-500/30", icon: "🏙️" },
-  "Terror / Horror": { color: "text-red-500", bg: "bg-red-500/10", border: "border-red-500/30", icon: "🩸" },
-  "Horror Cósmico": { color: "text-emerald-400", bg: "bg-emerald-500/10", border: "border-emerald-500/30", icon: "🐙" },
-  "Terror Espacial": { color: "text-rose-500", bg: "bg-rose-500/10", border: "border-rose-500/30", icon: "🛰️" },
-  "Ciencia Ficción": { color: "text-cyan-400", bg: "bg-cyan-500/10", border: "border-cyan-500/30", icon: "🚀" },
-  "Cyberpunk": { color: "text-fuchsia-500", bg: "bg-fuchsia-500/10", border: "border-fuchsia-500/30", icon: "🦾" },
-  "Steampunk": { color: "text-orange-400", bg: "bg-orange-500/10", border: "border-orange-500/30", icon: "⚙️" },
-  "Post-Apocalíptico": { color: "text-orange-600", bg: "bg-orange-600/10", border: "border-orange-600/30", icon: "☢️" },
-  "Misterio / Investigación": { color: "text-zinc-300", bg: "bg-zinc-500/10", border: "border-zinc-500/30", icon: "🔎" },
-  "Mundo de Tinieblas": { color: "text-red-600", bg: "bg-red-600/10", border: "border-red-600/30", icon: "🦇" },
-  "Superhéroes": { color: "text-yellow-400", bg: "bg-yellow-500/10", border: "border-yellow-500/30", icon: "🦸" },
-  "Western / Weird West": { color: "text-amber-700", bg: "bg-amber-800/10", border: "border-amber-800/30", icon: "🤠" },
-  "Piratas / Naval": { color: "text-teal-400", bg: "bg-teal-500/10", border: "border-teal-500/30", icon: "🏴‍☠️" },
-  "Space Opera": { color: "text-indigo-400", bg: "bg-indigo-500/10", border: "border-indigo-500/30", icon: "🛸" },
-  "Histórico": { color: "text-stone-400", bg: "bg-stone-500/10", border: "border-stone-500/30", icon: "📜" },
-  "Anime / Manga": { color: "text-pink-400", bg: "bg-pink-500/10", border: "border-pink-500/30", icon: "🌸" },
-  "Espionaje / Acción": { color: "text-zinc-400", bg: "bg-zinc-500/10", border: "border-zinc-500/30", icon: "🕶️" },
-  "Rol Infantil / Familiar": { color: "text-sky-400", bg: "bg-sky-500/10", border: "border-sky-500/30", icon: "🧸" },
-  "Comedia": { color: "text-yellow-300", bg: "bg-yellow-500/10", border: "border-yellow-500/30", icon: "🎭" },
-  "Escape Room": { color: "text-lime-400", bg: "bg-lime-500/10", border: "border-lime-500/30", icon: "🗝️" }
+  "Fantasía Medieval": { color: "text-amber-400", bg: "bg-amber-500/10", border: "border-amber-500/30", hoverBorder: "hover:border-amber-500/30", hoverText: "group-hover:text-amber-400", icon: "🏰" },
+  "Fantasía Oscura": { color: "text-purple-400", bg: "bg-purple-500/10", border: "border-purple-500/30", hoverBorder: "hover:border-purple-500/30", hoverText: "group-hover:text-purple-400", icon: "🌑" },
+  "Fantasía Urbana": { color: "text-blue-400", bg: "bg-blue-500/10", border: "border-blue-500/30", hoverBorder: "hover:border-blue-500/30", hoverText: "group-hover:text-blue-400", icon: "🏙️" },
+  "Terror / Horror": { color: "text-red-500", bg: "bg-red-500/10", border: "border-red-500/30", hoverBorder: "hover:border-red-500/30", hoverText: "group-hover:text-red-500", icon: "🩸" },
+  "Horror Cósmico": { color: "text-emerald-400", bg: "bg-emerald-500/10", border: "border-emerald-500/30", hoverBorder: "hover:border-emerald-500/30", hoverText: "group-hover:text-emerald-400", icon: "🐙" },
+  "Terror Espacial": { color: "text-rose-500", bg: "bg-rose-500/10", border: "border-rose-500/30", hoverBorder: "hover:border-rose-500/30", hoverText: "group-hover:text-rose-500", icon: "🛰️" },
+  "Ciencia Ficción": { color: "text-cyan-400", bg: "bg-cyan-500/10", border: "border-cyan-500/30", hoverBorder: "hover:border-cyan-500/30", hoverText: "group-hover:text-cyan-400", icon: "🚀" },
+  "Cyberpunk": { color: "text-fuchsia-500", bg: "bg-fuchsia-500/10", border: "border-fuchsia-500/30", hoverBorder: "hover:border-fuchsia-500/30", hoverText: "group-hover:text-fuchsia-500", icon: "🦾" },
+  "Steampunk": { color: "text-orange-400", bg: "bg-orange-500/10", border: "border-orange-500/30", hoverBorder: "hover:border-orange-500/30", hoverText: "group-hover:text-orange-400", icon: "⚙️" },
+  "Post-Apocalíptico": { color: "text-orange-600", bg: "bg-orange-600/10", border: "border-orange-600/30", hoverBorder: "hover:border-orange-600/30", hoverText: "group-hover:text-orange-600", icon: "☢️" },
+  "Misterio / Investigación": { color: "text-zinc-300", bg: "bg-zinc-500/10", border: "border-zinc-500/30", hoverBorder: "hover:border-zinc-500/30", hoverText: "group-hover:text-zinc-300", icon: "🔎" },
+  "Mundo de Tinieblas": { color: "text-red-600", bg: "bg-red-600/10", border: "border-red-600/30", hoverBorder: "hover:border-red-600/30", hoverText: "group-hover:text-red-600", icon: "🦇" },
+  "Superhéroes": { color: "text-yellow-400", bg: "bg-yellow-500/10", border: "border-yellow-500/30", hoverBorder: "hover:border-yellow-500/30", hoverText: "group-hover:text-yellow-400", icon: "🦸" },
+  "Western / Weird West": { color: "text-amber-700", bg: "bg-amber-800/10", border: "border-amber-800/30", hoverBorder: "hover:border-amber-800/30", hoverText: "group-hover:text-amber-700", icon: "🤠" },
+  "Piratas / Naval": { color: "text-teal-400", bg: "bg-teal-500/10", border: "border-teal-500/30", hoverBorder: "hover:border-teal-500/30", hoverText: "group-hover:text-teal-400", icon: "🏴‍☠️" },
+  "Space Opera": { color: "text-indigo-400", bg: "bg-indigo-500/10", border: "border-indigo-500/30", hoverBorder: "hover:border-indigo-500/30", hoverText: "group-hover:text-indigo-400", icon: "🛸" },
+  "Histórico": { color: "text-stone-400", bg: "bg-stone-500/10", border: "border-stone-500/30", hoverBorder: "hover:border-stone-500/30", hoverText: "group-hover:text-stone-400", icon: "📜" },
+  "Anime / Manga": { color: "text-pink-400", bg: "bg-pink-500/10", border: "border-pink-500/30", hoverBorder: "hover:border-pink-500/30", hoverText: "group-hover:text-pink-400", icon: "🌸" },
+  "Espionaje / Acción": { color: "text-zinc-400", bg: "bg-zinc-500/10", border: "border-zinc-500/30", hoverBorder: "hover:border-zinc-500/30", hoverText: "group-hover:text-zinc-400", icon: "🕶️" },
+  "Rol Infantil / Familiar": { color: "text-sky-400", bg: "bg-sky-500/10", border: "border-sky-500/30", hoverBorder: "hover:border-sky-500/30", hoverText: "group-hover:text-sky-400", icon: "🧸" },
+  "Comedia": { color: "text-yellow-300", bg: "bg-yellow-500/10", border: "border-yellow-500/30", hoverBorder: "hover:border-yellow-500/30", hoverText: "group-hover:text-yellow-300", icon: "🎭" },
+  "Escape Room": { color: "text-lime-400", bg: "bg-lime-500/10", border: "border-lime-500/30", hoverBorder: "hover:border-lime-500/30", hoverText: "group-hover:text-lime-400", icon: "🗝️" }
 };
 
 function Partida(props) {
   const tema = CONFIG_TEMAS[props.etiqueta] || CONFIG_TEMAS['Fantasía Medieval'];
 
-  const cantJugadores = props.jugadoresIniciales ?? props.jugadores_anotados ?? 0;
+  const cantJugadores = props.jugadoresIniciales ?? props.anotados ?? props.jugadores_anotados ?? 0;
   const yaEstaAnotado = Boolean(props.anotadoInicialmente || props.estoy_anotado || false);
 
   const [jugadoresAnotados, setJugadoresAnotados] = useState(cantJugadores);
@@ -74,7 +73,6 @@ function Partida(props) {
             const sistemasCargados = Array.isArray(data) ? data : [];
             setSistemas(sistemasCargados);
             
-            // Si falta el sistema_id pero tenemos el nombre (porque la DB estaba desincronizada), lo buscamos
             if (!datosEdicion.sistema_id && props.sistema) {
               const sistemaActual = sistemasCargados.find(s => s.nombre === props.sistema);
               if(sistemaActual) {
@@ -95,13 +93,11 @@ function Partida(props) {
     setAnotado(yaEstaAnotado);
   }, [cantJugadores, yaEstaAnotado]);
 
-  // ✨ TELEPATÍA PARA LA LISTA DE JUGADORES EN EL MODAL
   useEffect(() => {
-    if (!modalAbierto) return; // Solo escuchamos si el pergamino está abierto
+    if (!modalAbierto) return; 
     
     const socket = io('https://gestor-eventos-rol.onrender.com');
     socket.on('actualizacion-mesas', () => {
-       // Si alguien se anota mientras miras la lista, se refresca sola
        cargarListaJugadores();
     });
 
@@ -148,9 +144,8 @@ function Partida(props) {
       try {
         const res = await fetchProtegido(`https://gestor-eventos-rol.onrender.com/api/partidas/${props.id}`, { method: 'DELETE' });
         if (res.ok) {
-          // ✨ ELIMINAMOS EL RELOAD FORZADO. El componente padre se actualizará por WebSockets
           Swal.fire({ title: 'Mesa Borrada', icon: 'success', background: '#09090b', color: '#fff', confirmButtonColor: '#10b981' });
-          setModalAbierto(false); // Solo cerramos el modal
+          setModalAbierto(false); 
         } else {
           Swal.fire({ title: 'Error Mágico', text: 'No se pudo disolver la mesa.', icon: 'error', background: '#09090b', color: '#fff', confirmButtonColor: '#ef4444' });
         }
@@ -165,14 +160,13 @@ function Partida(props) {
         return Swal.fire({ title: 'Aviso', text: 'Debes seleccionar un sistema', icon: 'warning', background: '#09090b', color: '#fff' });
     }
 
-    // ✨ MAGIA PARA ALIMENTAR A LAS DOS COLUMNAS DE TU BASE DE DATOS
     const sistemaObj = sistemas.find(s => s.id.toString() === datosEdicion.sistema_id.toString());
     const nombreSistema = sistemaObj ? sistemaObj.nombre : props.sistema;
 
     const paqueteFinal = {
       ...datosEdicion,
-      sistema: nombreSistema,             // Va directo a la columna de texto vieja
-      sistema_id: datosEdicion.sistema_id // Va directo a la columna numérica nueva
+      sistema: nombreSistema,             
+      sistema_id: datosEdicion.sistema_id 
     };
 
     try {
@@ -182,9 +176,8 @@ function Partida(props) {
       });
 
       if (res.ok) {
-        // ✨ ELIMINAMOS EL RELOAD FORZADO. 
         Swal.fire({ title: '¡Aventura Reescríta!', text: 'Los detalles de la mesa han sido actualizados.', icon: 'success', background: '#09090b', color: '#fff', confirmButtonColor: '#f59e0b' });
-        setModoEdicion(false); // Solo cerramos el modo edición
+        setModoEdicion(false); 
       } else {
         const data = await res.json();
         Swal.fire({ title: 'Aviso del Gremio', text: data.error, icon: 'warning', background: '#09090b', color: '#fff' });
@@ -207,11 +200,11 @@ function Partida(props) {
         onClick={() => setModalAbierto(true)}
         className={`relative p-8 rounded-[2rem] border transition-all duration-500 shadow-2xl flex flex-col h-[450px] cursor-pointer group overflow-hidden ${
           soyElMaster 
-          ? `border-${tema.color.split('-')[1]}-500/50 bg-gradient-to-br ${tema.bg} to-zinc-950 hover:shadow-[0_0_30px_rgba(245,158,11,0.2)]` 
-          : `border-zinc-800 bg-zinc-900/60 hover:bg-zinc-900 hover:${tema.border} hover:shadow-xl`
+          ? "bg-amber-900/10 border-amber-500/50 shadow-[0_0_20px_rgba(245,158,11,0.15)] ring-1 ring-amber-500/30" 
+          : `border-zinc-800 bg-zinc-900/60 hover:bg-zinc-900 ${tema.hoverBorder} hover:shadow-xl`
         }`}
       >
-        {soyElMaster && <div className={`absolute top-0 right-0 w-32 h-32 ${tema.bg} blur-[60px] rounded-full pointer-events-none`}></div>}
+        {soyElMaster && <div className="absolute top-0 right-0 w-32 h-32 bg-amber-500/10 blur-[60px] rounded-full pointer-events-none"></div>}
 
         <div className="flex justify-between items-start mb-6 relative z-10">
           <div className="max-w-[75%] space-y-3">
@@ -231,13 +224,13 @@ function Partida(props) {
               </span>
               
               {soyElMaster && (
-                <span className={`text-[9px] font-black uppercase tracking-widest px-3 py-1 rounded-full border shadow-lg ${tema.color} ${tema.bg} ${tema.border}`}>
-                  ✨ Tu Mesa
+                <span className="text-[9px] font-black uppercase tracking-widest px-3 py-1 rounded-full border shadow-lg text-amber-500 bg-amber-500/10 border-amber-500/50">
+                  ⭐ Tu Mesa
                 </span>
               )}
             </div>
 
-            <h3 className={`text-2xl font-black text-white italic uppercase tracking-tighter leading-none line-clamp-2 drop-shadow-md transition-colors group-hover:${tema.color}`}>
+            <h3 className={`text-2xl font-black text-white italic uppercase tracking-tighter leading-none line-clamp-2 drop-shadow-md transition-colors ${soyElMaster ? 'group-hover:text-amber-400' : tema.hoverText}`}>
               {props.titulo}
             </h3>
           </div>
@@ -263,7 +256,7 @@ function Partida(props) {
             </div>
             <div>
               <p className="text-[9px] font-black text-zinc-500 uppercase tracking-[0.2em]">Director de Juego</p>
-              <p className="text-sm text-zinc-200 font-bold truncate">{props.dmNombre || 'Desconocido'}</p>
+              <p className="text-sm text-zinc-200 font-bold truncate">{props.dmNombre || props.dungeon_master_nombre || 'Desconocido'}</p>
             </div>
           </div>
           
@@ -271,7 +264,7 @@ function Partida(props) {
             <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
               <button 
                 onClick={abrirEdicion}
-                className={`w-8 h-8 bg-zinc-800 ${tema.color} hover:text-black rounded-xl flex items-center justify-center transition-colors border border-transparent hover:${tema.border} hover:bg-zinc-300 shadow-lg`}
+                className={`w-8 h-8 bg-zinc-800 ${tema.color} hover:text-black rounded-xl flex items-center justify-center transition-colors border border-transparent ${tema.hoverBorder} hover:bg-zinc-300 shadow-lg`}
                 title="Editar Mesa"
               >
                 ✏️
@@ -291,13 +284,16 @@ function Partida(props) {
           {!soyElMaster && !props.eventoEsPasado && (
             <button 
               onClick={alternarInscripcion}
+              disabled={cargandoJugadores || (jugadoresAnotados >= props.cupo && !anotado)}
               className={`flex-1 py-4 rounded-2xl font-black text-[10px] uppercase tracking-[0.2em] transition-all shadow-xl ${
                 anotado 
                 ? 'bg-red-500/10 text-red-500 border border-red-500/40 hover:bg-red-600 hover:text-white' 
-                : 'bg-emerald-600 text-white border border-emerald-500 hover:bg-emerald-500 shadow-emerald-900/40 active:scale-95'
+                : jugadoresAnotados >= props.cupo
+                  ? 'bg-zinc-950 text-zinc-600 border border-zinc-800 cursor-not-allowed'
+                  : 'bg-emerald-600 text-white border border-emerald-500 hover:bg-emerald-500 shadow-emerald-900/40 active:scale-95'
               }`}
             >
-              {anotado ? 'Abandonar' : 'Alistarse'}
+              {anotado ? 'Abandonar' : jugadoresAnotados >= props.cupo ? 'Llena' : 'Alistarse'}
             </button>
           )}
           <div className={`px-6 flex items-center justify-center bg-zinc-950 text-zinc-500 rounded-2xl border transition-all ${soyElMaster || props.eventoEsPasado ? 'w-full py-4 text-xs tracking-widest hover:text-white hover:bg-zinc-800 uppercase font-black border-zinc-800 cursor-pointer' : 'border-zinc-800/80 group-hover:border-zinc-700 group-hover:text-zinc-300'}`}>
@@ -418,7 +414,7 @@ function Partida(props) {
                 <>
                   <button 
                     onClick={abrirEdicion}
-                    className={`bg-zinc-900 text-zinc-400 hover:${tema.color} border border-zinc-800 hover:${tema.border} font-black uppercase tracking-widest text-[9px] px-4 py-2 rounded-xl transition-colors shadow-lg`}
+                    className={`bg-zinc-900 text-zinc-400 hover:${tema.color} border border-zinc-800 ${tema.hoverBorder} font-black uppercase tracking-widest text-[9px] px-4 py-2 rounded-xl transition-colors shadow-lg`}
                   >
                     ✏️ Editar
                   </button>
@@ -454,7 +450,7 @@ function Partida(props) {
                   🎲 {props.sistema || 'Sistema Desconocido'}
                 </span>
                 {soyElMaster && (
-                  <span className={`text-[10px] font-black uppercase tracking-widest px-3 py-1.5 rounded-full border ${tema.color} ${tema.bg} ${tema.border} shadow-[0_0_10px_rgba(255,255,255,0.1)]`}>
+                  <span className="text-[10px] font-black uppercase tracking-widest px-3 py-1.5 rounded-full border text-amber-500 bg-amber-500/10 border-amber-500/50 shadow-[0_0_10px_rgba(255,255,255,0.1)]">
                     ✨ Tu Mesa
                   </span>
                 )}
@@ -469,7 +465,7 @@ function Partida(props) {
                   <div className="w-14 h-14 bg-zinc-900 border border-zinc-700 rounded-full flex items-center justify-center text-2xl">🛡️</div>
                   <div>
                     <p className="text-[10px] font-black text-zinc-500 uppercase tracking-[0.2em] mb-1">Director de Juego</p>
-                    <p className="text-xl text-zinc-200 font-black">{props.dmNombre}</p>
+                    <p className="text-xl text-zinc-200 font-black">{props.dmNombre || props.dungeon_master_nombre}</p>
                   </div>
                 </div>
                 
@@ -550,11 +546,13 @@ function Partida(props) {
                     onClick={alternarInscripcion}
                     className={`flex-1 py-5 rounded-2xl font-black text-xs uppercase tracking-[0.2em] transition-all shadow-xl flex items-center justify-center gap-3 ${
                       anotado 
-                      ? 'bg-red-500/10 text-red-500 border border-red-500/40 hover:bg-red-500 hover:text-white' 
-                      : 'bg-emerald-600 text-white hover:bg-emerald-500 shadow-emerald-900/40 border border-emerald-500 active:scale-95'
+                      ? 'bg-red-500/10 text-red-500 border-red-500/40 hover:bg-red-500 hover:text-white' 
+                      : jugadoresAnotados >= props.cupo
+                        ? 'bg-zinc-950 text-zinc-600 border border-zinc-800 cursor-not-allowed'
+                        : 'bg-emerald-600 text-white hover:bg-emerald-500 shadow-emerald-900/40 border border-emerald-500 active:scale-95'
                     }`}
                   >
-                    {anotado ? 'Abandonar Expedición' : 'Firmar el Contrato (Unirse)'}
+                    {anotado ? 'Abandonar Expedición' : jugadoresAnotados >= props.cupo ? 'Mesa Llena' : 'Firmar el Contrato (Unirse)'}
                   </button>
                 )}
                 <button 
