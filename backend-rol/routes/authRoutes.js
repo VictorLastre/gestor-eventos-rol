@@ -29,7 +29,7 @@ router.post('/registro', async (req, res) => {
         console.error(err);
         return res.status(400).json({ error: 'El nombre de héroe o email ya están en uso.' });
       }
-      res.status(201).json({ mensaje: '¡Aventurero registrado en los anales del gremio!' });
+      res.status(201).json({ mensaje: '¡Aventurero registrado en el gremio!' });
     });
   } catch (e) { 
     res.status(500).json({ error: 'Error interno en la forja de identidad.' }); 

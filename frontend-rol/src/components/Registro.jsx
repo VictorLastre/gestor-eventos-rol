@@ -43,7 +43,8 @@ function Registro({ irALogin }) {
     });
 
     try {
-      const res = await fetch('https://gestor-eventos-rol.onrender.com/api/registro', {
+      // ✨ RUTA TELEPÁTICA ACTUALIZADA AL NUEVO SERVIDOR DE HOSTINGER
+      const res = await fetch('https://hotpink-butterfly-694113.hostingersite.com/api/registro', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         // ✨ INCLUIMOS nombre_completo EN EL ENVÍO
