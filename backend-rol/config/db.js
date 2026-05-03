@@ -1,24 +1,17 @@
 const mysql = require('mysql2');
 
-const db = mysql.createPool({
-  host: process.env.DB_HOST,
-  user: process.env.DB_USER,
-  password: process.env.DB_PASSWORD,
-  database: process.env.DB_NAME,
-  port: process.env.DB_PORT || 3306,
-  ssl: { rejectUnauthorized: false },
+// Configuración de la conexión con las nuevas credenciales de Hostinger
+const pool = mysql.createPool({
+  host: 'localhost',              // En Hostinger se usa localhost
+  user: 'u708459681_victor',      // El usuario que creaste (con el prefijo)
+  password: 'TuContraseñaSegura', // La contraseña que asignaste a la base
+  database: 'u708459681_rol',     // El nombre de la base (con el prefijo)
   waitForConnections: true,
   connectionLimit: 10,
   queueLimit: 0
 });
 
-db.getConnection((err, connection) => {
-  if (err) {
-    console.error('❌ Error conectando a la base de datos MySQL:', err);
-  } else {
-    console.log('✅ ¡Conexión exitosa a la base de datos MySQL!');
-    connection.release();
-  }
-});
+// Convertimos a promesas para usar async/await en tus rutas
+const promisePool = pool.promise();
 
-module.exports = db;
+module.exports = promisePool;
