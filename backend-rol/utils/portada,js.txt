@@ -1,0 +1,46 @@
+using System;
+
+namespace Universidad.Examenes
+{
+    /// <summary>
+    /// Portada de Examen Parcial
+    /// </summary>
+    public class ParcialProgramacionI
+    {
+        public static void Main(string[] args)
+        {
+            var alumno = new Estudiante
+            {
+                NombreCompleto = "Víctor Lastre",
+                DocumentoIdentidad = "31.482.947",
+                Comision = "1-B",
+                Materia = "Programación I",
+                FechaEntrega = DateTime.Now.ToString("dd/MM/yyyy")
+            };
+
+            alumno.PresentarExamen();
+        }
+    }
+
+    public class Estudiante
+    {
+        public string NombreCompleto { get; set; }
+        public string DocumentoIdentidad { get; set; }
+        public string Comision { get; set; }
+        public string Materia { get; set; }
+        public string FechaEntrega { get; set; }
+
+        public void PresentarExamen()
+        {
+            Console.WriteLine("========================================");
+            Console.WriteLine("       DATOS DEL EXAMEN PARCIAL         ");
+            Console.WriteLine("========================================");
+            Console.WriteLine($"Alumno: {NombreCompleto}");
+            Console.WriteLine($"DNI:    {DocumentoIdentidad}");
+            Console.WriteLine($"Curso:  {Comision}");
+            Console.WriteLine($"Materia:{Materia}");
+            Console.WriteLine($"Fecha:  {FechaEntrega}");
+            Console.WriteLine("========================================");
+        }
+    }
+}

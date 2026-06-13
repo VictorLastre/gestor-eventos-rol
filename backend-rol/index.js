@@ -1,54 +1,57 @@
 require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
-const http = require('http'); // ✨ 1. IMPORTAMOS HTTP
-const { Server } = require('socket.io'); // ✨ 2. IMPORTAMOS SOCKET.IO
+const http = require('http'); 
+const { Server } = require('socket.io'); 
 
 const app = express();
-
-// ✨ 3. CREAMOS EL SERVIDOR HTTP BASADO EN EXPRESS
 const server = http.createServer(app);
 
-// ✨ 4. CONFIGURAMOS EL MEGÁFONO (SOCKET.IO) CON LOS MISMOS PERMISOS CORS
+// ✨ 1. LISTA DE DOMINIOS AUTORIZADOS (Ajustado para Hostinger)
+const dominiosAutorizados = [
+  'http://localhost:5173',
+  'https://hotpink-butterfly-694113.hostingersite.com',
+  'https://rollapampa.org',
+  'https://www.rollapampa.org',
+  'https://gestor-eventos-rol.vercel.app'
+];
+
+// ✨ 2. CONFIGURACIÓN DEL MEGÁFONO (SOCKET.IO)
 const io = new Server(server, {
+  path: '/api/socket.io', // Ajuste para que Passenger (Hostinger) no se confunda
   cors: {
-    origin: [
-      'http://localhost:5173',
-      'https://gestor-eventos-rol.vercel.app',
-      /\.vercel\.app$/
-    ],
+    origin: dominiosAutorizados,
     methods: ['GET', 'POST', 'PUT', 'DELETE'],
-    allowedHeaders: ['Content-Type', 'authorization']
+    allowedHeaders: ['Content-Type', 'authorization'],
+    credentials: true
   }
 });
 
-// ✨ 5. GUARDAMOS 'io' EN APP PARA PODER USARLO DESDE CUALQUIER RUTA (ej: partidasRoutes.js)
 app.set('io', io);
 
-// ✨ 6. ESCUCHAMOS QUIÉN SE CONECTA A LA TABERNA
 io.on('connection', (socket) => {
   console.log('🔮 Un aventurero se ha conectado a la red telepática:', socket.id);
-
   socket.on('disconnect', () => {
     console.log('💨 Un aventurero ha dejado la red telepática:', socket.id);
   });
 });
 
+// ✨ 3. CONFIGURACIÓN DE CORS PARA EXPRESS
 app.use(cors({
-  origin: [
-    'http://localhost:5173',
-    'https://gestor-eventos-rol.vercel.app',
-    /\.vercel\.app$/
-  ],
+  origin: dominiosAutorizados,
   methods: ['GET', 'POST', 'PUT', 'DELETE'],
-  allowedHeaders: ['Content-Type', 'authorization']
+  allowedHeaders: ['Content-Type', 'authorization'],
+  credentials: true
 }));
 
 app.use(express.json());
 
-// ✨ 7. RUTA DE SUPERVIVENCIA (HEALTH CHECK) PARA RENDER
-// Cuando Render golpee la puerta "/", le responderemos que todo está perfecto (200 OK)
+// Ruta de supervivencia (Configurada para responder en la raíz y en /api)
 app.get('/', (req, res) => {
+  res.status(200).send('🏰 ¡La fortaleza del Gremio está en pie y los servidores respiran!');
+});
+
+app.get('/api', (req, res) => {
   res.status(200).send('🏰 ¡La fortaleza del Gremio está en pie y los servidores respiran!');
 });
 
@@ -57,25 +60,22 @@ const authRoutes = require('./routes/authRoutes');
 const eventosRoutes = require('./routes/eventosRoutes');
 const partidasRoutes = require('./routes/partidasRoutes');
 const usuariosRoutes = require('./routes/usuariosRoutes');
-// ✨ AQUÍ IMPORTAMOS EL NUEVO PERGAMINO DE SISTEMAS
 const sistemasRoutes = require('./routes/sistemasRoutes'); 
-// ✨ IMPORTAMOS EL NUEVO PERGAMINO DE ESCAPE ROOMS
 const escapeRoutes = require('./routes/escapeRoutes'); 
 
-// Usamos las rutas
+// ✨ RESTAURAMOS EL PREFIJO '/api' PORQUE EXPRESS RECIBE LA RUTA COMPLETA DESDE PASSENGER ✨
 app.use('/api', authRoutes); 
 app.use('/api/eventos', eventosRoutes);
 app.use('/api/partidas', partidasRoutes);
 app.use('/api/usuarios', usuariosRoutes); 
-// ✨ AQUÍ LE DECIMOS AL SERVIDOR QUE ABRA LAS PUERTAS A LOS SISTEMAS
 app.use('/api/sistemas', sistemasRoutes);
-// ✨ ABRIMOS LAS PUERTAS DEL LABERINTO (RUTAS DE ESCAPE ROOMS)
 app.use('/api/escapes', escapeRoutes);
 
-const PUERTO = process.env.PORT || 3001;
+// ✨ 4. PUERTO DINÁMICO PARA HOSTINGER
+// Hostinger (Passenger) asigna el puerto automáticamente
+const PUERTO = process.env.PORT || 8080;
 
-// ✨ ATENCIÓN: AHORA INICIAMOS 'server' EN LUGAR DE 'app' PARA QUE SOCKET.IO FUNCIONE
-server.listen(PUERTO, '0.0.0.0', () => {
-  console.log(`⚔️  Asociación de Rol La Pampa activa en puerto ${PUERTO}`);
-  console.log(`🔮 Red telepática (WebSockets) inicializada y en escucha.`);
+server.listen(PUERTO, () => {
+  console.log(`⚔️ Asociación de Rol La Pampa activa en el puerto ${PUERTO}`);
+  console.log(`🔮 Red telepática inicializada.`);
 });
