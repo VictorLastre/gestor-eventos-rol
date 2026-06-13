@@ -3,11 +3,12 @@ const express = require('express');
 const cors = require('cors');
 const http = require('http'); 
 const { Server } = require('socket.io'); 
+const path = require('path'); // ✨ IMPORTANTE: Necesario para unir las rutas de los archivos
 
 const app = express();
 const server = http.createServer(app);
 
-// ✨ 1. LISTA DE DOMINIOS AUTORIZADOS (Ajustado para Hostinger)
+// ✨ 1. LISTA DE DOMINIOS AUTORIZADOS
 const dominiosAutorizados = [
   'http://localhost:5173',
   'https://hotpink-butterfly-694113.hostingersite.com',
@@ -18,7 +19,7 @@ const dominiosAutorizados = [
 
 // ✨ 2. CONFIGURACIÓN DEL MEGÁFONO (SOCKET.IO)
 const io = new Server(server, {
-  path: '/api/socket.io', // Ajuste para que Passenger (Hostinger) no se confunda
+  path: '/api/socket.io',
   cors: {
     origin: dominiosAutorizados,
     methods: ['GET', 'POST', 'PUT', 'DELETE'],
@@ -46,11 +47,7 @@ app.use(cors({
 
 app.use(express.json());
 
-// Ruta de supervivencia (Configurada para responder en la raíz y en /api)
-app.get('/', (req, res) => {
-  res.status(200).send('🏰 ¡La fortaleza del Gremio está en pie y los servidores respiran!');
-});
-
+// Ruta de supervivencia del backend (Solo responde en /api ahora)
 app.get('/api', (req, res) => {
   res.status(200).send('🏰 ¡La fortaleza del Gremio está en pie y los servidores respiran!');
 });
@@ -63,7 +60,7 @@ const usuariosRoutes = require('./routes/usuariosRoutes');
 const sistemasRoutes = require('./routes/sistemasRoutes'); 
 const escapeRoutes = require('./routes/escapeRoutes'); 
 
-// ✨ RESTAURAMOS EL PREFIJO '/api' PORQUE EXPRESS RECIBE LA RUTA COMPLETA DESDE PASSENGER ✨
+// ✨ RUTAS DEL BACKEND ✨
 app.use('/api', authRoutes); 
 app.use('/api/eventos', eventosRoutes);
 app.use('/api/partidas', partidasRoutes);
@@ -71,8 +68,17 @@ app.use('/api/usuarios', usuariosRoutes);
 app.use('/api/sistemas', sistemasRoutes);
 app.use('/api/escapes', escapeRoutes);
 
-// ✨ 4. PUERTO DINÁMICO PARA HOSTINGER
-// Hostinger (Passenger) asigna el puerto automáticamente
+// ✨ NUEVO: SERVIR EL FRONTEND DE REACT ✨
+// Le decimos a Express que la carpeta 'public' contiene tu página web visual
+app.use(express.static(path.join(__dirname, 'public')));
+
+// Catch-all: Si un usuario entra a cualquier ruta que no sea /api (ej: /login, /mesas), 
+// Express le enviará el index.html de React para que el enrutador visual haga su magia.
+app.get('*', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'index.html'));
+});
+
+// ✨ 4. PUERTO DINÁMICO
 const PUERTO = process.env.PORT || 8080;
 
 server.listen(PUERTO, () => {
