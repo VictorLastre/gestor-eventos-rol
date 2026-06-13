@@ -47,7 +47,7 @@ app.use(cors({
 
 app.use(express.json());
 
-// Ruta de supervivencia del backend
+// Ruta de supervivencia del backend (Solo responde en /api)
 app.get('/api', (req, res) => {
   res.status(200).send('🏰 ¡La fortaleza del Gremio está en pie y los servidores respiran!');
 });
@@ -69,13 +69,13 @@ app.use('/api/sistemas', sistemasRoutes);
 app.use('/api/escapes', escapeRoutes);
 
 // ✨ SERVIR EL FRONTEND DE VITE ✨
-// Le decimos a Express que busque los archivos visuales en la carpeta 'dist'
-app.use(express.static(path.join(__dirname, 'dist')));
+// Le decimos a Express que busque los archivos visuales en tu carpeta 'public'
+app.use(express.static(path.join(__dirname, 'public')));
 
 // Catch-all: Si entran a la raíz o a cualquier otra ruta de React,
-// Express les envía el index.html que está dentro de 'dist'.
+// Express les envía el index.html que está dentro de 'public'.
 app.get('*', (req, res) => {
-  res.sendFile(path.join(__dirname, 'dist', 'index.html'));
+  res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
 
 // ✨ 4. PUERTO DINÁMICO
