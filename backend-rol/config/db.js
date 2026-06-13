@@ -1,11 +1,11 @@
 const mysql = require('mysql2');
 
-// Configuración de la conexión con las nuevas credenciales de Hostinger
+// Configuración de la conexión vinculada a las Variables de Entorno de Hostinger
 const pool = mysql.createPool({
-  host: 'localhost',              // En Hostinger se usa localhost
-  user: 'u708459681_victor',      // El usuario que creaste (con el prefijo)
-  password: 'TuContraseñaSegura', // La contraseña que asignaste a la base
-  database: 'u708459681_rol',     // El nombre de la base (con el prefijo)
+  host: process.env.MYSQL_ADDON_HOST || '127.0.0.1', 
+  user: process.env.MYSQL_ADDON_USER, 
+  password: process.env.MYSQL_ADDON_PASSWORD, 
+  database: process.env.MYSQL_ADDON_DB, 
   waitForConnections: true,
   connectionLimit: 10,
   queueLimit: 0
