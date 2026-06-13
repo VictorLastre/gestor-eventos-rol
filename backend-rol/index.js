@@ -3,7 +3,7 @@ const express = require('express');
 const cors = require('cors');
 const http = require('http'); 
 const { Server } = require('socket.io'); 
-const path = require('path'); // ✨ IMPORTANTE: Necesario para unir las rutas de los archivos
+const path = require('path'); 
 
 const app = express();
 const server = http.createServer(app);
@@ -47,7 +47,7 @@ app.use(cors({
 
 app.use(express.json());
 
-// Ruta de supervivencia del backend (Solo responde en /api ahora)
+// Ruta de supervivencia del backend
 app.get('/api', (req, res) => {
   res.status(200).send('🏰 ¡La fortaleza del Gremio está en pie y los servidores respiran!');
 });
@@ -68,14 +68,14 @@ app.use('/api/usuarios', usuariosRoutes);
 app.use('/api/sistemas', sistemasRoutes);
 app.use('/api/escapes', escapeRoutes);
 
-// ✨ NUEVO: SERVIR EL FRONTEND DE REACT ✨
-// Le decimos a Express que la carpeta 'public' contiene tu página web visual
-app.use(express.static(path.join(__dirname, 'public')));
+// ✨ SERVIR EL FRONTEND DE VITE ✨
+// Le decimos a Express que busque los archivos visuales en la carpeta 'dist'
+app.use(express.static(path.join(__dirname, 'dist')));
 
-// Catch-all: Si un usuario entra a cualquier ruta que no sea /api (ej: /login, /mesas), 
-// Express le enviará el index.html de React para que el enrutador visual haga su magia.
+// Catch-all: Si entran a la raíz o a cualquier otra ruta de React,
+// Express les envía el index.html que está dentro de 'dist'.
 app.get('*', (req, res) => {
-  res.sendFile(path.join(__dirname, 'public', 'index.html'));
+  res.sendFile(path.join(__dirname, 'dist', 'index.html'));
 });
 
 // ✨ 4. PUERTO DINÁMICO
