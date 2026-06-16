@@ -1,0 +1,26 @@
+RewriteEngine On
+
+# 🛡️ 1. Evitar conflictos con archivos físicos
+RewriteCond %{REQUEST_FILENAME} -f
+RewriteRule ^ - [L]
+
+# ⚙️ 2. Reglas del motor Node.js (Passenger)
+PassengerAppRoot /home/u708459681/domains/rollapampa.org/nodejs
+PassengerAppType node
+PassengerNodejs /opt/alt/alt-nodejs22/root/bin/node
+PassengerStartupFile index.js
+PassengerBaseURI /
+
+# 🧪 3. Forzar el manejo de la API por Node
+<Location /api>
+  PassengerEnabled on
+</Location>
+
+# 🖼️ 4. Reglas de React (Para que funcionen las rutas visuales)
+<IfModule mod_rewrite.c>
+  RewriteBase /
+  RewriteCond %{REQUEST_URI} !^/api [NC]
+  RewriteCond %{REQUEST_FILENAME} !-f
+  RewriteCond %{REQUEST_FILENAME} !-d
+  RewriteRule . /index.html [L]
+</IfModule>
