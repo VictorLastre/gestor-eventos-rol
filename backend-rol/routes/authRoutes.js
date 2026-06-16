@@ -6,9 +6,9 @@ const db = require('../config/db');
 
 const JWT_SECRET = process.env.JWT_SECRET || 'secreto_temporal_de_emergencia';
 
-// ✨ REGISTRO: Ahora capturamos el nombre real para los pergaminos oficiales
+// ✨ REGISTRO: Actualizado para usar Promesas y evitar el cuelgue
 router.post('/registro', async (req, res) => {
-  const { nombre, nombre_completo, email, password } = req.body;
+  const { nombre, nombre_completo, email, password } = req.body;
 
   // Validación de contraseña segura para proteger el gremio
   const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)[A-Za-z\d@$!%*?&._-]{8,}$/;
@@ -18,50 +18,64 @@ router.post('/registro', async (req, res) => {
     });
   }
 
-  try {
-    const hash = await bcrypt.hash(password, 10);
-    
-    // Añadimos nombre_completo a la consulta SQL
-    const sql = 'INSERT INTO usuarios (nombre, nombre_completo, email, password, rol) VALUES (?, ?, ?, ?, ?)';
-    
-    db.query(sql, [nombre, nombre_completo, email, hash, 'jugador'], (err) => {
-      if (err) {
-        console.error(err);
-        return res.status(400).json({ error: 'El nombre de héroe o email ya están en uso.' });
-      }
-      res.status(201).json({ mensaje: '¡Aventurero registrado en el gremio!' });
-    });
-  } catch (e) { 
-    res.status(500).json({ error: 'Error interno en la forja de identidad.' }); 
-  }
+  try {
+    const hash = await bcrypt.hash(password, 10);
+    
+    // Añadimos nombre_completo a la consulta SQL
+    const sql = 'INSERT INTO usuarios (nombre, nombre_completo, email, password, rol) VALUES (?, ?, ?, ?, ?)';
+    
+    // Ejecutamos la consulta con await
+    await db.query(sql, [nombre, nombre_completo, email, hash, 'jugador']);
+    
+    res.status(201).json({ mensaje: '¡Aventurero registrado en el gremio!' });
+  } catch (e) { 
+    console.error('Error en la forja de identidad:', e);
+    // Si el error es por duplicado en MySQL (ER_DUP_ENTRY)
+    if (e.code === 'ER_DUP_ENTRY') {
+      return res.status(400).json({ error: 'El nombre de héroe o email ya están en uso.' });
+    }
+    res.status(500).json({ error: 'Error interno en la forja de identidad.' }); 
+  }
 });
 
-router.post('/login', (req, res) => {
-  const { email, password } = req.body;
-  
-  db.query('SELECT * FROM usuarios WHERE email = ?', [email], async (err, resultados) => {
-    if (err || resultados.length === 0) return res.status(401).json({ error: 'Credenciales incorrectas' });
-    
-    const usuario = resultados[0];
-    const valida = await bcrypt.compare(password, usuario.password);
-    
-    if (!valida) return res.status(401).json({ error: 'Credenciales incorrectas' });
+// ✨ LOGIN: Actualizado para usar Promesas
+router.post('/login', async (req, res) => {
+  const { email, password } = req.body;
+  
+  try {
+    // Usamos await y destructuramos el primer elemento (las filas/rows)
+    const [resultados] = await db.query('SELECT * FROM usuarios WHERE email = ?', [email]);
+    
+    // Si no hay resultados, devolvemos error (y detenemos la ejecución)
+    if (resultados.length === 0) {
+      return res.status(401).json({ error: 'Credenciales incorrectas' });
+    }
+    
+    const usuario = resultados[0];
+    const valida = await bcrypt.compare(password, usuario.password);
+    
+    if (!valida) {
+      return res.status(401).json({ error: 'Credenciales incorrectas' });
+    }
 
-    const token = jwt.sign({ id: usuario.id, rol: usuario.rol, nombre: usuario.nombre }, JWT_SECRET, { expiresIn: '2h' });
-    
-    // ✨ LOGIN: Ahora enviamos también el nombre completo al Frontend
-    res.json({ 
-      token, 
-      usuario: { 
-        id: usuario.id, 
-        nombre: usuario.nombre, 
-        nombre_completo: usuario.nombre_completo, // Enviamos el nombre real
-        rol: usuario.rol, 
-        email: usuario.email,
-        avatar: usuario.avatar || 'guerrero' 
-      } 
-    });
-  });
+    const token = jwt.sign({ id: usuario.id, rol: usuario.rol, nombre: usuario.nombre }, JWT_SECRET, { expiresIn: '2h' });
+    
+    // ✨ LOGIN EXITOSO: Enviamos los datos al Frontend
+    res.json({ 
+      token, 
+      usuario: { 
+        id: usuario.id, 
+        nombre: usuario.nombre, 
+        nombre_completo: usuario.nombre_completo, // Enviamos el nombre real
+        rol: usuario.rol, 
+        email: usuario.email,
+        avatar: usuario.avatar || 'guerrero' 
+      } 
+    });
+  } catch (error) {
+    console.error('Error en el login:', error);
+    res.status(500).json({ error: 'Error interno al intentar abrir la bóveda.' });
+  }
 });
 
 module.exports = router;
