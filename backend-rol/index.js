@@ -47,7 +47,7 @@ app.use(cors({
 
 app.use(express.json());
 
-// Ruta de supervivencia del backend (Solo responde en /api)
+// Ruta de supervivencia del backend
 app.get('/api', (req, res) => {
   res.status(200).send('🏰 ¡La fortaleza del Gremio está en pie y los servidores respiran!');
 });
@@ -72,9 +72,9 @@ app.use('/api/escapes', escapeRoutes);
 // Le decimos a Express que busque los archivos visuales en tu carpeta 'public'
 app.use(express.static(path.join(__dirname, 'public')));
 
-// Catch-all: Si entran a la raíz o a cualquier otra ruta de React,
-// Express les envía el index.html que está dentro de 'public'.
-app.get('*', (req, res) => {
+// Catch-all actualizado: Usamos una expresión regular /.*/ en lugar del string '*'
+// Esto evita el PathError de las nuevas versiones de Express
+app.get(/.*/, (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
 
