@@ -3,6 +3,116 @@ import puertaDungeon from '../assets/dungeon_door.png';
 import forjaAventura from '../assets/forja_tu_aventura.gif'; 
 import LogoSVG from '../assets/Logo.svg'; 
 
+// ✨ OPTIMIZACIÓN: Los fundadores se declaran fuera del componente para evitar 
+// que se re-creen en cada renderizado, mejorando el rendimiento.
+const fundadores = [
+  {
+    nombre: "Agus",
+    titulo: "Dungeon Master Novata",
+    icono: "📦",
+    descripcion: "Prefiero dirigir a: Jugadores con o sin experiencia entre 4 a 17 años.\n\nSistemas: Magissa, Detectives de Monstruos, D&D 5e.\n\nEstilo: Bastante teatro de la mente, haciendo hincapié en el world building y la conexión con los personajes. ¡Me encanta que todos aportemos ideas!\n\nMonstruo Favorito: Mímicos.\n\nSnacks: Cosas chocolatosas (brownies) y bebidas frescas.",
+    color: {
+      border: "border-emerald-500/40 hover:border-emerald-500",
+      shadow: "shadow-[0_0_25px_rgba(16,185,129,0.15)] hover:shadow-[0_0_40px_rgba(16,185,129,0.4)]",
+      text: "text-emerald-400",
+      bgIcon: "border-emerald-500/50 shadow-[inset_0_0_15px_rgba(16,185,129,0.2)]",
+      foil: "from-emerald-400/0 via-emerald-300/40 to-emerald-400/0",
+      modalGlow: "shadow-[0_0_40px_rgba(16,185,129,0.2)]",
+      modalBorder: "border-emerald-500"
+    }
+  },
+  {
+    nombre: "Diny",
+    titulo: "Dungeon Master",
+    icono: "🐉",
+    descripcion: "Prefiero dirigir a: Mayores de 15 años y veteranos con ganas de reírse.\n\nSistemas: D&D 5e, Vampiro La Mascarada 5e.\n\nEstilo: Mucho teatro mental, me centro más en el role-play y la historia antes que en el combate. (Por el poder de las risas puedo saltarme reglas si el momento es épico).\n\nMonstruo Favorito: Dragones.\n\nSnacks: Cualquier cosa con chocolate y papitas de limón.",
+    color: {
+      border: "border-purple-500/40 hover:border-purple-500",
+      shadow: "shadow-[0_0_25px_rgba(168,85,247,0.15)] hover:shadow-[0_0_40px_rgba(168,85,247,0.4)]",
+      text: "text-purple-400",
+      bgIcon: "border-purple-500/50 shadow-[inset_0_0_15px_rgba(168,85,247,0.2)]",
+      foil: "from-purple-400/0 via-purple-300/40 to-purple-400/0",
+      modalGlow: "shadow-[0_0_40px_rgba(168,85,247,0.2)]",
+      modalBorder: "border-purple-500"
+    }
+  },
+  {
+    nombre: "Guille",
+    titulo: "Dungeon Master",
+    icono: "🧊",
+    descripcion: "Prefiero dirigir a: Adolescentes y/o adultos, con y sin experiencia.\n\nSistemas: Pampa Primigenia, Blades in the Dark, Pathfinder 1e, D&D 5e, Estrellas Innumerables.\n\nEstilo: Balance entre narrativa y combate, improviso más de lo que preparo. Utilizo mapas dibujables, grillas transparentes y teatro mental.\n\nMonstruo Favorito: Cubo Gelatinoso.\n\nSnacks: Mate cuando hace frío, Tereré cuando hace calor y 9 de Oros en abundancia.",
+    color: {
+      border: "border-blue-500/40 hover:border-blue-500",
+      shadow: "shadow-[0_0_25px_rgba(59,130,246,0.15)] hover:shadow-[0_0_40px_rgba(59,130,246,0.4)]",
+      text: "text-blue-400",
+      bgIcon: "border-blue-500/50 shadow-[inset_0_0_15px_rgba(59,130,246,0.2)]",
+      foil: "from-blue-400/0 via-blue-300/40 to-blue-400/0",
+      modalGlow: "shadow-[0_0_40px_rgba(59,130,246,0.2)]",
+      modalBorder: "border-blue-500"
+    }
+  },
+  {
+    nombre: "Keith",
+    titulo: "Dungeon Master",
+    icono: "🐈‍⬛",
+    descripcion: "Prefiero dirigir a: Jugadores con o sin experiencia.\n\nSistemas: D&D 5e, Magissa, La Bruja Ha Muerto.\n\nEstilo: Me gusta tener el manual cerca, pero priorizo que el jugador disfrute. Uso objetos para mayor inmersión y disfruto cuando inventan cosas raras e inesperadas.\n\nMonstruo Favorito: Cait Sith.\n\nSnacks: Café, energizantes, papas fritas y ¡AGUANTEN LOS ALFAJORES DE FRUTA!",
+    color: {
+      border: "border-indigo-500/40 hover:border-indigo-500",
+      shadow: "shadow-[0_0_25_rgba(99,102,241,0.15)]",
+      text: "text-indigo-400",
+      bgIcon: "border-indigo-500/50 shadow-[inset_0_0_15px_rgba(99,102,241,0.2)]",
+      foil: "from-indigo-400/0 via-indigo-300/40 to-indigo-400/0",
+      modalGlow: "shadow-[0_0_40px_rgba(99,102,241,0.2)]",
+      modalBorder: "border-indigo-500"
+    }
+  },
+  {
+    nombre: "Mati",
+    titulo: "Dungeon Master",
+    icono: "💀",
+    descripcion: "Prefiero dirigir a: Jugadores mayores de 15 años y veteranos.\n\nSistemas: D&D 5e, D&D 3.5, Savage Worlds, Pathfinder.\n\nEstilo: Equilibrado. Buen rol y también combate estratégico. Fiel a las reglas salvo que la situación sea muy meme (¡Un buen 20 lo justifica todo!).\n\nMonstruo Favorito: Archiliches.\n\nSnacks: Coca Cola, pastafrola y tarta de frutilla.",
+    color: {
+      border: "border-amber-500/40 hover:border-amber-500",
+      shadow: "shadow-[0_0_25_rgba(245,158,11,0.15)]",
+      text: "text-amber-400",
+      bgIcon: "border-amber-500/50 shadow-[inset_0_0_15px_rgba(245,158,11,0.2)]",
+      foil: "from-amber-400/0 via-amber-300/40 to-amber-400/0",
+      modalGlow: "shadow-[0_0_40px_rgba(245,158,11,0.2)]",
+      modalBorder: "border-amber-500"
+    }
+  },
+  {
+    nombre: "Smoke",
+    titulo: "Dungeon Master",
+    icono: "👺",
+    descripcion: "Prefiero dirigir a: Mayores de 15 años y veteranos con ganas de reírse.\n\nSistemas: D&D 5e, LANCER, Vampiro La Mascarada 5e, La Llamada de Cthulhu 7e.\n\nEstilo: Equilibrado. Teatro de la mente para narrativa y mapas para combate táctico. Suelo escribir mis propias historias integrando los trasfondos de los personajes.\n\nMonstruo Favorito: Goblins.\n\nSnacks: Alfajores, galletitas, facturas y todo lo que tenga alto porcentaje de azúcar.",
+    color: {
+      border: "border-red-500/40 hover:border-red-500",
+      shadow: "shadow-[0_0_25_rgba(239,68,68,0.15)]",
+      text: "text-red-400",
+      bgIcon: "border-red-500/50 shadow-[inset_0_0_15px_rgba(239,68,68,0.2)]",
+      foil: "from-red-400/0 via-red-300/40 to-red-400/0",
+      modalGlow: "shadow-[0_0_40px_rgba(239,68,68,0.2)]",
+      modalBorder: "border-red-500"
+    }
+  },
+  {
+    nombre: "Vyktor",
+    titulo: "Dungeon Master",
+    icono: "🧟",
+    descripcion: "Prefiero dirigir a: ¡Todos son bienvenidos mientras tengan ganas de divertirse! (Dependiendo de la ambientación, obvio).\n\nSistemas: D&D 5e, Cthulhu 7e, Warhammer Fantasy, Star Wars d20, Vieja Escuela, Indies.\n\nEstilo: Consulto manuales pero doy total libertad a las ideas (y que se la banquen si se mandan macanas). Mapas, miniaturas y mucho teatro mental.\n\nMonstruo Favorito: Zombies.\n\nSnacks: MATE (si no hay, me pongo de mal humor) y pastelitos o pastafrola.",
+    color: {
+      border: "border-green-500/40 hover:border-green-500",
+      shadow: "shadow-[0_0_25_rgba(34,197,94,0.15)]",
+      text: "text-green-400",
+      bgIcon: "border-green-500/50 shadow-[inset_0_0_15px_rgba(34,197,94,0.2)]",
+      foil: "from-green-400/0 via-green-300/40 to-green-400/0",
+      modalGlow: "shadow-[0_0_40px_rgba(34,197,94,0.2)]",
+      modalBorder: "border-green-500"
+    }
+  }
+];
+
 function Landing({ irALogin }) {
   const [indiceFundador, setIndiceFundador] = useState(null);
   const [seccionActiva, setSeccionActiva] = useState('inicio'); 
@@ -22,114 +132,6 @@ function Landing({ irALogin }) {
     }, 4000);
     return () => clearInterval(intervalo);
   }, [seccionActiva]);
-
-  const fundadores = [
-    {
-      nombre: "Agus",
-      titulo: "Dungeon Master Novata",
-      icono: "📦",
-      descripcion: "Prefiero dirigir a: Jugadores con o sin experiencia entre 4 a 17 años.\n\nSistemas: Magissa, Detectives de Monstruos, D&D 5e.\n\nEstilo: Bastante teatro de la mente, haciendo hincapié en el world building y la conexión con los personajes. ¡Me encanta que todos aportemos ideas!\n\nMonstruo Favorito: Mímicos.\n\nSnacks: Cosas chocolatosas (brownies) y bebidas frescas.",
-      color: {
-        border: "border-emerald-500/40 hover:border-emerald-500",
-        shadow: "shadow-[0_0_25px_rgba(16,185,129,0.15)] hover:shadow-[0_0_40px_rgba(16,185,129,0.4)]",
-        text: "text-emerald-400",
-        bgIcon: "border-emerald-500/50 shadow-[inset_0_0_15px_rgba(16,185,129,0.2)]",
-        foil: "from-emerald-400/0 via-emerald-300/40 to-emerald-400/0",
-        modalGlow: "shadow-[0_0_40px_rgba(16,185,129,0.2)]",
-        modalBorder: "border-emerald-500"
-      }
-    },
-    {
-      nombre: "Diny",
-      titulo: "Dungeon Master",
-      icono: "🐉",
-      descripcion: "Prefiero dirigir a: Mayores de 15 años y veteranos con ganas de reírse.\n\nSistemas: D&D 5e, Vampiro La Mascarada 5e.\n\nEstilo: Mucho teatro mental, me centro más en el role-play y la historia antes que en el combate. (Por el poder de las risas puedo saltarme reglas si el momento es épico).\n\nMonstruo Favorito: Dragones.\n\nSnacks: Cualquier cosa con chocolate y papitas de limón.",
-      color: {
-        border: "border-purple-500/40 hover:border-purple-500",
-        shadow: "shadow-[0_0_25px_rgba(168,85,247,0.15)] hover:shadow-[0_0_40px_rgba(168,85,247,0.4)]",
-        text: "text-purple-400",
-        bgIcon: "border-purple-500/50 shadow-[inset_0_0_15px_rgba(168,85,247,0.2)]",
-        foil: "from-purple-400/0 via-purple-300/40 to-purple-400/0",
-        modalGlow: "shadow-[0_0_40px_rgba(168,85,247,0.2)]",
-        modalBorder: "border-purple-500"
-      }
-    },
-    {
-      nombre: "Guille",
-      titulo: "Dungeon Master",
-      icono: "🧊",
-      descripcion: "Prefiero dirigir a: Adolescentes y/o adultos, con y sin experiencia.\n\nSistemas: Pampa Primigenia, Blades in the Dark, Pathfinder 1e, D&D 5e, Estrellas Innumerables.\n\nEstilo: Balance entre narrativa y combate, improviso más de lo que preparo. Utilizo mapas dibujables, grillas transparentes y teatro mental.\n\nMonstruo Favorito: Cubo Gelatinoso.\n\nSnacks: Mate cuando hace frío, Tereré cuando hace calor y 9 de Oros en abundancia.",
-      color: {
-        border: "border-blue-500/40 hover:border-blue-500",
-        shadow: "shadow-[0_0_25px_rgba(59,130,246,0.15)] hover:shadow-[0_0_40px_rgba(59,130,246,0.4)]",
-        text: "text-blue-400",
-        bgIcon: "border-blue-500/50 shadow-[inset_0_0_15px_rgba(59,130,246,0.2)]",
-        foil: "from-blue-400/0 via-blue-300/40 to-blue-400/0",
-        modalGlow: "shadow-[0_0_40px_rgba(59,130,246,0.2)]",
-        modalBorder: "border-blue-500"
-      }
-    },
-    {
-      nombre: "Keith",
-      titulo: "Dungeon Master",
-      icono: "🐈‍⬛",
-      descripcion: "Prefiero dirigir a: Jugadores con o sin experiencia.\n\nSistemas: D&D 5e, Magissa, La Bruja Ha Muerto.\n\nEstilo: Me gusta tener el manual cerca, pero priorizo que el jugador disfrute. Uso objetos para mayor inmersión y disfruto cuando inventan cosas raras e inesperadas.\n\nMonstruo Favorito: Cait Sith.\n\nSnacks: Café, energizantes, papas fritas y ¡AGUANTEN LOS ALFAJORES DE FRUTA!",
-      color: {
-        border: "border-indigo-500/40 hover:border-indigo-500",
-        shadow: "shadow-[0_0_25_rgba(99,102,241,0.15)]",
-        text: "text-indigo-400",
-        bgIcon: "border-indigo-500/50 shadow-[inset_0_0_15px_rgba(99,102,241,0.2)]",
-        foil: "from-indigo-400/0 via-indigo-300/40 to-indigo-400/0",
-        modalGlow: "shadow-[0_0_40px_rgba(99,102,241,0.2)]",
-        modalBorder: "border-indigo-500"
-      }
-    },
-    {
-      nombre: "Mati",
-      titulo: "Dungeon Master",
-      icono: "💀",
-      descripcion: "Prefiero dirigir a: Jugadores mayores de 15 años y veteranos.\n\nSistemas: D&D 5e, D&D 3.5, Savage Worlds, Pathfinder.\n\nEstilo: Equilibrado. Buen rol y también combate estratégico. Fiel a las reglas salvo que la situación sea muy meme (¡Un buen 20 lo justifica todo!).\n\nMonstruo Favorito: Archiliches.\n\nSnacks: Coca Cola, pastafrola y tarta de frutilla.",
-      color: {
-        border: "border-amber-500/40 hover:border-amber-500",
-        shadow: "shadow-[0_0_25_rgba(245,158,11,0.15)]",
-        text: "text-amber-400",
-        bgIcon: "border-amber-500/50 shadow-[inset_0_0_15px_rgba(245,158,11,0.2)]",
-        foil: "from-amber-400/0 via-amber-300/40 to-amber-400/0",
-        modalGlow: "shadow-[0_0_40px_rgba(245,158,11,0.2)]",
-        modalBorder: "border-amber-500"
-      }
-    },
-    {
-      nombre: "Smoke",
-      titulo: "Dungeon Master",
-      icono: "👺",
-      descripcion: "Prefiero dirigir a: Mayores de 15 años y veteranos con ganas de reírse.\n\nSistemas: D&D 5e, LANCER, Vampiro La Mascarada 5e, La Llamada de Cthulhu 7e.\n\nEstilo: Equilibrado. Teatro de la mente para narrativa y mapas para combate táctico. Suelo escribir mis propias historias integrando los trasfondos de los personajes.\n\nMonstruo Favorito: Goblins.\n\nSnacks: Alfajores, galletitas, facturas y todo lo que tenga alto porcentaje de azúcar.",
-      color: {
-        border: "border-red-500/40 hover:border-red-500",
-        shadow: "shadow-[0_0_25_rgba(239,68,68,0.15)]",
-        text: "text-red-400",
-        bgIcon: "border-red-500/50 shadow-[inset_0_0_15px_rgba(239,68,68,0.2)]",
-        foil: "from-red-400/0 via-red-300/40 to-red-400/0",
-        modalGlow: "shadow-[0_0_40px_rgba(239,68,68,0.2)]",
-        modalBorder: "border-red-500"
-      }
-    },
-    {
-      nombre: "Vyktor",
-      titulo: "Dungeon Master",
-      icono: "🧟",
-      descripcion: "Prefiero dirigir a: ¡Todos son bienvenidos mientras tengan ganas de divertirse! (Dependiendo de la ambientación, obvio).\n\nSistemas: D&D 5e, Cthulhu 7e, Warhammer Fantasy, Star Wars d20, Vieja Escuela, Indies.\n\nEstilo: Consulto manuales pero doy total libertad a las ideas (y que se la banquen si se mandan macanas). Mapas, miniaturas y mucho teatro mental.\n\nMonstruo Favorito: Zombies.\n\nSnacks: MATE (si no hay, me pongo de mal humor) y pastelitos o pastafrola.",
-      color: {
-        border: "border-green-500/40 hover:border-green-500",
-        shadow: "shadow-[0_0_25_rgba(34,197,94,0.15)]",
-        text: "text-green-400",
-        bgIcon: "border-green-500/50 shadow-[inset_0_0_15px_rgba(34,197,94,0.2)]",
-        foil: "from-green-400/0 via-green-300/40 to-green-400/0",
-        modalGlow: "shadow-[0_0_40px_rgba(34,197,94,0.2)]",
-        modalBorder: "border-green-500"
-      }
-    }
-  ];
 
   const siguienteFundador = (e) => { e.stopPropagation(); setIndiceFundador((prev) => (prev + 1) % fundadores.length); };
   const anteriorFundador = (e) => { e.stopPropagation(); setIndiceFundador((prev) => (prev - 1 + fundadores.length) % fundadores.length); };
