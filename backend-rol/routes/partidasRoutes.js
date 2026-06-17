@@ -75,7 +75,7 @@ router.post('/', verificarToken, (req, res) => {
         db.query("SELECT id FROM usuarios WHERE rol = 'admin'", (err, admins) => {
           if (err || admins.length === 0) return; 
           
-          const mensajeNotif = `¡El Escriba anuncia que el DM ${req.usuario.nombre} ha convocado su primera mesa ("${titulo}")! Recuerda forjar su Certificado del Gremio en el Censo.`;
+          const mensajeNotif = `¡El Escriba announces que el DM ${req.usuario.nombre} ha convocado su primera mesa ("${titulo}")! Recuerda forjar su Certificado del Gremio en el Censo.`;
           const notificacionesValues = admins.map(admin => [admin.id, mensajeNotif]);
           
           db.query("INSERT INTO notificaciones (usuario_id, mensaje) VALUES ?", [notificacionesValues], (err) => {

@@ -136,7 +136,7 @@ router.post('/:id/partidas', verificarToken, (req, res) => {
     const hoyArg = new Date(Date.now() + tzOffset).toISOString().split('T')[0];
 
     if (hoyArg >= evento_fecha) {
-      return res.status(400).json({ error: 'La convocatoria ha cerrado. Ya estamos en la fecha del evento y la organización está preparando la logística.' });
+      return res.status(400).json({ error: 'La convocatoria ha cerrado. Ya estamos en la fecha del evento and la organización está preparando la logística.' });
     }
 
     if (es_dm > 0) return res.status(400).json({ error: 'Ya estás dirigiendo una mesa en este evento.' });

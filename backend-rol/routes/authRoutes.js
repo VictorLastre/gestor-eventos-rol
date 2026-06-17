@@ -6,7 +6,7 @@ const db = require('../config/db');
 
 const JWT_SECRET = process.env.JWT_SECRET || 'secreto_temporal_de_emergencia';
 
-// ✨ REGISTRO: Actualizado para usar Promesas y evitar el cuelgue
+// ✨ REGISTRO: Actualizado para usar el puente mágico de Promesas
 router.post('/registro', async (req, res) => {
   const { nombre, nombre_completo, email, password } = req.body;
 
@@ -24,8 +24,8 @@ router.post('/registro', async (req, res) => {
     // Añadimos nombre_completo a la consulta SQL
     const sql = 'INSERT INTO usuarios (nombre, nombre_completo, email, password, rol) VALUES (?, ?, ?, ?, ?)';
     
-    // Ejecutamos la consulta con await
-    await db.query(sql, [nombre, nombre_completo, email, hash, 'jugador']);
+    // ✨ EL PUENTE MÁGICO APLICADO AQUÍ: db.promise().query
+    await db.promise().query(sql, [nombre, nombre_completo, email, hash, 'jugador']);
     
     res.status(201).json({ mensaje: '¡Aventurero registrado en el gremio!' });
   } catch (e) { 
@@ -38,13 +38,13 @@ router.post('/registro', async (req, res) => {
   }
 });
 
-// ✨ LOGIN: Actualizado para usar Promesas
+// ✨ LOGIN: Actualizado para usar el puente mágico de Promesas
 router.post('/login', async (req, res) => {
   const { email, password } = req.body;
   
   try {
-    // Usamos await y destructuramos el primer elemento (las filas/rows)
-    const [resultados] = await db.query('SELECT * FROM usuarios WHERE email = ?', [email]);
+    // ✨ EL PUENTE MÁGICO APLICADO AQUÍ: db.promise().query
+    const [resultados] = await db.promise().query('SELECT * FROM usuarios WHERE email = ?', [email]);
     
     // Si no hay resultados, devolvemos error (y detenemos la ejecución)
     if (resultados.length === 0) {

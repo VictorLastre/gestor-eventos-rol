@@ -6,7 +6,8 @@ const verificarToken = require('../middlewares/auth'); // ✨ Importante para la
 // 1. OBTENER SISTEMAS (Público: para que los DMs elijan al crear mesa)
 router.get('/', async (req, res) => {
     try {
-        const [resultados] = await db.query('SELECT * FROM sistemas ORDER BY nombre ASC');
+        // ✨ EL PUENTE MÁGICO APLICADO AQUÍ: db.promise().query
+        const [resultados] = await db.promise().query('SELECT * FROM sistemas ORDER BY nombre ASC');
         res.json(resultados);
     } catch (error) {
         console.error('❌ Error al consultar sistemas:', error);
@@ -22,7 +23,8 @@ router.post('/', verificarToken, async (req, res) => {
     if (!nombre) return res.status(400).json({ error: 'El nombre es obligatorio.' });
 
     try {
-        await db.query('INSERT INTO sistemas (nombre) VALUES (?)', [nombre]);
+        // ✨ EL PUENTE MÁGICO APLICADO AQUÍ
+        await db.promise().query('INSERT INTO sistemas (nombre) VALUES (?)', [nombre]);
         
         // ✨ WEBSOCKETS: Avisar a todos que hay un nuevo sistema en la biblioteca
         const io = req.app.get('io');
@@ -46,7 +48,8 @@ router.put('/:id', verificarToken, async (req, res) => {
     const { id } = req.params;
 
     try {
-        await db.query('UPDATE sistemas SET nombre = ? WHERE id = ?', [nombre, id]);
+        // ✨ EL PUENTE MÁGICO APLICADO AQUÍ
+        await db.promise().query('UPDATE sistemas SET nombre = ? WHERE id = ?', [nombre, id]);
         
         // ✨ WEBSOCKETS: Avisar del cambio en los pergaminos
         const io = req.app.get('io');
@@ -66,7 +69,8 @@ router.delete('/:id', verificarToken, async (req, res) => {
     const { id } = req.params;
 
     try {
-        await db.query('DELETE FROM sistemas WHERE id = ?', [id]);
+        // ✨ EL PUENTE MÁGICO APLICADO AQUÍ
+        await db.promise().query('DELETE FROM sistemas WHERE id = ?', [id]);
         
         // ✨ WEBSOCKETS: Avisar de la eliminación
         const io = req.app.get('io');
