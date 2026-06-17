@@ -97,8 +97,8 @@ const fundadores = [
     }
   },
   {
-    nombre: "Vyktor",
-    titulo: "Dungeon Master",
+    nombre: "Sterbern",
+    titulo: "Zombie Master",
     icono: "👤",
     descripcion: "Prefiero dirigir a: ¡Todos son bienvenidos mientras tengan ganas de divertirse! (Dependiendo de la ambientación, obvio).\n\nSistemas: D&D 5e, Cthulhu 7e, Warhammer Fantasy, Star Wars d20, Vieja Escuela, Indies.\n\nEstilo: Consulto manuales pero doy total libertad a las ideas (y que se la banquen si se mandan macanas). Mapas, miniaturas y mucho teatro mental.\n\nMonstruo Favorito: Zombies.\n\nSnacks: MATE (si no hay, me pongo de mal humor) y pastelitos o pastafrola.",
     color: {
