@@ -12,13 +12,10 @@ const pool = mysql.createPool({
   queueLimit: 0
 });
 
-// Convertimos a promesas para usar async/await en tus rutas
-const promisePool = pool.promise();
-
 // ✨ PRUEBA DE CONEXIÓN DE SUPERVIVENCIA ✨
-// Esto obligará a Node.js a probar la llave inmediatamente al arrancar.
-// Si la puerta de la base de datos está trabada, nos dejará un mensaje de error exacto en los logs.
-promisePool.getConnection()
+// Usamos .promise() de forma temporal y exclusiva solo para esta prueba de arranque, 
+// así nos permite usar .then() y .catch() para atrapar errores de credenciales.
+pool.promise().getConnection()
   .then(connection => {
     console.log('📦 ¡Conexión a la Bóveda de Datos (MySQL) establecida con éxito!');
     connection.release(); // Liberamos la conexión de prueba para que los usuarios la usen
@@ -28,4 +25,7 @@ promisePool.getConnection()
     console.error('Código de error:', err.code);
   });
 
-module.exports = promisePool;
+// ⚔️ LA CURA CONTRA LOS ERRORES 500 ⚔️
+// Exportamos el 'pool' normal (Callbacks) para que sea 100% compatible 
+// con la forma en la que están escritas tus rutas de usuarios y partidas.
+module.exports = pool;
