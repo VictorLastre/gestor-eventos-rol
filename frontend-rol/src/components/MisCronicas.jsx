@@ -2,8 +2,8 @@ import { useState, useEffect } from 'react';
 import Swal from 'sweetalert2'; 
 import { fetchProtegido } from '../utils/api'; 
 import { io } from 'socket.io-client';
-// ✨ 1. IMPORTAMOS EL CATÁLOGO DE EMOJIS
-import EmojiPicker from 'emoji-picker-react';
+// ✨ IMPORTAMOS EL NUEVO COMPONENTE DE AVATARES
+import AvatarUsuario from '../components/AvatarUsuario';
 
 function MisCronicas({ alActualizarUsuario }) { 
   const [cronicas, setCronicas] = useState({ dirigiendo: [], jugando: [] });
@@ -12,9 +12,6 @@ function MisCronicas({ alActualizarUsuario }) {
   const [usuarioGuardado, setUsuarioGuardado] = useState(JSON.parse(localStorage.getItem('usuario')));
   const [editando, setEditando] = useState(false);
   
-  // ✨ 2. ESTADO PARA MOSTRAR/OCULTAR EL PANEL DE EMOJIS
-  const [mostrarBuscadorEmojis, setMostrarBuscadorEmojis] = useState(false);
-  
   const [peticionEnviada, setPeticionEnviada] = useState(usuarioGuardado?.solicitudDmPendiente || false);
   const esJugadorBase = usuarioGuardado?.rol === 'jugador';
   
@@ -22,7 +19,7 @@ function MisCronicas({ alActualizarUsuario }) {
     nombre: usuarioGuardado?.nombre || '', 
     nombre_completo: usuarioGuardado?.nombre_completo || '', 
     email: usuarioGuardado?.email || '',
-    avatar: usuarioGuardado?.avatar || 'guerrero'
+    avatar: usuarioGuardado?.avatar || 'guerrero' // Lo mantenemos en el estado para no romper el backend
   });
 
   const cargarCronicas = () => {
@@ -80,12 +77,6 @@ function MisCronicas({ alActualizarUsuario }) {
 
   const manejarCambioPerfil = (e) => {
     setPerfil({ ...perfil, [e.target.name]: e.target.value });
-  };
-
-  // ✨ 3. FUNCIÓN PARA ATRAPAR EL EMOJI SELECCIONADO
-  const atraparEmoji = (emojiObject) => {
-    setPerfil({ ...perfil, avatar: emojiObject.emoji });
-    setMostrarBuscadorEmojis(false); // Cerramos el panel después de elegir
   };
 
   const guardarPerfil = async () => {
@@ -168,12 +159,6 @@ function MisCronicas({ alActualizarUsuario }) {
     }
   };
 
-  // ✨ FUNCIÓN PARA RENDERIZAR EL AVATAR (Adaptador por si tienen guardado "mago" en lugar del emoji)
-  const renderAvatar = (avatarString) => {
-    const viejosIconos = { guerrero: '⚔️', mago: '🧙', esqueleto: '💀', goblin: '👺' };
-    return viejosIconos[avatarString] || avatarString || '👤';
-  };
-
   if (cargando) return (
     <div className="flex justify-center items-center min-h-[50vh]">
       <div className="flex flex-col items-center gap-4">
@@ -193,34 +178,18 @@ function MisCronicas({ alActualizarUsuario }) {
         {editando ? (
           <div className="relative z-10 flex flex-col gap-8 animate-in zoom-in-95 duration-300">
             
-            {/* ✨ 4. NUEVA ZONA DE SELECCIÓN DE EMOJIS */}
+            {/* ✨ NUEVA ZONA DE IDENTIDAD VISUAL (Boring Avatars) */}
             <div className="space-y-4 relative">
-              <label className="text-[10px] font-black text-zinc-500 uppercase tracking-widest ml-2">Elige tu Identidad (Avatar)</label>
-              
-              <div className="flex items-center gap-6">
-                <div className="w-20 h-20 bg-zinc-950 rounded-3xl border-2 border-emerald-500/50 flex items-center justify-center text-4xl shadow-[0_0_20px_rgba(16,185,129,0.2)]">
-                  {renderAvatar(perfil.avatar)}
+              <label className="text-[10px] font-black text-zinc-500 uppercase tracking-widest ml-2">Identidad Visual</label>
+              <div className="flex flex-col sm:flex-row items-center gap-6 bg-zinc-950/50 p-6 rounded-[2rem] border border-zinc-800/50">
+                <div className="w-20 h-20 bg-zinc-950 rounded-full border-2 border-emerald-500/50 flex items-center justify-center shadow-[0_0_20px_rgba(16,185,129,0.2)] overflow-hidden">
+                  <AvatarUsuario nombre={perfil.nombre} tamaño={80} variante="beam" />
                 </div>
-                
-                <button 
-                  onClick={() => setMostrarBuscadorEmojis(!mostrarBuscadorEmojis)}
-                  className="bg-zinc-800 hover:bg-zinc-700 text-white px-6 py-4 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all border border-zinc-700"
-                >
-                  {mostrarBuscadorEmojis ? 'Ocultar Catálogo ✕' : 'Explorar Catálogo de Emojis 🔍'}
-                </button>
+                <div className="text-zinc-400 text-sm italic font-medium text-center sm:text-left">
+                  Tu avatar se forja mágicamente en base a tu Alias.<br/>
+                  <span className="text-emerald-500/70 text-xs">Prueba a escribir un nuevo nombre abajo para ver cómo cambia.</span>
+                </div>
               </div>
-
-              {/* El componente del Picker - ✨ ¡CORREGIDO AQUÍ! */}
-              {mostrarBuscadorEmojis && (
-                <div className="absolute z-50 top-[110%] left-0 shadow-[0_20px_50px_rgba(0,0,0,0.5)] rounded-2xl overflow-hidden border border-zinc-700 animate-in fade-in slide-in-from-top-4">
-                  <EmojiPicker 
-                    onEmojiClick={atraparEmoji} 
-                    theme="dark" 
-                    searchPlaceHolder="Buscar identidad..."
-                    skinTonesDisabled={false}
-                  />
-                </div>
-              )}
             </div>
             
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -250,7 +219,7 @@ function MisCronicas({ alActualizarUsuario }) {
             
             <div className="flex flex-col sm:flex-row gap-3 mt-2">
               <button onClick={guardarPerfil} className="flex-1 bg-emerald-600 hover:bg-emerald-500 text-white font-black py-4 rounded-2xl uppercase text-xs tracking-widest transition-all shadow-lg shadow-emerald-900/20">Grabar Ficha</button>
-              <button onClick={() => { setEditando(false); setMostrarBuscadorEmojis(false); }} className="px-8 bg-zinc-800 hover:bg-zinc-700 text-zinc-400 font-black py-4 rounded-2xl uppercase text-xs tracking-widest transition-all">Descartar</button>
+              <button onClick={() => setEditando(false)} className="px-8 bg-zinc-800 hover:bg-zinc-700 text-zinc-400 font-black py-4 rounded-2xl uppercase text-xs tracking-widest transition-all">Descartar</button>
             </div>
           </div>
         ) : (
@@ -258,8 +227,9 @@ function MisCronicas({ alActualizarUsuario }) {
             <div className="flex items-center gap-6 md:gap-8">
                 <div className="relative group">
                     <div className="absolute inset-0 bg-emerald-500/20 blur-xl rounded-full group-hover:bg-emerald-500/40 transition-all"></div>
-                    <div className="w-24 h-24 md:w-32 md:h-32 bg-zinc-950 rounded-full flex items-center justify-center text-5xl md:text-6xl border-2 border-emerald-500/50 shadow-2xl relative z-10">
-                        {renderAvatar(perfil.avatar)}
+                    <div className="w-24 h-24 md:w-32 md:h-32 bg-zinc-950 rounded-full flex items-center justify-center border-2 border-emerald-500/50 shadow-2xl relative z-10 overflow-hidden">
+                        {/* ✨ INVOCACIÓN DEL AVATAR */}
+                        <AvatarUsuario nombre={perfil.nombre} tamaño={128} variante="beam" />
                     </div>
                 </div>
                 <div>

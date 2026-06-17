@@ -2,8 +2,11 @@ import { useState, useEffect, useRef } from 'react';
 import Swal from 'sweetalert2';
 import { fetchProtegido } from '../utils/api';
 import LogoSVG from '../assets/Logo.svg'; 
-// ✨ IMPORTAMOS EL RECEPTOR TELEPÁTICO PARA LOS CUERVOS
 import { io } from 'socket.io-client';
+
+// ✨ IMPORTAMOS EL NUEVO COMPONENTE DE AVATARES
+// Ajusta la ruta dependiendo de dónde guardaste el archivo AvatarUsuario.jsx
+import AvatarUsuario from '../components/AvatarUsuario'; 
 
 function Navbar({ usuario, alCerrarSesion, setVista }) {
   const [notificaciones, setNotificaciones] = useState([]);
@@ -32,7 +35,6 @@ function Navbar({ usuario, alCerrarSesion, setVista }) {
     cargarNotificaciones();
 
     // ✨ 2. EL RITUAL DE CONEXIÓN A LA RED TELEPÁTICA PARA NOTIFICACIONES
-    // ✨ CONFIGURADO CON RUTA RELATIVA SEGIN LA INFRAESTRUCTURA DE PRODUCCIÓN
     const socket = io('/', { path: '/api/socket.io' });
 
     // Escuchamos si llegan nuevos cuervos (notificaciones) para este usuario en particular
@@ -49,7 +51,7 @@ function Navbar({ usuario, alCerrarSesion, setVista }) {
     return () => {
       socket.disconnect();
     };
-  }, [usuario]); // Volver a ejecutar si el usuario cambia (ej: hace login)
+  }, [usuario]); 
 
   useEffect(() => {
     function handleClickOutside(event) {
@@ -64,7 +66,6 @@ function Navbar({ usuario, alCerrarSesion, setVista }) {
   const marcarComoLeida = async (id, e) => {
     e.stopPropagation();
     try {
-      // ✨ RUTA RELATIVA ACTUALIZADA
       const res = await fetchProtegido(`/api/usuarios/notificaciones/${id}/leida`, {
         method: 'PUT'
       });
@@ -74,15 +75,6 @@ function Navbar({ usuario, alCerrarSesion, setVista }) {
     } catch (err) {
       if (err !== 'Sesión expirada') console.error(err);
     }
-  };
-
-  // ✨ LA FUNCIÓN MÁGICA PARA ENTENDER TODOS LOS AVATARES
-  const renderAvatar = () => {
-    const avatarStr = usuario?.avatar || '👤';
-    const viejosIconos = { guerrero: '⚔️', mago: '🧙', esqueleto: '💀', goblin: '👺' };
-    
-    // Si el valor está en el diccionario viejo, lo traduce. Si no, lo asume como emoji directo.
-    return viejosIconos[avatarStr] || avatarStr;
   };
 
   const confirmarCierreSesion = () => {
@@ -217,24 +209,27 @@ function Navbar({ usuario, alCerrarSesion, setVista }) {
           </div>
 
           <div className={`flex items-center gap-3 bg-zinc-950 p-1.5 pr-6 rounded-full border shadow-inner transition-all ${esFundador ? 'border-amber-500/30 shadow-amber-900/10' : 'border-zinc-800'}`}>
-            <div className={`w-10 h-10 bg-zinc-900 rounded-full flex items-center justify-center text-xl overflow-hidden transition-all duration-700 relative
+            
+            {/* ✨ AQUÍ INVOCAMOS EL NUEVO COMPONENTE BORING AVATARS */}
+            <div className={`w-10 h-10 rounded-full flex items-center justify-center overflow-hidden transition-all duration-700 relative
               ${esFundador 
                 ? 'border-2 border-amber-400 shadow-[0_0_15px_rgba(251,191,36,0.6)]' 
                 : 'border-2 border-emerald-500 shadow-[0_0_10px_rgba(16,185,129,0.3)]'
               }`}
             >
-              {esFundador && <div className="absolute inset-0 bg-amber-500/20 animate-pulse"></div>}
-              {/* ✨ AQUÍ INVOCAMOS LA FUNCIÓN MÁGICA */}
-              <span className="relative z-10">{renderAvatar()}</span>
+              {esFundador && <div className="absolute inset-0 bg-amber-500/20 animate-pulse z-0"></div>}
+              <div className="relative z-10 flex items-center justify-center w-full h-full">
+                <AvatarUsuario nombre={usuario?.nombre} tamaño={40} variante="beam" />
+              </div>
             </div>
             
             <div className="text-right hidden sm:flex flex-col justify-center">
               <p className={`text-sm font-black leading-none mb-1 tracking-tight uppercase italic ${esFundador ? 'text-amber-400 drop-shadow-[0_0_5px_rgba(251,191,36,0.5)]' : 'text-zinc-200'}`}>
-                {usuario.nombre}
+                {usuario?.nombre}
               </p>
               <div className="flex gap-2 justify-end items-center">
                 <p className={`text-[9px] font-black uppercase tracking-[0.2em] ${esFundador ? 'text-amber-600' : 'text-zinc-500'}`}>
-                  {usuario.rol === 'admin' ? '👑 Admin' : usuario.rol === 'dm' ? '🛡️ DM' : '⚔️ Aventurero'}
+                  {usuario?.rol === 'admin' ? '👑 Admin' : usuario?.rol === 'dm' ? '🛡️ DM' : '⚔️ Aventurero'}
                 </p>
               </div>
             </div>

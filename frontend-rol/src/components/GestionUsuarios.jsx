@@ -4,6 +4,8 @@ import { fetchProtegido } from '../utils/api';
 import * as XLSX from 'xlsx'; 
 import CertificadoBase from '../assets/CertificadoBase.png'; 
 import { io } from 'socket.io-client';
+// ✨ IMPORTAMOS EL NUEVO COMPONENTE DE AVATARES
+import AvatarUsuario from '../components/AvatarUsuario';
 
 function GestionUsuarios() {
   const [solicitudes, setSolicitudes] = useState([]);
@@ -71,12 +73,6 @@ function GestionUsuarios() {
   useEffect(() => {
     setPaginaCenso(1);
   }, [filtroRol, busqueda]);
-
-  const renderAvatar = (avatarString) => {
-    if (!avatarString) return '👤';
-    const viejosIconos = { guerrero: '⚔️', mago: '🧙', esqueleto: '💀', goblin: '👺' };
-    return viejosIconos[avatarString] || avatarString;
-  };
 
   const exportarLogistica = async () => {
     if (eventos.length === 0) return Swal.fire({ title: 'Error', text: 'No hay eventos registrados.', icon: 'error', background: '#09090b', color: '#fff' });
@@ -326,8 +322,9 @@ function GestionUsuarios() {
                {solicitudes.map(user => (
                  <div key={user.id} className="bg-zinc-900 border border-zinc-800 p-6 rounded-3xl flex flex-col sm:flex-row justify-between items-center gap-4 transition-all hover:border-purple-500/30 group">
                     <div className="flex items-center gap-4">
-                      <div className="w-14 h-14 bg-zinc-950 rounded-full flex items-center justify-center text-2xl border border-zinc-800 group-hover:border-purple-500/50 transition-colors">
-                        {renderAvatar(user.avatar)}
+                      {/* ✨ AVATAR INVOCADO AQUÍ */}
+                      <div className="w-14 h-14 bg-zinc-950 rounded-full flex items-center justify-center border border-zinc-800 group-hover:border-purple-500/50 transition-colors overflow-hidden">
+                        <AvatarUsuario nombre={user.nombre} tamaño={56} variante="beam" />
                       </div>
                       <div>
                         <p className="text-xl font-black text-white tracking-tighter uppercase italic">{user.nombre}</p>
@@ -396,8 +393,9 @@ function GestionUsuarios() {
                     usuariosPaginados.map(user => (
                       <tr key={user.id} className="hover:bg-white/[0.02] transition-colors group">
                         <td className="p-6 flex items-center gap-4">
-                          <span className="w-12 h-12 bg-zinc-950 rounded-full flex items-center justify-center text-xl border border-zinc-800 group-hover:border-zinc-600 transition-all">
-                            {renderAvatar(user.avatar)}
+                          {/* ✨ AVATAR INVOCADO AQUÍ */}
+                          <span className="w-12 h-12 bg-zinc-950 rounded-full flex items-center justify-center border border-zinc-800 group-hover:border-zinc-600 transition-all overflow-hidden">
+                            <AvatarUsuario nombre={user.nombre} tamaño={48} variante="beam" />
                           </span>
                           <div>
                             <p className="font-black text-zinc-200 uppercase italic tracking-tight">
