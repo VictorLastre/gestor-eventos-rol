@@ -30,7 +30,7 @@ function Estadisticas() {
         console.error(err);
         Swal.fire({
           title: 'El Oráculo está nublado',
-          text: 'Hubo un error al consultar los anales de la asociación.',
+          text: 'Hubo un error al consultar los archivos de la asociación.',
           icon: 'error',
           background: '#18181b',
           color: '#fff',
@@ -121,7 +121,7 @@ function Estadisticas() {
               ) : (
                 <tr>
                   <td colSpan="3" className="p-10 text-center text-zinc-600 italic font-bold">
-                    No hay crónicas registradas en los anales...
+                    No hay crónicas registradas en los registros...
                   </td>
                 </tr>
               )}

@@ -476,7 +476,7 @@ function Eventos() {
       </section>
 
       <section className="opacity-60 hover:opacity-100 transition-opacity duration-500">
-        <h3 className="text-xl font-black text-zinc-600 uppercase tracking-[0.3em] mb-10 italic">Anales del Pasado</h3>
+        <h3 className="text-xl font-black text-zinc-600 uppercase tracking-[0.3em] mb-10 italic">Eventos Pasados</h3>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
           {eventosPasados.map(evento => (
             <div key={evento.id} onClick={() => entrarAlEvento(evento)} className="group bg-zinc-950 border border-zinc-900 p-6 rounded-[2rem] transition-all cursor-pointer hover:bg-zinc-900 hover:border-zinc-700 relative overflow-hidden">
