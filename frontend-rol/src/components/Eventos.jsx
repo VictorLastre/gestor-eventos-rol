@@ -34,7 +34,6 @@ function Eventos() {
   };
 
   const cargarEventos = () => {
-    // ✨ CORRECCIÓN: Ruta relativa para evitar problemas de CORS
     fetch('/api/eventos')
       .then(res => res.json())
       .then(datos => setEventos(Array.isArray(datos) ? datos : []))
@@ -42,7 +41,6 @@ function Eventos() {
   };
 
   const cargarMesasDelEvento = (idEvento) => {
-    // ✨ CORRECCIÓN: Ruta relativa
     fetchProtegido(`/api/eventos/${idEvento}/partidas`)
       .then(res => res.json())
       .then(datos => setPartidasDelEvento(Array.isArray(datos) ? datos : []))
@@ -50,7 +48,6 @@ function Eventos() {
   };
 
   const cargarEscapesDelEvento = (idEvento) => {
-    // ✨ CORRECCIÓN: Ruta relativa
     fetchProtegido(`/api/escapes/${idEvento}`)
       .then(res => res.json())
       .then(data => setEscapesDelEvento(Array.isArray(data) ? data : []))
@@ -60,7 +57,6 @@ function Eventos() {
   useEffect(() => { 
     cargarEventos(); 
 
-    // ✨ CORRECCIÓN: WebSocket con ruta relativa y path específico del backend
     const socket = io('/', {
       path: '/api/socket.io',
       transports: ['websocket', 'polling'],
@@ -108,7 +104,6 @@ function Eventos() {
 
     if (result.isConfirmed) {
       try {
-        // ✨ CORRECCIÓN: Ruta relativa
         const res = await fetchProtegido(`/api/eventos/${id}`, { method: 'DELETE' });
         if (res.ok) {
           Swal.fire({ title: '¡Evento Borrado!', icon: 'success', background: '#09090b', color: '#fff', customClass: { popup: 'border border-emerald-500/30 rounded-[2rem]' } });
@@ -121,7 +116,6 @@ function Eventos() {
   const guardarEdicionEvento = async (e) => {
     e.preventDefault();
     try {
-      // ✨ CORRECCIÓN: Ruta relativa
       const res = await fetchProtegido(`/api/eventos/${eventoEditando.id}`, {
         method: 'PUT',
         body: JSON.stringify(eventoEditando)
@@ -158,28 +152,38 @@ function Eventos() {
   if (eventoSeleccionado) {
     const yaParticipa = partidasDelEvento.some(p => p.dungeon_master_id === usuarioGuardado?.id || p.anotadoInicialmente === 1);
     
-    // Control de DMs (Si ya pasó la fecha, no arman más mesas)
     const tzOffset = -3 * 60 * 60 * 1000;
     const hoyArg = new Date(Date.now() + tzOffset).toISOString().split('T')[0];
     const fechaEventoStr = eventoSeleccionado.fecha.split('T')[0];
     const convocatoriaCerrada = hoyArg >= fechaEventoStr;
 
-    // ✨ MAGIA DE TIEMPO: Control de Jugadores (Se cierra 1 hora antes del evento)
     let inscripcionesCerradas = false;
     if (eventoSeleccionado.fecha && eventoSeleccionado.hora_inicio) {
       const [anio, mes, dia] = eventoSeleccionado.fecha.split('T')[0].split('-');
       const [hora, minuto] = eventoSeleccionado.hora_inicio.split(':');
       
       const fechaHoraEvento = new Date(anio, mes - 1, dia, hora, minuto);
-      // Restamos 1 hora (60 min * 60 seg * 1000 ms)
       const limiteInscripcion = new Date(fechaHoraEvento.getTime() - (60 * 60 * 1000));
       const ahora = new Date();
       
       inscripcionesCerradas = ahora >= limiteInscripcion;
     }
 
+    // ✨ MAGIA DE ORDENAMIENTO: Novatos primero, luego los que tienen más cupos vacíos
+    const mesasOrdenadas = [...partidasDelEvento].sort((a, b) => {
+      // 1. Prioridad Absoluta: Mesas aptas para novatos
+      if (a.apta_novatos && !b.apta_novatos) return -1;
+      if (!a.apta_novatos && b.apta_novatos) return 1;
+
+      // 2. Ordenar por la cantidad de cupos disponibles (de mayor a menor)
+      const libresA = Math.max(0, (a.cupo || 0) - (a.jugadoresIniciales || 0));
+      const libresB = Math.max(0, (b.cupo || 0) - (b.jugadoresIniciales || 0));
+      return libresB - libresA; 
+    });
+
     return (
-      <div className="max-w-6xl mx-auto p-4 md:p-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
+      // ✨ CAMBIAMOS max-w-6xl POR max-w-7xl PARA ENSANCHAR LA TABERNA
+      <div className="max-w-7xl mx-auto p-4 md:p-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
         <button onClick={() => setEventoSeleccionado(null)} className="group flex items-center gap-2 text-zinc-500 hover:text-emerald-400 transition-colors font-black text-[10px] uppercase tracking-[0.3em] mb-8">
           <span className="group-hover:-translate-x-1 transition-transform">←</span> Volver al Tablón
         </button>
@@ -214,7 +218,6 @@ function Eventos() {
           </div>
         </header>
 
-        {/* ✨ PESTAÑAS CENTRADAS Y VISUALMENTE IMPACTANTES */}
         <div className="flex justify-center mb-16">
           <div className="bg-zinc-950/80 p-2 rounded-full border border-zinc-800 flex flex-col md:flex-row gap-2 shadow-2xl backdrop-blur-sm">
             <button 
@@ -288,10 +291,11 @@ function Eventos() {
               </div>
             </div>
 
-            {partidasDelEvento.length > 0 ? (
+            {mesasOrdenadas.length > 0 ? (
               <div ref={carruselPartidasRef} className="flex gap-6 overflow-x-auto pb-12 scrollbar-hide snap-x" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
-                {partidasDelEvento.map(p => (
-                  <div key={p.id} className="min-w-[300px] md:min-w-[400px] snap-center">
+                {/* ✨ AQUÍ RENDERIZAMOS CON EL NUEVO ORDEN Y EL NUEVO TAMAÑO (3 COMPLETAS) */}
+                {mesasOrdenadas.map(p => (
+                  <div key={p.id} className="w-[85vw] sm:w-[350px] lg:w-[calc(33.333%-1rem)] flex-none snap-center">
                     <Partida 
                       {...p} 
                       eventoEsPasado={eventoSeleccionado.estado === 'Finalizado' || eventoSeleccionado.estado === 'Suspendido'} 

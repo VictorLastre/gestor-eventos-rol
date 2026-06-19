@@ -66,7 +66,6 @@ function Partida(props) {
       if (modalAbierto) cargarListaJugadores();
       
       if (modoEdicion && sistemas.length === 0) {
-        // ✨ RUTA RELATIVA ACTUALIZADA
         fetch('/api/sistemas')
           .then(res => res.json())
           .then(data => {
@@ -96,7 +95,6 @@ function Partida(props) {
   useEffect(() => {
     if (!modalAbierto) return; 
     
-    // ✨ CONEXIÓN DE WEBSOCKETS ACTUALIZADA A RUTA RELATIVA
     const socket = io('/', { path: '/api/socket.io' });
     socket.on('actualizacion-mesas', () => {
        cargarListaJugadores();
@@ -107,7 +105,6 @@ function Partida(props) {
 
   const cargarListaJugadores = () => {
     setCargandoJugadores(true);
-    // ✨ RUTA RELATIVA ACTUALIZADA
     fetchProtegido(`/api/partidas/${props.id}/jugadores`)
       .then(res => res.json())
       .then(datos => { setListaJugadores(datos); setCargandoJugadores(false); })
@@ -122,7 +119,6 @@ function Partida(props) {
     const metodo = anotado ? 'DELETE' : 'POST';
 
     try {
-      // ✨ RUTA RELATIVA ACTUALIZADA
       const res = await fetchProtegido(`/api/partidas/${props.id}/inscripciones`, { method: metodo });
       if (res.ok) {
         setAnotado(!anotado);
@@ -145,7 +141,6 @@ function Partida(props) {
 
     if (result.isConfirmed) {
       try {
-        // ✨ RUTA RELATIVA ACTUALIZADA
         const res = await fetchProtegido(`/api/partidas/${props.id}`, { method: 'DELETE' });
         if (res.ok) {
           Swal.fire({ title: 'Mesa Borrada', icon: 'success', background: '#09090b', color: '#fff', confirmButtonColor: '#10b981' });
@@ -174,7 +169,6 @@ function Partida(props) {
     };
 
     try {
-      // ✨ RUTA RELATIVA ACTUALIZADA
       const res = await fetchProtegido(`/api/partidas/${props.id}`, {
         method: 'PUT',
         body: JSON.stringify(paqueteFinal)
@@ -198,14 +192,28 @@ function Partida(props) {
     setModalAbierto(false); 
   };
 
+  // ✨ LÓGICA DE COLORES POR DISPONIBILIDAD ✨
+  const estaLlena = jugadoresAnotados >= props.cupo;
+  const tieneJugadores = jugadoresAnotados > 0 && !estaLlena;
+  
+  let estiloBordeDisponibilidad = "";
+  if (estaLlena) {
+    estiloBordeDisponibilidad = "border-red-500/60 hover:border-red-500 shadow-[0_0_15px_rgba(239,68,68,0.15)]"; // Rojo
+  } else if (tieneJugadores) {
+    estiloBordeDisponibilidad = "border-orange-500/60 hover:border-orange-500 shadow-[0_0_15px_rgba(249,115,22,0.15)]"; // Naranja
+  } else {
+    estiloBordeDisponibilidad = "border-emerald-500/60 hover:border-emerald-500 shadow-[0_0_15px_rgba(16,185,129,0.15)]"; // Verde
+  }
+
   return (
     <>
+      {/* ✨ APLICACIÓN DEL BORDE COLOREADO AQUÍ ✨ */}
       <div 
         onClick={() => setModalAbierto(true)}
-        className={`relative p-8 rounded-[2rem] border transition-all duration-500 shadow-2xl flex flex-col h-[450px] cursor-pointer group overflow-hidden ${
+        className={`relative p-8 rounded-[2rem] border-2 transition-all duration-500 flex flex-col h-[450px] cursor-pointer group overflow-hidden ${
           soyElMaster 
-          ? "bg-amber-900/10 border-amber-500/50 shadow-[0_0_20px_rgba(245,158,11,0.15)] ring-1 ring-amber-500/30" 
-          : `border-zinc-800 bg-zinc-900/60 hover:bg-zinc-900 ${tema.hoverBorder} hover:shadow-xl`
+          ? "bg-amber-900/10 border-amber-500/80 shadow-[0_0_20px_rgba(245,158,11,0.25)]" 
+          : `bg-zinc-900/60 hover:bg-zinc-900 hover:shadow-xl ${estiloBordeDisponibilidad}`
         }`}
       >
         {soyElMaster && <div className="absolute top-0 right-0 w-32 h-32 bg-amber-500/10 blur-[60px] rounded-full pointer-events-none"></div>}
@@ -240,7 +248,7 @@ function Partida(props) {
           </div>
           
           <div className="text-right flex flex-col items-end">
-            <p className={`text-4xl font-mono font-black leading-none drop-shadow-lg ${jugadoresAnotados >= props.cupo ? 'text-red-500' : 'text-emerald-500'}`}>
+            <p className={`text-4xl font-mono font-black leading-none drop-shadow-lg ${estaLlena ? 'text-red-500' : tieneJugadores ? 'text-orange-500' : 'text-emerald-500'}`}>
               {jugadoresAnotados}
             </p>
             <p className="text-[10px] text-zinc-500 font-bold uppercase tracking-widest mt-1 border-t border-zinc-800 pt-1 w-full text-center">
@@ -288,18 +296,18 @@ function Partida(props) {
           {!soyElMaster && !props.eventoEsPasado && (
             <button 
               onClick={alternarInscripcion}
-              disabled={cargandoJugadores || (props.inscripcionesCerradas && !anotado) || (jugadoresAnotados >= props.cupo && !anotado)}
+              disabled={cargandoJugadores || (props.inscripcionesCerradas && !anotado) || (estaLlena && !anotado)}
               className={`flex-1 py-4 rounded-2xl font-black text-[10px] uppercase tracking-[0.2em] transition-all shadow-xl ${
                 anotado 
                 ? 'bg-red-500/10 text-red-500 border border-red-500/40 hover:bg-red-600 hover:text-white' 
                 : props.inscripcionesCerradas
                   ? 'bg-zinc-950 text-zinc-600 border border-zinc-800 cursor-not-allowed'
-                  : jugadoresAnotados >= props.cupo
+                  : estaLlena
                     ? 'bg-zinc-950 text-zinc-600 border border-zinc-800 cursor-not-allowed'
                     : 'bg-emerald-600 text-white border border-emerald-50 hover:bg-emerald-500 shadow-emerald-900/40 active:scale-95'
               }`}
             >
-              {anotado ? 'Abandonar' : props.inscripcionesCerradas ? 'Cerrado' : jugadoresAnotados >= props.cupo ? 'Llena' : 'Alistarse'}
+              {anotado ? 'Abandonar' : props.inscripcionesCerradas ? 'Cerrado' : estaLlena ? 'Llena' : 'Alistarse'}
             </button>
           )}
           <div className={`px-6 flex items-center justify-center bg-zinc-950 text-zinc-500 rounded-2xl border transition-all ${soyElMaster || props.eventoEsPasado ? 'w-full py-4 text-xs tracking-widest hover:text-white hover:bg-zinc-800 uppercase font-black border-zinc-800 cursor-pointer' : 'border-zinc-800/80 group-hover:border-zinc-700 group-hover:text-zinc-300'}`}>
@@ -476,12 +484,12 @@ function Partida(props) {
                 <div className="bg-zinc-950/50 p-6 rounded-[2rem] border border-zinc-800/80 shadow-inner flex items-center justify-between">
                   <div>
                     <p className="text-[10px] font-black text-zinc-500 uppercase tracking-[0.2em] mb-1">Disponibilidad</p>
-                    <p className={`text-xl font-black ${jugadoresAnotados >= props.cupo ? 'text-red-500' : 'text-emerald-500'}`}>
+                    <p className={`text-xl font-black ${estaLlena ? 'text-red-500' : 'text-emerald-500'}`}>
                       {jugadoresAnotados} de {props.cupo}
                     </p>
                   </div>
-                  <div className={`text-4xl font-mono font-black opacity-20 ${jugadoresAnotados >= props.cupo ? 'text-red-500' : 'text-emerald-500'}`}>
-                     {jugadoresAnotados >= props.cupo ? 'FULL' : 'OPEN'}
+                  <div className={`text-4xl font-mono font-black opacity-20 ${estaLlena ? 'text-red-500' : 'text-emerald-500'}`}>
+                     {estaLlena ? 'FULL' : 'OPEN'}
                   </div>
                 </div>
               </div>
@@ -548,18 +556,18 @@ function Partida(props) {
                 {!soyElMaster && !props.eventoEsPasado && (
                   <button 
                     onClick={alternarInscripcion}
-                    disabled={cargandoJugadores || (props.inscripcionesCerradas && !anotado) || (jugadoresAnotados >= props.cupo && !anotado)}
+                    disabled={cargandoJugadores || (props.inscripcionesCerradas && !anotado) || (estaLlena && !anotado)}
                     className={`flex-1 py-5 rounded-2xl font-black text-xs uppercase tracking-[0.2em] transition-all shadow-xl flex items-center justify-center gap-3 ${
                       anotado 
                       ? 'bg-red-500/10 text-red-500 border-red-500/40 hover:bg-red-500 hover:text-white' 
                       : props.inscripcionesCerradas
                         ? 'bg-zinc-950 text-zinc-600 border border-zinc-800 cursor-not-allowed'
-                        : jugadoresAnotados >= props.cupo
+                        : estaLlena
                           ? 'bg-zinc-950 text-zinc-600 border border-zinc-800 cursor-not-allowed'
                           : 'bg-emerald-600 text-white hover:bg-emerald-500 shadow-emerald-900/40 border border-emerald-50 active:scale-95'
                     }`}
                   >
-                    {anotado ? 'Abandonar Expedición' : props.inscripcionesCerradas ? 'Inscripciones Cerradas' : jugadoresAnotados >= props.cupo ? 'Mesa Llena' : 'Firmar el Contrato (Unirse)'}
+                    {anotado ? 'Abandonar Expedición' : props.inscripcionesCerradas ? 'Inscripciones Cerradas' : estaLlena ? 'Mesa Llena' : 'Firmar el Contrato (Unirse)'}
                   </button>
                 )}
                 <button 
