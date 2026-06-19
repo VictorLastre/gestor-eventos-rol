@@ -6,13 +6,16 @@ function Login(props) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [mostrarPassword, setMostrarPassword] = useState(false); 
+  
+  // ✨ ESTADOS PARA EL RESETEO DE CONTRASEÑA
+  const [mostrarModalReset, setMostrarModalReset] = useState(false);
+  const [emailReset, setEmailReset] = useState('');
+  const [enviandoReset, setEnviandoReset] = useState(false);
 
   const manejarLogin = async (e) => {
     e.preventDefault();
 
     try {
-      // ✨ RUTA RELATIVA: Ya no necesitamos la URL completa. 
-      // El navegador usará el dominio actual automáticamente.
       const respuesta = await fetch('/api/login', {
         method: 'POST',
         headers: {
@@ -82,6 +85,40 @@ function Login(props) {
     }
   };
 
+  // ✨ FUNCIÓN PARA SOLICITAR EL RESETEO
+  const manejarReset = async (e) => {
+    e.preventDefault();
+    if (!emailReset) return;
+    
+    setEnviandoReset(true);
+
+    try {
+      const res = await fetch('/api/usuarios/olvide-password', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: emailReset })
+      });
+
+      if (res.ok) {
+        Swal.fire({
+          title: 'Petición Enviada',
+          text: 'Si el correo existe en nuestros registros, verás un enlace especial (por consola o en tu correo) para restaurar la magia.',
+          icon: 'success',
+          background: '#09090b', color: '#fff', confirmButtonColor: '#10b981'
+        });
+        setMostrarModalReset(false);
+        setEmailReset('');
+      } else {
+        const data = await res.json();
+        Swal.fire({ title: 'Aviso', text: data.error, icon: 'warning', background: '#09090b', color: '#fff' });
+      }
+    } catch (error) {
+      Swal.fire({ title: 'Error', text: 'El mensajero fue derribado. Intenta de nuevo.', icon: 'error', background: '#09090b', color: '#fff' });
+    }
+    
+    setEnviandoReset(false);
+  };
+
   return (
     <div className="min-h-[85vh] flex flex-col items-center justify-center p-6 animate-in fade-in zoom-in-95 duration-700">
       
@@ -136,7 +173,7 @@ function Login(props) {
             </label>
             <div className="relative">
               <input 
-                type={mostrarPassword ? "text" : "password"}
+                type="password"
                 className="w-full bg-zinc-950/50 border border-zinc-800 rounded-2xl py-4 pl-5 pr-14 text-white placeholder-zinc-700 focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500/50 transition-all shadow-inner"
                 placeholder="••••••••"
                 value={password}
@@ -165,12 +202,47 @@ function Login(props) {
           </button>
         </form>
 
-        <div className="mt-10 text-center">
-            <p className="text-[9px] text-zinc-600 font-bold uppercase tracking-widest">
-                ¿Has olvidado tus pergaminos? Contacta a un Administrador
-            </p>
+        <div className="mt-10 text-center relative z-10">
+            {/* ✨ ENLACE INTERACTIVO PARA OLVIDO DE CONTRASEÑA */}
+            <button 
+              onClick={() => setMostrarModalReset(true)}
+              className="text-[10px] text-zinc-500 hover:text-emerald-400 font-bold uppercase tracking-widest transition-colors"
+            >
+                ¿Olvidaste las runas de tu contraseña?
+            </button>
         </div>
       </div>
+
+      {/* ✨ MODAL DE RECUPERACIÓN DE CONTRASEÑA */}
+      {mostrarModalReset && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/95 backdrop-blur-md animate-in fade-in zoom-in-95 duration-300">
+          <div className="bg-zinc-900 border border-emerald-500/30 w-full max-w-md rounded-[2.5rem] p-8 md:p-10 shadow-[0_0_80px_rgba(16,185,129,0.15)] relative">
+            <button onClick={() => setMostrarModalReset(false)} className="absolute top-6 right-6 w-10 h-10 bg-zinc-950 flex items-center justify-center rounded-full text-zinc-500 hover:text-white hover:bg-zinc-800 transition-colors border border-zinc-800">✕</button>
+            
+            <h3 className="text-2xl font-black text-white uppercase tracking-tighter mb-4 italic">
+              <span className="text-emerald-500">🔮</span> Restaurar Memoria
+            </h3>
+            <p className="text-zinc-400 text-sm mb-8 italic">Ingresa el correo de tu personaje. Si existe en los registros, se forjará un enlace para que restaures tu contraseña.</p>
+            
+            <form onSubmit={manejarReset} className="flex flex-col gap-6">
+              <div className="space-y-2">
+                <label className="text-[10px] font-black text-zinc-500 uppercase tracking-widest ml-1">Correo Electrónico</label>
+                <input 
+                  type="email" 
+                  value={emailReset} 
+                  onChange={e => setEmailReset(e.target.value)} 
+                  required 
+                  className="w-full bg-zinc-950 border border-zinc-800 rounded-2xl py-4 px-5 text-white focus:border-emerald-500 outline-none transition-all font-bold shadow-inner" 
+                />
+              </div>
+
+              <button type="submit" disabled={enviandoReset} className="group relative overflow-hidden font-black py-5 rounded-2xl shadow-xl transition-all active:scale-95 text-xs uppercase tracking-[0.2em] border border-emerald-500 bg-emerald-600 text-white disabled:opacity-50">
+                <span className="relative z-10">{enviandoReset ? 'Enviando Cuervo...' : 'Solicitar Enlace'}</span>
+              </button>
+            </form>
+          </div>
+        </div>
+      )}
 
     </div>
   );
