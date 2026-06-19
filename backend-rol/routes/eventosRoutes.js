@@ -3,6 +3,9 @@ const router = express.Router();
 const db = require('../config/db');
 const verificarToken = require('../middlewares/auth');
 
+// ✨ IMPORTAMOS LA MAGIA DEL CUERVO DE TELEGRAM
+const { enviarMensajeCanal } = require('../utils/telegramBot');
+
 // ✨ FUNCIÓN DEL ESCRIBA: REGISTRO EN LA BITÁCORA
 const registrarLog = (usuario, accion, descripcion) => {
   const sql = "INSERT INTO logs_actividad (usuario_id, nombre_usuario, accion, descripcion) VALUES (?, ?, ?, ?)";
@@ -75,6 +78,10 @@ router.post('/', verificarToken, (req, res) => {
     // ✨ REGISTRO EN BITÁCORA
     registrarLog(req.usuario, 'CREAR_EVENTO', `Ha convocado una nueva jornada: "${nombre}" para el ${fechaLimpia}.`);
 
+    // ✨ MAGIA DE TELEGRAM: Grito al Canal General
+    const mensajeTelegram = `📢 <b>¡NUEVA JORNADA CONVOCADA!</b> 🎲\n\n⚔️ <b>${nombre}</b>\n📅 <b>Fecha:</b> ${fechaLimpia}\n⏰ <b>Horario:</b> ${hora_inicio} a ${hora_fin}\n📍 <b>Lugar:</b> ${lugar}, ${ciudad}\n\n<i>${descripcion}</i>\n\n¡Preparad vuestros dados y visitad el tablón para abrir vuestras mesas!`;
+    enviarMensajeCanal(mensajeTelegram);
+
     // ✨ WEBSOCKETS: Avisar a todos que hay un nuevo evento
     const io = req.app.get('io');
     if (io) io.emit('actualizacion-eventos');
@@ -83,7 +90,7 @@ router.post('/', verificarToken, (req, res) => {
   });
 });
 
-// 3. Obtener partidas de un evento específico
+// 3. Obtener partidas de un evento específico (✨ CON SISTEMA DE NIVEL PARA DMs)
 router.get('/:id/partidas', verificarToken, (req, res) => {
   const sql = `
     SELECT 
@@ -92,7 +99,13 @@ router.get('/:id/partidas', verificarToken, (req, res) => {
       p.cupo, p.turno, p.estado, p.etiqueta, p.apta_novatos, p.materiales_pedidos,
       u.nombre AS dmNombre, 
       (SELECT COUNT(*) FROM inscripciones WHERE partida_id = p.id) AS jugadoresIniciales,
-      (SELECT COUNT(*) FROM inscripciones WHERE partida_id = p.id AND usuario_id = ?) AS anotadoInicialmente
+      (SELECT COUNT(*) FROM inscripciones WHERE partida_id = p.id AND usuario_id = ?) AS anotadoInicialmente,
+      (1 + (
+        SELECT COUNT(*) 
+        FROM partidas ph 
+        JOIN eventos eh ON ph.evento_id = eh.id 
+        WHERE ph.dungeon_master_id = p.dungeon_master_id AND eh.estado = 'Finalizado'
+      )) AS dm_nivel
     FROM partidas p 
     JOIN usuarios u ON p.dungeon_master_id = u.id
     LEFT JOIN sistemas s ON p.sistema_id = s.id 
@@ -108,14 +121,13 @@ router.get('/:id/partidas', verificarToken, (req, res) => {
   });
 });
 
-// 4. Crear una mesa en un evento (✨ CONTROL DE FECHA LÍMITE AGREGADO)
+// 4. Crear una mesa en un evento
 router.post('/:id/partidas', verificarToken, (req, res) => {
   if (req.usuario.rol === 'jugador') return res.status(403).json({ error: 'Solo DMs y Admins pueden crear mesas.' });
   
   const eventoId = req.params.id;
   const usuarioId = req.usuario.id;
 
-  // Modificamos la consulta para traer también la fecha del evento
   const sqlCheck = `
     SELECT 
       DATE_FORMAT(e.fecha, '%Y-%m-%d') as evento_fecha,
@@ -131,8 +143,7 @@ router.post('/:id/partidas', verificarToken, (req, res) => {
     
     const { evento_fecha, nombre_evento, es_dm, es_jugador } = resultados[0];
 
-    // ✨ BLOQUEO LOGÍSTICO: Si hoy es el día del evento (o posterior), se bloquea la creación
-    const tzOffset = -3 * 60 * 60 * 1000; // Hora Argentina
+    const tzOffset = -3 * 60 * 60 * 1000; 
     const hoyArg = new Date(Date.now() + tzOffset).toISOString().split('T')[0];
 
     if (hoyArg >= evento_fecha) {
@@ -156,10 +167,8 @@ router.post('/:id/partidas', verificarToken, (req, res) => {
         return res.status(500).json({ error: 'Error al crear la mesa.' });
       }
       
-      // ✨ REGISTRO EN BITÁCORA
       registrarLog(req.usuario, 'CREAR_MESA', `Abrió la mesa "${titulo}" para la jornada "${nombre_evento}".`);
 
-      // ✨ WEBSOCKETS: Avisar que se creó una mesa nueva en este evento específico
       const io = req.app.get('io');
       if (io) io.emit('actualizacion-mesas', { eventoId: parseInt(eventoId) });
       
@@ -189,10 +198,8 @@ router.put('/:id', verificarToken, (req, res) => {
       return res.status(500).json({ error: 'Error al modificar los registros del evento.' });
     }
     
-    // ✨ REGISTRO EN BITÁCORA
     registrarLog(req.usuario, 'MODIFICAR_EVENTO', `Alteró los registros de la jornada: "${nombre}".`);
 
-    // ✨ WEBSOCKETS: Avisar a todos que el evento cambió (horario, nombre, estado, etc.)
     const io = req.app.get('io');
     if (io) io.emit('actualizacion-eventos');
     
@@ -204,17 +211,14 @@ router.put('/:id', verificarToken, (req, res) => {
 router.delete('/:id', verificarToken, (req, res) => {
   if (req.usuario.rol !== 'admin') return res.status(403).json({ error: 'Sin autorización.' });
   
-  // Primero sacamos el nombre del evento para poder registrarlo en el log
   db.query("SELECT nombre FROM eventos WHERE id = ?", [req.params.id], (err, result) => {
       const nombreEvento = result[0]?.nombre || 'Desconocido';
 
       db.query("DELETE FROM eventos WHERE id = ?", [req.params.id], (err) => {
         if (err) return res.status(500).send('Error');
         
-        // ✨ REGISTRO EN BITÁCORA
         registrarLog(req.usuario, 'ELIMINAR_EVENTO', `Canceló y borró la jornada: "${nombreEvento}".`);
 
-        // ✨ WEBSOCKETS: Avisar que un evento desapareció
         const io = req.app.get('io');
         if (io) io.emit('actualizacion-eventos');
         

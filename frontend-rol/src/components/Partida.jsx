@@ -263,10 +263,14 @@ function Partida(props) {
 
         <div className="mb-6 bg-zinc-950/80 p-3.5 rounded-2xl border border-zinc-800/80 flex justify-between items-center transition-all group-hover:bg-zinc-950 relative z-10">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-zinc-900 border border-zinc-700 rounded-full flex items-center justify-center text-sm shadow-inner">
+            {/* ✨ INSIGNIA DE NIVEL DEL DM AQUÍ ✨ */}
+            <div className="w-10 h-10 bg-zinc-900 border border-zinc-700 rounded-full flex items-center justify-center text-sm shadow-inner relative">
               🛡️
+              <div className="absolute -bottom-2 -right-2 bg-gradient-to-br from-amber-400 to-amber-600 text-black text-[9px] font-black px-1.5 py-0.5 rounded-full border border-zinc-900 shadow-md">
+                Lv{props.dm_nivel || 1}
+              </div>
             </div>
-          <div>
+            <div>
               <p className="text-[9px] font-black text-zinc-500 uppercase tracking-[0.2em]">Director de Juego</p>
               <p className="text-sm text-zinc-200 font-bold truncate">{props.dmNombre || props.dungeon_master_nombre || 'Desconocido'}</p>
             </div>
@@ -474,10 +478,18 @@ function Partida(props) {
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-10">
                 <div className="bg-zinc-950/50 p-6 rounded-[2rem] border border-zinc-800/80 shadow-inner flex items-center gap-4">
-                  <div className="w-14 h-14 bg-zinc-900 border border-zinc-700 rounded-full flex items-center justify-center text-2xl">🛡️</div>
+                  {/* ✨ INSIGNIA DE NIVEL DEL DM EN EL MODAL ✨ */}
+                  <div className="w-14 h-14 bg-zinc-900 border border-zinc-700 rounded-full flex items-center justify-center text-2xl relative">
+                    🛡️
+                    <div className="absolute -bottom-2 -right-2 bg-gradient-to-br from-amber-400 to-amber-600 text-black text-[11px] font-black px-2 py-0.5 rounded-full border-2 border-zinc-900 shadow-md">
+                      Lv{props.dm_nivel || 1}
+                    </div>
+                  </div>
                   <div>
                     <p className="text-[10px] font-black text-zinc-500 uppercase tracking-[0.2em] mb-1">Director de Juego</p>
-                    <p className="text-xl text-zinc-200 font-black">{props.dmNombre || props.dungeon_master_nombre}</p>
+                    <div className="flex items-center gap-2">
+                        <p className="text-xl text-zinc-200 font-black">{props.dmNombre || props.dungeon_master_nombre}</p>
+                    </div>
                   </div>
                 </div>
                 
