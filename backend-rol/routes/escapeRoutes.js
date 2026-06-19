@@ -11,7 +11,7 @@ const registrarLog = (usuario, accion, descripcion) => {
   });
 };
 
-// 1. OBTENER TODOS LOS ESCAPES DE UN EVENTO (Añadido: Nombres de los jugadores)
+// 1. OBTENER TODOS LOS ESCAPES DE UN EVENTO
 router.get('/:eventoId', verificarToken, (req, res) => {
   const eventoId = req.params.eventoId;
   
@@ -96,7 +96,7 @@ router.post('/:eventoId', verificarToken, (req, res) => {
   });
 });
 
-// 3. INSCRIBIRSE A UN TURNO DE ESCAPE (✨ BLOQUEOS LOGÍSTICOS APLICADOS)
+// 3. INSCRIBIRSE A UN TURNO DE ESCAPE
 router.post('/turnos/:turnoId/inscripciones', verificarToken, (req, res) => {
   const turnoId = req.params.turnoId;
   const usuarioId = req.usuario.id;
@@ -173,7 +173,7 @@ router.delete('/turnos/:turnoId/inscripciones', verificarToken, (req, res) => {
   });
 });
 
-// 5. ELIMINAR UN ESCAPE ROOM (Solo organizador o admin)
+// 5. ELIMINAR UN ESCAPE ROOM
 router.delete('/:id', verificarToken, (req, res) => {
   const roomId = req.params.id;
 
@@ -199,7 +199,50 @@ router.delete('/:id', verificarToken, (req, res) => {
   });
 });
 
-// 6. REPORTE LOGÍSTICO POR HORARIOS
+// ✨ 6. EDITAR UN ESCAPE ROOM (¡NUEVO!)
+router.put('/:id', verificarToken, (req, res) => {
+  const roomId = req.params.id;
+  const usuarioId = req.usuario.id;
+  const rolUsuario = req.usuario.rol;
+
+  // Primero verificamos que la sala exista y que el usuario tenga permisos
+  db.query("SELECT organizador_id, evento_id, titulo as titulo_viejo FROM escape_rooms WHERE id = ?", [roomId], (err, resultados) => {
+    if (err || resultados.length === 0) return res.status(404).json({ error: 'Escape Room no encontrado.' });
+
+    const orgId = resultados[0].organizador_id;
+    const evento_id = resultados[0].evento_id;
+    const titulo_viejo = resultados[0].titulo_viejo;
+
+    if (orgId !== usuarioId && rolUsuario !== 'admin') {
+      return res.status(403).json({ error: 'No tienes autoridad para reescribir esta sala.' });
+    }
+
+    // Extraemos los nuevos datos enviados por el frontend
+    const { titulo, descripcion, dificultad, edad_minima, cupo_por_turno, materiales_pedidos } = req.body;
+
+    // Actualizamos los datos principales de la sala (No tocamos los turnos en esta ruta por seguridad y simplicidad)
+    const sqlUpdate = `
+      UPDATE escape_rooms 
+      SET titulo = ?, descripcion = ?, dificultad = ?, edad_minima = ?, cupo_por_turno = ?, materiales_pedidos = ?
+      WHERE id = ?
+    `;
+
+    db.query(sqlUpdate, [titulo, descripcion, dificultad, edad_minima, cupo_por_turno, materiales_pedidos, roomId], (err) => {
+      if (err) return res.status(500).json({ error: 'Error al actualizar los planos de la sala.' });
+      
+      // Dejamos constancia en los anales del gremio
+      registrarLog(req.usuario, 'EDITAR_ESCAPE', `Modificó los detalles del Escape Room "${titulo_viejo}" (Ahora: "${titulo}").`);
+
+      // Avisamos a todos vía WebSocket para que se actualice la pantalla en vivo
+      const io = req.app.get('io');
+      if (io) io.emit('actualizacion-escapes', { eventoId: parseInt(evento_id) });
+
+      res.status(200).json({ mensaje: '¡Planos de la sala actualizados!' });
+    });
+  });
+});
+
+// 7. REPORTE LOGÍSTICO POR HORARIOS
 router.get('/reporte-logistico/:eventoId', verificarToken, (req, res) => {
   if (req.usuario.rol !== 'admin') return res.status(403).json({ error: 'Solo para el consejo.' });
 
