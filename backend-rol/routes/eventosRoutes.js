@@ -3,9 +3,6 @@ const router = express.Router();
 const db = require('../config/db');
 const verificarToken = require('../middlewares/auth');
 
-// ✨ IMPORTAMOS LA MAGIA DEL CUERVO DE TELEGRAM
-const { enviarMensajeCanal } = require('../utils/telegramBot');
-
 // ✨ FUNCIÓN DEL ESCRIBA: REGISTRO EN LA BITÁCORA
 const registrarLog = (usuario, accion, descripcion) => {
   const sql = "INSERT INTO logs_actividad (usuario_id, nombre_usuario, accion, descripcion) VALUES (?, ?, ?, ?)";
@@ -77,10 +74,6 @@ router.post('/', verificarToken, (req, res) => {
     
     // ✨ REGISTRO EN BITÁCORA
     registrarLog(req.usuario, 'CREAR_EVENTO', `Ha convocado una nueva jornada: "${nombre}" para el ${fechaLimpia}.`);
-
-    // ✨ MAGIA DE TELEGRAM: Grito al Canal General
-    const mensajeTelegram = `📢 <b>¡NUEVA JORNADA CONVOCADA!</b> 🎲\n\n⚔️ <b>${nombre}</b>\n📅 <b>Fecha:</b> ${fechaLimpia}\n⏰ <b>Horario:</b> ${hora_inicio} a ${hora_fin}\n📍 <b>Lugar:</b> ${lugar}, ${ciudad}\n\n<i>${descripcion}</i>\n\n¡Preparad vuestros dados y visitad el tablón para abrir vuestras mesas!`;
-    enviarMensajeCanal(mensajeTelegram);
 
     // ✨ WEBSOCKETS: Avisar a todos que hay un nuevo evento
     const io = req.app.get('io');
