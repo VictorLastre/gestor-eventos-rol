@@ -130,7 +130,6 @@ function Landing({ irALogin }) {
           {/* Menú Desktop */}
           <div className="hidden md:flex items-center gap-6">
             <button onClick={() => setSeccionActiva('inicio')} className={`text-[10px] font-bold uppercase tracking-widest transition-colors ${seccionActiva === 'inicio' ? 'text-emerald-400 border-b-2 border-emerald-400' : 'hover:text-emerald-400'}`}>Inicio</button>
-            {/* ✨ SECCIÓN "NOSOTROS" AHORA ENGLOBA TODO */}
             <button onClick={() => setSeccionActiva('nosotros')} className={`text-[10px] font-bold uppercase tracking-widest transition-colors ${seccionActiva === 'nosotros' ? 'text-emerald-400 border-b-2 border-emerald-400' : 'hover:text-emerald-400'}`}>Nosotros</button>
             <div className="h-6 w-px bg-zinc-800"></div>
             <button onClick={irALogin} className="relative group transition-all duration-300 hover:scale-110 flex flex-col items-center justify-center h-full">
@@ -174,38 +173,37 @@ function Landing({ irALogin }) {
           </header>
         )}
 
-        {/* ✨ SECCIÓN NOSOTROS (AHORA COMBINADA CON FUNDADORES) ✨ */}
+        {/* ✨ SECCIÓN NOSOTROS */}
         {seccionActiva === 'nosotros' && (
           <section className="h-full w-full max-w-5xl mx-auto flex flex-col items-center px-4 py-8 animate-in fade-in slide-in-from-bottom-8 duration-500 overflow-y-auto scrollbar-hide pb-24">
             
-            <h2 className="text-3xl md:text-4xl font-black text-white uppercase tracking-tighter mb-8 mt-4 flex items-center justify-center gap-3">
+            {/* ✨ shrink-0 evita que el flexbox aplaste este título */}
+            <h2 className="shrink-0 text-3xl md:text-4xl font-black text-white uppercase tracking-tighter mb-8 mt-4 flex items-center justify-center gap-3">
               📜 La Asociación
             </h2>
             
-            {/* ✨ CUADRO ROLERO CORREGIDO PARA QUE JAMÁS SE APLASTE ✨ */}
-            <div className="relative p-2 bg-zinc-950 border-4 border-double border-amber-700/80 rounded-sm shadow-[0_0_30px_rgba(180,83,9,0.2)] mb-8 max-w-4xl w-full group overflow-hidden transition-transform hover:scale-[1.01] duration-500">
-               {/* Capa de borde interior */}
+            {/* ✨ CUADRO ROLERO CORREGIDO CON shrink-0 PARA QUE JAMÁS SE APLASTE ✨ */}
+            <div className="shrink-0 relative p-2 bg-zinc-950 border-4 border-double border-amber-700/80 rounded-sm shadow-[0_0_30px_rgba(180,83,9,0.2)] mb-8 max-w-4xl w-full group overflow-hidden transition-transform hover:scale-[1.01] duration-500">
                <div className="absolute inset-0 border border-amber-500/30 pointer-events-none z-10"></div>
                
-               {/* La imagen fluye naturalmente ahora. block y w-full aseguran que ocupe todo el ancho y su altura se calcule automáticamente en base a su aspect ratio natural de 1200x675. */}
-               <img src={FotoGrupal} alt="Asociación de Rol La Pampa" className="block w-full h-auto object-contain border border-zinc-900 shadow-inner sepia-[.15] contrast-[1.1] grayscale-[0.2]" />
+               {/* aspect-video asegura una proporción estricta de 16:9, idéntica a 1200x675 */}
+               <img src={FotoGrupal} alt="Asociación de Rol La Pampa" className="block w-full aspect-video object-cover border border-zinc-900 shadow-inner sepia-[.15] contrast-[1.1] grayscale-[0.2]" />
                
-               {/* Detalles de esquina metálicos (con z-20 para estar encima de todo) */}
                <div className="absolute top-0 left-0 w-6 h-6 border-t-2 border-l-2 border-amber-400 z-20"></div>
                <div className="absolute top-0 right-0 w-6 h-6 border-t-2 border-r-2 border-amber-400 z-20"></div>
                <div className="absolute bottom-0 left-0 w-6 h-6 border-b-2 border-l-2 border-amber-400 z-20"></div>
                <div className="absolute bottom-0 right-0 w-6 h-6 border-b-2 border-r-2 border-amber-400 z-20"></div>
             </div>
 
-            {/* Texto Descriptivo */}
-            <div className="space-y-4 text-sm md:text-base text-zinc-300 leading-relaxed bg-zinc-900/50 p-6 md:p-8 rounded-[2rem] border border-zinc-800/50 shadow-2xl mb-12 text-center max-w-3xl w-full relative">
+            {/* Texto Descriptivo - Con shrink-0 para evitar ser comprimido */}
+            <div className="shrink-0 space-y-4 text-sm md:text-base text-zinc-300 leading-relaxed bg-zinc-900/50 p-6 md:p-8 rounded-[2rem] border border-zinc-800/50 shadow-2xl mb-12 text-center max-w-3xl w-full relative">
               <div className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-zinc-950 text-zinc-500 text-[10px] font-black uppercase tracking-widest px-4 py-1 border border-zinc-800 rounded-full">Nuestra Historia</div>
               <p>Nacimos con un propósito claro: reunir a los apasionados por el rol bajo un mismo estandarte en La Pampa. Somos un espacio creado por y para jugadores y Narradores.</p>
               <p>Nuestra misión es que nadie se quede sin un grupo con el cual compartir una tarde de imaginación y estrategia.</p>
             </div>
 
-            {/* ✨ BOTONERA DE FUNDADORES ✨ */}
-            <div className="w-full max-w-4xl flex flex-col items-center">
+            {/* BOTONERA DE FUNDADORES - Con shrink-0 */}
+            <div className="shrink-0 w-full max-w-4xl flex flex-col items-center">
               <div className="text-center mb-6">
                 <h3 className="text-2xl md:text-3xl font-black text-white uppercase tracking-tighter mb-1">👑 Los Fundadores</h3>
                 <p className="text-amber-500/80 font-bold uppercase tracking-widest text-[9px] md:text-[10px] animate-pulse">Toca un nombre para leer sus crónicas</p>
