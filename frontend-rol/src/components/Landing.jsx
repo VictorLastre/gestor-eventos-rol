@@ -2,10 +2,8 @@ import { useState, useEffect } from 'react';
 import puertaDungeon from '../assets/dungeon_door.png'; 
 import forjaAventura from '../assets/forja_tu_aventura.gif'; 
 import LogoSVG from '../assets/Logo.svg'; 
-import FotoGrupal from '../assets/FotoGrupal.png'; // ✨ IMPORTAMOS LA FOTO GRUPAL
+import FotoGrupal from '../assets/FotoGrupal.png'; 
 
-// ✨ OPTIMIZACIÓN: Los fundadores se declaran fuera del componente para evitar 
-// que se re-creen en cada renderizado, mejorando el rendimiento. (Iconos eliminados a pedido)
 const fundadores = [
   {
     nombre: "Agus",
@@ -130,7 +128,6 @@ function Landing({ irALogin }) {
           {/* Menú Desktop */}
           <div className="hidden md:flex items-center gap-6">
             <button onClick={() => setSeccionActiva('inicio')} className={`text-[10px] font-bold uppercase tracking-widest transition-colors ${seccionActiva === 'inicio' ? 'text-emerald-400 border-b-2 border-emerald-400' : 'hover:text-emerald-400'}`}>Inicio</button>
-            {/* ✨ SECCIÓN "NOSOTROS" AHORA ENGLOBA TODO */}
             <button onClick={() => setSeccionActiva('nosotros')} className={`text-[10px] font-bold uppercase tracking-widest transition-colors ${seccionActiva === 'nosotros' ? 'text-emerald-400 border-b-2 border-emerald-400' : 'hover:text-emerald-400'}`}>Nosotros</button>
             <div className="h-6 w-px bg-zinc-800"></div>
             <button onClick={irALogin} className="relative group transition-all duration-300 hover:scale-110 flex flex-col items-center justify-center h-full">
@@ -174,7 +171,7 @@ function Landing({ irALogin }) {
           </header>
         )}
 
-        {/* ✨ SECCIÓN NOSOTROS (AHORA COMBINADA CON FUNDADORES) ✨ */}
+        {/* SECCIÓN NOSOTROS */}
         {seccionActiva === 'nosotros' && (
           <section className="h-full w-full max-w-5xl mx-auto flex flex-col items-center px-4 py-8 animate-in fade-in slide-in-from-bottom-8 duration-500 overflow-y-auto scrollbar-hide pb-24">
             
@@ -182,9 +179,15 @@ function Landing({ irALogin }) {
               📜 La Asociación
             </h2>
             
-            {/* ✨ CUADRO ROLERO PARA LA FOTO GRUPAL */}
+            {/* ✨ CUADRO ROLERO PARA LA FOTO GRUPAL CORREGIDO ✨ */}
             <div className="relative p-2 bg-zinc-950 border-4 border-double border-amber-700/80 rounded-sm shadow-[0_0_30px_rgba(180,83,9,0.2)] mb-8 max-w-4xl w-full group overflow-hidden before:absolute before:inset-0 before:border-[1px] before:border-amber-500/30 before:pointer-events-none transition-transform hover:scale-[1.01] duration-500">
-               <img src={FotoGrupal} alt="Asociación de Rol La Pampa" className="w-full h-auto object-cover border border-zinc-900 shadow-inner sepia-[.15] contrast-[1.1] grayscale-[0.2]" />
+               {/* 
+                 Se agregó min-h-[200px] md:min-h-[400px] para asegurar que la imagen tenga espacio 
+                 y object-cover para que llene el contenedor sin aplastarse.
+               */}
+               <div className="w-full h-48 md:h-96 relative overflow-hidden">
+                 <img src={FotoGrupal} alt="Asociación de Rol La Pampa" className="absolute inset-0 w-full h-full object-cover border border-zinc-900 shadow-inner sepia-[.15] contrast-[1.1] grayscale-[0.2]" />
+               </div>
                
                {/* Detalles de esquina metálicos */}
                <div className="absolute top-0 left-0 w-6 h-6 border-t-2 border-l-2 border-amber-400"></div>
@@ -200,7 +203,7 @@ function Landing({ irALogin }) {
               <p>Nuestra misión es que nadie se quede sin un grupo con el cual compartir una tarde de imaginación y estrategia.</p>
             </div>
 
-            {/* ✨ BOTONERA DE FUNDADORES ✨ */}
+            {/* BOTONERA DE FUNDADORES */}
             <div className="w-full max-w-4xl flex flex-col items-center">
               <div className="text-center mb-6">
                 <h3 className="text-2xl md:text-3xl font-black text-white uppercase tracking-tighter mb-1">👑 Los Fundadores</h3>
@@ -271,7 +274,7 @@ function Landing({ irALogin }) {
         </p>
       </footer>
 
-      {/* ✨ MODAL FUNDADORES (Limpiado y sin el icono) ✨ */}
+      {/* MODAL FUNDADORES */}
       {indiceFundador !== null && (
         <div className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-black/95 backdrop-blur-md animate-in fade-in duration-300" onClick={() => setIndiceFundador(null)}>
           <div className={`bg-zinc-900 border w-full max-w-[400px] md:max-w-md rounded-[2rem] p-6 relative ${fundadores[indiceFundador].color.modalGlow} ${fundadores[indiceFundador].color.modalBorder}`} onClick={(e) => e.stopPropagation()}>
