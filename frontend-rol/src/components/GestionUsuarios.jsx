@@ -111,7 +111,6 @@ function GestionUsuarios() {
     }
   };
 
-  // ✨ RUTAS CORREGIDAS
   const generarCertificado = (idDM, nombreDM, nombreReal) => {
     const nombreAFijar = nombreReal || nombreDM;
 
@@ -271,7 +270,6 @@ function GestionUsuarios() {
     if (res.ok) { cargarDatosPrincipales(); cargarCenso(); Swal.fire({ title: 'Voto Registrado', icon: 'info', background: '#09090b', color: '#fff', customClass: { popup: 'border border-emerald-500/30 rounded-[2rem]' } }); }
   };
 
-  // ✨ FUNCIÓN DE HARD RESET AÑADIDA AQUÍ
   const aplicarHardReset = async (usuario) => {
     const confirmacion = await Swal.fire({
       title: '¿Forzar Contraseña?',
@@ -335,16 +333,16 @@ function GestionUsuarios() {
     <div className="animate-in fade-in slide-in-from-bottom-4 duration-700">
       
       <div className="flex flex-wrap gap-2 md:gap-4 mb-8 border-b border-zinc-800 pb-4">
-        <button onClick={() => setPestanaActiva('peticiones')} className={`flex items-center gap-2 px-6 py-3 font-black text-[10px] uppercase tracking-[0.2em] transition-all rounded-xl ${pestanaActiva === 'peticiones' ? 'bg-purple-600 text-white shadow-lg shadow-purple-900/40' : 'text-zinc-500 hover:bg-zinc-900'}`}>
+        <button onClick={() => setPestanaActiva('peticiones')} className={`flex items-center gap-2 px-4 md:px-6 py-3 font-black text-[9px] md:text-[10px] uppercase tracking-[0.2em] transition-all rounded-xl ${pestanaActiva === 'peticiones' ? 'bg-purple-600 text-white shadow-lg shadow-purple-900/40' : 'text-zinc-500 hover:bg-zinc-900'}`}>
           🛡️ Peticiones DM {solicitudes.length > 0 && <span className="bg-white text-purple-600 px-2 py-0.5 rounded-full text-[9px]">{solicitudes.length}</span>}
         </button>
-        <button onClick={() => setPestanaActiva('censo')} className={`flex items-center gap-2 px-6 py-3 font-black text-[10px] uppercase tracking-[0.2em] transition-all rounded-xl ${pestanaActiva === 'censo' ? 'bg-emerald-600 text-white shadow-lg shadow-emerald-900/40' : 'text-zinc-500 hover:bg-zinc-900'}`}>
+        <button onClick={() => setPestanaActiva('censo')} className={`flex items-center gap-2 px-4 md:px-6 py-3 font-black text-[9px] md:text-[10px] uppercase tracking-[0.2em] transition-all rounded-xl ${pestanaActiva === 'censo' ? 'bg-emerald-600 text-white shadow-lg shadow-emerald-900/40' : 'text-zinc-500 hover:bg-zinc-900'}`}>
           📜 Registro Gremial
         </button>
-        <button onClick={() => setPestanaActiva('senado')} className={`flex items-center gap-2 px-6 py-3 font-black text-[10px] uppercase tracking-[0.2em] transition-all rounded-xl ${pestanaActiva === 'senado' ? 'bg-amber-600 text-white shadow-lg shadow-amber-900/40' : 'text-zinc-500 hover:bg-zinc-900'}`}>
+        <button onClick={() => setPestanaActiva('senado')} className={`flex items-center gap-2 px-4 md:px-6 py-3 font-black text-[9px] md:text-[10px] uppercase tracking-[0.2em] transition-all rounded-xl ${pestanaActiva === 'senado' ? 'bg-amber-600 text-white shadow-lg shadow-amber-900/40' : 'text-zinc-500 hover:bg-zinc-900'}`}>
           🏛️ Senado {votaciones.length > 0 && <span className="bg-white text-amber-600 px-2 py-0.5 rounded-full text-[9px] animate-pulse">{votaciones.length}</span>}
         </button>      
-        <button onClick={() => setPestanaActiva('oraculo')} className={`flex items-center gap-2 px-6 py-3 font-black text-[10px] uppercase tracking-[0.2em] transition-all rounded-xl ${pestanaActiva === 'oraculo' ? 'bg-blue-600 text-white shadow-lg shadow-blue-900/40' : 'text-zinc-500 hover:bg-zinc-900'}`}>
+        <button onClick={() => setPestanaActiva('oraculo')} className={`flex items-center gap-2 px-4 md:px-6 py-3 font-black text-[9px] md:text-[10px] uppercase tracking-[0.2em] transition-all rounded-xl ${pestanaActiva === 'oraculo' ? 'bg-blue-600 text-white shadow-lg shadow-blue-900/40' : 'text-zinc-500 hover:bg-zinc-900'}`}>
           👁️ Oráculo de Datos
         </button>
       </div>
@@ -356,24 +354,24 @@ function GestionUsuarios() {
              <h3 className="text-2xl font-black text-white uppercase tracking-tighter">Aspirantes a Director</h3>
            </div>
            {solicitudes.length === 0 ? (
-             <div className="bg-zinc-950/50 border-2 border-dashed border-zinc-900 rounded-[2.5rem] p-20 text-center text-zinc-700 font-black uppercase tracking-[0.3em] text-xs">No hay peticiones en el tablón</div>
+             <div className="bg-zinc-950/50 border-2 border-dashed border-zinc-900 rounded-[2rem] md:rounded-[2.5rem] p-10 md:p-20 text-center text-zinc-700 font-black uppercase tracking-[0.3em] text-xs">No hay peticiones en el tablón</div>
            ) : (
              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                {solicitudes.map(user => (
-                 <div key={user.id} className="bg-zinc-900 border border-zinc-800 p-6 rounded-3xl flex flex-col sm:flex-row justify-between items-center gap-4 transition-all hover:border-purple-500/30 group">
-                    <div className="flex items-center gap-4">
+                 <div key={user.id} className="bg-zinc-900 border border-zinc-800 p-4 md:p-6 rounded-3xl flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 transition-all hover:border-purple-500/30 group">
+                    <div className="flex items-center gap-4 w-full sm:w-auto">
                       {/* ✨ AVATAR INVOCADO AQUÍ */}
-                      <div className="w-14 h-14 bg-zinc-950 rounded-full flex items-center justify-center border border-zinc-800 group-hover:border-purple-500/50 transition-colors overflow-hidden">
+                      <div className="shrink-0 w-12 h-12 md:w-14 md:h-14 bg-zinc-950 rounded-full flex items-center justify-center border border-zinc-800 group-hover:border-purple-500/50 transition-colors overflow-hidden">
                         <AvatarUsuario nombre={user.nombre} tamaño={56} variante="beam" />
                       </div>
-                      <div>
-                        <p className="text-xl font-black text-white tracking-tighter uppercase italic">{user.nombre}</p>
-                        <p className="text-xs text-zinc-500 font-mono italic">{user.email}</p>
+                      <div className="min-w-0 flex-1">
+                        <p className="text-lg md:text-xl font-black text-white tracking-tighter uppercase italic truncate">{user.nombre}</p>
+                        <p className="text-xs text-zinc-500 font-mono italic truncate">{user.email}</p>
                       </div>
                     </div>
-                    <div className="flex gap-2 w-full sm:w-auto">
-                      <button onClick={() => rechazarUsuario(user.id, user.nombre)} className="flex-1 bg-zinc-800 text-zinc-500 py-3 px-4 rounded-xl text-[9px] font-black uppercase tracking-widest hover:bg-red-500/10 hover:text-red-500 transition-all">✕ Denegar</button>
-                      <button onClick={() => promoverUsuario(user.id, user.nombre)} className="flex-1 bg-amber-500 text-black py-3 px-6 rounded-xl text-[9px] font-black uppercase tracking-widest hover:scale-105 transition-all">🪄 Ascender</button>
+                    <div className="flex gap-2 w-full sm:w-auto mt-2 sm:mt-0">
+                      <button onClick={() => rechazarUsuario(user.id, user.nombre)} className="flex-1 sm:flex-none bg-zinc-800 text-zinc-500 py-3 px-4 rounded-xl text-[9px] font-black uppercase tracking-widest hover:bg-red-500/10 hover:text-red-500 transition-all whitespace-nowrap">✕ Denegar</button>
+                      <button onClick={() => promoverUsuario(user.id, user.nombre)} className="flex-1 sm:flex-none bg-amber-500 text-black py-3 px-4 md:px-6 rounded-xl text-[9px] font-black uppercase tracking-widest hover:scale-105 transition-all whitespace-nowrap">🪄 Ascender</button>
                     </div>
                  </div>
                ))}
@@ -393,7 +391,7 @@ function GestionUsuarios() {
             <div className="flex flex-wrap items-center gap-3">
               <button onClick={exportarLogistica} className="bg-emerald-600 hover:bg-emerald-500 text-white font-black px-6 py-3.5 rounded-2xl text-[9px] uppercase tracking-widest transition-all shadow-xl shadow-emerald-950/20">📊 Exportar Logística</button>
               
-              <div className="flex gap-1 bg-zinc-950 border border-zinc-800 p-1.5 rounded-2xl overflow-x-auto">
+              <div className="flex gap-1 bg-zinc-950 border border-zinc-800 p-1.5 rounded-2xl overflow-x-auto scrollbar-hide">
                 {['todos', 'admin', 'dm', 'jugador'].map(rol => (
                   <button 
                     key={rol} 
@@ -412,57 +410,61 @@ function GestionUsuarios() {
             </div>
           </div>
 
-          <div className="bg-zinc-900/50 rounded-[2.5rem] border border-zinc-800 overflow-hidden shadow-2xl backdrop-blur-sm">
-            <div className="overflow-x-auto">
+          <div className="bg-zinc-900/50 rounded-[2rem] md:rounded-[2.5rem] border border-zinc-800 overflow-hidden shadow-2xl backdrop-blur-sm">
+            <div className="overflow-x-auto scrollbar-hide">
               <table className="w-full text-left">
                 <thead>
                   <tr className="bg-zinc-950/50 text-[10px] uppercase tracking-[0.2em] text-zinc-600 font-black border-b border-zinc-800">
-                    <th className="p-6">Héroe / Identidad Real</th>
-                    <th className="p-6 hidden md:table-cell">Rango Actual</th>
-                    <th className="p-6 text-center">Acciones de Comando</th>
+                    <th className="p-4 md:p-6 whitespace-nowrap">Héroe / Identidad Real</th>
+                    <th className="p-4 md:p-6 hidden sm:table-cell whitespace-nowrap">Rango Actual</th>
+                    <th className="p-4 md:p-6 text-center whitespace-nowrap">Acciones de Comando</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-zinc-800/30">
                   {usuariosPaginados.length === 0 ? (
                     <tr>
-                      <td colSpan="3" className="p-12 text-center text-zinc-600 font-bold uppercase tracking-widest text-xs italic">
+                      <td colSpan="3" className="p-8 md:p-12 text-center text-zinc-600 font-bold uppercase tracking-widest text-xs italic">
                         No se encontraron registros en el archivo.
                       </td>
                     </tr>
                   ) : (
                     usuariosPaginados.map(user => (
                       <tr key={user.id} className="hover:bg-white/[0.02] transition-colors group">
-                        <td className="p-6 flex items-center gap-4">
+                        <td className="p-4 md:p-6 flex items-center gap-3 md:gap-4">
                           {/* ✨ AVATAR INVOCADO AQUÍ */}
-                          <span className="w-12 h-12 bg-zinc-950 rounded-full flex items-center justify-center border border-zinc-800 group-hover:border-zinc-600 transition-all overflow-hidden">
+                          <span className="shrink-0 w-10 h-10 md:w-12 md:h-12 bg-zinc-950 rounded-full flex items-center justify-center border border-zinc-800 group-hover:border-zinc-600 transition-all overflow-hidden">
                             <AvatarUsuario nombre={user.nombre} tamaño={48} variante="beam" />
                           </span>
-                          <div>
-                            <p className="font-black text-zinc-200 uppercase italic tracking-tight">
-                              {user.nombre}
-                              {user.nombre_completo && <span className="ml-2 text-[10px] text-emerald-500/50 not-italic font-bold tracking-widest border-l border-zinc-800 pl-2">{user.nombre_completo.toUpperCase()}</span>}
+                          <div className="min-w-0">
+                            <p className="font-black text-zinc-200 uppercase italic tracking-tight flex flex-wrap items-center gap-1 md:gap-2">
+                              <span className="truncate">{user.nombre}</span>
+                              {user.nombre_completo && <span className="text-[9px] md:text-[10px] text-emerald-500/50 not-italic font-bold tracking-widest border-l border-zinc-800 pl-1 md:pl-2 whitespace-nowrap">{user.nombre_completo.toUpperCase()}</span>}
                             </p>
-                            <p className="text-[10px] text-zinc-600 font-mono lowercase">{user.email}</p>
+                            <p className="text-[9px] md:text-[10px] text-zinc-600 font-mono lowercase truncate">{user.email}</p>
+                            {/* Mostrar rango en móviles si se oculta la columna */}
+                            <span className={`sm:hidden mt-1 inline-block text-[8px] font-black uppercase tracking-widest px-2 py-0.5 rounded-md border whitespace-nowrap ${user.rol === 'admin' ? 'bg-amber-500/10 text-amber-500 border-amber-500/20' : user.rol === 'dm' ? 'bg-purple-500/10 text-purple-400 border-purple-500/20' : 'bg-zinc-800/50 text-zinc-500 border-zinc-700/50'}`}>
+                              {user.rol === 'admin' ? '👑 Admin' : user.rol === 'dm' ? '🛡️ DM' : '⚔️ Jugador'}
+                            </span>
                           </div>
                         </td>
-                        <td className="p-6 hidden md:table-cell">
-                          <span className={`text-[9px] font-black uppercase tracking-widest px-4 py-1.5 rounded-full border ${user.rol === 'admin' ? 'bg-amber-500/10 text-amber-500 border-amber-500/20' : user.rol === 'dm' ? 'bg-purple-500/10 text-purple-400 border-purple-500/20' : 'bg-zinc-800/50 text-zinc-500 border-zinc-700/50'}`}>
+                        <td className="p-4 md:p-6 hidden sm:table-cell">
+                          {/* ✨ ESTA ES LA ETIQUETA CORREGIDA PARA QUE NO SALTE DE LÍNEA */}
+                          <span className={`text-[9px] font-black uppercase tracking-widest px-4 py-1.5 rounded-full border whitespace-nowrap ${user.rol === 'admin' ? 'bg-amber-500/10 text-amber-500 border-amber-500/20' : user.rol === 'dm' ? 'bg-purple-500/10 text-purple-400 border-purple-500/20' : 'bg-zinc-800/50 text-zinc-500 border-zinc-700/50'}`}>
                             {user.rol === 'admin' ? '👑 Administrador' : user.rol === 'dm' ? '🛡️ Dungeon Master' : '⚔️ Aventurero'}
                           </span>
                         </td>
-                        <td className="p-6">
-                          <div className="flex items-center justify-center gap-3">
+                        <td className="p-4 md:p-6">
+                          <div className="flex items-center justify-center gap-2 md:gap-3 flex-wrap">
                             
                             {user.rol === 'dm' && user.es_dm_nuevo && (
-                              <button onClick={() => generarCertificado(user.id, user.nombre, user.nombre_completo)} className="w-10 h-10 bg-amber-500/10 border border-amber-500/50 text-amber-500 rounded-xl hover:bg-amber-500 hover:text-black transition-all text-sm shadow-[0_0_15px_rgba(245,158,11,0.3)] animate-pulse" title="Generar Certificado del Gremio">📜</button>
+                              <button onClick={() => generarCertificado(user.id, user.nombre, user.nombre_completo)} className="w-8 h-8 md:w-10 md:h-10 bg-amber-500/10 border border-amber-500/50 text-amber-500 rounded-xl hover:bg-amber-500 hover:text-black transition-all text-sm shadow-[0_0_15px_rgba(245,158,11,0.3)] animate-pulse" title="Generar Certificado del Gremio">📜</button>
                             )}
 
-                            {user.rol !== 'admin' && <button onClick={() => proponerAdmin(user.id, user.nombre)} className="w-10 h-10 bg-zinc-950 border border-zinc-800 rounded-xl hover:border-amber-500 hover:text-amber-500 transition-all text-sm" title="Proponer al Senado">👑</button>}
-                            {user.rol !== 'dm' && user.rol !== 'admin' && <button onClick={() => cambiarRolDirecto(user.id, user.nombre, 'dm')} className="w-10 h-10 bg-zinc-950 border border-zinc-800 rounded-xl hover:border-purple-500 hover:text-purple-400 transition-all text-sm" title="Ascender a DM">🛡️</button>}
-                            {user.rol !== 'jugador' && <button onClick={() => cambiarRolDirecto(user.id, user.nombre, 'jugador')} className="w-10 h-10 bg-zinc-950 border border-zinc-800 rounded-xl hover:border-red-500 hover:text-red-500 transition-all text-sm" title="Revocar Rango">✕</button>}
+                            {user.rol !== 'admin' && <button onClick={() => proponerAdmin(user.id, user.nombre)} className="w-8 h-8 md:w-10 md:h-10 bg-zinc-950 border border-zinc-800 rounded-xl hover:border-amber-500 hover:text-amber-500 transition-all text-sm" title="Proponer al Senado">👑</button>}
+                            {user.rol !== 'dm' && user.rol !== 'admin' && <button onClick={() => cambiarRolDirecto(user.id, user.nombre, 'dm')} className="w-8 h-8 md:w-10 md:h-10 bg-zinc-950 border border-zinc-800 rounded-xl hover:border-purple-500 hover:text-purple-400 transition-all text-sm" title="Ascender a DM">🛡️</button>}
+                            {user.rol !== 'jugador' && <button onClick={() => cambiarRolDirecto(user.id, user.nombre, 'jugador')} className="w-8 h-8 md:w-10 md:h-10 bg-zinc-950 border border-zinc-800 rounded-xl hover:border-red-500 hover:text-red-500 transition-all text-sm" title="Revocar Rango">✕</button>}
                             
-                            {/* ✨ NUEVO BOTÓN HARD RESET EN LA TABLA */}
-                            <button onClick={() => aplicarHardReset(user)} className="w-10 h-10 bg-zinc-950 border border-zinc-800 rounded-xl hover:border-red-500 hover:text-red-500 transition-all text-sm" title="Forzar restablecimiento de contraseña (Hard Reset)">🔑</button>
+                            <button onClick={() => aplicarHardReset(user)} className="w-8 h-8 md:w-10 md:h-10 bg-zinc-950 border border-zinc-800 rounded-xl hover:border-red-500 hover:text-red-500 transition-all text-sm" title="Forzar restablecimiento de contraseña (Hard Reset)">🔑</button>
 
                           </div>
                         </td>
@@ -474,10 +476,10 @@ function GestionUsuarios() {
             </div>
             
             {totalPaginas > 1 && (
-              <div className="flex justify-between items-center p-6 bg-zinc-950/30 border-t border-zinc-800">
-                 <button onClick={() => setPaginaCenso(p => Math.max(1, p - 1))} disabled={paginaCenso === 1} className="px-6 py-2 bg-zinc-900 text-zinc-500 font-black text-[10px] uppercase tracking-widest rounded-xl disabled:opacity-20 transition-all hover:text-white">← Anterior</button>
+              <div className="flex flex-col sm:flex-row justify-between items-center gap-4 p-4 md:p-6 bg-zinc-950/30 border-t border-zinc-800">
+                 <button onClick={() => setPaginaCenso(p => Math.max(1, p - 1))} disabled={paginaCenso === 1} className="w-full sm:w-auto px-6 py-2 bg-zinc-900 text-zinc-500 font-black text-[10px] uppercase tracking-widest rounded-xl disabled:opacity-20 transition-all hover:text-white">← Anterior</button>
                  <span className="text-zinc-600 text-[9px] font-black uppercase tracking-[0.3em]">Página {paginaCenso} de {totalPaginas} ({usuariosProcesados.length} héroes)</span>
-                 <button onClick={() => setPaginaCenso(p => Math.min(totalPaginas, p + 1))} disabled={paginaCenso >= totalPaginas} className="px-6 py-2 bg-zinc-900 text-zinc-500 font-black text-[10px] uppercase tracking-widest rounded-xl disabled:opacity-20 transition-all hover:text-white">Siguiente →</button>
+                 <button onClick={() => setPaginaCenso(p => Math.min(totalPaginas, p + 1))} disabled={paginaCenso >= totalPaginas} className="w-full sm:w-auto px-6 py-2 bg-zinc-900 text-zinc-500 font-black text-[10px] uppercase tracking-widest rounded-xl disabled:opacity-20 transition-all hover:text-white">Siguiente →</button>
               </div>
             )}
           </div>
@@ -495,19 +497,19 @@ function GestionUsuarios() {
           </div>
           
           {votaciones.length === 0 ? (
-            <div className="bg-zinc-950/50 border-2 border-dashed border-zinc-900 rounded-[3rem] p-24 text-center">
+            <div className="bg-zinc-950/50 border-2 border-dashed border-zinc-900 rounded-[2rem] md:rounded-[3rem] p-10 md:p-24 text-center">
                <p className="text-zinc-700 font-black uppercase tracking-[0.3em] text-xs italic">El Senado está en silencio absoluto...</p>
             </div>
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               {votaciones.map(v => (
-                <div key={v.id} className="bg-zinc-900 border border-zinc-800 rounded-[2.5rem] p-8 relative overflow-hidden shadow-2xl group transition-all hover:border-amber-500/40">
+                <div key={v.id} className="bg-zinc-900 border border-zinc-800 rounded-[2rem] md:rounded-[2.5rem] p-6 md:p-8 relative overflow-hidden shadow-2xl group transition-all hover:border-amber-500/40">
                   <div className="absolute top-0 right-0 w-32 h-32 bg-amber-500/5 blur-[80px] rounded-full group-hover:bg-amber-500/10 transition-all"></div>
                   
-                  <h4 className="text-3xl font-black text-white tracking-tighter mb-1 uppercase italic">{v.candidato_nombre}</h4>
+                  <h4 className="text-2xl md:text-3xl font-black text-white tracking-tighter mb-1 uppercase italic break-words">{v.candidato_nombre}</h4>
                   <p className="text-[10px] text-zinc-500 uppercase tracking-widest font-bold mb-8">Propuesto por: <span className="text-amber-500">{v.proponente_nombre}</span></p>
                   
-                  <div className="bg-zinc-950 rounded-[2rem] p-6 border border-zinc-800/50 mb-8">
+                  <div className="bg-zinc-950 rounded-[1.5rem] md:rounded-[2rem] p-5 md:p-6 border border-zinc-800/50 mb-8">
                     <div className="flex justify-between items-end mb-4">
                       <div className="flex flex-col">
                         <span className="text-[9px] font-black text-emerald-500 uppercase tracking-widest mb-1">A Favor</span>
@@ -527,11 +529,11 @@ function GestionUsuarios() {
                   </div>
 
                   {v.ya_vote > 0 ? (
-                    <div className="bg-zinc-800/30 text-zinc-600 text-center py-5 rounded-2xl font-black text-[10px] uppercase tracking-[0.3em] border border-zinc-800/50">⚖️ Tu veredicto ha sido sellado</div>
+                    <div className="bg-zinc-800/30 text-zinc-600 text-center py-4 md:py-5 rounded-2xl font-black text-[9px] md:text-[10px] uppercase tracking-[0.3em] border border-zinc-800/50">⚖️ Tu veredicto ha sido sellado</div>
                   ) : (
-                    <div className="flex gap-3">
-                      <button onClick={() => emitirVoto(v.id, v.candidato_nombre, 'en contra')} className="flex-1 bg-zinc-950 border border-zinc-800 text-red-500/50 hover:text-red-500 hover:bg-red-500/5 py-4 rounded-2xl font-black text-[10px] uppercase tracking-widest transition-all">👎 Rechazar</button>
-                      <button onClick={() => emitirVoto(v.id, v.candidato_nombre, 'a favor')} className="flex-1 bg-emerald-600 text-white hover:bg-emerald-500 py-4 rounded-2xl font-black text-[10px] uppercase tracking-widest shadow-lg shadow-emerald-900/20 transition-all">👍 Apoyar</button>
+                    <div className="flex gap-2 md:gap-3">
+                      <button onClick={() => emitirVoto(v.id, v.candidato_nombre, 'en contra')} className="flex-1 bg-zinc-950 border border-zinc-800 text-red-500/50 hover:text-red-500 hover:bg-red-500/5 py-3 md:py-4 rounded-xl md:rounded-2xl font-black text-[9px] md:text-[10px] uppercase tracking-widest transition-all">👎 Rechazar</button>
+                      <button onClick={() => emitirVoto(v.id, v.candidato_nombre, 'a favor')} className="flex-1 bg-emerald-600 text-white hover:bg-emerald-500 py-3 md:py-4 rounded-xl md:rounded-2xl font-black text-[9px] md:text-[10px] uppercase tracking-widest shadow-lg shadow-emerald-900/20 transition-all">👍 Apoyar</button>
                     </div>
                   )}
                 </div>
@@ -551,7 +553,7 @@ function GestionUsuarios() {
             </div>
           </div>
 
-          <div className="bg-zinc-900 border border-zinc-800 rounded-[2.5rem] p-8 md:p-12 shadow-2xl relative overflow-hidden">
+          <div className="bg-zinc-900 border border-zinc-800 rounded-[2rem] md:rounded-[2.5rem] p-6 md:p-12 shadow-2xl relative overflow-hidden">
             <div className="absolute top-0 right-0 w-64 h-64 bg-blue-500/5 blur-[100px] rounded-full pointer-events-none"></div>
 
             {topSistemas.length === 0 ? (
@@ -565,13 +567,13 @@ function GestionUsuarios() {
                   return (
                     <div key={index} className="group relative">
                       <div className="flex justify-between items-end mb-2">
-                        <h4 className={`font-black uppercase tracking-tighter italic flex items-center gap-3 ${esPrimero ? 'text-2xl text-amber-400' : 'text-xl text-zinc-300 group-hover:text-blue-400 transition-colors'}`}>
+                        <h4 className={`font-black uppercase tracking-tighter italic flex items-center gap-2 md:gap-3 ${esPrimero ? 'text-xl md:text-2xl text-amber-400' : 'text-lg md:text-xl text-zinc-300 group-hover:text-blue-400 transition-colors'}`}>
                           {esPrimero ? '👑' : <span className="text-zinc-600 text-sm">#{index + 1}</span>}
                           {sistema.sistema || 'Sistema Desconocido'}
                         </h4>
                         <div className="flex flex-col items-end">
-                          <span className="text-[10px] font-black text-zinc-600 uppercase tracking-widest">Mesas</span>
-                          <span className={`text-xl font-black leading-none ${esPrimero ? 'text-amber-500' : 'text-blue-500'}`}>{sistema.cantidad}</span>
+                          <span className="text-[9px] md:text-[10px] font-black text-zinc-600 uppercase tracking-widest">Mesas</span>
+                          <span className={`text-lg md:text-xl font-black leading-none ${esPrimero ? 'text-amber-500' : 'text-blue-500'}`}>{sistema.cantidad}</span>
                         </div>
                       </div>
                       

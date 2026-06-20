@@ -1,22 +1,20 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import puertaDungeon from '../assets/dungeon_door.png'; 
 import forjaAventura from '../assets/forja_tu_aventura.gif'; 
 import LogoSVG from '../assets/Logo.svg'; 
+import FotoGrupal from '../assets/FotoGrupal.png'; // ✨ IMPORTAMOS LA FOTO GRUPAL
 
 // ✨ OPTIMIZACIÓN: Los fundadores se declaran fuera del componente para evitar 
-// que se re-creen en cada renderizado, mejorando el rendimiento.
+// que se re-creen en cada renderizado, mejorando el rendimiento. (Iconos eliminados a pedido)
 const fundadores = [
   {
     nombre: "Agus",
     titulo: "Dungeon Master Novata",
-    icono: "👤",
     descripcion: "Prefiero dirigir a: Jugadores con o sin experiencia entre 4 a 17 años.\n\nSistemas: Magissa, Detectives de Monstruos, D&D 5e.\n\nEstilo: Bastante teatro de la mente, haciendo hincapié en el world building y la conexión con los personajes. ¡Me encanta que todos aportemos ideas!\n\nMonstruo Favorito: Mímicos.\n\nSnacks: Cosas chocolatosas (brownies) y bebidas frescas.",
     color: {
       border: "border-emerald-500/40 hover:border-emerald-500",
       shadow: "shadow-[0_0_25px_rgba(16,185,129,0.15)] hover:shadow-[0_0_40px_rgba(16,185,129,0.4)]",
       text: "text-emerald-400",
-      bgIcon: "border-emerald-500/50 shadow-[inset_0_0_15px_rgba(16,185,129,0.2)]",
-      foil: "from-emerald-400/0 via-emerald-300/40 to-emerald-400/0",
       modalGlow: "shadow-[0_0_40px_rgba(16,185,129,0.2)]",
       modalBorder: "border-emerald-500"
     }
@@ -24,14 +22,11 @@ const fundadores = [
   {
     nombre: "Diny",
     titulo: "Dungeon Master",
-    icono: "👤",
     descripcion: "Prefiero dirigir a: Mayores de 15 años y veteranos con ganas de reírse.\n\nSistemas: D&D 5e, Vampiro La Mascarada 5e.\n\nEstilo: Mucho teatro mental, me centro más en el role-play y la historia antes que en el combate. (Por el poder de las risas puedo saltarme reglas si el momento es épico).\n\nMonstruo Favorito: Dragones.\n\nSnacks: Cualquier cosa con chocolate y papitas de limón.",
     color: {
       border: "border-purple-500/40 hover:border-purple-500",
       shadow: "shadow-[0_0_25px_rgba(168,85,247,0.15)] hover:shadow-[0_0_40px_rgba(168,85,247,0.4)]",
       text: "text-purple-400",
-      bgIcon: "border-purple-500/50 shadow-[inset_0_0_15px_rgba(168,85,247,0.2)]",
-      foil: "from-purple-400/0 via-purple-300/40 to-purple-400/0",
       modalGlow: "shadow-[0_0_40px_rgba(168,85,247,0.2)]",
       modalBorder: "border-purple-500"
     }
@@ -39,14 +34,11 @@ const fundadores = [
   {
     nombre: "Guille",
     titulo: "Dungeon Master",
-    icono: "👤",
     descripcion: "Prefiero dirigir a: Adolescentes y/o adultos, con y sin experiencia.\n\nSistemas: Pampa Primigenia, Blades in the Dark, Pathfinder 1e, D&D 5e, Estrellas Innumerables.\n\nEstilo: Balance entre narrativa y combate, improviso más de lo que preparo. Utilizo mapas dibujables, grillas transparentes y teatro mental.\n\nMonstruo Favorito: Cubo Gelatinoso.\n\nSnacks: Mate cuando hace frío, Tereré cuando hace calor y 9 de Oros en abundancia.",
     color: {
       border: "border-blue-500/40 hover:border-blue-500",
       shadow: "shadow-[0_0_25px_rgba(59,130,246,0.15)] hover:shadow-[0_0_40px_rgba(59,130,246,0.4)]",
       text: "text-blue-400",
-      bgIcon: "border-blue-500/50 shadow-[inset_0_0_15px_rgba(59,130,246,0.2)]",
-      foil: "from-blue-400/0 via-blue-300/40 to-blue-400/0",
       modalGlow: "shadow-[0_0_40px_rgba(59,130,246,0.2)]",
       modalBorder: "border-blue-500"
     }
@@ -54,14 +46,11 @@ const fundadores = [
   {
     nombre: "Keith",
     titulo: "Dungeon Master",
-    icono: "👤",
     descripcion: "Prefiero dirigir a: Jugadores con o sin experiencia.\n\nSistemas: D&D 5e, Magissa, La Bruja Ha Muerto.\n\nEstilo: Me gusta tener el manual cerca, pero priorizo que el jugador disfrute. Uso objetos para mayor inmersión y disfruto cuando inventan cosas raras e inesperadas.\n\nMonstruo Favorito: Cait Sith.\n\nSnacks: Café, energizantes, papas fritas y ¡AGUANTEN LOS ALFAJORES DE FRUTA!",
     color: {
       border: "border-indigo-500/40 hover:border-indigo-500",
       shadow: "shadow-[0_0_25_rgba(99,102,241,0.15)]",
       text: "text-indigo-400",
-      bgIcon: "border-indigo-500/50 shadow-[inset_0_0_15px_rgba(99,102,241,0.2)]",
-      foil: "from-indigo-400/0 via-indigo-300/40 to-indigo-400/0",
       modalGlow: "shadow-[0_0_40px_rgba(99,102,241,0.2)]",
       modalBorder: "border-indigo-500"
     }
@@ -69,14 +58,11 @@ const fundadores = [
   {
     nombre: "Mati",
     titulo: "Dungeon Master",
-    icono: "👤",
     descripcion: "Prefiero dirigir a: Jugadores mayores de 15 años y veteranos.\n\nSistemas: D&D 5e, D&D 3.5, Savage Worlds, Pathfinder.\n\nEstilo: Equilibrado. Buen rol y también combate estratégico. Fiel a las reglas salvo que la situación sea muy meme (¡Un buen 20 lo justifica todo!).\n\nMonstruo Favorito: Archiliches.\n\nSnacks: Coca Cola, pastafrola y tarta de frutilla.",
     color: {
       border: "border-amber-500/40 hover:border-amber-500",
       shadow: "shadow-[0_0_25_rgba(245,158,11,0.15)]",
       text: "text-amber-400",
-      bgIcon: "border-amber-500/50 shadow-[inset_0_0_15px_rgba(245,158,11,0.2)]",
-      foil: "from-amber-400/0 via-amber-300/40 to-amber-400/0",
       modalGlow: "shadow-[0_0_40px_rgba(245,158,11,0.2)]",
       modalBorder: "border-amber-500"
     }
@@ -84,14 +70,11 @@ const fundadores = [
   {
     nombre: "Smoke",
     titulo: "Dungeon Master",
-    icono: "👤",
     descripcion: "Prefiero dirigir a: Mayores de 15 años y veteranos con ganas de reírse.\n\nSistemas: D&D 5e, LANCER, Vampiro La Mascarada 5e, La Llamada de Cthulhu 7e.\n\nEstilo: Equilibrado. Teatro de la mente para narrativa y mapas para combate táctico. Suelo escribir mis propias historias integrando los trasfondos de los personajes.\n\nMonstruo Favorito: Goblins.\n\nSnacks: Alfajores, galletitas, facturas y todo lo que tenga alto porcentaje de azúcar.",
     color: {
       border: "border-red-500/40 hover:border-red-500",
       shadow: "shadow-[0_0_25_rgba(239,68,68,0.15)]",
       text: "text-red-400",
-      bgIcon: "border-red-500/50 shadow-[inset_0_0_15px_rgba(239,68,68,0.2)]",
-      foil: "from-red-400/0 via-red-300/40 to-red-400/0",
       modalGlow: "shadow-[0_0_40px_rgba(239,68,68,0.2)]",
       modalBorder: "border-red-500"
     }
@@ -99,14 +82,11 @@ const fundadores = [
   {
     nombre: "Sterbern",
     titulo: "Zombie Master",
-    icono: "👤",
     descripcion: "Prefiero dirigir a: ¡Todos son bienvenidos mientras tengan ganas de divertirse! (Dependiendo de la ambientación, obvio).\n\nSistemas: D&D 5e, Cthulhu 7e, Warhammer Fantasy, Star Wars d20, Vieja Escuela, Indies.\n\nEstilo: Consulto manuales pero doy total libertad a las ideas (y que se la banquen si se mandan macanas). Mapas, miniaturas y mucho teatro mental.\n\nMonstruo Favorito: Zombies.\n\nSnacks: MATE (si no hay, me pongo de mal humor) y pastelitos o pastafrola.",
     color: {
       border: "border-green-500/40 hover:border-green-500",
       shadow: "shadow-[0_0_25_rgba(34,197,94,0.15)]",
       text: "text-green-400",
-      bgIcon: "border-green-500/50 shadow-[inset_0_0_15px_rgba(34,197,94,0.2)]",
-      foil: "from-green-400/0 via-green-300/40 to-green-400/0",
       modalGlow: "shadow-[0_0_40px_rgba(34,197,94,0.2)]",
       modalBorder: "border-green-500"
     }
@@ -117,21 +97,6 @@ function Landing({ irALogin }) {
   const [indiceFundador, setIndiceFundador] = useState(null);
   const [seccionActiva, setSeccionActiva] = useState('inicio'); 
   const [menuAbierto, setMenuAbierto] = useState(false); 
-  const carruselRef = useRef(null);
-
-  useEffect(() => {
-    const intervalo = setInterval(() => {
-      if (carruselRef.current && seccionActiva === 'fundadores') {
-        const { scrollLeft, scrollWidth, clientWidth } = carruselRef.current;
-        if (scrollLeft + clientWidth >= scrollWidth - 10) {
-          carruselRef.current.scrollTo({ left: 0, behavior: 'smooth' });
-        } else {
-          carruselRef.current.scrollBy({ left: 320, behavior: 'smooth' });
-        }
-      }
-    }, 4000);
-    return () => clearInterval(intervalo);
-  }, [seccionActiva]);
 
   const siguienteFundador = (e) => { e.stopPropagation(); setIndiceFundador((prev) => (prev + 1) % fundadores.length); };
   const anteriorFundador = (e) => { e.stopPropagation(); setIndiceFundador((prev) => (prev - 1 + fundadores.length) % fundadores.length); };
@@ -141,13 +106,6 @@ function Landing({ irALogin }) {
       
       <style>
         {`
-          @keyframes foil-shine {
-            0% { transform: translateX(-150%) skewX(-15deg); opacity: 0; }
-            10% { opacity: 1; }
-            40% { transform: translateX(250%) skewX(-15deg); opacity: 0; }
-            100% { transform: translateX(250%) skewX(-15deg); opacity: 0; }
-          }
-          .animate-foil { animation: foil-shine 6s cubic-bezier(0.4, 0, 0.2, 1) infinite; }
           .img-glow { filter: drop-shadow(0 0 8px rgba(16, 185, 129, 0.4)); }
           .scrollbar-hide::-webkit-scrollbar { display: none; }
           .scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
@@ -172,8 +130,8 @@ function Landing({ irALogin }) {
           {/* Menú Desktop */}
           <div className="hidden md:flex items-center gap-6">
             <button onClick={() => setSeccionActiva('inicio')} className={`text-[10px] font-bold uppercase tracking-widest transition-colors ${seccionActiva === 'inicio' ? 'text-emerald-400 border-b-2 border-emerald-400' : 'hover:text-emerald-400'}`}>Inicio</button>
+            {/* ✨ SECCIÓN "NOSOTROS" AHORA ENGLOBA TODO */}
             <button onClick={() => setSeccionActiva('nosotros')} className={`text-[10px] font-bold uppercase tracking-widest transition-colors ${seccionActiva === 'nosotros' ? 'text-emerald-400 border-b-2 border-emerald-400' : 'hover:text-emerald-400'}`}>Nosotros</button>
-            <button onClick={() => setSeccionActiva('fundadores')} className={`text-[10px] font-bold uppercase tracking-widest transition-colors ${seccionActiva === 'fundadores' ? 'text-emerald-400 border-b-2 border-emerald-400' : 'hover:text-emerald-400'}`}>Fundadores</button>
             <div className="h-6 w-px bg-zinc-800"></div>
             <button onClick={irALogin} className="relative group transition-all duration-300 hover:scale-110 flex flex-col items-center justify-center h-full">
               <img src={puertaDungeon} alt="Entrar" className="w-12 h-12 object-contain img-glow" />
@@ -193,13 +151,12 @@ function Landing({ irALogin }) {
         <div className={`fixed inset-0 bg-zinc-950/98 z-[105] flex flex-col items-center justify-center gap-8 transition-transform duration-500 md:hidden ${menuAbierto ? 'translate-x-0' : 'translate-x-full'}`}>
           <button onClick={() => {setSeccionActiva('inicio'); setMenuAbierto(false);}} className="text-xl font-black uppercase tracking-widest text-white">Inicio</button>
           <button onClick={() => {setSeccionActiva('nosotros'); setMenuAbierto(false);}} className="text-xl font-black uppercase tracking-widest text-white">Nosotros</button>
-          <button onClick={() => {setSeccionActiva('fundadores'); setMenuAbierto(false);}} className="text-xl font-black uppercase tracking-widest text-white">Fundadores</button>
           <button onClick={irALogin} className="bg-emerald-600 text-white px-8 py-3 rounded-xl font-black uppercase tracking-widest">Ingresar</button>
         </div>
       </nav>
 
-      {/* CONTENIDO PRINCIPAL: Ocupa el espacio restante sin generar scroll */}
-      <main className="flex-1 flex flex-col justify-center pt-20 md:pt-24 pb-4 overflow-hidden">
+      {/* CONTENIDO PRINCIPAL */}
+      <main className="flex-1 flex flex-col pt-20 md:pt-24 pb-4 overflow-hidden">
         
         {/* SECCIÓN INICIO */}
         {seccionActiva === 'inicio' && (
@@ -207,7 +164,6 @@ function Landing({ irALogin }) {
             <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[300px] md:w-[400px] h-[300px] md:h-[400px] bg-emerald-500/10 blur-[80px] rounded-full pointer-events-none"></div>
             
             <button onClick={irALogin} className="group relative transition-transform duration-500 hover:scale-105 active:scale-95 mb-4 outline-none flex flex-col items-center z-10">
-              {/* Imagen más pequeña para ahorrar espacio vertical */}
               <img src={forjaAventura} alt="Comenzar" className="w-[120px] md:w-[150px] h-auto object-contain img-glow" />
               <span className="mt-2 text-emerald-500 font-black uppercase tracking-[0.2em] md:tracking-[0.4em] text-[9px] md:text-[10px] animate-pulse">Haz clic para entrar →</span>
             </button>
@@ -218,57 +174,60 @@ function Landing({ irALogin }) {
           </header>
         )}
 
-        {/* SECCIÓN NOSOTROS */}
+        {/* ✨ SECCIÓN NOSOTROS (AHORA COMBINADA CON FUNDADORES) ✨ */}
         {seccionActiva === 'nosotros' && (
-          <section className="h-full flex flex-col justify-center items-center px-4 animate-in fade-in slide-in-from-bottom-8 duration-500">
-             <div className="text-center w-full max-w-3xl">
-              <h2 className="text-2xl md:text-4xl font-black text-white uppercase tracking-tighter mb-4 md:mb-6 flex items-center justify-center gap-3">📜 Nosotros </h2>
-              <div className="space-y-4 text-sm md:text-base text-zinc-400 leading-relaxed bg-zinc-900/50 p-6 md:p-8 rounded-[2rem] border border-zinc-800/50 shadow-2xl">
-                <p>Nacimos con un propósito claro: reunir a los apasionados por el rol bajo un mismo estandarte en La Pampa. Somos un espacio creado por y para jugadores y Narradores.</p>
-                <p>Nuestra misión es que nadie se quede sin un grupo con el cual compartir una tarde de imaginación y estrategia.</p>
-              </div>
-            </div>
-          </section>
-        )}
-
-        {/* SECCIÓN FUNDADORES */}
-        {seccionActiva === 'fundadores' && (
-          <section className="h-full w-full max-w-[1400px] mx-auto flex flex-col justify-center animate-in fade-in slide-in-from-bottom-8 duration-500">
-            <div className="text-center mb-4 md:mb-6 px-4">
-              <h2 className="text-2xl md:text-4xl font-black text-white uppercase tracking-tighter mb-1">👑 Fundadores</h2>
-              <p className="text-zinc-500 font-bold uppercase tracking-widest text-[9px] md:text-[10px]">Héroes de la Primera Era</p>
-            </div>
+          <section className="h-full w-full max-w-5xl mx-auto flex flex-col items-center px-4 py-8 animate-in fade-in slide-in-from-bottom-8 duration-500 overflow-y-auto scrollbar-hide pb-24">
             
-            {/* Contenedor del Carrusel: Centrado en PC, Scroll en Móvil */}
-            <div className="relative group/carrusel w-full px-2">
-              <div ref={carruselRef} className="flex gap-4 md:gap-5 overflow-x-auto snap-x snap-mandatory scrollbar-hide py-4 items-center md:justify-center">
+            <h2 className="text-3xl md:text-4xl font-black text-white uppercase tracking-tighter mb-8 mt-4 flex items-center justify-center gap-3">
+              📜 La Asociación
+            </h2>
+            
+            {/* ✨ CUADRO ROLERO PARA LA FOTO GRUPAL */}
+            <div className="relative p-2 bg-zinc-950 border-4 border-double border-amber-700/80 rounded-sm shadow-[0_0_30px_rgba(180,83,9,0.2)] mb-8 max-w-4xl w-full group overflow-hidden before:absolute before:inset-0 before:border-[1px] before:border-amber-500/30 before:pointer-events-none transition-transform hover:scale-[1.01] duration-500">
+               <img src={FotoGrupal} alt="Asociación de Rol La Pampa" className="w-full h-auto object-cover border border-zinc-900 shadow-inner sepia-[.15] contrast-[1.1] grayscale-[0.2]" />
+               
+               {/* Detalles de esquina metálicos */}
+               <div className="absolute top-0 left-0 w-6 h-6 border-t-2 border-l-2 border-amber-400"></div>
+               <div className="absolute top-0 right-0 w-6 h-6 border-t-2 border-r-2 border-amber-400"></div>
+               <div className="absolute bottom-0 left-0 w-6 h-6 border-b-2 border-l-2 border-amber-400"></div>
+               <div className="absolute bottom-0 right-0 w-6 h-6 border-b-2 border-r-2 border-amber-400"></div>
+            </div>
+
+            {/* Texto Descriptivo */}
+            <div className="space-y-4 text-sm md:text-base text-zinc-300 leading-relaxed bg-zinc-900/50 p-6 md:p-8 rounded-[2rem] border border-zinc-800/50 shadow-2xl mb-12 text-center max-w-3xl w-full relative">
+              <div className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-zinc-950 text-zinc-500 text-[10px] font-black uppercase tracking-widest px-4 py-1 border border-zinc-800 rounded-full">Nuestra Historia</div>
+              <p>Nacimos con un propósito claro: reunir a los apasionados por el rol bajo un mismo estandarte en La Pampa. Somos un espacio creado por y para jugadores y Narradores.</p>
+              <p>Nuestra misión es que nadie se quede sin un grupo con el cual compartir una tarde de imaginación y estrategia.</p>
+            </div>
+
+            {/* ✨ BOTONERA DE FUNDADORES ✨ */}
+            <div className="w-full max-w-4xl flex flex-col items-center">
+              <div className="text-center mb-6">
+                <h3 className="text-2xl md:text-3xl font-black text-white uppercase tracking-tighter mb-1">👑 Los Fundadores</h3>
+                <p className="text-amber-500/80 font-bold uppercase tracking-widest text-[9px] md:text-[10px] animate-pulse">Toca un nombre para leer sus crónicas</p>
+              </div>
+              
+              <div className="flex flex-wrap justify-center gap-3 md:gap-4 w-full">
                 {fundadores.map((fundador, index) => (
-                  <div key={index} onClick={() => setIndiceFundador(index)} className={`w-[220px] md:w-[260px] flex-shrink-0 snap-center bg-zinc-900 border rounded-[1.5rem] p-5 md:p-6 cursor-pointer transition-all duration-500 relative overflow-hidden flex flex-col items-center text-center ${fundador.color.shadow} ${fundador.color.border}`}>
-                    <div className={`absolute inset-0 bg-gradient-to-tr ${fundador.color.foil} animate-foil z-10 pointer-events-none`}></div>
-                    
-                    <div className={`w-14 h-14 md:w-16 md:h-16 bg-zinc-950 rounded-full border-2 flex items-center justify-center text-2xl md:text-3xl mb-3 relative z-20 ${fundador.color.bgIcon}`}>
-                      {fundador.icono}
-                    </div>
-                    
-                    <h3 className={`text-lg md:text-xl font-black uppercase mb-1 relative z-20 ${fundador.color.text}`}>{fundador.nombre}</h3>
-                    <p className="text-[9px] md:text-[10px] font-bold text-zinc-500 uppercase tracking-widest mb-4 relative z-20">{fundador.titulo}</p>
-                    
-                    <span className={`mt-auto text-[8px] md:text-[9px] font-black uppercase bg-zinc-950/50 px-3 py-1.5 rounded-lg border border-zinc-800/50 relative z-20 ${fundador.color.text}`}>
-                      Ver Historia →
-                    </span>
-                  </div>
+                  <button 
+                    key={index} 
+                    onClick={() => setIndiceFundador(index)}
+                    className={`px-5 py-3 md:px-8 md:py-4 rounded-xl md:rounded-2xl border-2 bg-zinc-950/80 font-black uppercase tracking-widest text-xs md:text-sm transition-all duration-300 transform hover:-translate-y-1 ${fundador.color.border} ${fundador.color.text} hover:bg-zinc-900 shadow-lg`}
+                  >
+                    {fundador.nombre}
+                  </button>
                 ))}
               </div>
             </div>
-            <p className="text-center text-zinc-600 text-[9px] italic mt-2 md:hidden">Desliza para conocerlos</p>
+
           </section>
         )}
       </main>
 
-      {/* PIE DE PÁGINA: Altura fija y compacta */}
-      <footer className="h-24 md:h-28 flex flex-col items-center justify-center border-t border-zinc-900 bg-zinc-950 px-4 z-10">
+      {/* PIE DE PÁGINA */}
+      <footer className="h-24 md:h-28 flex flex-col items-center justify-center border-t border-zinc-900 bg-zinc-950 px-4 z-10 shrink-0">
         
-        {/* Enlaces a Redes (Más compactos) */}
+        {/* Enlaces a Redes */}
         <div className="flex gap-4 mb-3">
           <a 
             href="https://www.instagram.com/asociacionderollapampa/" 
@@ -312,21 +271,20 @@ function Landing({ irALogin }) {
         </p>
       </footer>
 
-      {/* MODAL FUNDADORES */}
+      {/* ✨ MODAL FUNDADORES (Limpiado y sin el icono) ✨ */}
       {indiceFundador !== null && (
         <div className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-black/95 backdrop-blur-md animate-in fade-in duration-300" onClick={() => setIndiceFundador(null)}>
           <div className={`bg-zinc-900 border w-full max-w-[400px] md:max-w-md rounded-[2rem] p-6 relative ${fundadores[indiceFundador].color.modalGlow} ${fundadores[indiceFundador].color.modalBorder}`} onClick={(e) => e.stopPropagation()}>
-            <button onClick={() => setIndiceFundador(null)} className="absolute top-4 right-4 text-zinc-500 hover:text-white text-lg w-8 h-8 flex items-center justify-center border border-zinc-800 rounded-full">✕</button>
-            <div className={`w-16 h-16 md:w-20 md:h-20 bg-zinc-950 rounded-full border-2 flex items-center justify-center text-2xl md:text-3xl mb-4 mx-auto ${fundadores[indiceFundador].color.modalBorder}`}>{fundadores[indiceFundador].icono}</div>
-            <h3 className="text-2xl md:text-3xl font-black text-white text-center uppercase tracking-tighter mb-1">{fundadores[indiceFundador].nombre}</h3>
-            <p className={`text-center font-black uppercase tracking-widest text-[9px] md:text-[10px] mb-4 ${fundadores[indiceFundador].color.text}`}>{fundadores[indiceFundador].titulo}</p>
+            <button onClick={() => setIndiceFundador(null)} className="absolute top-4 right-4 text-zinc-500 hover:text-white text-lg w-8 h-8 flex items-center justify-center border border-zinc-800 rounded-full z-10">✕</button>
             
-            {/* ✨ NOTA: Agregué 'whitespace-pre-line' y 'text-left' para que los saltos de línea de la descripción se vean perfectos */}
+            <h3 className="text-2xl md:text-3xl font-black text-white text-center uppercase tracking-tighter mb-1 mt-4">{fundadores[indiceFundador].nombre}</h3>
+            <p className={`text-center font-black uppercase tracking-widest text-[9px] md:text-[10px] mb-4 border-b border-zinc-800/50 pb-4 ${fundadores[indiceFundador].color.text}`}>{fundadores[indiceFundador].titulo}</p>
+            
             <p className="text-zinc-300 leading-relaxed italic text-left text-sm md:text-base px-2 whitespace-pre-line">{fundadores[indiceFundador].descripcion}</p>
             
             <div className="flex justify-between mt-6 pt-4 border-t border-zinc-800">
-               <button onClick={anteriorFundador} className="text-emerald-500 font-black uppercase text-[9px] tracking-widest hover:text-emerald-400 transition-colors">‹ Anterior</button>
-               <button onClick={siguienteFundador} className="text-emerald-500 font-black uppercase text-[9px] tracking-widest hover:text-emerald-400 transition-colors">Siguiente ›</button>
+               <button onClick={anteriorFundador} className="text-zinc-500 font-black uppercase text-[9px] tracking-widest hover:text-white transition-colors">‹ Anterior</button>
+               <button onClick={siguienteFundador} className="text-zinc-500 font-black uppercase text-[9px] tracking-widest hover:text-white transition-colors">Siguiente ›</button>
             </div>
           </div>
         </div>
