@@ -183,15 +183,18 @@ function Landing({ irALogin }) {
             </h2>
             
             {/* ✨ CUADRO ROLERO CORREGIDO PARA QUE JAMÁS SE APLASTE ✨ */}
-            {/* El aspect-video garantiza que el contenedor siempre sea 16:9, perfecto para tu foto de 1200x675 */}
-            <div className="relative p-2 bg-zinc-950 border-4 border-double border-amber-700/80 rounded-sm shadow-[0_0_30px_rgba(180,83,9,0.2)] mb-8 max-w-4xl w-full group overflow-hidden before:absolute before:inset-0 before:border-[1px] before:border-amber-500/30 before:pointer-events-none transition-transform hover:scale-[1.01] duration-500 aspect-video">
-               <img src={FotoGrupal} alt="Asociación de Rol La Pampa" className="absolute inset-0 w-full h-full object-cover border border-zinc-900 shadow-inner sepia-[.15] contrast-[1.1] grayscale-[0.2]" />
+            <div className="relative p-2 bg-zinc-950 border-4 border-double border-amber-700/80 rounded-sm shadow-[0_0_30px_rgba(180,83,9,0.2)] mb-8 max-w-4xl w-full group overflow-hidden transition-transform hover:scale-[1.01] duration-500">
+               {/* Capa de borde interior */}
+               <div className="absolute inset-0 border border-amber-500/30 pointer-events-none z-10"></div>
                
-               {/* Detalles de esquina metálicos */}
-               <div className="absolute top-0 left-0 w-6 h-6 border-t-2 border-l-2 border-amber-400"></div>
-               <div className="absolute top-0 right-0 w-6 h-6 border-t-2 border-r-2 border-amber-400"></div>
-               <div className="absolute bottom-0 left-0 w-6 h-6 border-b-2 border-l-2 border-amber-400"></div>
-               <div className="absolute bottom-0 right-0 w-6 h-6 border-b-2 border-r-2 border-amber-400"></div>
+               {/* La imagen fluye naturalmente ahora. block y w-full aseguran que ocupe todo el ancho y su altura se calcule automáticamente en base a su aspect ratio natural de 1200x675. */}
+               <img src={FotoGrupal} alt="Asociación de Rol La Pampa" className="block w-full h-auto object-contain border border-zinc-900 shadow-inner sepia-[.15] contrast-[1.1] grayscale-[0.2]" />
+               
+               {/* Detalles de esquina metálicos (con z-20 para estar encima de todo) */}
+               <div className="absolute top-0 left-0 w-6 h-6 border-t-2 border-l-2 border-amber-400 z-20"></div>
+               <div className="absolute top-0 right-0 w-6 h-6 border-t-2 border-r-2 border-amber-400 z-20"></div>
+               <div className="absolute bottom-0 left-0 w-6 h-6 border-b-2 border-l-2 border-amber-400 z-20"></div>
+               <div className="absolute bottom-0 right-0 w-6 h-6 border-b-2 border-r-2 border-amber-400 z-20"></div>
             </div>
 
             {/* Texto Descriptivo */}
