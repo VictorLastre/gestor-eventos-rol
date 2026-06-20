@@ -271,6 +271,46 @@ function GestionUsuarios() {
     if (res.ok) { cargarDatosPrincipales(); cargarCenso(); Swal.fire({ title: 'Voto Registrado', icon: 'info', background: '#09090b', color: '#fff', customClass: { popup: 'border border-emerald-500/30 rounded-[2rem]' } }); }
   };
 
+  // ✨ FUNCIÓN DE HARD RESET AÑADIDA AQUÍ
+  const aplicarHardReset = async (usuario) => {
+    const confirmacion = await Swal.fire({
+      title: '¿Forzar Contraseña?',
+      html: `Estás a punto de borrar la contraseña de <b class="text-emerald-400">${usuario.nombre}</b>.<br/><br/>Se le asignará una contraseña temporal por defecto.`,
+      icon: 'warning',
+      showCancelButton: true,
+      background: '#09090b', color: '#fff',
+      confirmButtonColor: '#ef4444', cancelButtonColor: '#27272a',
+      confirmButtonText: 'Sí, aplicar Hard Reset',
+      cancelButtonText: 'Cancelar',
+      customClass: { popup: 'border border-red-500/30 rounded-[2rem]' }
+    });
+
+    if (confirmacion.isConfirmed) {
+      try {
+        const res = await fetchProtegido(`/api/usuarios/${usuario.id}/hard-reset`, {
+          method: 'PUT'
+        });
+        
+        const data = await res.json();
+
+        if (res.ok) {
+          Swal.fire({
+            title: '¡Magia Aplicada!',
+            html: `La nueva contraseña temporal para el usuario es:<br/><br/><b class="text-2xl text-emerald-500 font-mono bg-black p-4 rounded-xl border border-zinc-800">${data.temporal}</b><br/><br/><span class="text-sm text-zinc-400">Copia esta contraseña y entrégasela al aventurero para que pueda entrar y cambiarla en su perfil.</span>`,
+            icon: 'success',
+            background: '#09090b', color: '#fff',
+            confirmButtonColor: '#10b981',
+            customClass: { popup: 'border border-emerald-500/30 rounded-[2rem]' }
+          });
+        } else {
+          Swal.fire({ title: 'Error', text: data.error, icon: 'error', background: '#09090b', color: '#fff', customClass: { popup: 'border border-red-500/30 rounded-[2rem]' } });
+        }
+      } catch (error) {
+        Swal.fire({ title: 'Error', text: 'El servidor no responde.', icon: 'error', background: '#09090b', color: '#fff' });
+      }
+    }
+  };
+
   const jerarquiaRoles = { admin: 1, dm: 2, jugador: 3 };
 
   const usuariosProcesados = todosLosUsuarios
@@ -420,6 +460,10 @@ function GestionUsuarios() {
                             {user.rol !== 'admin' && <button onClick={() => proponerAdmin(user.id, user.nombre)} className="w-10 h-10 bg-zinc-950 border border-zinc-800 rounded-xl hover:border-amber-500 hover:text-amber-500 transition-all text-sm" title="Proponer al Senado">👑</button>}
                             {user.rol !== 'dm' && user.rol !== 'admin' && <button onClick={() => cambiarRolDirecto(user.id, user.nombre, 'dm')} className="w-10 h-10 bg-zinc-950 border border-zinc-800 rounded-xl hover:border-purple-500 hover:text-purple-400 transition-all text-sm" title="Ascender a DM">🛡️</button>}
                             {user.rol !== 'jugador' && <button onClick={() => cambiarRolDirecto(user.id, user.nombre, 'jugador')} className="w-10 h-10 bg-zinc-950 border border-zinc-800 rounded-xl hover:border-red-500 hover:text-red-500 transition-all text-sm" title="Revocar Rango">✕</button>}
+                            
+                            {/* ✨ NUEVO BOTÓN HARD RESET EN LA TABLA */}
+                            <button onClick={() => aplicarHardReset(user)} className="w-10 h-10 bg-zinc-950 border border-zinc-800 rounded-xl hover:border-red-500 hover:text-red-500 transition-all text-sm" title="Forzar restablecimiento de contraseña (Hard Reset)">🔑</button>
+
                           </div>
                         </td>
                       </tr>

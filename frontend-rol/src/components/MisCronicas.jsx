@@ -19,11 +19,11 @@ function MisCronicas({ alActualizarUsuario }) {
     nombre: usuarioGuardado?.nombre || '', 
     nombre_completo: usuarioGuardado?.nombre_completo || '', 
     email: usuarioGuardado?.email || '',
-    avatar: usuarioGuardado?.avatar || 'guerrero' // Lo mantenemos en el estado para no romper el backend
+    avatar: usuarioGuardado?.avatar || 'guerrero',
+    password: '' // ✨ AGREGADO: Campo para la nueva contraseña
   });
 
   const cargarCronicas = () => {
-    // ✨ RUTA RELATIVA ACTUALIZADA
     fetchProtegido('/api/usuarios/mis-cronicas')
       .then(res => res.json())
       .then(datos => {
@@ -37,7 +37,6 @@ function MisCronicas({ alActualizarUsuario }) {
   };
 
   const actualizarPerfilDesdeDB = () => {
-    // ✨ RUTA RELATIVA ACTUALIZADA
     fetchProtegido('/api/usuarios/yo') 
       .then(res => res.json())
       .then(datosUsuario => {
@@ -55,7 +54,6 @@ function MisCronicas({ alActualizarUsuario }) {
   useEffect(() => {
     cargarCronicas();
 
-    // ✨ CONEXIÓN DE WEBSOCKETS ACTUALIZADA (Ruta Relativa)
     const socket = io('/', { path: '/api/socket.io' });
 
     socket.on('actualizacion-mesas', () => {
@@ -81,7 +79,6 @@ function MisCronicas({ alActualizarUsuario }) {
 
   const guardarPerfil = async () => {
     try {
-      // ✨ RUTA RELATIVA ACTUALIZADA
       const res = await fetchProtegido('/api/usuarios/perfil', {
         method: 'PUT',
         body: JSON.stringify(perfil)
@@ -89,9 +86,16 @@ function MisCronicas({ alActualizarUsuario }) {
       
       if (res.ok) {
         const nuevoUsuario = { ...usuarioGuardado, ...perfil };
+        
+        // ✨ SEGURIDAD: Borramos la contraseña antes de guardar en el navegador
+        delete nuevoUsuario.password;
+
         localStorage.setItem('usuario', JSON.stringify(nuevoUsuario));
         setUsuarioGuardado(nuevoUsuario);
         if (alActualizarUsuario) alActualizarUsuario(nuevoUsuario);
+        
+        // Limpiamos el campo del formulario
+        setPerfil(prev => ({ ...prev, password: '' }));
         setEditando(false);
         
         Swal.fire({
@@ -124,7 +128,6 @@ function MisCronicas({ alActualizarUsuario }) {
     if (!result.isConfirmed) return;
 
     try {
-      // ✨ RUTA RELATIVA ACTUALIZADA
       const res = await fetchProtegido('/api/usuarios/solicitar-dm', {
         method: 'POST'
       });
@@ -178,7 +181,6 @@ function MisCronicas({ alActualizarUsuario }) {
         {editando ? (
           <div className="relative z-10 flex flex-col gap-8 animate-in zoom-in-95 duration-300">
             
-            {/* ✨ NUEVA ZONA DE IDENTIDAD VISUAL (Boring Avatars) */}
             <div className="space-y-4 relative">
               <label className="text-[10px] font-black text-zinc-500 uppercase tracking-widest ml-2">Identidad Visual</label>
               <div className="flex flex-col sm:flex-row items-center gap-6 bg-zinc-950/50 p-6 rounded-[2rem] border border-zinc-800/50">
@@ -203,18 +205,36 @@ function MisCronicas({ alActualizarUsuario }) {
               </div>
             </div>
 
-            <div className="space-y-2">
-              <label className="text-[10px] font-black text-zinc-500 uppercase tracking-widest ml-2 flex items-center gap-2">
-                <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse"></span> 
-                Nombre Real (Requerido para Certificados)
-              </label>
-              <input 
-                name="nombre_completo" 
-                placeholder="Ej: Bilbo Bolsón" 
-                className="w-full bg-zinc-950 border border-zinc-800 rounded-2xl py-4 px-6 text-white focus:border-emerald-500 outline-none transition-all font-bold" 
-                value={perfil.nombre_completo} 
-                onChange={manejarCambioPerfil} 
-              />
+            {/* ✨ ZONA DE CONTRASEÑA AGREGADA AQUÍ */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="space-y-2">
+                <label className="text-[10px] font-black text-zinc-500 uppercase tracking-widest ml-2 flex items-center gap-2">
+                  <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse"></span> 
+                  Nombre Real (Requerido para Certificados)
+                </label>
+                <input 
+                  name="nombre_completo" 
+                  placeholder="Ej: Bilbo Bolsón" 
+                  className="w-full bg-zinc-950 border border-zinc-800 rounded-2xl py-4 px-6 text-white focus:border-emerald-500 outline-none transition-all font-bold" 
+                  value={perfil.nombre_completo} 
+                  onChange={manejarCambioPerfil} 
+                />
+              </div>
+
+              <div className="space-y-2">
+                <label className="text-[10px] font-black text-zinc-500 uppercase tracking-widest ml-2 flex items-center gap-2">
+                  <span className="w-1.5 h-1.5 bg-amber-500 rounded-full animate-pulse"></span> 
+                  Nueva Contraseña (Opcional)
+                </label>
+                <input 
+                  type="password"
+                  name="password" 
+                  placeholder="Dejar vacío para no cambiarla" 
+                  className="w-full bg-zinc-950 border border-zinc-800 rounded-2xl py-4 px-6 text-white focus:border-amber-500 outline-none transition-all font-bold" 
+                  value={perfil.password} 
+                  onChange={manejarCambioPerfil} 
+                />
+              </div>
             </div>
             
             <div className="flex flex-col sm:flex-row gap-3 mt-2">
@@ -228,7 +248,6 @@ function MisCronicas({ alActualizarUsuario }) {
                 <div className="relative group">
                     <div className="absolute inset-0 bg-emerald-500/20 blur-xl rounded-full group-hover:bg-emerald-500/40 transition-all"></div>
                     <div className="w-24 h-24 md:w-32 md:h-32 bg-zinc-950 rounded-full flex items-center justify-center border-2 border-emerald-500/50 shadow-2xl relative z-10 overflow-hidden">
-                        {/* ✨ INVOCACIÓN DEL AVATAR */}
                         <AvatarUsuario nombre={perfil.nombre} tamaño={128} variante="beam" />
                     </div>
                 </div>

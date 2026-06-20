@@ -3,13 +3,12 @@ const router = express.Router();
 const db = require('../config/db');
 const verificarToken = require('../middlewares/auth');
 const bcrypt = require('bcrypt'); 
-const crypto = require('crypto'); // ✨ Generador de tokens para reseteo
 
-// ✨ FUNCIÓN: REGISTRO DE ACTIVIDAD
+// ✨ FUNCIÓN DEL ESCRIBA: REGISTRO EN LA BITÁCORA
 const registrarLog = (usuario, accion, descripcion) => {
   const sql = "INSERT INTO logs_actividad (usuario_id, nombre_usuario, accion, descripcion) VALUES (?, ?, ?, ?)";
   db.query(sql, [usuario.id, usuario.nombre, accion, descripcion], (err) => {
-    if (err) console.error("❌ Error en registro de actividad:", err);
+    if (err) console.error("❌ Error en bitácora:", err);
   });
 };
 
@@ -49,7 +48,7 @@ router.get('/mis-cronicas', verificarToken, (req, res) => {
 router.get('/solicitudes-dm', verificarToken, (req, res) => {
   if (req.usuario.rol !== 'admin') return res.status(403).json({ error: 'Acceso denegado.' });
   db.query("SELECT id, nombre, email FROM usuarios WHERE solicita_dm = 1 AND rol = 'jugador'", (err, resultados) => {
-    if (err) return res.status(500).json({ error: 'Error del servidor.' });
+    if (err) return res.status(500).json({ error: 'Error.' });
     res.json(resultados || []);
   });
 });
@@ -83,12 +82,12 @@ router.get('/estadisticas', verificarToken, (req, res) => {
     FROM eventos e LEFT JOIN partidas p ON e.id = p.evento_id LEFT JOIN inscripciones i ON p.id = i.partida_id
     GROUP BY e.id ORDER BY e.fecha DESC`;
   db.query(sql, (err, resultados) => {
-    if (err) return res.status(500).json({ error: 'Error del servidor.' });
+    if (err) return res.status(500).json({ error: 'Error.' });
     res.json(resultados);
   });
 });
 
-// ✨ ACTUALIZAR PERFIL
+// ✨ ACTUALIZAR PERFIL (Con registro en bitácora)
 router.put('/perfil', verificarToken, async (req, res) => {
   const { nombre, nombre_completo, email, password, avatar } = req.body;
   const idUsuario = req.usuario.id;
@@ -109,14 +108,14 @@ router.put('/perfil', verificarToken, async (req, res) => {
     }
 
     db.query(sql, params, (err) => {
-      if (err) return res.status(500).json({ error: 'Error al actualizar tu perfil.' });
+      if (err) return res.status(500).json({ error: 'Error al actualizar tu ficha.' });
       
-      registrarLog(req.usuario, 'ACTUALIZAR_PERFIL', `Actualizó sus datos${cambioPass ? ' (incluyendo contraseña)' : ''}.`);
+      registrarLog(req.usuario, 'ACTUALIZAR_PERFIL', `Actualizó sus datos de aventurero${cambioPass ? ' (incluyendo contraseña)' : ''}.`);
       
       res.json({ mensaje: '¡Perfil actualizado con éxito!' });
     });
   } catch (error) {
-    res.status(500).json({ error: 'Error interno del servidor.' });
+    res.status(500).json({ error: 'Error interno en la magia del servidor.' });
   }
 });
 
@@ -126,25 +125,25 @@ router.post('/solicitar-dm', verificarToken, (req, res) => {
   }
 
   db.query("UPDATE usuarios SET solicita_dm = 1 WHERE id = ?", [req.usuario.id], (err) => {
-    if (err) return res.status(500).json({ error: 'Error al enviar la solicitud.' });
+    if (err) return res.status(500).json({ error: 'Error al enviar la petición.' });
     
-    registrarLog(req.usuario, 'PEDIDO_DM', 'Ha solicitado el rango de Dungeon Master.');
+    registrarLog(req.usuario, 'PEDIDO_DM', 'Ha solicitado formalmente el rango de Dungeon Master.');
 
     const io = req.app.get('io');
     if (io) io.emit('actualizacion-solicitudes');
-    res.status(200).send('¡Solicitud enviada!');
+    res.status(200).send('¡Tu solicitud ha sido enviada!');
   });
 });
 
 router.put('/:id/promover', verificarToken, (req, res) => {
-  if (req.usuario.rol !== 'admin') return res.status(403).json({ error: 'Acceso denegado.' });
+  if (req.usuario.rol !== 'admin') return res.status(403).json({ error: 'Denegado.' });
   
   db.query("UPDATE usuarios SET rol = 'dm', solicita_dm = 0, es_dm_nuevo = 1 WHERE id = ?", [req.params.id], (err) => {
-    if (err) return res.status(500).send('Error al promover usuario.');
+    if (err) return res.status(500).send('Error al forjar el ascenso.');
     
     db.query("SELECT nombre FROM usuarios WHERE id = ?", [req.params.id], (err, result) => {
-        const nombrePromovido = result[0]?.nombre || 'Usuario';
-        registrarLog(req.usuario, 'PROMOVER_DM', `Promovió a ${nombrePromovido} a Dungeon Master.`);
+        const nombrePromovido = result[0]?.nombre || 'Desconocido';
+        registrarLog(req.usuario, 'PROMOVER_DM', `Promovió a ${nombrePromovido} al rango de Dungeon Master.`);
     });
 
     const io = req.app.get('io');
@@ -152,29 +151,29 @@ router.put('/:id/promover', verificarToken, (req, res) => {
       io.emit('actualizacion-usuarios');
       io.emit('actualizacion-solicitudes');
     }
-    res.send('¡Promoción exitosa!');
+    res.send('¡Ascenso completado!');
   });
 });
 
 router.put('/:id/rechazar-dm', verificarToken, (req, res) => {
-  if (req.usuario.rol !== 'admin') return res.status(403).json({ error: 'Acceso denegado.' });
+  if (req.usuario.rol !== 'admin') return res.status(403).json({ error: 'Denegado.' });
   
   db.query("UPDATE usuarios SET solicita_dm = 0 WHERE id = ?", [req.params.id], (err) => {
-    if (err) return res.status(500).send('Error al rechazar solicitud.');
+    if (err) return res.status(500).send('Error al rechazar la petición.');
     
     db.query("SELECT nombre FROM usuarios WHERE id = ?", [req.params.id], (err, result) => {
-        const nombreRechazado = result[0]?.nombre || 'Usuario';
-        registrarLog(req.usuario, 'RECHAZAR_DM', `Rechazó la solicitud de DM de ${nombreRechazado}.`);
+        const nombreRechazado = result[0]?.nombre || 'Desconocido';
+        registrarLog(req.usuario, 'RECHAZAR_DM', `Denegó la solicitud de DM de ${nombreRechazado}.`);
     });
 
     const io = req.app.get('io');
     if (io) io.emit('actualizacion-solicitudes');
-    res.status(200).send('Solicitud rechazada.');
+    res.status(200).send('Petición denegada.');
   });
 });
 
 router.put('/:id/rol', verificarToken, (req, res) => {
-  if (req.usuario.rol !== 'admin') return res.status(403).json({ error: 'Acceso denegado.' });
+  if (req.usuario.rol !== 'admin') return res.status(403).json({ error: 'Sin autoridad.' });
 
   const { rol } = req.body; 
   const usuarioId = req.params.id;
@@ -183,10 +182,10 @@ router.put('/:id/rol', verificarToken, (req, res) => {
     'UPDATE usuarios SET rol = ?, solicita_dm = 0, es_dm_nuevo = 0 WHERE id = ?';
 
   db.query(sqlUpdate, [rol, usuarioId], (err) => {
-    if (err) return res.status(500).json({ error: 'Error del servidor.' });
+    if (err) return res.status(500).json({ error: 'Error.' });
     
     db.query("SELECT nombre FROM usuarios WHERE id = ?", [usuarioId], (err, result) => {
-        registrarLog(req.usuario, 'CAMBIO_ROL_MANUAL', `Cambió el rol de ${result[0]?.nombre} a ${rol.toUpperCase()}.`);
+        registrarLog(req.usuario, 'CAMBIO_ROL_MANUAL', `Cambió el rango de ${result[0]?.nombre} a ${rol.toUpperCase()}.`);
     });
 
     const io = req.app.get('io');
@@ -197,7 +196,7 @@ router.put('/:id/rol', verificarToken, (req, res) => {
 
 // ✨ SENADO: PROPONER ADMIN
 router.post('/:id/proponer-admin', verificarToken, (req, res) => {
-  if (req.usuario.rol !== 'admin') return res.status(403).json({ error: 'Solo administradores.' });
+  if (req.usuario.rol !== 'admin') return res.status(403).json({ error: 'Solo admins.' });
   
   const candidatoId = req.params.id;
 
@@ -205,12 +204,12 @@ router.post('/:id/proponer-admin', verificarToken, (req, res) => {
     const nombreCandidato = userRes[0]?.nombre;
 
     db.query("INSERT INTO votaciones_admin (candidato_id, proponente_id) VALUES (?, ?)", [candidatoId, req.usuario.id], (err, result) => {
-      if (err) return res.status(500).json({ error: 'Error del servidor.' });
+      if (err) return res.status(500).json({ error: 'Error.' });
       
       const votacionId = result.insertId;
       db.query("INSERT INTO votos_admin (votacion_id, admin_id, voto) VALUES (?, ?, 'a favor')", [votacionId, req.usuario.id], (err) => {
         
-        registrarLog(req.usuario, 'PROPUESTA_SENADO', `Abrió votación para ascender a ${nombreCandidato} a Administrador.`);
+        registrarLog(req.usuario, 'PROPUESTA_SENADO', `Abrió una votación para ascender a ${nombreCandidato} a Administrador.`);
 
         const io = req.app.get('io');
         if (io) io.emit('actualizacion-senado');
@@ -222,7 +221,7 @@ router.post('/:id/proponer-admin', verificarToken, (req, res) => {
 
 // ✨ SENADO: VOTAR
 router.post('/votaciones/:id/votar', verificarToken, (req, res) => {
-  if (req.usuario.rol !== 'admin') return res.status(403).json({ error: 'Solo administradores.' });
+  if (req.usuario.rol !== 'admin') return res.status(403).json({ error: 'Solo admins.' });
 
   const votacionId = req.params.id;
   const { voto } = req.body; 
@@ -230,7 +229,6 @@ router.post('/votaciones/:id/votar', verificarToken, (req, res) => {
   db.query("INSERT INTO votos_admin (votacion_id, admin_id, voto) VALUES (?, ?, ?)", [votacionId, req.usuario.id, voto], (err) => {
     if (err) return res.status(500).json({ error: 'Error al votar.' });
 
-    // Registro del voto
     db.query("SELECT c.nombre FROM votaciones_admin v JOIN usuarios c ON v.candidato_id = c.id WHERE v.id = ?", [votacionId], (err, resV) => {
         registrarLog(req.usuario, 'VOTO_SENADO', `Votó "${voto}" en la propuesta de ${resV[0]?.nombre}.`);
     });
@@ -265,99 +263,72 @@ router.post('/votaciones/:id/votar', verificarToken, (req, res) => {
   });
 });
 
-// ✨ RUTA: RECUPERACIÓN DE CONTRASEÑA POR EMAIL
-router.post('/olvide-password', (req, res) => {
-  const { email } = req.body;
-  if (!email) return res.status(400).json({ error: 'Debes ingresar un email.' });
+// ✨ HARD RESET DE CONTRASEÑA (NUEVO - SOLO PARA ADMINS)
+router.put('/:id/hard-reset', verificarToken, async (req, res) => {
+  if (req.usuario.rol !== 'admin') {
+    return res.status(403).json({ error: 'Solo los líderes del gremio tienen este poder.' });
+  }
 
-  db.query('SELECT * FROM usuarios WHERE email = ?', [email], (err, results) => {
-    if (err) return res.status(500).json({ error: 'Error del servidor.' });
+  const defaultPassword = 'Aventurero2026!'; // Contraseña por defecto
+
+  try {
+    const hash = await bcrypt.hash(defaultPassword, 10);
     
-    if (results.length === 0) {
-      return res.status(200).json({ mensaje: 'Si el correo existe, se enviaron instrucciones.' });
-    }
-
-    crypto.randomBytes(20, (err, buffer) => {
-      if (err) return res.status(500).json({ error: 'Error al generar token de seguridad.' });
+    db.query("UPDATE usuarios SET password = ?, reset_password_token = NULL, reset_password_expires = NULL WHERE id = ?", [hash, req.params.id], (err) => {
+      if (err) return res.status(500).json({ error: 'Error al forzar la contraseña.' });
       
-      const token = buffer.toString('hex');
-      const expires = Date.now() + 3600000; // 1 hora
+      db.query("SELECT nombre FROM usuarios WHERE id = ?", [req.params.id], (err, result) => {
+          const nombreReseteado = result[0]?.nombre || 'Desconocido';
+          registrarLog(req.usuario, 'HARD_RESET_PASS', `Hizo un hard reset a la contraseña de ${nombreReseteado}.`);
+      });
 
-      db.query('UPDATE usuarios SET reset_password_token = ?, reset_password_expires = ? WHERE email = ?', [token, expires, email], (err) => {
-        if (err) return res.status(500).json({ error: 'Error al guardar token.' });
-
-        const resetLink = `http://localhost:3000/reset-password/${token}`;
-        console.log(`🔑 Token de reseteo generado: ${resetLink}`);
-        
-        res.status(200).json({ mensaje: 'Si el correo existe, se enviaron instrucciones.' });
+      res.status(200).json({ 
+        mensaje: 'Contraseña forjada con éxito', 
+        temporal: defaultPassword 
       });
     });
-  });
+  } catch (error) {
+    res.status(500).json({ error: 'Error interno en la magia del servidor.' });
+  }
 });
 
-// ✨ RUTA FINAL (Restablecer Contraseña)
-router.post('/reset-password/:token', async (req, res) => {
-  const { token } = req.params;
-  const { newPassword } = req.body;
-
-  if (!newPassword) return res.status(400).json({ error: 'Debes ingresar una nueva contraseña.' });
-
-  db.query('SELECT * FROM usuarios WHERE reset_password_token = ? AND reset_password_expires > ?', [token, Date.now()], async (err, results) => {
-    if (err) return res.status(500).json({ error: 'Error del servidor.' });
-    if (results.length === 0) return res.status(400).json({ error: 'El token es inválido o expiró.' });
-
-    const user = results[0];
-    try {
-      const hash = await bcrypt.hash(newPassword, 10);
-      db.query('UPDATE usuarios SET password = ?, reset_password_token = NULL, reset_password_expires = NULL WHERE id = ?', [hash, user.id], (err) => {
-        if (err) return res.status(500).json({ error: 'Error al actualizar contraseña.' });
-        
-        registrarLog(user, 'RESET_PASSWORD', 'Actualizó su contraseña.');
-        res.status(200).json({ mensaje: '¡Contraseña actualizada!' });
-      });
-    } catch (error) {
-      res.status(500).json({ error: 'Error interno del servidor.' });
-    }
-  });
-});
-
-// (Notificaciones y censo)
+// NOTIFICACIONES Y CENSO
 router.get('/notificaciones', verificarToken, (req, res) => {
-  const sql = "SELECT id, mensaje, fecha FROM notificaciones WHERE usuario_id = ? AND leida = FALSE ORDER BY fecha DESC";
-  db.query(sql, [req.usuario.id], (err, resultados) => {
-    if (err) return res.status(500).json({ error: 'Error del servidor.' });
-    res.json(resultados);
-  });
-});
-
-router.put('/notificaciones/:id/leida', verificarToken, (req, res) => {
-  const sql = "UPDATE notificaciones SET leida = TRUE WHERE id = ? AND usuario_id = ?";
-  db.query(sql, [req.params.id, req.usuario.id], (err) => {
-    if (err) return res.status(500).json({ error: 'Error del servidor.' });
-    res.json({ mensaje: 'Notificación leída.' });
-  });
-});
-
-router.get('/', verificarToken, (req, res) => {
-  if (req.usuario.rol !== 'admin') return res.status(403).json({ error: 'Acceso denegado.' });
-  const page = parseInt(req.query.page) || 1;
-  const limit = parseInt(req.query.limit) || 10;
-  const offset = (page - 1) * limit;
-  db.query("SELECT COUNT(*) AS total FROM usuarios", (err, countResult) => {
-    if (err) return res.status(500).json({ error: 'Error del servidor.' });
-    const sql = `SELECT id, nombre, nombre_completo, email, rol, avatar, solicita_dm, es_dm_nuevo FROM usuarios ORDER BY nombre ASC LIMIT ${limit} OFFSET ${offset}`;
-    db.query(sql, (err, resultados) => {
-      if (err) return res.status(500).json({ error: 'Error del servidor.' });
-      res.json({ datos: resultados, paginacion: { paginaActual: page, totalPaginas: Math.ceil(countResult[0].total / limit) } });
+    const sql = "SELECT id, mensaje, fecha FROM notificaciones WHERE usuario_id = ? AND leida = FALSE ORDER BY fecha DESC";
+    db.query(sql, [req.usuario.id], (err, resultados) => {
+      if (err) return res.status(500).json({ error: 'Error.' });
+      res.json(resultados);
     });
   });
-});
-
-router.get('/yo', verificarToken, (req, res) => {
-  db.query("SELECT id, nombre, nombre_completo, email, rol, avatar, solicita_dm, es_dm_nuevo FROM usuarios WHERE id = ?", [req.usuario.id], (err, resultados) => {
-    if (err || resultados.length === 0) return res.status(404).json({ error: 'No encontrado.' });
-    res.json(resultados[0]);
+  
+  router.put('/notificaciones/:id/leida', verificarToken, (req, res) => {
+    const sql = "UPDATE notificaciones SET leida = TRUE WHERE id = ? AND usuario_id = ?";
+    db.query(sql, [req.params.id, req.usuario.id], (err) => {
+      if (err) return res.status(500).json({ error: 'Error.' });
+      res.json({ mensaje: 'Leída.' });
+    });
   });
-});
+  
+  router.get('/', verificarToken, (req, res) => {
+    if (req.usuario.rol !== 'admin') return res.status(403).json({ error: 'Denegado.' });
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 10;
+    const offset = (page - 1) * limit;
+    db.query("SELECT COUNT(*) AS total FROM usuarios", (err, countResult) => {
+      if (err) return res.status(500).json({ error: 'Error.' });
+      const sql = `SELECT id, nombre, nombre_completo, email, rol, avatar, solicita_dm, es_dm_nuevo FROM usuarios ORDER BY nombre ASC LIMIT ${limit} OFFSET ${offset}`;
+      db.query(sql, (err, resultados) => {
+        if (err) return res.status(500).json({ error: 'Error.' });
+        res.json({ datos: resultados, paginacion: { paginaActual: page, totalPaginas: Math.ceil(countResult[0].total / limit) } });
+      });
+    });
+  });
+  
+  router.get('/yo', verificarToken, (req, res) => {
+    db.query("SELECT id, nombre, nombre_completo, email, rol, avatar, solicita_dm, es_dm_nuevo FROM usuarios WHERE id = ?", [req.usuario.id], (err, resultados) => {
+      if (err || resultados.length === 0) return res.status(404).json({ error: 'No encontrado.' });
+      res.json(resultados[0]);
+    });
+  });
 
 module.exports = router;
