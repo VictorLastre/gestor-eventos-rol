@@ -173,7 +173,7 @@ function Login(props) {
             </label>
             <div className="relative">
               <input 
-                type="password"
+                type={mostrarPassword ? "text" : "password"}
                 className="w-full bg-zinc-950/50 border border-zinc-800 rounded-2xl py-4 pl-5 pr-14 text-white placeholder-zinc-700 focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500/50 transition-all shadow-inner"
                 placeholder="••••••••"
                 value={password}
