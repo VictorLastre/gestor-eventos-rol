@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import Swal from 'sweetalert2'; 
 import Partida from './Partida'; 
 import CrearMesa from './CrearMesa'; 
+import CrearMesaJuego from './CrearMesaJuego'; // ✨ IMPORTAMOS EL NUEVO FORMULARIO
 import FormularioEscape from './FormularioEscape'; 
 import TarjetaEscape from './TarjetaEscape'; 
 import { fetchProtegido } from '../utils/api'; 
@@ -15,13 +16,17 @@ function Eventos() {
   
   const [vistaActiva, setVistaActiva] = useState('rol'); 
   const [escapesDelEvento, setEscapesDelEvento] = useState([]);
+  
   const [mostrarFormularioMesa, setMostrarFormularioMesa] = useState(false);
   const [mostrarFormularioEscape, setMostrarFormularioEscape] = useState(false);
+  const [mostrarFormularioJuegoMesa, setMostrarFormularioJuegoMesa] = useState(false); // ✨ NUEVO ESTADO
   
   const carruselEventosRef = useRef(null);
   const carruselPartidasRef = useRef(null); 
+  const carruselJuegosRef = useRef(null); // ✨ REF PARA EL CARRUSEL DE JUEGOS
 
   const usuarioGuardado = JSON.parse(localStorage.getItem('usuario'));
+  // Los DMs y Admins pueden crear mesas de rol.
   const esDungeonMaster = usuarioGuardado && (usuarioGuardado.rol === 'dm' || usuarioGuardado.rol === 'admin');
   const esAdmin = usuarioGuardado && usuarioGuardado.rol === 'admin';
 
@@ -67,6 +72,7 @@ function Eventos() {
       cargarEventos();
     });
 
+    // ✨ actualizacion-mesas ahora maneja tanto Rol como Juegos de Mesa!
     socket.on('actualizacion-mesas', (data) => {
       setEventoSeleccionado(estadoPrevio => {
         if (estadoPrevio && estadoPrevio.id === data.eventoId) {
@@ -139,6 +145,7 @@ function Eventos() {
     setVistaActiva('rol'); 
     setMostrarFormularioMesa(false);
     setMostrarFormularioEscape(false);
+    setMostrarFormularioJuegoMesa(false);
     cargarMesasDelEvento(evento.id);
     cargarEscapesDelEvento(evento.id); 
   };
@@ -150,6 +157,7 @@ function Eventos() {
   const scrollEventosDer = () => carruselEventosRef.current?.scrollBy({ left: 400, behavior: 'smooth' });
 
   if (eventoSeleccionado) {
+    // Si ya está en alguna mesa de Rol o Juegos de Mesa como creador o jugador
     const yaParticipa = partidasDelEvento.some(p => p.dungeon_master_id === usuarioGuardado?.id || p.anotadoInicialmente === 1);
     
     const tzOffset = -3 * 60 * 60 * 1000;
@@ -169,20 +177,23 @@ function Eventos() {
       inscripcionesCerradas = ahora >= limiteInscripcion;
     }
 
-    // ✨ MAGIA DE ORDENAMIENTO: Novatos primero, luego los que tienen más cupos vacíos
-    const mesasOrdenadas = [...partidasDelEvento].sort((a, b) => {
-      // 1. Prioridad Absoluta: Mesas aptas para novatos
+    // ✨ DIVIDIMOS LAS PARTIDAS SEGÚN SU ETIQUETA
+    const mesasDeRol = partidasDelEvento.filter(p => p.etiqueta !== 'Juegos de Mesa');
+    const mesasDeJuego = partidasDelEvento.filter(p => p.etiqueta === 'Juegos de Mesa');
+
+    // ✨ ORDENAMIENTO (Novatos primero, luego las más vacías)
+    const ordenamientoMesas = (a, b) => {
       if (a.apta_novatos && !b.apta_novatos) return -1;
       if (!a.apta_novatos && b.apta_novatos) return 1;
-
-      // 2. Ordenar por la cantidad de cupos disponibles (de mayor a menor)
       const libresA = Math.max(0, (a.cupo || 0) - (a.jugadoresIniciales || 0));
       const libresB = Math.max(0, (b.cupo || 0) - (b.jugadoresIniciales || 0));
       return libresB - libresA; 
-    });
+    };
+
+    const mesasOrdenadas = [...mesasDeRol].sort(ordenamientoMesas);
+    const juegosOrdenados = [...mesasDeJuego].sort(ordenamientoMesas);
 
     return (
-      // ✨ CAMBIAMOS max-w-6xl POR max-w-7xl PARA ENSANCHAR LA TABERNA
       <div className="max-w-7xl mx-auto p-4 md:p-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
         <button onClick={() => setEventoSeleccionado(null)} className="group flex items-center gap-2 text-zinc-500 hover:text-emerald-400 transition-colors font-black text-[10px] uppercase tracking-[0.3em] mb-8">
           <span className="group-hover:-translate-x-1 transition-transform">←</span> Volver al Tablón
@@ -240,6 +251,16 @@ function Eventos() {
             >
               <span className="text-lg">🔐</span> Escape Rooms
             </button>
+            <button 
+              onClick={() => setVistaActiva('juegos')} 
+              className={`flex justify-center items-center gap-3 px-8 py-4 font-black text-[10px] md:text-xs uppercase tracking-[0.2em] transition-all rounded-full ${
+                vistaActiva === 'juegos' 
+                  ? 'bg-gradient-to-r from-rose-500 to-pink-600 text-white shadow-lg shadow-rose-500/30 transform scale-105' 
+                  : 'text-zinc-500 hover:text-white hover:bg-zinc-900'
+              }`}
+            >
+              <span className="text-lg">🃏</span> Juegos de Mesa
+            </button>
           </div>
         </div>
 
@@ -293,7 +314,6 @@ function Eventos() {
 
             {mesasOrdenadas.length > 0 ? (
               <div ref={carruselPartidasRef} className="flex gap-6 overflow-x-auto pb-12 scrollbar-hide snap-x" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
-                {/* ✨ AQUÍ RENDERIZAMOS CON EL NUEVO ORDEN Y EL NUEVO TAMAÑO (3 COMPLETAS) */}
                 {mesasOrdenadas.map(p => (
                   <div key={p.id} className="w-[85vw] sm:w-[350px] lg:w-[calc(33.333%-1rem)] flex-none snap-center">
                     <Partida 
@@ -377,6 +397,78 @@ function Eventos() {
             )}
           </div>
         )}
+
+        {/* ========================================= */}
+        {/* 🃏 VISTA: JUEGOS DE MESA                  */}
+        {/* ========================================= */}
+        {vistaActiva === 'juegos' && (
+          <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
+            {/* Cualquier usuario logueado (incluido 'aventurero') puede convocar si no participa en otra cosa */}
+            {usuarioGuardado && (eventoSeleccionado.estado !== 'Finalizado' && eventoSeleccionado.estado !== 'Suspendido') && !yaParticipa && (
+              <div className="mb-12">
+                {!convocatoriaCerrada ? (
+                  <>
+                    <div className="flex justify-center w-full">
+                      <button 
+                        onClick={() => setMostrarFormularioJuegoMesa(!mostrarFormularioJuegoMesa)}
+                        className={`w-full max-w-md py-5 rounded-full font-black transition-all duration-300 flex items-center justify-center gap-3 tracking-widest text-xs md:text-sm uppercase transform hover:-translate-y-1 ${
+                          mostrarFormularioJuegoMesa 
+                            ? 'bg-zinc-900 text-zinc-500 border border-zinc-800 hover:text-white hover:bg-red-500/20 hover:border-red-500/50' 
+                            : 'bg-gradient-to-r from-rose-500 to-pink-600 text-white shadow-lg shadow-rose-500/20 hover:shadow-rose-500/40'
+                        }`}
+                      >
+                        {mostrarFormularioJuegoMesa ? '✕ Cancelar Convocatoria' : '🃏 Convocar Juego de Mesa'}
+                      </button>
+                    </div>
+
+                    {mostrarFormularioJuegoMesa && (
+                      <div className="mt-8 p-1 bg-gradient-to-b from-rose-500/20 to-transparent rounded-[2.5rem]">
+                        <div className="bg-zinc-900 p-8 rounded-[2.5rem] border border-zinc-800 shadow-3xl">
+                          <CrearMesaJuego idEvento={eventoSeleccionado.id} alCrearMesa={() => {setMostrarFormularioJuegoMesa(false);}} />
+                        </div>
+                      </div>
+                    )}
+                  </>
+                ) : (
+                  <div className="bg-rose-500/10 border border-rose-500/30 p-8 rounded-[2.5rem] flex flex-col items-center justify-center text-center shadow-inner">
+                    <span className="text-3xl mb-3">🃏</span>
+                    <h4 className="text-rose-500 font-black uppercase tracking-widest text-sm mb-2">Convocatoria Cerrada</h4>
+                    <p className="text-zinc-400 text-sm italic max-w-lg">Ya nos encontramos en la fecha del evento. La organización está finalizando los preparativos logísticos y no es posible registrar nuevas mesas.</p>
+                  </div>
+                )}
+              </div>
+            )}
+
+            <div className="flex items-center justify-between mb-8">
+              <h3 className="text-2xl font-black text-white uppercase tracking-tighter italic">Juegos de la Jornada</h3>
+              <div className="flex gap-2">
+                <button onClick={() => carruselJuegosRef.current?.scrollBy({left: -350, behavior: 'smooth'})} className="w-10 h-10 bg-zinc-900 border border-zinc-800 rounded-full flex items-center justify-center hover:bg-zinc-800 text-zinc-500 transition-colors">‹</button>
+                <button onClick={() => carruselJuegosRef.current?.scrollBy({left: 350, behavior: 'smooth'})} className="w-10 h-10 bg-zinc-900 border border-zinc-800 rounded-full flex items-center justify-center hover:bg-zinc-800 text-zinc-500 transition-colors">›</button>
+              </div>
+            </div>
+
+            {juegosOrdenados.length > 0 ? (
+              <div ref={carruselJuegosRef} className="flex gap-6 overflow-x-auto pb-12 scrollbar-hide snap-x" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
+                {juegosOrdenados.map(p => (
+                  <div key={p.id} className="w-[85vw] sm:w-[350px] lg:w-[calc(33.333%-1rem)] flex-none snap-center">
+                    <Partida 
+                      {...p} 
+                      eventoEsPasado={eventoSeleccionado.estado === 'Finalizado' || eventoSeleccionado.estado === 'Suspendido'} 
+                      esAdmin={esAdmin} 
+                      esMiMesa={usuarioGuardado?.id === p.dungeon_master_id} 
+                      inscripcionesCerradas={inscripcionesCerradas} 
+                    />
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="text-center py-24 bg-zinc-900/30 border-2 border-dashed border-zinc-800 rounded-[2.5rem]">
+                <p className="text-zinc-600 font-black uppercase tracking-widest text-xs">No hay juegos de mesa registrados para este evento</p>
+              </div>
+            )}
+          </div>
+        )}
+
       </div>
     );
   }
