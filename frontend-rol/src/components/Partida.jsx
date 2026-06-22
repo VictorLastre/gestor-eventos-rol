@@ -26,12 +26,12 @@ const CONFIG_TEMAS = {
   "Rol Infantil / Familiar": { color: "text-sky-400", bg: "bg-sky-500/10", border: "border-sky-500/30", hoverBorder: "hover:border-sky-500/30", hoverText: "group-hover:text-sky-400", icon: "🧸" },
   "Comedia": { color: "text-yellow-300", bg: "bg-yellow-500/10", border: "border-yellow-500/30", hoverBorder: "hover:border-yellow-500/30", hoverText: "group-hover:text-yellow-300", icon: "🎭" },
   "Escape Room": { color: "text-lime-400", bg: "bg-lime-500/10", border: "border-lime-500/30", hoverBorder: "hover:border-lime-500/30", hoverText: "group-hover:text-lime-400", icon: "🗝️" },
-  "Juegos de Mesa": { color: "text-rose-500", bg: "bg-rose-500/10", border: "border-rose-500/30", hoverBorder: "hover:border-rose-500/30", hoverText: "group-hover:text-rose-500", icon: "🃏" } // ✨ AÑADIDO A LA CONFIGURACIÓN
+  "Juegos de Mesa": { color: "text-rose-500", bg: "bg-rose-500/10", border: "border-rose-500/30", hoverBorder: "hover:border-rose-500/30", hoverText: "group-hover:text-rose-500", icon: "🃏" } 
 };
 
 function Partida(props) {
   const tema = CONFIG_TEMAS[props.etiqueta] || CONFIG_TEMAS['Fantasía Medieval'];
-  const esJuegoMesa = props.etiqueta === 'Juegos de Mesa'; // ✨ FLAG IMPORTANTE
+  const esJuegoMesa = props.etiqueta === 'Juegos de Mesa'; 
 
   const cantJugadores = props.jugadoresIniciales ?? props.anotados ?? props.jugadores_anotados ?? 0;
   const yaEstaAnotado = Boolean(props.anotadoInicialmente || props.estoy_anotado || false);
@@ -49,13 +49,15 @@ function Partida(props) {
     titulo: props.titulo || '',
     descripcion: props.descripcion || props.description || '',
     requisitos: props.requisitos || '',
-    sistema: props.sistema || '', // ✨ Añadido para el input directo de Juegos de Mesa
+    sistema: props.sistema || '', 
     sistema_id: props.sistema_id || '', 
     cupo: props.cupo || 4,
     turno: props.turno || 'Tarde',
     etiqueta: props.etiqueta || 'Fantasía Medieval',
     apta_novatos: Boolean(props.apta_novatos),
-    materiales_pedidos: props.materiales_pedidos || '' 
+    materiales_pedidos: props.materiales_pedidos || '',
+    es_privada: Boolean(props.es_privada), // ✨ ESTADO PARA EDICIÓN
+    codigo_privado: props.codigo_privado || '' // ✨ ESTADO PARA EDICIÓN
   });
 
   const Toast = Swal.mixin({
@@ -68,7 +70,6 @@ function Partida(props) {
       document.body.style.overflow = 'hidden';
       if (modalAbierto) cargarListaJugadores();
       
-      // ✨ Solo consultamos los sistemas de rol si NO es un Juego de Mesa
       if (modoEdicion && sistemas.length === 0 && !esJuegoMesa) {
         fetch('/api/sistemas')
           .then(res => res.json())
@@ -118,12 +119,46 @@ function Partida(props) {
   const soyElMaster = props.esMiMesa; 
   const soyAdmin = props.esAdmin;
 
+  // ✨ INSCRIPCIÓN CON SOPORTE PARA MESAS PRIVADAS
   const alternarInscripcion = async (e) => {
     e.stopPropagation(); 
     const metodo = anotado ? 'DELETE' : 'POST';
+    let payload = null;
+
+    // Si intenta unirse y la mesa es privada, pedimos la clave
+    if (metodo === 'POST' && props.es_privada) {
+      const { value: claveIngresada } = await Swal.fire({
+        title: 'Mesa Privada',
+        text: 'Ingresa la contraseña secreta dictada por el Organizador:',
+        input: 'password',
+        inputPlaceholder: 'Contraseña...',
+        background: '#09090b',
+        color: '#fff',
+        showCancelButton: true,
+        confirmButtonColor: '#a855f7', // Color purpura
+        cancelButtonColor: '#3f3f46',
+        confirmButtonText: 'Desbloquear y Unirse',
+        cancelButtonText: 'Cancelar',
+        customClass: { popup: 'border border-purple-500/30 rounded-[2rem]' }
+      });
+
+      // Si el usuario cancela o no pone nada, abortamos
+      if (!claveIngresada) return;
+      
+      payload = { codigo_privado: claveIngresada };
+    }
 
     try {
-      const res = await fetchProtegido(`/api/partidas/${props.id}/inscripciones`, { method: metodo });
+      const opcionesFetch = { method: metodo };
+
+      // Si tenemos un payload (la clave), la mandamos en el body
+      if (payload) {
+        opcionesFetch.headers = { 'Content-Type': 'application/json' };
+        opcionesFetch.body = JSON.stringify(payload);
+      }
+
+      const res = await fetchProtegido(`/api/partidas/${props.id}/inscripciones`, opcionesFetch);
+      
       if (res.ok) {
         setAnotado(!anotado);
         setJugadoresAnotados(anotado ? jugadoresAnotados - 1 : jugadoresAnotados + 1);
@@ -161,14 +196,14 @@ function Partida(props) {
 
     let paqueteFinal;
 
-    // ✨ Tratamiento especial para Juegos de Mesa vs Rol
     if (esJuegoMesa) {
         if (!datosEdicion.sistema.trim()) {
             return Swal.fire({ title: 'Aviso', text: 'Debes indicar el juego de mesa.', icon: 'warning', background: '#09090b', color: '#fff' });
         }
         paqueteFinal = {
             ...datosEdicion,
-            sistema_id: null
+            sistema_id: null,
+            codigo_privado: datosEdicion.es_privada ? datosEdicion.codigo_privado : null
         };
     } else {
         if (!datosEdicion.sistema_id) {
@@ -180,7 +215,8 @@ function Partida(props) {
         paqueteFinal = {
           ...datosEdicion,
           sistema: nombreSistema,             
-          sistema_id: datosEdicion.sistema_id 
+          sistema_id: datosEdicion.sistema_id,
+          codigo_privado: datosEdicion.es_privada ? datosEdicion.codigo_privado : null
         };
     }
 
@@ -206,6 +242,15 @@ function Partida(props) {
     e.stopPropagation();
     setModoEdicion(true);
     setModalAbierto(false); 
+  };
+
+  const generarClaveAleatoriaEdicion = () => {
+    const caracteres = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+    let clave = '';
+    for (let i = 0; i < 6; i++) {
+      clave += caracteres.charAt(Math.floor(Math.random() * caracteres.length));
+    }
+    setDatosEdicion({...datosEdicion, codigo_privado: clave});
   };
 
   // Lógica de colores por disponibilidad
@@ -236,18 +281,23 @@ function Partida(props) {
         <div className="flex justify-between items-start mb-6 relative z-10 gap-3">
           <div className="flex-1 min-w-0 space-y-3 pr-2">
             <div className="flex flex-wrap gap-2">
+              {/* ✨ ETIQUETA DE MESA PRIVADA (NUEVO) */}
+              {Boolean(props.es_privada) && (
+                <span className="text-[9px] font-black text-purple-900 bg-purple-400 uppercase tracking-widest px-3 py-1 rounded-full shadow-[0_0_12px_rgba(168,85,247,0.5)] flex items-center gap-1.5 whitespace-nowrap animate-pulse">
+                  🔒 Privada
+                </span>
+              )}
+
               {Boolean(props.apta_novatos) && (
-                <span className={`text-[9px] font-black ${esJuegoMesa ? 'text-emerald-900 bg-emerald-400' : 'text-emerald-950 bg-emerald-400'} uppercase tracking-widest px-3 py-1 rounded-full shadow-[0_0_12px_rgba(52,211,153,0.5)] flex items-center gap-1.5 animate-pulse whitespace-nowrap`}>
+                <span className={`text-[9px] font-black ${esJuegoMesa ? 'text-emerald-900 bg-emerald-400' : 'text-emerald-950 bg-emerald-400'} uppercase tracking-widest px-3 py-1 rounded-full shadow-[0_0_12px_rgba(52,211,153,0.5)] flex items-center gap-1.5 whitespace-nowrap`}>
                   🌱 {esJuegoMesa ? 'Enseña a jugar' : 'Novatos'}
                 </span>
               )}
-              {/* ✨ OCULTAMOS LA ETIQUETA SI ES UN JUEGO DE MESA */}
               {props.etiqueta && !esJuegoMesa && (
                 <span className={`text-[9px] font-black uppercase tracking-widest px-3 py-1 rounded-full border flex items-center gap-1.5 whitespace-nowrap ${tema.color} ${tema.bg} ${tema.border}`}>
                   {tema.icon} {props.etiqueta}
                 </span>
               )}
-              {/* ✨ Para juegos de mesa mostramos el Joker 🃏 en vez del dado 🎲 */}
               <span className="text-[9px] font-black text-zinc-300 uppercase tracking-widest bg-zinc-800 px-3 py-1 rounded-full border border-zinc-700 shadow-inner whitespace-nowrap">
                 {esJuegoMesa ? '🃏' : '🎲'} {props.sistema || 'Sistema Desconocido'}
               </span>
@@ -327,7 +377,7 @@ function Partida(props) {
                     : 'bg-emerald-600 text-white border border-emerald-50 hover:bg-emerald-500 shadow-emerald-900/40 active:scale-95'
               }`}
             >
-              {anotado ? 'Abandonar' : props.inscripcionesCerradas ? 'Cerrado' : estaLlena ? 'Llena' : 'Alistarse'}
+              {anotado ? 'Abandonar' : props.inscripcionesCerradas ? 'Cerrado' : estaLlena ? 'Llena' : (props.es_privada ? '🔒 Alistarse' : 'Alistarse')}
             </button>
           )}
           <div className={`px-6 shrink-0 flex items-center justify-center bg-zinc-950 text-zinc-500 rounded-2xl border transition-all ${soyElMaster || props.eventoEsPasado ? 'w-full py-4 text-xs tracking-widest hover:text-white hover:bg-zinc-800 uppercase font-black border-zinc-800 cursor-pointer' : 'border-zinc-800/80 group-hover:border-zinc-700 group-hover:text-zinc-300'}`}>
@@ -356,7 +406,6 @@ function Partida(props) {
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                {/* ✨ OCULTAMOS EL GÉNERO SI ES JUEGO DE MESA */}
                 {!esJuegoMesa && (
                   <div className="flex flex-col gap-2">
                     <label className="text-[10px] font-black text-zinc-500 uppercase tracking-widest ml-1">Género</label>
@@ -384,7 +433,6 @@ function Partida(props) {
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                {/* ✨ SISTEMA COMO INPUT SI ES JUEGO DE MESA, O COMO SELECT SI ES ROL */}
                 {esJuegoMesa ? (
                   <div className="flex flex-col gap-2">
                     <label className="text-[10px] font-black text-zinc-500 uppercase tracking-widest ml-1">Juego a jugar</label>
@@ -427,6 +475,48 @@ function Partida(props) {
                     <option value="Madrugada" className="bg-zinc-900">Madrugada</option>
                   </select>
                 </div>
+              </div>
+
+              {/* ✨ NUEVO: CONFIGURACIÓN DE MESA PRIVADA EN EDICIÓN ✨ */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-2 border-t border-zinc-800/50">
+                <div 
+                  onClick={() => setDatosEdicion({...datosEdicion, es_privada: !datosEdicion.es_privada})}
+                  className={`cursor-pointer p-4 rounded-2xl border-2 transition-all flex items-center justify-between select-none h-[60px] ${
+                    datosEdicion.es_privada 
+                    ? 'bg-purple-500/10 border-purple-500/50 shadow-[0_0_20px_rgba(168,85,247,0.15)]' 
+                    : 'bg-zinc-950 border-zinc-800 hover:border-zinc-700'
+                  }`}
+                >
+                  <div className="flex items-center gap-3">
+                    <span className={`text-xl ${datosEdicion.es_privada ? 'opacity-100' : 'opacity-30'}`}>🔒</span>
+                    <div>
+                      <h4 className={`font-black uppercase tracking-widest text-[11px] ${datosEdicion.es_privada ? 'text-purple-400' : 'text-zinc-500'}`}>Mesa Privada</h4>
+                    </div>
+                  </div>
+                  <div className={`w-5 h-5 rounded-md flex items-center justify-center border-2 transition-colors ${datosEdicion.es_privada ? 'bg-purple-500 border-purple-500 text-black' : 'border-zinc-700'}`}>
+                    {datosEdicion.es_privada && <span className="font-black text-xs">✓</span>}
+                  </div>
+                </div>
+
+                {datosEdicion.es_privada && (
+                  <div className="flex gap-2 animate-in fade-in zoom-in duration-300">
+                    <input 
+                      type="text" 
+                      placeholder="Contraseña Secreta" 
+                      value={datosEdicion.codigo_privado} 
+                      onChange={e => setDatosEdicion({...datosEdicion, codigo_privado: e.target.value})} 
+                      className="w-full bg-purple-500/5 border border-purple-500/30 rounded-2xl py-4 px-6 text-white focus:border-purple-500 outline-none font-bold placeholder:text-purple-900/50 shadow-inner h-[60px]"
+                    />
+                    <button 
+                      type="button" 
+                      onClick={generarClaveAleatoriaEdicion}
+                      className="w-[60px] h-[60px] shrink-0 bg-purple-500/10 border border-purple-500/50 text-purple-400 rounded-2xl flex items-center justify-center hover:bg-purple-500 hover:text-white transition-all shadow-[0_0_15px_rgba(168,85,247,0.2)]"
+                      title="Generar Clave Mágica"
+                    >
+                      🪄
+                    </button>
+                  </div>
+                )}
               </div>
 
               <div className="space-y-2 mt-4">
@@ -485,12 +575,18 @@ function Partida(props) {
 
             <div className="relative z-10 pt-4 md:pt-0">
               <div className="flex flex-wrap gap-2 mb-6">
+                {/* ✨ ETIQUETA DE MESA PRIVADA EN EL MODAL (NUEVO) */}
+                {Boolean(props.es_privada) && (
+                  <span className="text-[10px] font-black text-purple-950 uppercase tracking-widest bg-purple-400 px-3 py-1.5 rounded-full shadow-[0_0_15px_rgba(168,85,247,0.4)] flex items-center gap-1.5 animate-pulse">
+                    🔒 Mesa Privada
+                  </span>
+                )}
+
                 {Boolean(props.apta_novatos) && (
                   <span className="text-[10px] font-black text-emerald-950 uppercase tracking-widest bg-emerald-400 px-3 py-1.5 rounded-full shadow-[0_0_15px_rgba(52,211,153,0.4)] flex items-center gap-1.5">
                     🌱 {esJuegoMesa ? 'Enseña a jugar' : 'Apta Novatos'}
                   </span>
                 )}
-                {/* ✨ OCULTAMOS LA ETIQUETA SI ES UN JUEGO DE MESA */}
                 {props.etiqueta && !esJuegoMesa && (
                   <span className={`text-[10px] font-black uppercase tracking-widest px-3 py-1.5 rounded-full border flex items-center gap-1.5 ${tema.color} ${tema.bg} ${tema.border}`}>
                     {tema.icon} {props.etiqueta}
@@ -612,7 +708,7 @@ function Partida(props) {
                           : 'bg-emerald-600 text-white hover:bg-emerald-500 shadow-emerald-900/40 border border-emerald-50 active:scale-95'
                     }`}
                   >
-                    {anotado ? 'Abandonar Expedición' : props.inscripcionesCerradas ? 'Inscripciones Cerradas' : estaLlena ? 'Mesa Llena' : 'Firmar el Contrato (Unirse)'}
+                    {anotado ? 'Abandonar Expedición' : props.inscripcionesCerradas ? 'Inscripciones Cerradas' : estaLlena ? 'Mesa Llena' : (props.es_privada ? '🔒 Desbloquear y Unirse' : 'Firmar el Contrato (Unirse)')}
                   </button>
                 )}
                 <button 
