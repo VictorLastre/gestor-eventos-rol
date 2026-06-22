@@ -88,7 +88,7 @@ router.get('/:id/partidas', verificarToken, (req, res) => {
   const sql = `
     SELECT 
       p.id, p.evento_id, p.dungeon_master_id, p.titulo, p.descripcion, p.requisitos, 
-      p.sistema_id, s.nombre AS sistema,
+      p.sistema, p.sistema_id, s.nombre AS sistema_db_nombre,
       p.cupo, p.turno, p.estado, p.etiqueta, p.apta_novatos, p.materiales_pedidos,
       u.nombre AS dmNombre, 
       (SELECT COUNT(*) FROM inscripciones WHERE partida_id = p.id) AS jugadoresIniciales,
@@ -110,62 +110,111 @@ router.get('/:id/partidas', verificarToken, (req, res) => {
       console.error(err);
       return res.status(500).json({ error: 'Error al consultar las mesas.' });
     }
-    res.json(resultados);
+    
+    // Hacemos que si hay un sistema_id, mande el nombre de la BD, si no, que mande el string libre
+    const formateados = resultados.map(r => ({
+      ...r,
+      sistema: r.sistema_db_nombre || r.sistema
+    }));
+
+    res.json(formateados);
   });
 });
 
-// 4. Crear una mesa en un evento
+// 4. Crear una mesa en un evento (✨ ACTUALIZADO PARA JUEGOS DE MESA Y SEGURIDAD MÁXIMA)
 router.post('/:id/partidas', verificarToken, (req, res) => {
-  if (req.usuario.rol === 'jugador') return res.status(403).json({ error: 'Solo DMs y Admins pueden crear mesas.' });
-  
   const eventoId = req.params.id;
   const usuarioId = req.usuario.id;
+  const rolUsuario = req.usuario.rol;
+  
+  const { titulo, descripcion, requisitos, sistema, sistema_id, cupo, turno, etiqueta, apta_novatos, materiales_pedidos } = req.body;
 
+  // ✨ VALIDACIÓN DEL TIPO DE MESA Y ROL ✨
+  const esOrganizadorValido = rolUsuario === 'dm' || rolUsuario === 'admin';
+  const esMesaJuegoValida = (rolUsuario === 'jugador' || rolUsuario === 'aventurero') && etiqueta === 'Juegos de Mesa';
+
+  if (!esOrganizadorValido && !esMesaJuegoValida) {
+    return res.status(403).json({ 
+      error: 'Solo los Directores de Juego pueden convocar aventuras de Rol. Como Jugador, solo puedes organizar Juegos de Mesa.' 
+    });
+  }
+
+  // ✨ RESTRICCIÓN: NO ESTAR EN DOS LUGARES AL MISMO TIEMPO
   const sqlCheck = `
     SELECT 
       DATE_FORMAT(e.fecha, '%Y-%m-%d') as evento_fecha,
       e.nombre as nombre_evento,
-      (SELECT COUNT(*) FROM partidas WHERE evento_id = ? AND dungeon_master_id = ?) as es_dm,
-      (SELECT COUNT(*) FROM inscripciones i JOIN partidas p ON i.partida_id = p.id WHERE p.evento_id = ? AND i.usuario_id = ?) as es_jugador
+      (SELECT COUNT(*) FROM partidas WHERE evento_id = ? AND dungeon_master_id = ?) as es_creador,
+      (SELECT COUNT(*) FROM inscripciones i JOIN partidas p ON i.partida_id = p.id WHERE p.evento_id = ? AND i.usuario_id = ?) as es_jugador,
+      (SELECT COUNT(*) FROM escape_inscripciones ei JOIN escape_turnos et ON ei.escape_turno_id = et.id JOIN escape_rooms er ON et.escape_room_id = er.id WHERE er.evento_id = ? AND ei.usuario_id = ?) as es_escape
     FROM eventos e WHERE e.id = ?
   `;
   
-  db.query(sqlCheck, [eventoId, usuarioId, eventoId, usuarioId, eventoId], (err, resultados) => {
+  db.query(sqlCheck, [eventoId, usuarioId, eventoId, usuarioId, eventoId, usuarioId, eventoId], (err, resultados) => {
     if (err) return res.status(500).json({ error: 'Error al consultar los registros del gremio.' });
     if (resultados.length === 0) return res.status(404).json({ error: 'El evento no existe.' });
     
-    const { evento_fecha, nombre_evento, es_dm, es_jugador } = resultados[0];
+    const { evento_fecha, nombre_evento, es_creador, es_jugador, es_escape } = resultados[0];
 
     const tzOffset = -3 * 60 * 60 * 1000; 
     const hoyArg = new Date(Date.now() + tzOffset).toISOString().split('T')[0];
 
+    // Chequeamos si el evento ya pasó o está transcurriendo
     if (hoyArg >= evento_fecha) {
-      return res.status(400).json({ error: 'La convocatoria ha cerrado. Ya estamos en la fecha del evento and la organización está preparando la logística.' });
+      return res.status(400).json({ error: 'La convocatoria ha cerrado. Ya estamos en la fecha del evento y la organización está preparando la logística.' });
     }
 
-    if (es_dm > 0) return res.status(400).json({ error: 'Ya estás dirigiendo una mesa en este evento.' });
-    if (es_jugador > 0) return res.status(400).json({ error: 'No puedes crear una mesa porque ya estás anotado como jugador en este evento.' });
+    // Bloqueamos si ya tiene otra mesa, si está inscrito en otra, o si está en un escape
+    if (es_creador > 0 || es_jugador > 0 || es_escape > 0) {
+      return res.status(400).json({ 
+        error: 'No puedes organizar esta mesa porque ya tienes otro compromiso (como jugador, creador o en un Escape Room) en este evento.' 
+      });
+    }
 
-    const { titulo, descripcion, requisitos, sistema_id, cupo, turno, etiqueta, apta_novatos, materiales_pedidos } = req.body;
-    
     const sqlInsert = `
         INSERT INTO partidas 
-        (evento_id, dungeon_master_id, titulo, descripcion, requisitos, sistema_id, cupo, turno, estado, etiqueta, apta_novatos, materiales_pedidos) 
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'abierta', ?, ?, ?)
+        (evento_id, dungeon_master_id, titulo, descripcion, requisitos, sistema, sistema_id, cupo, turno, estado, etiqueta, apta_novatos, materiales_pedidos) 
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'abierta', ?, ?, ?)
     `;
     
-    db.query(sqlInsert, [eventoId, usuarioId, titulo, descripcion, requisitos, sistema_id, cupo, turno, etiqueta, apta_novatos, materiales_pedidos], (err) => {
+    db.query(sqlInsert, [eventoId, usuarioId, titulo, descripcion, requisitos, sistema, sistema_id, cupo, turno, etiqueta, apta_novatos, materiales_pedidos], (err) => {
       if (err) {
         console.error(err);
         return res.status(500).json({ error: 'Error al crear la mesa.' });
       }
       
-      registrarLog(req.usuario, 'CREAR_MESA', `Abrió la mesa "${titulo}" para la jornada "${nombre_evento}".`);
+      // ✨ REGISTRO EN BITÁCORA
+      const tipoMesaLog = etiqueta === 'Juegos de Mesa' ? 'CONVOCAR_JUEGO' : 'CREAR_MESA';
+      const descLog = etiqueta === 'Juegos de Mesa' 
+        ? `Convocó el juego de mesa "${titulo}" para la jornada "${nombre_evento}".`
+        : `Abrió la mesa de Rol "${titulo}" para la jornada "${nombre_evento}".`;
+
+      registrarLog(req.usuario, tipoMesaLog, descLog);
+
+      // ✨ MAGIA DE NOTIFICACIÓN (Solo para DMs creando su PRIMERA mesa de Rol)
+      if (etiqueta !== 'Juegos de Mesa') {
+        db.query("SELECT COUNT(*) AS total_mesas FROM partidas WHERE dungeon_master_id = ? AND etiqueta != 'Juegos de Mesa'", [usuarioId], (err, countResult) => {
+          if (err) console.error("Error al contar las mesas del DM:", err);
+          
+          if (countResult && countResult[0].total_mesas === 1) {
+            db.query("SELECT id FROM usuarios WHERE rol = 'admin'", (err, admins) => {
+              if (err || admins.length === 0) return; 
+              
+              const mensajeNotif = `¡El Escriba announces que el DM ${req.usuario.nombre} ha convocado su primera mesa de ROL ("${titulo}")! Recuerda forjar su Certificado del Gremio en el Censo.`;
+              const notificacionesValues = admins.map(admin => [admin.id, mensajeNotif]);
+              
+              db.query("INSERT INTO notificaciones (usuario_id, mensaje) VALUES ?", [notificacionesValues], (err) => {
+                  if(err) console.error("Error al enviar los cuervos a los admins:", err);
+              });
+            });
+          }
+        });
+      }
 
       const io = req.app.get('io');
       if (io) io.emit('actualizacion-mesas', { eventoId: parseInt(eventoId) });
       
-      res.status(201).json({ mensaje: '¡Mesa creada con éxito!' });
+      res.status(201).json({ mensaje: `¡${etiqueta === 'Juegos de Mesa' ? 'Juego de mesa' : 'Mesa'} convocado con éxito!` });
     });
   });
 });
