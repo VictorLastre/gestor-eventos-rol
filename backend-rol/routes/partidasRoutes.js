@@ -20,7 +20,7 @@ router.get('/estadisticas/sistemas', verificarToken, (req, res) => {
       COUNT(p.id) as cantidad 
     FROM partidas p
     JOIN sistemas s ON p.sistema_id = s.id
-    WHERE p.etiqueta = 'Rol' -- Solo contamos estadísticas de rol
+    WHERE p.etiqueta != 'Juegos de Mesa' -- Solo contamos estadísticas de rol
     GROUP BY p.sistema_id, s.nombre
     ORDER BY cantidad DESC 
     LIMIT 5
@@ -30,7 +30,7 @@ router.get('/estadisticas/sistemas', verificarToken, (req, res) => {
     if (err) {
       console.error("Error al consultar el Oráculo de Sistemas:", err);
       // Fallback: Si la nueva query falla por algún motivo de estructura, volvemos a la vieja
-      const sqlFallback = `SELECT sistema, COUNT(*) as cantidad FROM partidas WHERE etiqueta = 'Rol' GROUP BY sistema ORDER BY cantidad DESC LIMIT 5`;
+      const sqlFallback = `SELECT sistema, COUNT(*) as cantidad FROM partidas WHERE etiqueta != 'Juegos de Mesa' GROUP BY sistema ORDER BY cantidad DESC LIMIT 5`;
       return db.query(sqlFallback, (errFB, resFB) => {
         if(errFB) return res.status(500).json({ error: 'Error leyendo los sistemas más jugados.' });
         res.json(resFB);
@@ -40,7 +40,7 @@ router.get('/estadisticas/sistemas', verificarToken, (req, res) => {
   });
 });
 
-// ✨ ESTADÍSTICAS: Obtener el Top de Juegos de Mesa (¡NUEVA RUTA AÑADIDA!)
+// ✨ ESTADÍSTICAS: Obtener el Top de Juegos de Mesa
 router.get('/estadisticas/juegos-mesa', verificarToken, (req, res) => {
   const sql = `
     SELECT sistema, COUNT(*) as cantidad 
@@ -56,74 +56,90 @@ router.get('/estadisticas/juegos-mesa', verificarToken, (req, res) => {
   });
 });
 
-// ✨ CREACIÓN: Forjar una nueva mesa/partida (Flexibilizada para Juegos de Mesa)
+// ✨ CREACIÓN: Forjar una nueva mesa/partida (Flexibilizada para Juegos de Mesa y Protegida contra ubicuidad)
 router.post('/', verificarToken, (req, res) => {
   const idUsuario = req.usuario.id;
   const rolUsuario = req.usuario.rol;
-  const { titulo, sistema, etiqueta } = req.body;
+  const { titulo, descripcion, requisitos, sistema, sistema_id, cupo, turno, etiqueta, apta_novatos, materiales_pedidos, evento_id } = req.body;
 
   // ✨ VALIDACIÓN DEL TIPO DE MESA Y ROL ✨
-  // Admins y DMs pueden crear lo que quieran.
-  // Aventureros solo pueden crear mesas con la etiqueta 'Juegos de Mesa'.
   const esOrganizadorValido = rolUsuario === 'dm' || rolUsuario === 'admin';
-  const esMesaJuegoValida = rolUsuario === 'aventurero' && etiqueta === 'Juegos de Mesa';
+  // Permitimos a 'jugador' o 'aventurero' crear mesas, PERO SOLO si la etiqueta es 'Juegos de Mesa'
+  const esMesaJuegoValida = (rolUsuario === 'jugador' || rolUsuario === 'aventurero') && etiqueta === 'Juegos de Mesa';
 
   if (!esOrganizadorValido && !esMesaJuegoValida) {
     return res.status(403).json({ 
-      error: 'Solo los Directores de Juego pueden convocar aventuras de Rol. Como Aventurero, puedes convocar mesas de Juegos de Mesa.' 
+      error: 'Solo los Directores de Juego pueden convocar aventuras de Rol. Como Jugador, solo puedes organizar Juegos de Mesa.' 
     });
   }
 
-  // Aceptamos tanto sistema como sistema_id si vienen del frontend.
-  // Para juegos de mesa, sistema_id vendrá NULL o un ID genérico.
-  const { descripcion, requisitos, sistema_id, cupo, turno, apta_novatos, materiales_pedidos, evento_id } = req.body;
-
-  // Insertamos en ambas columnas por si acaso (para compatibilidad)
-  const sqlInsert = `
-    INSERT INTO partidas 
-    (titulo, descripcion, requisitos, sistema, sistema_id, cupo, turno, etiqueta, apta_novatos, materiales_pedidos, evento_id, dungeon_master_id) 
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+  // ✨ RESTRICCIÓN: NO ESTAR EN DOS LUGARES AL MISMO TIEMPO (AHORA AL CREAR) ✨
+  const sqlValidarParticipacion = `
+    SELECT 
+      (SELECT COUNT(*) FROM partidas WHERE evento_id = ? AND dungeon_master_id = ?) as es_creador,
+      (SELECT COUNT(*) FROM inscripciones i JOIN partidas p ON i.partida_id = p.id WHERE p.evento_id = ? AND i.usuario_id = ?) as es_jugador,
+      (SELECT COUNT(*) FROM escape_inscripciones ei JOIN escape_turnos et ON ei.escape_turno_id = et.id JOIN escape_rooms er ON et.escape_room_id = er.id WHERE er.evento_id = ? AND ei.usuario_id = ?) as es_escape
   `;
 
-  db.query(sqlInsert, [titulo, descripcion, requisitos, sistema, sistema_id, cupo, turno, etiqueta, apta_novatos, materiales_pedidos, evento_id, idUsuario], (err, resultado) => {
-    if (err) {
-      console.error(err);
-      return res.status(500).json({ error: 'Error al forjar la mesa en la base de datos.' });
-    }
+  db.query(sqlValidarParticipacion, [evento_id, idUsuario, evento_id, idUsuario, evento_id, idUsuario], (err, participacion) => {
+    if (err) return res.status(500).json({ error: 'Error al consultar tus compromisos en el Gremio.' });
 
-    // ✨ REGISTRO EN BITÁCORA
-    const tipoMesaLog = etiqueta === 'Juegos de Mesa' ? 'CONVOCAR_JUEGO' : 'CREAR_MESA';
-    const descLog = etiqueta === 'Juegos de Mesa' 
-      ? `Convocó la mesa de juego "${titulo}" para "${sistema}".`
-      : `Abrió la mesa de Rol "${titulo}" usando el sistema "${sistema}".`;
-      
-    registrarLog(req.usuario, tipoMesaLog, descLog);
+    const { es_creador, es_jugador, es_escape } = participacion[0];
 
-    // ✨ MAGIA DE NOTIFICACIÓN (Solo para DMs creando su PRIMERA mesa de Rol)
-    if (etiqueta !== 'Juegos de Mesa') {
-      db.query("SELECT COUNT(*) AS total_mesas FROM partidas WHERE dungeon_master_id = ? AND etiqueta != 'Juegos de Mesa'", [idUsuario], (err, countResult) => {
-        if (err) console.error("Error al contar las mesas del DM:", err);
-        
-        if (countResult && countResult[0].total_mesas === 1) {
-          db.query("SELECT id FROM usuarios WHERE rol = 'admin'", (err, admins) => {
-            if (err || admins.length === 0) return; 
-            
-            const mensajeNotif = `¡El Escriba announces que el DM ${req.usuario.nombre} ha convocado su primera mesa de ROL ("${titulo}")! Recuerda forjar su Certificado del Gremio en el Censo.`;
-            const notificacionesValues = admins.map(admin => [admin.id, mensajeNotif]);
-            
-            db.query("INSERT INTO notificaciones (usuario_id, mensaje) VALUES ?", [notificacionesValues], (err) => {
-                if(err) console.error("Error al enviar los cuervos a los admins:", err);
-            });
-          });
-        }
+    // Si ya tiene una mesa creada, si ya está inscrito en una, o si está en un escape room, lo bloqueamos.
+    if (es_creador > 0 || es_jugador > 0 || es_escape > 0) {
+      return res.status(400).json({ 
+        error: 'No puedes organizar esta mesa porque ya tienes otro compromiso (como jugador, creador o en un Escape Room) en este evento.' 
       });
     }
 
-    // ✨ WEBSOCKETS: Avisar que se forjó una nueva mesa (para refrescar el tablón automáticamente)
-    const io = req.app.get('io');
-    if (io) io.emit('actualizacion-mesas', { eventoId: parseInt(evento_id) });
+    // Insertamos en ambas columnas por si acaso (para compatibilidad)
+    const sqlInsert = `
+      INSERT INTO partidas 
+      (titulo, descripcion, requisitos, sistema, sistema_id, cupo, turno, etiqueta, apta_novatos, materiales_pedidos, evento_id, dungeon_master_id) 
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `;
 
-    res.status(201).json({ mensaje: `¡Mesa de ${etiqueta} forjada con éxito! Los aventureros ya pueden unirse.` });
+    db.query(sqlInsert, [titulo, descripcion, requisitos, sistema, sistema_id, cupo, turno, etiqueta, apta_novatos, materiales_pedidos, evento_id, idUsuario], (err, resultado) => {
+      if (err) {
+        console.error(err);
+        return res.status(500).json({ error: 'Error al forjar la mesa en la base de datos.' });
+      }
+
+      // ✨ REGISTRO EN BITÁCORA
+      const tipoMesaLog = etiqueta === 'Juegos de Mesa' ? 'CONVOCAR_JUEGO' : 'CREAR_MESA';
+      const descLog = etiqueta === 'Juegos de Mesa' 
+        ? `Convocó el juego de mesa "${titulo}" para "${sistema}".`
+        : `Abrió la mesa de Rol "${titulo}" usando el sistema "${sistema}".`;
+        
+      registrarLog(req.usuario, tipoMesaLog, descLog);
+
+      // ✨ MAGIA DE NOTIFICACIÓN (Solo para DMs creando su PRIMERA mesa de Rol)
+      if (etiqueta !== 'Juegos de Mesa') {
+        db.query("SELECT COUNT(*) AS total_mesas FROM partidas WHERE dungeon_master_id = ? AND etiqueta != 'Juegos de Mesa'", [idUsuario], (err, countResult) => {
+          if (err) console.error("Error al contar las mesas del DM:", err);
+          
+          if (countResult && countResult[0].total_mesas === 1) {
+            db.query("SELECT id FROM usuarios WHERE rol = 'admin'", (err, admins) => {
+              if (err || admins.length === 0) return; 
+              
+              const mensajeNotif = `¡El Escriba announces que el DM ${req.usuario.nombre} ha convocado su primera mesa de ROL ("${titulo}")! Recuerda forjar su Certificado del Gremio en el Censo.`;
+              const notificacionesValues = admins.map(admin => [admin.id, mensajeNotif]);
+              
+              db.query("INSERT INTO notificaciones (usuario_id, mensaje) VALUES ?", [notificacionesValues], (err) => {
+                  if(err) console.error("Error al enviar los cuervos a los admins:", err);
+              });
+            });
+          }
+        });
+      }
+
+      // ✨ WEBSOCKETS: Avisar que se forjó una nueva mesa (para refrescar el tablón automáticamente)
+      const io = req.app.get('io');
+      if (io) io.emit('actualizacion-mesas', { eventoId: parseInt(evento_id) });
+
+      res.status(201).json({ mensaje: `¡${etiqueta === 'Juegos de Mesa' ? 'Juego de mesa' : 'Mesa'} convocado con éxito!` });
+    });
   });
 });
 
@@ -146,9 +162,7 @@ router.post('/:id/inscripciones', verificarToken, (req, res) => {
 
     if (anotados >= cupo) return res.status(400).send('❌ ¡Mesa llena! No quedan lugares.');
 
-    // ✨ RESTRECCIÓN DE "NO ESTAR EN DOS LUGARES" ✨
-    // Verificamos si ya es Organizador (DM/Creador) en este evento, si ya está anotado en otra mesa,
-    // o si tiene un turno de Escape Room. (Esta query es perfecta y soporta el cambio automáticamente).
+    // ✨ RESTRECCIÓN DE "NO ESTAR EN DOS LUGARES" AL UNIRSE ✨
     const sqlValidarParticipacion = `
       SELECT 
         (SELECT COUNT(*) FROM partidas WHERE evento_id = ? AND dungeon_master_id = ?) as es_dm_o_creador,
@@ -176,7 +190,7 @@ router.post('/:id/inscripciones', verificarToken, (req, res) => {
         const io = req.app.get('io');
         if (io) io.emit('actualizacion-mesas', { eventoId: parseInt(evento_id) });
         
-        res.status(201).send('¡Te has unido a la aventura!');
+        res.status(201).send('¡Te has unido a la partida!');
       });
     });
   });
@@ -263,7 +277,7 @@ router.delete('/:id', verificarToken, (req, res) => {
   });
 });
 
-// ✨ EDICIÓN: Modificar detalles de la mesa (Flexibilizada y asegura actualización de ambas columnas de sistema)
+// ✨ EDICIÓN: Modificar detalles de la mesa
 router.put('/:id', verificarToken, (req, res) => {
   const partidaId = req.params.id;
   const usuarioId = req.usuario.id;
@@ -282,15 +296,13 @@ router.put('/:id', verificarToken, (req, res) => {
     const { titulo, descripcion, requisitos, sistema, sistema_id, cupo, turno, etiqueta, apta_novatos, materiales_pedidos } = req.body;
 
     // ✨ VALIDACIÓN DE AUTORIDAD PARA CAMBIAR ETIQUETA O SISTEMA DE ROL ✨
-    // Si la etiqueta cambia de Rol a otra cosa, o de otra cosa a Rol, o si se intenta editar una mesa de Rol siendo Aventurero, lo bloqueamos.
-    // Solo un Admin o el DM de la mesa (siendo rol DM/Admin) pueden cambiar la etiqueta.
-    const esOrganizadorValido = req.usuario.rol === 'dm' || req.usuario.rol === 'admin';
-    const intentaCambiarRolAAntes = etiqueta_vieja === 'Rol';
-    const intentaCambiarRolAAhora = etiqueta === 'Rol';
-
-    if (!esOrganizadorValido && (intentaCambiarRolAAntes || intentaCambiarRolAAhora)) {
+    const esOrganizadorValido = rolUsuario === 'dm' || rolUsuario === 'admin';
+    const esJugador = rolUsuario === 'jugador' || rolUsuario === 'aventurero';
+    
+    // Si un jugador intenta cambiar la etiqueta a otra que no sea Juegos de Mesa, o intenta editar una mesa que no era Juegos de Mesa
+    if (esJugador && (etiqueta_vieja !== 'Juegos de Mesa' || etiqueta !== 'Juegos de Mesa')) {
       return res.status(403).json({ 
-        error: 'No tienes la autoridad del Gremio para editar mesas de Rol o cambiar la etiqueta Rol.' 
+        error: 'No tienes la autoridad del Gremio para editar mesas de Rol o cambiar a una etiqueta de Rol.' 
       });
     }
 
