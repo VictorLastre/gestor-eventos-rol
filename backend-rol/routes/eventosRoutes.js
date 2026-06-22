@@ -83,13 +83,15 @@ router.post('/', verificarToken, (req, res) => {
   });
 });
 
-// 3. Obtener partidas de un evento específico (✨ CON SISTEMA DE NIVEL PARA DMs)
+// 3. Obtener partidas de un evento específico (✨ CON SISTEMA DE NIVEL PARA DMs Y SEGURIDAD DE MESAS PRIVADAS)
 router.get('/:id/partidas', verificarToken, (req, res) => {
   const sql = `
     SELECT 
       p.id, p.evento_id, p.dungeon_master_id, p.titulo, p.descripcion, p.requisitos, 
       p.sistema, p.sistema_id, s.nombre AS sistema_db_nombre,
       p.cupo, p.turno, p.estado, p.etiqueta, p.apta_novatos, p.materiales_pedidos,
+      IF(p.codigo_privado IS NOT NULL AND p.codigo_privado != '', 1, 0) AS es_privada,
+      IF(p.dungeon_master_id = ?, p.codigo_privado, NULL) AS codigo_privado,
       u.nombre AS dmNombre, 
       (SELECT COUNT(*) FROM inscripciones WHERE partida_id = p.id) AS jugadoresIniciales,
       (SELECT COUNT(*) FROM inscripciones WHERE partida_id = p.id AND usuario_id = ?) AS anotadoInicialmente,
@@ -105,7 +107,8 @@ router.get('/:id/partidas', verificarToken, (req, res) => {
     WHERE p.evento_id = ? 
     GROUP BY p.id
   `;
-  db.query(sql, [req.usuario.id, req.params.id], (err, resultados) => {
+  // Se agregó req.usuario.id por partida doble para la lógica de la contraseña y de si está anotado
+  db.query(sql, [req.usuario.id, req.usuario.id, req.params.id], (err, resultados) => {
     if (err) {
       console.error(err);
       return res.status(500).json({ error: 'Error al consultar las mesas.' });
@@ -127,7 +130,8 @@ router.post('/:id/partidas', verificarToken, (req, res) => {
   const usuarioId = req.usuario.id;
   const rolUsuario = req.usuario.rol;
   
-  const { titulo, descripcion, requisitos, sistema, sistema_id, cupo, turno, etiqueta, apta_novatos, materiales_pedidos } = req.body;
+  // Extraemos también el codigo_privado del cuerpo de la petición
+  const { titulo, descripcion, requisitos, sistema, sistema_id, cupo, turno, etiqueta, apta_novatos, materiales_pedidos, codigo_privado } = req.body;
 
   // ✨ VALIDACIÓN DEL TIPO DE MESA Y ROL ✨
   const esOrganizadorValido = rolUsuario === 'dm' || rolUsuario === 'admin';
@@ -171,13 +175,14 @@ router.post('/:id/partidas', verificarToken, (req, res) => {
       });
     }
 
+    // Añadimos el codigo_privado a la inserción
     const sqlInsert = `
         INSERT INTO partidas 
-        (evento_id, dungeon_master_id, titulo, descripcion, requisitos, sistema, sistema_id, cupo, turno, estado, etiqueta, apta_novatos, materiales_pedidos) 
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'abierta', ?, ?, ?)
+        (evento_id, dungeon_master_id, titulo, descripcion, requisitos, sistema, sistema_id, cupo, turno, estado, etiqueta, apta_novatos, materiales_pedidos, codigo_privado) 
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'abierta', ?, ?, ?, ?)
     `;
     
-    db.query(sqlInsert, [eventoId, usuarioId, titulo, descripcion, requisitos, sistema, sistema_id, cupo, turno, etiqueta, apta_novatos, materiales_pedidos], (err) => {
+    db.query(sqlInsert, [eventoId, usuarioId, titulo, descripcion, requisitos, sistema, sistema_id, cupo, turno, etiqueta, apta_novatos, materiales_pedidos, codigo_privado || null], (err) => {
       if (err) {
         console.error(err);
         return res.status(500).json({ error: 'Error al crear la mesa.' });

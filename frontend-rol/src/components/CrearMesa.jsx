@@ -31,6 +31,10 @@ function CrearMesa({ idEvento, alCrearMesa }) {
   const [aptaNovatos, setAptaNovatos] = useState(false);
   const [materialesPedidos, setMaterialesPedidos] = useState('');
 
+  // ✨ NUEVOS ESTADOS PARA MESA PRIVADA
+  const [esPrivada, setEsPrivada] = useState(false);
+  const [codigoPrivado, setCodigoPrivado] = useState('');
+
   useEffect(() => {
     // ✨ CORRECCIÓN: Ruta relativa para cargar los sistemas
     fetch('/api/sistemas')
@@ -41,6 +45,16 @@ function CrearMesa({ idEvento, alCrearMesa }) {
       .catch(err => console.error("Error al cargar sistemas:", err));
   }, []);
 
+  // ✨ FUNCIÓN PARA GENERAR CLAVE ALEATORIA
+  const generarClaveAleatoria = () => {
+    const caracteres = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+    let clave = '';
+    for (let i = 0; i < 6; i++) {
+      clave += caracteres.charAt(Math.floor(Math.random() * caracteres.length));
+    }
+    setCodigoPrivado(clave);
+  };
+
   const manejarCreacion = async (e) => {
     e.preventDefault();
     
@@ -48,6 +62,18 @@ function CrearMesa({ idEvento, alCrearMesa }) {
         return Swal.fire({
             title: 'Falta información',
             text: 'Debes seleccionar un sistema de juego de la lista.',
+            icon: 'warning',
+            background: '#18181b',
+            color: '#fff',
+            confirmButtonColor: '#f59e0b'
+        });
+    }
+
+    // ✨ VALIDACIÓN DE LA CONTRASEÑA
+    if (esPrivada && !codigoPrivado.trim()) {
+        return Swal.fire({
+            title: 'Mesa Bloqueada',
+            text: 'Has marcado la mesa como privada, debes escribir una contraseña para dársela a tus jugadores.',
             icon: 'warning',
             background: '#18181b',
             color: '#fff',
@@ -64,7 +90,8 @@ function CrearMesa({ idEvento, alCrearMesa }) {
       turno, 
       etiqueta, 
       apta_novatos: aptaNovatos,
-      materiales_pedidos: materialesPedidos 
+      materiales_pedidos: materialesPedidos,
+      codigo_privado: esPrivada ? codigoPrivado : null // ✨ AÑADIMOS LA CLAVE SI ES PRIVADA
     };
 
     try {
@@ -90,6 +117,7 @@ function CrearMesa({ idEvento, alCrearMesa }) {
         setTitulo(''); setDescripcion(''); setRequisitos(''); 
         setSistemaId(''); setCupo(4); setEtiqueta('Fantasía Medieval'); 
         setAptaNovatos(false); setMaterialesPedidos('');
+        setEsPrivada(false); setCodigoPrivado(''); // Limpiamos la clave
         alCrearMesa(); 
 
       } else {
@@ -217,7 +245,7 @@ function CrearMesa({ idEvento, alCrearMesa }) {
                   value={cupo} 
                   onChange={e => setCupo(e.target.value)} 
                   min="1" max="10" required 
-                  className="w-full bg-zinc-950 border border-zinc-800 rounded-2xl py-4 px-6 text-white focus:border-amber-500 outline-none font-bold" 
+                  className="w-full bg-zinc-950 border border-zinc-800 rounded-2xl py-4 px-6 text-white focus:border-amber-500 outline-none font-bold text-center" 
                 />
               </div>
 
@@ -243,7 +271,7 @@ function CrearMesa({ idEvento, alCrearMesa }) {
                   placeholder="Ej: Nivel 3, traer ficha lista" 
                   value={requisitos} 
                   onChange={e => setRequisitos(e.target.value)} 
-                  className="w-full bg-zinc-950 border border-zinc-800 rounded-2xl py-4 px-6 text-white focus:border-amber-500 outline-none font-bold placeholder:text-zinc-800"
+                  className="w-full bg-zinc-950 border border-zinc-800 rounded-2xl py-4 px-6 text-white focus:border-amber-500 outline-none font-bold placeholder:text-zinc-800 h-[60px]"
                 />
               </div>
 
@@ -257,9 +285,51 @@ function CrearMesa({ idEvento, alCrearMesa }) {
                   placeholder="¿Necesitas dados, mapas...?" 
                   value={materialesPedidos} 
                   onChange={e => setMaterialesPedidos(e.target.value)} 
-                  className="w-full bg-amber-500/5 border border-amber-500/20 rounded-2xl py-4 px-6 text-amber-200 focus:border-amber-500 outline-none italic text-sm placeholder:text-amber-900/50 shadow-inner"
+                  className="w-full bg-amber-500/5 border border-amber-500/20 rounded-2xl py-4 px-6 text-amber-200 focus:border-amber-500 outline-none italic text-sm placeholder:text-amber-900/50 shadow-inner h-[60px]"
                 />
               </div>
+            </div>
+
+            {/* ✨ NUEVO: CONFIGURACIÓN DE MESA PRIVADA ✨ */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-2 border-t border-zinc-800/50">
+              <div 
+                onClick={() => setEsPrivada(!esPrivada)}
+                className={`cursor-pointer p-4 rounded-2xl border-2 transition-all flex items-center justify-between select-none h-[60px] ${
+                  esPrivada 
+                  ? 'bg-purple-500/10 border-purple-500/50 shadow-[0_0_20px_rgba(168,85,247,0.15)]' 
+                  : 'bg-zinc-950 border-zinc-800 hover:border-zinc-700'
+                }`}
+              >
+                <div className="flex items-center gap-3">
+                  <span className={`text-xl ${esPrivada ? 'opacity-100' : 'opacity-30'}`}>🔒</span>
+                  <div>
+                    <h4 className={`font-black uppercase tracking-widest text-[11px] ${esPrivada ? 'text-purple-400' : 'text-zinc-500'}`}>Mesa Privada</h4>
+                  </div>
+                </div>
+                <div className={`w-5 h-5 rounded-md flex items-center justify-center border-2 transition-colors ${esPrivada ? 'bg-purple-500 border-purple-500 text-black' : 'border-zinc-700'}`}>
+                  {esPrivada && <span className="font-black text-xs">✓</span>}
+                </div>
+              </div>
+
+              {esPrivada && (
+                <div className="flex gap-2 animate-in fade-in zoom-in duration-300">
+                  <input 
+                    type="text" 
+                    placeholder="Contraseña Secreta" 
+                    value={codigoPrivado} 
+                    onChange={e => setCodigoPrivado(e.target.value)} 
+                    className="w-full bg-purple-500/5 border border-purple-500/30 rounded-2xl py-4 px-6 text-white focus:border-purple-500 outline-none font-bold placeholder:text-purple-900/50 shadow-inner h-[60px]"
+                  />
+                  <button 
+                    type="button" 
+                    onClick={generarClaveAleatoria}
+                    className="w-[60px] h-[60px] shrink-0 bg-purple-500/10 border border-purple-500/50 text-purple-400 rounded-2xl flex items-center justify-center hover:bg-purple-500 hover:text-white transition-all shadow-[0_0_15px_rgba(168,85,247,0.2)]"
+                    title="Generar Clave Mágica"
+                  >
+                    🪄
+                  </button>
+                </div>
+              )}
             </div>
 
             <button 
