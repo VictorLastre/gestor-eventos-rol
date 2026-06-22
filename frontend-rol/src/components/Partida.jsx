@@ -25,11 +25,13 @@ const CONFIG_TEMAS = {
   "Espionaje / Acción": { color: "text-zinc-400", bg: "bg-zinc-500/10", border: "border-zinc-500/30", hoverBorder: "hover:border-zinc-500/30", hoverText: "group-hover:text-zinc-400", icon: "🕶️" },
   "Rol Infantil / Familiar": { color: "text-sky-400", bg: "bg-sky-500/10", border: "border-sky-500/30", hoverBorder: "hover:border-sky-500/30", hoverText: "group-hover:text-sky-400", icon: "🧸" },
   "Comedia": { color: "text-yellow-300", bg: "bg-yellow-500/10", border: "border-yellow-500/30", hoverBorder: "hover:border-yellow-500/30", hoverText: "group-hover:text-yellow-300", icon: "🎭" },
-  "Escape Room": { color: "text-lime-400", bg: "bg-lime-500/10", border: "border-lime-500/30", hoverBorder: "hover:border-lime-500/30", hoverText: "group-hover:text-lime-400", icon: "🗝️" }
+  "Escape Room": { color: "text-lime-400", bg: "bg-lime-500/10", border: "border-lime-500/30", hoverBorder: "hover:border-lime-500/30", hoverText: "group-hover:text-lime-400", icon: "🗝️" },
+  "Juegos de Mesa": { color: "text-rose-500", bg: "bg-rose-500/10", border: "border-rose-500/30", hoverBorder: "hover:border-rose-500/30", hoverText: "group-hover:text-rose-500", icon: "🃏" } // ✨ AÑADIDO A LA CONFIGURACIÓN
 };
 
 function Partida(props) {
   const tema = CONFIG_TEMAS[props.etiqueta] || CONFIG_TEMAS['Fantasía Medieval'];
+  const esJuegoMesa = props.etiqueta === 'Juegos de Mesa'; // ✨ FLAG IMPORTANTE
 
   const cantJugadores = props.jugadoresIniciales ?? props.anotados ?? props.jugadores_anotados ?? 0;
   const yaEstaAnotado = Boolean(props.anotadoInicialmente || props.estoy_anotado || false);
@@ -47,6 +49,7 @@ function Partida(props) {
     titulo: props.titulo || '',
     descripcion: props.descripcion || props.description || '',
     requisitos: props.requisitos || '',
+    sistema: props.sistema || '', // ✨ Añadido para el input directo de Juegos de Mesa
     sistema_id: props.sistema_id || '', 
     cupo: props.cupo || 4,
     turno: props.turno || 'Tarde',
@@ -65,7 +68,8 @@ function Partida(props) {
       document.body.style.overflow = 'hidden';
       if (modalAbierto) cargarListaJugadores();
       
-      if (modoEdicion && sistemas.length === 0) {
+      // ✨ Solo consultamos los sistemas de rol si NO es un Juego de Mesa
+      if (modoEdicion && sistemas.length === 0 && !esJuegoMesa) {
         fetch('/api/sistemas')
           .then(res => res.json())
           .then(data => {
@@ -85,7 +89,7 @@ function Partida(props) {
       document.body.style.overflow = 'unset';
     }
     return () => { document.body.style.overflow = 'unset'; };
-  }, [modalAbierto, modoEdicion, sistemas.length, props.sistema, datosEdicion.sistema_id]);
+  }, [modalAbierto, modoEdicion, sistemas.length, props.sistema, datosEdicion.sistema_id, esJuegoMesa]);
 
   useEffect(() => {
     setJugadoresAnotados(cantJugadores);
@@ -155,18 +159,30 @@ function Partida(props) {
   const guardarEdicion = async (e) => {
     e.preventDefault();
 
-    if (!datosEdicion.sistema_id) {
-        return Swal.fire({ title: 'Aviso', text: 'Debes seleccionar un sistema', icon: 'warning', background: '#09090b', color: '#fff' });
+    let paqueteFinal;
+
+    // ✨ Tratamiento especial para Juegos de Mesa vs Rol
+    if (esJuegoMesa) {
+        if (!datosEdicion.sistema.trim()) {
+            return Swal.fire({ title: 'Aviso', text: 'Debes indicar el juego de mesa.', icon: 'warning', background: '#09090b', color: '#fff' });
+        }
+        paqueteFinal = {
+            ...datosEdicion,
+            sistema_id: null
+        };
+    } else {
+        if (!datosEdicion.sistema_id) {
+            return Swal.fire({ title: 'Aviso', text: 'Debes seleccionar un sistema', icon: 'warning', background: '#09090b', color: '#fff' });
+        }
+        const sistemaObj = sistemas.find(s => s.id.toString() === datosEdicion.sistema_id.toString());
+        const nombreSistema = sistemaObj ? sistemaObj.nombre : props.sistema;
+
+        paqueteFinal = {
+          ...datosEdicion,
+          sistema: nombreSistema,             
+          sistema_id: datosEdicion.sistema_id 
+        };
     }
-
-    const sistemaObj = sistemas.find(s => s.id.toString() === datosEdicion.sistema_id.toString());
-    const nombreSistema = sistemaObj ? sistemaObj.nombre : props.sistema;
-
-    const paqueteFinal = {
-      ...datosEdicion,
-      sistema: nombreSistema,             
-      sistema_id: datosEdicion.sistema_id 
-    };
 
     try {
       const res = await fetchProtegido(`/api/partidas/${props.id}`, {
@@ -175,7 +191,7 @@ function Partida(props) {
       });
 
       if (res.ok) {
-        Swal.fire({ title: '¡Aventura Reescríta!', text: 'Los detalles de la mesa han sido actualizados.', icon: 'success', background: '#09090b', color: '#fff', confirmButtonColor: '#f59e0b' });
+        Swal.fire({ title: esJuegoMesa ? '¡Juego Actualizado!' : '¡Aventura Reescríta!', text: 'Los detalles de la mesa han sido actualizados.', icon: 'success', background: '#09090b', color: '#fff', confirmButtonColor: '#f59e0b' });
         setModoEdicion(false); 
       } else {
         const data = await res.json();
@@ -192,7 +208,7 @@ function Partida(props) {
     setModalAbierto(false); 
   };
 
-  // ✨ LÓGICA DE COLORES POR DISPONIBILIDAD ✨
+  // Lógica de colores por disponibilidad
   const estaLlena = jugadoresAnotados >= props.cupo;
   const tieneJugadores = jugadoresAnotados > 0 && !estaLlena;
   
@@ -209,7 +225,6 @@ function Partida(props) {
     <>
       <div 
         onClick={() => setModalAbierto(true)}
-        // ✨ Ajuste de altura a min-h y padding en móviles (p-6 sm:p-8)
         className={`relative p-6 sm:p-8 rounded-[2rem] border-2 transition-all duration-500 flex flex-col min-h-[450px] h-full cursor-pointer w-full group overflow-hidden ${
           soyElMaster 
           ? "bg-amber-900/10 border-amber-500/80 shadow-[0_0_20px_rgba(245,158,11,0.25)]" 
@@ -219,21 +234,22 @@ function Partida(props) {
         {soyElMaster && <div className="absolute top-0 right-0 w-32 h-32 bg-amber-500/10 blur-[60px] rounded-full pointer-events-none"></div>}
 
         <div className="flex justify-between items-start mb-6 relative z-10 gap-3">
-          {/* ✨ flex-1 min-w-0 evita que los textos largos empujen el diseño en móvil */}
           <div className="flex-1 min-w-0 space-y-3 pr-2">
             <div className="flex flex-wrap gap-2">
               {Boolean(props.apta_novatos) && (
-                <span className="text-[9px] font-black text-emerald-950 uppercase tracking-widest bg-emerald-400 px-3 py-1 rounded-full shadow-[0_0_12px_rgba(52,211,153,0.5)] flex items-center gap-1.5 animate-pulse whitespace-nowrap">
-                  🌱 Novatos
+                <span className={`text-[9px] font-black ${esJuegoMesa ? 'text-emerald-900 bg-emerald-400' : 'text-emerald-950 bg-emerald-400'} uppercase tracking-widest px-3 py-1 rounded-full shadow-[0_0_12px_rgba(52,211,153,0.5)] flex items-center gap-1.5 animate-pulse whitespace-nowrap`}>
+                  🌱 {esJuegoMesa ? 'Enseña a jugar' : 'Novatos'}
                 </span>
               )}
-              {props.etiqueta && (
+              {/* ✨ OCULTAMOS LA ETIQUETA SI ES UN JUEGO DE MESA */}
+              {props.etiqueta && !esJuegoMesa && (
                 <span className={`text-[9px] font-black uppercase tracking-widest px-3 py-1 rounded-full border flex items-center gap-1.5 whitespace-nowrap ${tema.color} ${tema.bg} ${tema.border}`}>
                   {tema.icon} {props.etiqueta}
                 </span>
               )}
+              {/* ✨ Para juegos de mesa mostramos el Joker 🃏 en vez del dado 🎲 */}
               <span className="text-[9px] font-black text-zinc-300 uppercase tracking-widest bg-zinc-800 px-3 py-1 rounded-full border border-zinc-700 shadow-inner whitespace-nowrap">
-                🎲 {props.sistema || 'Sistema Desconocido'}
+                {esJuegoMesa ? '🃏' : '🎲'} {props.sistema || 'Sistema Desconocido'}
               </span>
               
               {soyElMaster && (
@@ -243,13 +259,11 @@ function Partida(props) {
               )}
             </div>
 
-            {/* ✨ break-words previene que palabras ininterrumpidas rompan el ancho */}
             <h3 className={`text-2xl font-black text-white italic uppercase tracking-tighter leading-tight line-clamp-2 drop-shadow-md break-words transition-colors ${soyElMaster ? 'group-hover:text-amber-400' : tema.hoverText}`}>
               {props.titulo}
             </h3>
           </div>
           
-          {/* ✨ shrink-0 protege la fracción de jugadores para que nunca se oculte */}
           <div className="shrink-0 text-right flex flex-col items-end">
             <p className={`text-3xl sm:text-4xl font-mono font-black leading-none drop-shadow-lg ${estaLlena ? 'text-red-500' : tieneJugadores ? 'text-orange-500' : 'text-emerald-500'}`}>
               {jugadoresAnotados}
@@ -265,16 +279,15 @@ function Partida(props) {
         </p>
 
         <div className="mb-6 bg-zinc-950/80 p-3 rounded-2xl border border-zinc-800/80 flex justify-between items-center transition-all group-hover:bg-zinc-950 relative z-10 gap-2">
-          {/* ✨ min-w-0 para permitir truncar el nombre del DM si es muy largo */}
           <div className="flex items-center gap-3 min-w-0 flex-1">
             <div className="shrink-0 w-10 h-10 bg-zinc-900 border border-zinc-700 rounded-full flex items-center justify-center text-sm shadow-inner relative">
-              🛡️
+              {esJuegoMesa ? '👑' : '🛡️'}
               <div className="absolute -bottom-2 -right-2 bg-gradient-to-br from-amber-400 to-amber-600 text-black text-[9px] font-black px-1.5 py-0.5 rounded-full border border-zinc-900 shadow-md">
                 Lv{props.dm_nivel || 1}
               </div>
             </div>
             <div className="min-w-0 flex-1 pr-2">
-              <p className="text-[9px] font-black text-zinc-500 uppercase tracking-[0.2em] truncate">Director de Juego</p>
+              <p className="text-[9px] font-black text-zinc-500 uppercase tracking-[0.2em] truncate">{esJuegoMesa ? 'Organizador' : 'Director de Juego'}</p>
               <p className="text-sm text-zinc-200 font-bold truncate">{props.dmNombre || props.dungeon_master_nombre || 'Desconocido'}</p>
             </div>
           </div>
@@ -317,7 +330,6 @@ function Partida(props) {
               {anotado ? 'Abandonar' : props.inscripcionesCerradas ? 'Cerrado' : estaLlena ? 'Llena' : 'Alistarse'}
             </button>
           )}
-          {/* ✨ shrink-0 al botón del ojo para que siempre mantenga su tamaño */}
           <div className={`px-6 shrink-0 flex items-center justify-center bg-zinc-950 text-zinc-500 rounded-2xl border transition-all ${soyElMaster || props.eventoEsPasado ? 'w-full py-4 text-xs tracking-widest hover:text-white hover:bg-zinc-800 uppercase font-black border-zinc-800 cursor-pointer' : 'border-zinc-800/80 group-hover:border-zinc-700 group-hover:text-zinc-300'}`}>
             {soyElMaster || props.eventoEsPasado ? '👁️ Ver Pergamino' : '👁️'}
           </div>
@@ -329,33 +341,36 @@ function Partida(props) {
           <div className={`bg-zinc-900 border ${CONFIG_TEMAS[datosEdicion.etiqueta]?.border || 'border-amber-500/30'} w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-[2.5rem] p-8 md:p-10 relative shadow-[0_0_80px_rgba(0,0,0,0.5)] scrollbar-hide`} style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
             <button onClick={() => setModoEdicion(false)} className="absolute top-6 right-6 w-10 h-10 bg-zinc-950 flex items-center justify-center rounded-full text-zinc-500 hover:text-white hover:bg-zinc-800 transition-colors border border-zinc-800">✕</button>
             <h3 className="text-3xl font-black text-white uppercase tracking-tighter mb-8 flex items-center gap-3 italic">
-              <span className={`${CONFIG_TEMAS[datosEdicion.etiqueta]?.color || 'text-amber-500'} drop-shadow-md`}>📜</span> Reescribir Aventura
+              <span className={`${CONFIG_TEMAS[datosEdicion.etiqueta]?.color || 'text-amber-500'} drop-shadow-md`}>{esJuegoMesa ? '📐' : '📜'}</span> {esJuegoMesa ? 'Modificar Partida' : 'Reescribir Aventura'}
             </h3>
             
             <form onSubmit={guardarEdicion} className="flex flex-col gap-6">
               <div className="space-y-2">
                 <label className="text-[10px] font-black text-zinc-500 uppercase tracking-widest ml-1">Título de la Gesta</label>
-                <input type="text" value={datosEdicion.titulo} onChange={e => setDatosEdicion({...datosEdicion, titulo: e.target.value})} required className="w-full bg-zinc-950 border border-zinc-800 rounded-2xl py-4 px-5 text-white focus:border-amber-500 outline-none transition-all font-bold shadow-inner" />
+                <input type="text" value={datosEdicion.titulo} onChange={e => setDatosEdicion({...datosEdicion, titulo: e.target.value})} required className={`w-full bg-zinc-950 border border-zinc-800 rounded-2xl py-4 px-5 text-white focus:${tema.border} outline-none transition-all font-bold shadow-inner`} />
               </div>
 
               <div className="space-y-2">
-                <label className="text-[10px] font-black text-zinc-500 uppercase tracking-widest ml-1">Sinopsis</label>
-                <textarea value={datosEdicion.descripcion} onChange={e => setDatosEdicion({...datosEdicion, descripcion: e.target.value})} required rows="4" className="w-full bg-zinc-950 border border-zinc-800 rounded-2xl py-4 px-5 text-white focus:border-amber-500 outline-none transition-all resize-none italic font-medium shadow-inner" />
+                <label className="text-[10px] font-black text-zinc-500 uppercase tracking-widest ml-1">{esJuegoMesa ? 'Notas del Organizador' : 'Sinopsis'}</label>
+                <textarea value={datosEdicion.descripcion} onChange={e => setDatosEdicion({...datosEdicion, descripcion: e.target.value})} required rows="4" className={`w-full bg-zinc-950 border border-zinc-800 rounded-2xl py-4 px-5 text-white focus:${tema.border} outline-none transition-all resize-none italic font-medium shadow-inner`} />
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div className="flex flex-col gap-2">
-                  <label className="text-[10px] font-black text-zinc-500 uppercase tracking-widest ml-1">Género</label>
-                  <select value={datosEdicion.etiqueta} onChange={e => setDatosEdicion({...datosEdicion, etiqueta: e.target.value})} className={`bg-zinc-950 border border-zinc-800 rounded-2xl py-4 px-5 text-white outline-none font-bold appearance-none cursor-pointer ${CONFIG_TEMAS[datosEdicion.etiqueta]?.color || ''}`}>
-                    {Object.keys(CONFIG_TEMAS).map(opcion => (
-                       <option key={opcion} value={opcion}>{CONFIG_TEMAS[opcion].icon} {opcion}</option>
-                    ))}
-                  </select>
-                </div>
+                {/* ✨ OCULTAMOS EL GÉNERO SI ES JUEGO DE MESA */}
+                {!esJuegoMesa && (
+                  <div className="flex flex-col gap-2">
+                    <label className="text-[10px] font-black text-zinc-500 uppercase tracking-widest ml-1">Género</label>
+                    <select value={datosEdicion.etiqueta} onChange={e => setDatosEdicion({...datosEdicion, etiqueta: e.target.value})} className={`bg-zinc-950 border border-zinc-800 rounded-2xl py-4 px-5 text-white outline-none font-bold appearance-none cursor-pointer ${CONFIG_TEMAS[datosEdicion.etiqueta]?.color || ''}`}>
+                      {Object.keys(CONFIG_TEMAS).filter(op => op !== 'Juegos de Mesa').map(opcion => (
+                         <option key={opcion} value={opcion}>{CONFIG_TEMAS[opcion].icon} {opcion}</option>
+                      ))}
+                    </select>
+                  </div>
+                )}
                 
-                <div onClick={() => setDatosEdicion({...datosEdicion, apta_novatos: !datosEdicion.apta_novatos})} className={`cursor-pointer p-4 rounded-2xl border-2 transition-all flex items-center justify-between gap-4 select-none mt-6 ${datosEdicion.apta_novatos ? 'bg-emerald-500/10 border-emerald-500/50 shadow-[0_0_20px_rgba(16,185,129,0.15)]' : 'bg-zinc-950 border-zinc-800 hover:border-zinc-700'}`}>
+                <div onClick={() => setDatosEdicion({...datosEdicion, apta_novatos: !datosEdicion.apta_novatos})} className={`cursor-pointer p-4 rounded-2xl border-2 transition-all flex items-center justify-between gap-4 select-none ${esJuegoMesa ? 'md:col-span-2 mt-0' : 'mt-6'} ${datosEdicion.apta_novatos ? 'bg-emerald-500/10 border-emerald-500/50 shadow-[0_0_20px_rgba(16,185,129,0.15)]' : 'bg-zinc-950 border-zinc-800 hover:border-zinc-700'}`}>
                   <div>
-                    <h4 className={`font-black uppercase tracking-widest text-[11px] ${datosEdicion.apta_novatos ? 'text-emerald-400' : 'text-zinc-500'}`}>🌱 Apta Novatos</h4>
+                    <h4 className={`font-black uppercase tracking-widest text-[11px] ${datosEdicion.apta_novatos ? 'text-emerald-400' : 'text-zinc-500'}`}>🌱 {esJuegoMesa ? 'Enseño a Jugar' : 'Apta Novatos'}</h4>
                   </div>
                   <div className={`w-6 h-6 rounded-md flex items-center justify-center border-2 transition-colors ${datosEdicion.apta_novatos ? 'bg-emerald-500 border-emerald-500 text-black' : 'border-zinc-700'}`}>
                     {datosEdicion.apta_novatos && <span className="font-black text-sm">✓</span>}
@@ -364,34 +379,48 @@ function Partida(props) {
               </div>
 
               <div className="space-y-2">
-                <label className="text-[10px] font-black text-zinc-500 uppercase tracking-widest ml-1">Requisitos de Personaje</label>
-                <input type="text" value={datosEdicion.requisitos} onChange={e => setDatosEdicion({...datosEdicion, requisitos: e.target.value})} className="w-full bg-zinc-950 border border-zinc-800 rounded-2xl py-4 px-5 text-white focus:border-amber-500 outline-none font-medium shadow-inner" />
+                <label className="text-[10px] font-black text-zinc-500 uppercase tracking-widest ml-1">Requisitos Específicos</label>
+                <input type="text" value={datosEdicion.requisitos} onChange={e => setDatosEdicion({...datosEdicion, requisitos: e.target.value})} className={`w-full bg-zinc-950 border border-zinc-800 rounded-2xl py-4 px-5 text-white focus:${tema.border} outline-none font-medium shadow-inner`} />
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                <div className="flex flex-col gap-2">
-                  <label className="text-[10px] font-black text-zinc-500 uppercase tracking-widest ml-1">Sistema</label>
-                  <select 
-                    value={datosEdicion.sistema_id} 
-                    onChange={e => setDatosEdicion({...datosEdicion, sistema_id: e.target.value})}
-                    required
-                    className="bg-zinc-950 border border-zinc-800 rounded-2xl py-4 px-5 text-white focus:border-amber-500 outline-none font-bold cursor-pointer"
-                  >
-                    <option value="">Seleccionar...</option>
-                    {sistemas.map(s => (
-                      <option key={s.id} value={s.id} className="bg-zinc-900">{s.nombre}</option>
-                    ))}
-                  </select>
-                </div>
+                {/* ✨ SISTEMA COMO INPUT SI ES JUEGO DE MESA, O COMO SELECT SI ES ROL */}
+                {esJuegoMesa ? (
+                  <div className="flex flex-col gap-2">
+                    <label className="text-[10px] font-black text-zinc-500 uppercase tracking-widest ml-1">Juego a jugar</label>
+                    <input 
+                      type="text" 
+                      value={datosEdicion.sistema} 
+                      onChange={e => setDatosEdicion({...datosEdicion, sistema: e.target.value})} 
+                      required 
+                      className={`bg-zinc-950 border border-zinc-800 rounded-2xl py-4 px-5 text-white focus:${tema.border} outline-none font-bold`} 
+                    />
+                  </div>
+                ) : (
+                  <div className="flex flex-col gap-2">
+                    <label className="text-[10px] font-black text-zinc-500 uppercase tracking-widest ml-1">Sistema</label>
+                    <select 
+                      value={datosEdicion.sistema_id} 
+                      onChange={e => setDatosEdicion({...datosEdicion, sistema_id: e.target.value})}
+                      required
+                      className={`bg-zinc-950 border border-zinc-800 rounded-2xl py-4 px-5 text-white focus:${tema.border} outline-none font-bold cursor-pointer`}
+                    >
+                      <option value="">Seleccionar...</option>
+                      {sistemas.map(s => (
+                        <option key={s.id} value={s.id} className="bg-zinc-900">{s.nombre}</option>
+                      ))}
+                    </select>
+                  </div>
+                )}
                 
                 <div className="flex flex-col gap-2">
                   <label className="text-[10px] font-black text-zinc-500 uppercase tracking-widest ml-1">Cupo Máx.</label>
-                  <input type="number" value={datosEdicion.cupo} onChange={e => setDatosEdicion({...datosEdicion, cupo: e.target.value})} min="1" max="10" required className="bg-zinc-950 border border-zinc-800 rounded-2xl py-4 px-5 text-white focus:border-amber-500 outline-none font-black text-center" />
+                  <input type="number" value={datosEdicion.cupo} onChange={e => setDatosEdicion({...datosEdicion, cupo: e.target.value})} min="1" max={esJuegoMesa ? "20" : "10"} required className={`bg-zinc-950 border border-zinc-800 rounded-2xl py-4 px-5 text-white focus:${tema.border} outline-none font-black text-center`} />
                 </div>
                 
                 <div className="flex flex-col gap-2">
                   <label className="text-[10px] font-black text-zinc-500 uppercase tracking-widest ml-1">Turno</label>
-                  <select value={datosEdicion.turno} onChange={e => setDatosEdicion({...datosEdicion, turno: e.target.value})} className="bg-zinc-950 border border-zinc-800 rounded-2xl py-4 px-5 text-white focus:border-amber-500 outline-none font-bold cursor-pointer">
+                  <select value={datosEdicion.turno} onChange={e => setDatosEdicion({...datosEdicion, turno: e.target.value})} className={`bg-zinc-950 border border-zinc-800 rounded-2xl py-4 px-5 text-white focus:${tema.border} outline-none font-bold cursor-pointer`}>
                     <option value="Mañana" className="bg-zinc-900">Mañana</option>
                     <option value="Tarde" className="bg-zinc-900">Tarde</option>
                     <option value="Noche" className="bg-zinc-900">Noche</option>
@@ -409,14 +438,14 @@ function Partida(props) {
                   type="text" 
                   value={datosEdicion.materiales_pedidos} 
                   onChange={e => setDatosEdicion({...datosEdicion, materiales_pedidos: e.target.value})} 
-                  placeholder="Manuales, mapas, dados extras..."
+                  placeholder={esJuegoMesa ? "Dados extra, tableros, fichas..." : "Manuales, mapas, dados extras..."}
                   className={`w-full bg-zinc-950 border ${CONFIG_TEMAS[datosEdicion.etiqueta]?.border || 'border-amber-500/30'} rounded-2xl py-4 px-5 text-white outline-none italic text-sm shadow-inner`}
                 />
               </div>
 
               <button type="submit" className={`group relative overflow-hidden font-black py-5 rounded-2xl shadow-xl transition-all active:scale-95 text-xs uppercase tracking-[0.2em] mt-4 border ${CONFIG_TEMAS[datosEdicion.etiqueta]?.border || 'border-amber-400'} ${CONFIG_TEMAS[datosEdicion.etiqueta]?.bg || 'bg-amber-500'} ${CONFIG_TEMAS[datosEdicion.etiqueta]?.color || 'text-amber-500'}`}>
                 <div className="absolute inset-0 bg-white/5 opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
-                <span className="relative z-10">💾 Consagrar Cambios</span>
+                <span className="relative z-10">{esJuegoMesa ? '💾 Confirmar Cambios' : '💾 Consagrar Cambios'}</span>
               </button>
             </form>
           </div>
@@ -458,16 +487,17 @@ function Partida(props) {
               <div className="flex flex-wrap gap-2 mb-6">
                 {Boolean(props.apta_novatos) && (
                   <span className="text-[10px] font-black text-emerald-950 uppercase tracking-widest bg-emerald-400 px-3 py-1.5 rounded-full shadow-[0_0_15px_rgba(52,211,153,0.4)] flex items-center gap-1.5">
-                    🌱 Apta Novatos
+                    🌱 {esJuegoMesa ? 'Enseña a jugar' : 'Apta Novatos'}
                   </span>
                 )}
-                {props.etiqueta && (
+                {/* ✨ OCULTAMOS LA ETIQUETA SI ES UN JUEGO DE MESA */}
+                {props.etiqueta && !esJuegoMesa && (
                   <span className={`text-[10px] font-black uppercase tracking-widest px-3 py-1.5 rounded-full border flex items-center gap-1.5 ${tema.color} ${tema.bg} ${tema.border}`}>
                     {tema.icon} {props.etiqueta}
                   </span>
                 )}
                 <span className="text-[10px] font-black text-zinc-300 uppercase tracking-widest bg-zinc-800 px-3 py-1.5 rounded-full border border-zinc-700">
-                  🎲 {props.sistema || 'Sistema Desconocido'}
+                  {esJuegoMesa ? '🃏' : '🎲'} {props.sistema || 'Sistema Desconocido'}
                 </span>
                 {soyElMaster && (
                   <span className="text-[10px] font-black uppercase tracking-widest px-3 py-1.5 rounded-full border text-amber-500 bg-amber-500/10 border-amber-500/50 shadow-[0_0_10px_rgba(255,255,255,0.1)]">
@@ -483,13 +513,13 @@ function Partida(props) {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-10">
                 <div className="bg-zinc-950/50 p-6 rounded-[2rem] border border-zinc-800/80 shadow-inner flex items-center gap-4 min-w-0">
                   <div className="shrink-0 w-14 h-14 bg-zinc-900 border border-zinc-700 rounded-full flex items-center justify-center text-2xl relative">
-                    🛡️
+                    {esJuegoMesa ? '👑' : '🛡️'}
                     <div className="absolute -bottom-2 -right-2 bg-gradient-to-br from-amber-400 to-amber-600 text-black text-[11px] font-black px-2 py-0.5 rounded-full border-2 border-zinc-900 shadow-md">
                       Lv{props.dm_nivel || 1}
                     </div>
                   </div>
                   <div className="min-w-0 flex-1">
-                    <p className="text-[10px] font-black text-zinc-500 uppercase tracking-[0.2em] mb-1 truncate">Director de Juego</p>
+                    <p className="text-[10px] font-black text-zinc-500 uppercase tracking-[0.2em] mb-1 truncate">{esJuegoMesa ? 'Organizador' : 'Director de Juego'}</p>
                     <div className="flex items-center gap-2 min-w-0">
                         <p className="text-xl text-zinc-200 font-black truncate">{props.dmNombre || props.dungeon_master_nombre}</p>
                     </div>
@@ -550,7 +580,7 @@ function Partida(props) {
               </div>
 
               <div className="mb-10">
-                <h4 className="text-[10px] font-black text-zinc-500 uppercase tracking-[0.3em] mb-4">El Relato</h4>
+                <h4 className="text-[10px] font-black text-zinc-500 uppercase tracking-[0.3em] mb-4">{esJuegoMesa ? 'Notas del Organizador' : 'El Relato'}</h4>
                 <p className="text-zinc-300 text-lg md:text-xl leading-relaxed italic whitespace-pre-line border-l-4 border-zinc-800 pl-6 py-2">
                   {props.description || props.descripcion}
                 </p>

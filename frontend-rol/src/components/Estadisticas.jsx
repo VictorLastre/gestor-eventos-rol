@@ -5,6 +5,7 @@ import { fetchProtegido } from '../utils/api'; // ✨ IMPORTAMOS AL GUARDIÁN
 function Estadisticas() {
   const [datos, setDatos] = useState([]);
   const [sistemasTop, setSistemasTop] = useState([]); 
+  const [juegosTop, setJuegosTop] = useState([]); // ✨ NUEVO ESTADO PARA JUEGOS DE MESA
 
   useEffect(() => {
     // ✨ ELIMINAMOS LA LECTURA MANUAL DEL LOCALSTORAGE
@@ -17,11 +18,16 @@ function Estadisticas() {
     const fetchSistemas = fetchProtegido('/api/partidas/estadisticas/sistemas')
       .then(res => res.json());
 
-    // Esperamos a que ambos pergaminos lleguen
-    Promise.all([fetchEventos, fetchSistemas])
-      .then(([datosGlobales, topSistemas]) => {
+    // ✨ NUEVA RUTA: Estadísticas de juegos de mesa
+    const fetchJuegosMesa = fetchProtegido('/api/partidas/estadisticas/juegos-mesa')
+      .then(res => res.json());
+
+    // Esperamos a que los TRES pergaminos lleguen
+    Promise.all([fetchEventos, fetchSistemas, fetchJuegosMesa])
+      .then(([datosGlobales, topSistemas, topJuegos]) => {
         setDatos(datosGlobales);
         setSistemasTop(topSistemas);
+        setJuegosTop(Array.isArray(topJuegos) ? topJuegos : []);
       })
       .catch(err => {
         // ✨ IGNORAMOS EL ERROR SI FUE UNA EXPIRACIÓN DE SESIÓN
@@ -131,35 +137,71 @@ function Estadisticas() {
           </div>
         </div>
 
-        {/* SALÓN DE LA FAMA: SISTEMAS MÁS JUGADOS */}
-        <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-6 shadow-xl relative overflow-hidden h-fit">
-          <div className="absolute -bottom-10 -right-10 w-32 h-32 bg-amber-500/5 blur-3xl rounded-full pointer-events-none"></div>
+        {/* CONTENEDOR DERECHO: SALONES DE LA FAMA */}
+        <div className="flex flex-col gap-6">
           
-          <h4 className="text-lg font-black text-white uppercase tracking-tighter mb-6 flex items-center gap-2">
-            <span className="text-amber-500 shrink-0">🏆</span> <span className="truncate">Sistemas Populares</span>
-          </h4>
-          
-          <div className="space-y-3 relative z-10">
-            {sistemasTop.length > 0 ? (
-              sistemasTop.map((sis, idx) => (
-                <div key={idx} className="flex justify-between items-center bg-zinc-950 p-3 md:p-4 rounded-xl border border-zinc-800/50 hover:border-amber-500/30 transition-colors group gap-2">
-                  <div className="flex items-center gap-2 md:gap-3 min-w-0">
-                    <span className={`font-black text-sm w-5 text-center shrink-0 ${idx === 0 ? 'text-amber-400' : idx === 1 ? 'text-zinc-300' : idx === 2 ? 'text-amber-700' : 'text-zinc-600'}`}>
-                      #{idx + 1}
-                    </span>
-                    <span className="text-zinc-300 font-bold text-[10px] md:text-xs uppercase tracking-wider group-hover:text-white transition-colors truncate">
-                      {sis.sistema}
+          {/* SALÓN DE LA FAMA: SISTEMAS DE ROL */}
+          <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-6 shadow-xl relative overflow-hidden h-fit">
+            <div className="absolute -bottom-10 -right-10 w-32 h-32 bg-amber-500/5 blur-3xl rounded-full pointer-events-none"></div>
+            
+            <h4 className="text-lg font-black text-white uppercase tracking-tighter mb-6 flex items-center gap-2">
+              <span className="text-amber-500 shrink-0">🏆</span> <span className="truncate">Sistemas de Rol</span>
+            </h4>
+            
+            <div className="space-y-3 relative z-10">
+              {sistemasTop.length > 0 ? (
+                sistemasTop.map((sis, idx) => (
+                  <div key={idx} className="flex justify-between items-center bg-zinc-950 p-3 md:p-4 rounded-xl border border-zinc-800/50 hover:border-amber-500/30 transition-colors group gap-2">
+                    <div className="flex items-center gap-2 md:gap-3 min-w-0">
+                      <span className={`font-black text-sm w-5 text-center shrink-0 ${idx === 0 ? 'text-amber-400' : idx === 1 ? 'text-zinc-300' : idx === 2 ? 'text-amber-700' : 'text-zinc-600'}`}>
+                        #{idx + 1}
+                      </span>
+                      <span className="text-zinc-300 font-bold text-[10px] md:text-xs uppercase tracking-wider group-hover:text-white transition-colors truncate">
+                        {sis.sistema}
+                      </span>
+                    </div>
+                    <span className="bg-amber-500/10 text-amber-500 border border-amber-500/20 px-2 py-1 md:px-3 md:py-1 rounded-lg text-[10px] md:text-xs font-black shrink-0 whitespace-nowrap">
+                      {sis.cantidad} Mesas
                     </span>
                   </div>
-                  <span className="bg-amber-500/10 text-amber-500 border border-amber-500/20 px-2 py-1 md:px-3 md:py-1 rounded-lg text-[10px] md:text-xs font-black shrink-0 whitespace-nowrap">
-                    {sis.cantidad} Mesas
-                  </span>
-                </div>
-              ))
-            ) : (
-              <p className="text-zinc-600 text-xs italic text-center py-4">Aún no hay sistemas registrados...</p>
-            )}
+                ))
+              ) : (
+                <p className="text-zinc-600 text-xs italic text-center py-4">Aún no hay sistemas registrados...</p>
+              )}
+            </div>
           </div>
+
+          {/* ✨ SALÓN DE LA FAMA: JUEGOS DE MESA */}
+          <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-6 shadow-xl relative overflow-hidden h-fit">
+            <div className="absolute -bottom-10 -right-10 w-32 h-32 bg-rose-500/5 blur-3xl rounded-full pointer-events-none"></div>
+            
+            <h4 className="text-lg font-black text-white uppercase tracking-tighter mb-6 flex items-center gap-2">
+              <span className="text-rose-500 shrink-0">🃏</span> <span className="truncate">Juegos de Mesa</span>
+            </h4>
+            
+            <div className="space-y-3 relative z-10">
+              {juegosTop.length > 0 ? (
+                juegosTop.map((juego, idx) => (
+                  <div key={idx} className="flex justify-between items-center bg-zinc-950 p-3 md:p-4 rounded-xl border border-zinc-800/50 hover:border-rose-500/30 transition-colors group gap-2">
+                    <div className="flex items-center gap-2 md:gap-3 min-w-0">
+                      <span className={`font-black text-sm w-5 text-center shrink-0 ${idx === 0 ? 'text-rose-400' : idx === 1 ? 'text-zinc-300' : idx === 2 ? 'text-rose-700' : 'text-zinc-600'}`}>
+                        #{idx + 1}
+                      </span>
+                      <span className="text-zinc-300 font-bold text-[10px] md:text-xs uppercase tracking-wider group-hover:text-white transition-colors truncate">
+                        {juego.sistema}
+                      </span>
+                    </div>
+                    <span className="bg-rose-500/10 text-rose-500 border border-rose-500/20 px-2 py-1 md:px-3 md:py-1 rounded-lg text-[10px] md:text-xs font-black shrink-0 whitespace-nowrap">
+                      {juego.cantidad} Mesas
+                    </span>
+                  </div>
+                ))
+              ) : (
+                <p className="text-zinc-600 text-xs italic text-center py-4">Aún no hay juegos de mesa registrados...</p>
+              )}
+            </div>
+          </div>
+
         </div>
 
       </div>

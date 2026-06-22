@@ -40,6 +40,22 @@ router.get('/estadisticas/sistemas', verificarToken, (req, res) => {
   });
 });
 
+// ✨ ESTADÍSTICAS: Obtener el Top de Juegos de Mesa (¡NUEVA RUTA AÑADIDA!)
+router.get('/estadisticas/juegos-mesa', verificarToken, (req, res) => {
+  const sql = `
+    SELECT sistema, COUNT(*) as cantidad 
+    FROM partidas 
+    WHERE etiqueta = 'Juegos de Mesa' 
+    GROUP BY sistema 
+    ORDER BY cantidad DESC 
+    LIMIT 5
+  `;
+  db.query(sql, (err, resultados) => {
+    if (err) return res.status(500).json({ error: 'Error leyendo los juegos de mesa.' });
+    res.json(resultados);
+  });
+});
+
 // ✨ CREACIÓN: Forjar una nueva mesa/partida (Flexibilizada para Juegos de Mesa)
 router.post('/', verificarToken, (req, res) => {
   const idUsuario = req.usuario.id;
