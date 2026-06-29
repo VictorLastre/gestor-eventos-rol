@@ -4,7 +4,7 @@ import { fetchProtegido } from '../utils/api';
 import { io } from 'socket.io-client';
 // ✨ IMPORTAMOS EL NUEVO COMPONENTE DE AVATARES
 import AvatarUsuario from '../components/AvatarUsuario';
-// Mangiyeg iti SolicitudDM component
+// ✨ IMPORTAMOS EL COMPONENTE DE SOLICITUD
 import SolicitudDM from './SolicitudDM';
 
 function MisCronicas({ alActualizarUsuario }) { 
@@ -17,7 +17,7 @@ function MisCronicas({ alActualizarUsuario }) {
   const [peticionEnviada, setPeticionEnviada] = useState(usuarioGuardado?.solicitudDmPendiente || false);
   const esJugadorBase = usuarioGuardado?.rol === 'jugador';
   
-  // Mangikabil ti estado para iti modal ti SolicitudDM
+  // ✨ ESTADO PARA MOSTRAR EL REGLAMENTO
   const [mostrarSolicitudDM, setMostrarSolicitudDM] = useState(false);
   
   const [perfil, setPerfil] = useState({ 
@@ -118,12 +118,12 @@ function MisCronicas({ alActualizarUsuario }) {
     }
   };
 
-  // Luktan ti modal imbes a mangipatulod a dagus iti pakaammo
+  // ✨ ABRIMOS EL COMPONENTE DE REGLAMENTO EN LUGAR DE ENVIAR DIRECTO
   const enviarPeticionDM = () => {
     setMostrarSolicitudDM(true);
   };
 
-  // Iproseso ti dawat kalpasan ti panagpatingga ti SolicitudDM
+  // ✨ ESTA FUNCIÓN SE EJECUTA CUANDO EL USUARIO TERMINA DE ACEPTAR TODO
   const procesarPeticionDM = async () => {
     try {
       const res = await fetchProtegido('/api/usuarios/solicitar-dm', {
@@ -136,7 +136,8 @@ function MisCronicas({ alActualizarUsuario }) {
         localStorage.setItem('usuario', JSON.stringify(usuarioActualizado));
         setUsuarioGuardado(usuarioActualizado);
         if (alActualizarUsuario) alActualizarUsuario(usuarioActualizado);
-        setMostrarSolicitudDM(false);
+        
+        setMostrarSolicitudDM(false); // Cerramos el modal
       }
     } catch (e) { 
       if (e !== 'Sesión expirada') console.error(e); 
@@ -334,11 +335,11 @@ function MisCronicas({ alActualizarUsuario }) {
         </div>
       </div>
 
-      {/* Renderizar modal ti SolicitudDM no husto ti estado */}
+      {/* ✨ RENDERIZAMOS EL MODAL DEL REGLAMENTO SI EL ESTADO ESTÁ ACTIVO */}
       {mostrarSolicitudDM && (
         <div className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-black/95 backdrop-blur-md animate-in fade-in duration-300">
           <div className="relative w-full max-w-2xl max-h-[90vh] overflow-y-auto scrollbar-hide rounded-[2.5rem]">
-            {/* Pindutan tapno iserana ti modal no kasapulan */}
+            {/* Botón para cerrar el modal por si se arrepiente */}
             <button 
               onClick={() => setMostrarSolicitudDM(false)} 
               className="absolute top-4 right-4 z-[210] text-zinc-500 hover:text-white bg-zinc-900 w-10 h-10 rounded-full border border-zinc-800 flex items-center justify-center transition-colors shadow-lg"
