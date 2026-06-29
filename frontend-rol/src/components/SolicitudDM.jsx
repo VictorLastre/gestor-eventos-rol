@@ -308,6 +308,7 @@ function MisCronicas({ alActualizarUsuario }) {
           </div>
         </div>
         
+        
         {/* DIRIGIENDO */}
         <div className="space-y-8">
           <div className="flex items-center gap-4">
