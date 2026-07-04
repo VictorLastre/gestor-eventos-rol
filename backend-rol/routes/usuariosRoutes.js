@@ -114,7 +114,7 @@ router.put('/:id/rol', verificarToken, (req, res) => {
 // =======================================================
 
 router.put('/perfil', verificarToken, async (req, res) => {
-  const { nombre, nombre_completo, email, password, avatar, telegram_chet_id } = req.body;
+  const { nombre, nombre_completo, email, password, avatar, telegram_chat_id } = req.body;
   const idUsuario = req.usuario.id;
 
   try {
@@ -124,12 +124,12 @@ router.put('/perfil', verificarToken, async (req, res) => {
 
     if (password && password.trim() !== '') {
       const hash = await bcrypt.hash(password, 10);
-      sql = "UPDATE usuarios SET nombre = ?, nombre_completo = ?, email = ?, password = ?, avatar = ?, telegram_chet_id = ? WHERE id = ?";
-      params = [nombre, nombre_completo, email, hash, avatar, telegram_chet_id || null, idUsuario];
+      sql = "UPDATE usuarios SET nombre = ?, nombre_completo = ?, email = ?, password = ?, avatar = ?, telegram_chat_id = ? WHERE id = ?";
+      params = [nombre, nombre_completo, email, hash, avatar, telegram_chat_id || null, idUsuario];
       cambioPass = true;
     } else {
-      sql = "UPDATE usuarios SET nombre = ?, nombre_completo = ?, email = ?, avatar = ?, telegram_chet_id = ? WHERE id = ?";
-      params = [nombre, nombre_completo, email, avatar, telegram_chet_id || null, idUsuario];
+      sql = "UPDATE usuarios SET nombre = ?, nombre_completo = ?, email = ?, avatar = ?, telegram_chat_id = ? WHERE id = ?";
+      params = [nombre, nombre_completo, email, avatar, telegram_chat_id || null, idUsuario];
     }
 
     db.query(sql, params, (err) => {
@@ -357,7 +357,7 @@ router.get('/', verificarToken, (req, res) => {
     const offset = (page - 1) * limit;
     db.query("SELECT COUNT(*) AS total FROM usuarios", (err, countResult) => {
       if (err) return res.status(500).json({ error: 'Error.' });
-      const sql = `SELECT id, nombre, nombre_completo, email, rol, avatar, solicita_dm, es_dm_nuevo, telegram_chet_id FROM usuarios ORDER BY nombre ASC LIMIT ${limit} OFFSET ${offset}`;
+      const sql = `SELECT id, nombre, nombre_completo, email, rol, avatar, solicita_dm, es_dm_nuevo, telegram_chat_id FROM usuarios ORDER BY nombre ASC LIMIT ${limit} OFFSET ${offset}`;
       db.query(sql, (err, resultados) => {
         if (err) return res.status(500).json({ error: 'Error.' });
         res.json({ datos: resultados, paginacion: { paginaActual: page, totalPaginas: Math.ceil(countResult[0].total / limit) } });
@@ -366,7 +366,7 @@ router.get('/', verificarToken, (req, res) => {
 });
   
 router.get('/yo', verificarToken, (req, res) => {
-    db.query("SELECT id, nombre, nombre_completo, email, rol, avatar, solicita_dm, es_dm_nuevo, telegram_chet_id FROM usuarios WHERE id = ?", [req.usuario.id], (err, resultados) => {
+    db.query("SELECT id, nombre, nombre_completo, email, rol, avatar, solicita_dm, es_dm_nuevo, telegram_chat_id FROM usuarios WHERE id = ?", [req.usuario.id], (err, resultados) => {
       if (err || resultados.length === 0) return res.status(404).json({ error: 'No encontrado.' });
       res.json(resultados[0]);
     });

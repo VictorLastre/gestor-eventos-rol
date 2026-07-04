@@ -41,7 +41,7 @@ function MisCronicas({ alActualizarUsuario }) {
     nombre_completo: usuarioGuardado?.nombre_completo || '', 
     email: usuarioGuardado?.email || '',
     avatar: usuarioGuardado?.avatar || 'guerrero',
-    telegram_chet_id: usuarioGuardado?.telegram_chet_id || '',
+    telegram_chat_id: usuarioGuardado?.telegram_chat_id || '',
     password: '' // ✨ AGREGADO: Campo para la nueva contraseña
   });
 
