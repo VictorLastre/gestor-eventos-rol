@@ -12,7 +12,107 @@ const registrarLog = (usuario, accion, descripcion) => {
   });
 };
 
-// ✨ ACTUALIZAR PERFIL (Con registro en bitácora)
+// =======================================================
+// 🚨 1. RUTAS RECUPERADAS (¡Aquí está la de Crónicas!) 🚨
+// =======================================================
+
+router.get('/mis-cronicas', verificarToken, (req, res) => {
+  const idUsuario = req.usuario.id;
+
+  const sqlDirigiendo = `
+    SELECT p.*, e.nombre as evento_nombre, DATE_FORMAT(e.fecha, '%Y-%m-%d') as evento_fecha 
+    FROM partidas p 
+    JOIN eventos e ON p.evento_id = e.id 
+    WHERE p.dungeon_master_id = ?
+  `;
+  
+  const sqlJugando = `
+    SELECT p.*, e.nombre as evento_nombre, DATE_FORMAT(e.fecha, '%Y-%m-%d') as evento_fecha 
+    FROM inscripciones i 
+    JOIN partidas p ON i.partida_id = p.id 
+    JOIN eventos e ON p.evento_id = e.id 
+    WHERE i.usuario_id = ?
+  `;
+  
+  db.query(sqlDirigiendo, [idUsuario], (err, dirigiendo) => {
+    if (err) return res.status(500).json({ error: 'Error en crónicas de DM.' });
+    
+    db.query(sqlJugando, [idUsuario], (err, jugando) => {
+      if (err) return res.status(500).json({ error: 'Error en crónicas de jugador.' });
+      
+      res.json({ dirigiendo: dirigiendo || [], jugando: jugando || [] });
+    });
+  });
+});
+
+router.get('/solicitudes-dm', verificarToken, (req, res) => {
+  if (req.usuario.rol !== 'admin') return res.status(403).json({ error: 'Acceso denegado.' });
+  db.query("SELECT id, nombre, email FROM usuarios WHERE solicita_dm = 1 AND rol = 'jugador'", (err, resultados) => {
+    if (err) return res.status(500).json({ error: 'Error.' });
+    res.json(resultados || []);
+  });
+});
+
+router.get('/votaciones/activas', verificarToken, (req, res) => {
+  if (req.usuario.rol !== 'admin') return res.status(403).json({ error: 'Acceso denegado.' });
+
+  const sql = `
+    SELECT v.id, v.candidato_id, v.estado, c.nombre as candidato_nombre, p.nombre as proponente_nombre,
+    (SELECT COUNT(*) FROM votos_admin WHERE votacion_id = v.id AND voto = 'a favor') as votos_favor,
+    (SELECT COUNT(*) FROM votos_admin WHERE votacion_id = v.id AND voto = 'en contra') as votos_contra,
+    (SELECT COUNT(*) FROM usuarios WHERE rol = 'admin') as total_admins,
+    (SELECT COUNT(*) FROM votos_admin WHERE votacion_id = v.id AND admin_id = ?) as ya_vote
+    FROM votaciones_admin v
+    JOIN usuarios c ON v.candidato_id = c.id
+    JOIN usuarios p ON v.proponente_id = p.id
+    WHERE v.estado = 'pendiente'
+  `;
+
+  db.query(sql, [req.usuario.id], (err, resultados) => {
+    if (err) return res.status(500).json({ error: 'Error al consultar el Senado.' });
+    res.json(resultados);
+  });
+});
+
+router.get('/estadisticas', verificarToken, (req, res) => {
+  if (req.usuario.rol !== 'admin') return res.status(403).json({ error: 'Acceso denegado.' });
+  const sql = `
+    SELECT e.nombre, COUNT(DISTINCT p.id) AS total_mesas, COUNT(i.id) AS total_jugadores
+    FROM eventos e LEFT JOIN partidas p ON e.id = p.evento_id LEFT JOIN inscripciones i ON p.id = i.partida_id
+    GROUP BY e.id ORDER BY e.fecha DESC`;
+  db.query(sql, (err, resultados) => {
+    if (err) return res.status(500).json({ error: 'Error.' });
+    res.json(resultados);
+  });
+});
+
+router.put('/:id/rol', verificarToken, (req, res) => {
+  if (req.usuario.rol !== 'admin') return res.status(403).json({ error: 'Sin autoridad.' });
+
+  const { rol } = req.body; 
+  const usuarioId = req.params.id;
+  let sqlUpdate = rol === 'dm' ? 
+    'UPDATE usuarios SET rol = ?, solicita_dm = 0, es_dm_nuevo = 1 WHERE id = ?' : 
+    'UPDATE usuarios SET rol = ?, solicita_dm = 0, es_dm_nuevo = 0 WHERE id = ?';
+
+  db.query(sqlUpdate, [rol, usuarioId], (err) => {
+    if (err) return res.status(500).json({ error: 'Error.' });
+    
+    db.query("SELECT nombre FROM usuarios WHERE id = ?", [usuarioId], (err, result) => {
+        registrarLog(req.usuario, 'CAMBIO_ROL_MANUAL', `Cambió el rango de ${result[0]?.nombre} a ${rol.toUpperCase()}.`);
+    });
+
+    const io = req.app.get('io');
+    if (io) io.emit('actualizacion-usuarios');
+    res.status(200).json({ mensaje: 'Rango modificado.' });
+  });
+});
+
+
+// =======================================================
+// ✨ 2. TUS RUTAS (Las que me pasaste, intactas) ✨
+// =======================================================
+
 router.put('/perfil', verificarToken, async (req, res) => {
   const { nombre, nombre_completo, email, password, avatar, telegram_chet_id } = req.body;
   const idUsuario = req.usuario.id;
@@ -46,17 +146,14 @@ router.put('/perfil', verificarToken, async (req, res) => {
   }
 });
 
-// ✨ SOLICITAR RANGO DM (Revisada y asegurada)
 router.post('/solicitar-dm', verificarToken, (req, res) => {
   const idUsuario = req.usuario.id;
   const nombreUsuario = req.usuario.nombre;
 
-  // Evitamos que vuelva a solicitar si ya tiene rango
   if (req.usuario.rol === 'dm' || req.usuario.rol === 'admin') {
     return res.status(400).json({ error: 'Ya eres miembro de la orden de Directores de Juego.' });
   }
 
-  // Comprobar si ya existe una solicitud activa o votación para este usuario
   const sqlCheck = "SELECT solicita_dm, es_dm_nuevo FROM usuarios WHERE id = ?";
   db.query(sqlCheck, [idUsuario], (err, results) => {
     if (err) return res.status(500).json({ error: 'Error al consultar pergaminos.' });
@@ -82,7 +179,6 @@ router.post('/solicitar-dm', verificarToken, (req, res) => {
         });
       });
 
-      // ✨ WEBSOCKETS: Avisar a los administradores para actualizar la vista de Senado en tiempo real
       const io = req.app.get('io');
       if (io) io.emit('actualizacion-senado');
 
@@ -91,7 +187,6 @@ router.post('/solicitar-dm', verificarToken, (req, res) => {
   });
 });
 
-// ✨ ACEPTAR SOLICITUD DM (Ascender directamente sin Senado - Acción de Admin)
 router.post('/:id/aceptar-dm', verificarToken, (req, res) => {
   if (req.usuario.rol !== 'admin') return res.status(403).json({ error: 'Solo admins.' });
   
@@ -118,7 +213,6 @@ router.post('/:id/aceptar-dm', verificarToken, (req, res) => {
   });
 });
 
-// ✨ RECHAZAR SOLICITUD DM (Acción de Admin)
 router.post('/:id/rechazar-dm', verificarToken, (req, res) => {
   if (req.usuario.rol !== 'admin') return res.status(403).json({ error: 'Solo admins.' });
   
@@ -145,7 +239,6 @@ router.post('/:id/rechazar-dm', verificarToken, (req, res) => {
   });
 });
 
-// ✨ SENADO: CONVOCAR VOTACIÓN (Solo Admins)
 router.post('/:id/convocar-senado', verificarToken, (req, res) => {
   if (req.usuario.rol !== 'admin') return res.status(403).json({ error: 'Solo admins.' });
   
@@ -170,7 +263,6 @@ router.post('/:id/convocar-senado', verificarToken, (req, res) => {
   });
 });
 
-// ✨ SENADO: VOTAR
 router.post('/votaciones/:id/votar', verificarToken, (req, res) => {
   if (req.usuario.rol !== 'admin') return res.status(403).json({ error: 'Solo admins.' });
 
@@ -214,13 +306,12 @@ router.post('/votaciones/:id/votar', verificarToken, (req, res) => {
   });
 });
 
-// ✨ HARD RESET DE CONTRASEÑA (NUEVO - SOLO PARA ADMINS)
 router.put('/:id/hard-reset', verificarToken, async (req, res) => {
   if (req.usuario.rol !== 'admin') {
     return res.status(403).json({ error: 'Solo los líderes del gremio tienen este poder.' });
   }
 
-  const defaultPassword = 'Aventurero2026!'; // Contraseña por defecto
+  const defaultPassword = 'Aventurero2026!'; 
 
   try {
     const hash = await bcrypt.hash(defaultPassword, 10);
@@ -243,24 +334,23 @@ router.put('/:id/hard-reset', verificarToken, async (req, res) => {
   }
 });
 
-// NOTIFICACIONES Y CENSO
 router.get('/notificaciones', verificarToken, (req, res) => {
     const sql = "SELECT id, mensaje, fecha FROM notificaciones WHERE usuario_id = ? AND leida = FALSE ORDER BY fecha DESC";
     db.query(sql, [req.usuario.id], (err, resultados) => {
       if (err) return res.status(500).json({ error: 'Error.' });
       res.json(resultados);
     });
-  });
+});
   
-  router.put('/notificaciones/:id/leida', verificarToken, (req, res) => {
+router.put('/notificaciones/:id/leida', verificarToken, (req, res) => {
     const sql = "UPDATE notificaciones SET leida = TRUE WHERE id = ? AND usuario_id = ?";
     db.query(sql, [req.params.id, req.usuario.id], (err) => {
       if (err) return res.status(500).json({ error: 'Error.' });
       res.json({ mensaje: 'Leída.' });
     });
-  });
+});
   
-  router.get('/', verificarToken, (req, res) => {
+router.get('/', verificarToken, (req, res) => {
     if (req.usuario.rol !== 'admin') return res.status(403).json({ error: 'Denegado.' });
     const page = parseInt(req.query.page) || 1;
     const limit = parseInt(req.query.limit) || 10;
@@ -273,16 +363,13 @@ router.get('/notificaciones', verificarToken, (req, res) => {
         res.json({ datos: resultados, paginacion: { paginaActual: page, totalPaginas: Math.ceil(countResult[0].total / limit) } });
       });
     });
-  });
+});
   
-  router.get('/yo', verificarToken, (req, res) => {
+router.get('/yo', verificarToken, (req, res) => {
     db.query("SELECT id, nombre, nombre_completo, email, rol, avatar, solicita_dm, es_dm_nuevo, telegram_chet_id FROM usuarios WHERE id = ?", [req.usuario.id], (err, resultados) => {
       if (err || resultados.length === 0) return res.status(404).json({ error: 'No encontrado.' });
       res.json(resultados[0]);
     });
-  });
-
-
-  
+});
 
 module.exports = router;
