@@ -282,4 +282,7 @@ router.get('/notificaciones', verificarToken, (req, res) => {
     });
   });
 
+
+  
+
 module.exports = router;
