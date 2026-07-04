@@ -4,7 +4,7 @@ import { fetchProtegido } from '../utils/api';
 import { io } from 'socket.io-client';
 // ✨ IMPORTAMOS EL NUEVO COMPONENTE DE AVATARES
 import AvatarUsuario from '../components/AvatarUsuario';
-// Mangiyeg iti SolicitudDM component
+// ✨ Importamos el componente de la solicitud de DM
 import SolicitudDM from './SolicitudDM';
 
 function MisCronicas({ alActualizarUsuario }) { 
@@ -17,7 +17,7 @@ function MisCronicas({ alActualizarUsuario }) {
   const [peticionEnviada, setPeticionEnviada] = useState(usuarioGuardado?.solicitudDmPendiente || false);
   const esJugadorBase = usuarioGuardado?.rol === 'jugador';
   
-  // Mangikabil ti estado para iti modal ti SolicitudDM
+  // ✨ Estado para mostrar el modal de Solicitud de DM
   const [mostrarSolicitudDM, setMostrarSolicitudDM] = useState(false);
   
   const [perfil, setPerfil] = useState({ 
@@ -118,12 +118,12 @@ function MisCronicas({ alActualizarUsuario }) {
     }
   };
 
-  // Luktan ti modal imbes a mangipatulod a dagus iti pakaammo
+  // ✨ Abrimos el modal con los términos y condiciones en lugar de enviar la petición directamente
   const enviarPeticionDM = () => {
     setMostrarSolicitudDM(true);
   };
 
-  // Iproseso ti dawat kalpasan ti panagpatingga ti SolicitudDM
+  // ✨ Procesa la petición a la API tras aceptar los términos y condiciones
   const procesarPeticionDM = async () => {
     try {
       const res = await fetchProtegido('/api/usuarios/solicitar-dm', {
@@ -334,11 +334,11 @@ function MisCronicas({ alActualizarUsuario }) {
         </div>
       </div>
 
-      {/* Renderizar modal ti SolicitudDM no husto ti estado */}
+      {/* ✨ Renderizamos el modal si se solicita el rango de DM */}
       {mostrarSolicitudDM && (
         <div className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-black/95 backdrop-blur-md animate-in fade-in duration-300">
           <div className="relative w-full max-w-2xl max-h-[90vh] overflow-y-auto scrollbar-hide rounded-[2.5rem]">
-            {/* Pindutan tapno iserana ti modal no kasapulan */}
+            {/* Botón para cerrar el modal si el usuario lo desea */}
             <button 
               onClick={() => setMostrarSolicitudDM(false)} 
               className="absolute top-4 right-4 z-[210] text-zinc-500 hover:text-white bg-zinc-900 w-10 h-10 rounded-full border border-zinc-800 flex items-center justify-center transition-colors shadow-lg"
