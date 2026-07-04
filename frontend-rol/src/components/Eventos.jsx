@@ -24,6 +24,7 @@ function Eventos() {
   const carruselEventosRef = useRef(null);
   const carruselPartidasRef = useRef(null); 
   const carruselJuegosRef = useRef(null); // ✨ REF PARA EL CARRUSEL DE JUEGOS
+  const carruselEscapesRef = useRef(null); // ✨ REF PARA EL CARRUSEL DE ESCAPES
 
   const usuarioGuardado = JSON.parse(localStorage.getItem('usuario'));
   // Los DMs y Admins pueden crear mesas de rol.
@@ -95,6 +96,40 @@ function Eventos() {
       socket.disconnect();
     };
   }, []);
+
+  // ✨ AUTO-PLAY PARA LOS CARRUSELES (EVITA QUE LA PÁGINA QUEDE ESTÁTICA)
+  useEffect(() => {
+    let intervalo;
+    
+    const autoScroll = (ref) => {
+      if (ref.current) {
+        const container = ref.current;
+        const maxScrollLeft = container.scrollWidth - container.clientWidth;
+        
+        if (container.scrollLeft >= maxScrollLeft - 5) {
+          container.scrollTo({ left: 0, behavior: 'smooth' });
+        } else {
+          container.scrollBy({ left: 350, behavior: 'smooth' });
+        }
+      }
+    };
+
+    if (eventoSeleccionado) {
+      if (vistaActiva === 'rol') {
+        intervalo = setInterval(() => autoScroll(carruselPartidasRef), 4000);
+      } else if (vistaActiva === 'juegos') {
+        intervalo = setInterval(() => autoScroll(carruselJuegosRef), 4000);
+      } else if (vistaActiva === 'escape') {
+        intervalo = setInterval(() => autoScroll(carruselEscapesRef), 4000);
+      }
+    } else {
+      intervalo = setInterval(() => autoScroll(carruselEventosRef), 5000);
+    }
+
+    return () => {
+      if (intervalo) clearInterval(intervalo);
+    };
+  }, [eventoSeleccionado, vistaActiva, partidasDelEvento, escapesDelEvento, eventos]);
 
   const borrarEvento = async (id, e) => {
     e.stopPropagation();
@@ -376,18 +411,23 @@ function Eventos() {
 
             <div className="flex items-center justify-between mb-8">
               <h3 className="text-2xl font-black text-white uppercase tracking-tighter italic">Salas Disponibles</h3>
+              <div className="flex gap-2">
+                <button onClick={() => carruselEscapesRef.current?.scrollBy({left: -350, behavior: 'smooth'})} className="w-10 h-10 bg-zinc-900 border border-zinc-800 rounded-full flex items-center justify-center hover:bg-zinc-800 text-zinc-500 transition-colors">‹</button>
+                <button onClick={() => carruselEscapesRef.current?.scrollBy({left: 350, behavior: 'smooth'})} className="w-10 h-10 bg-zinc-900 border border-zinc-800 rounded-full flex items-center justify-center hover:bg-zinc-800 text-zinc-500 transition-colors">›</button>
+              </div>
             </div>
 
             {escapesDelEvento.length > 0 ? (
-              <div className="grid grid-cols-1 gap-10 pb-12 max-w-5xl mx-auto">
+              <div ref={carruselEscapesRef} className="flex gap-6 overflow-x-auto pb-12 scrollbar-hide snap-x" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
                 {escapesDelEvento.map(sala => (
-                  <TarjetaEscape 
-                    key={sala.id} 
-                    sala={sala} 
-                    usuarioGuardado={usuarioGuardado} 
-                    esAdmin={esAdmin} 
-                    inscripcionesCerradas={inscripcionesCerradas}
-                  />
+                  <div key={sala.id} className="w-[85vw] sm:w-[350px] lg:w-[calc(33.333%-1rem)] flex-none snap-center">
+                    <TarjetaEscape 
+                      sala={sala} 
+                      usuarioGuardado={usuarioGuardado} 
+                      esAdmin={esAdmin} 
+                      inscripcionesCerradas={inscripcionesCerradas}
+                    />
+                  </div>
                 ))}
               </div>
             ) : (

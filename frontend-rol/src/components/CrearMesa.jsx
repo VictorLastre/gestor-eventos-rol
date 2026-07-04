@@ -91,7 +91,7 @@ function CrearMesa({ idEvento, alCrearMesa }) {
       etiqueta, 
       apta_novatos: aptaNovatos,
       materiales_pedidos: materialesPedidos,
-      codigo_privado: esPrivada ? codigoPrivado : null // ✨ AÑADIMOS LA CLAVE SI ES PRIVADA
+      codigo_privado: esPrivada ? codigoPrivado : null
     };
 
     try {
@@ -104,6 +104,17 @@ function CrearMesa({ idEvento, alCrearMesa }) {
       const data = await respuesta.json();
 
       if (respuesta.ok) {
+        // ✨ Recordatorio de puntualidad según reglamento antes de la confirmación de éxito
+        await Swal.fire({
+          title: '⏰ Recordatorio de Puntualidad',
+          text: 'Como Dungeon Master de la Asociación de Rol La Pampa, recuerda presentarte al menos 15 minutos antes del inicio de tu turno para preparar tu espacio, recibir a los aventureros y organizar tus materiales.',
+          icon: 'info',
+          background: '#18181b',
+          color: '#fff',
+          confirmButtonColor: '#a855f7',
+          confirmButtonText: 'Entendido, seré puntual'
+        });
+
         Swal.fire({
           title: '¡Mesa Forjada!',
           text: data.mensaje || 'Tu aventura ha sido publicada en el tablón.',
