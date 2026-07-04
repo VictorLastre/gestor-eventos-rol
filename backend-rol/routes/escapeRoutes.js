@@ -57,6 +57,8 @@ router.get('/:eventoId', verificarToken, (req, res) => {
   });
 });
 
+const { enviarMensajeAlCanal } = require('../utils/telegram');
+
 // 2. CREAR UNA SALA DE ESCAPE Y SUS TURNOS
 router.post('/:eventoId', verificarToken, (req, res) => {
   if (req.usuario.rol === 'jugador') return res.status(403).json({ error: 'Solo DMs y Admins pueden organizar Escapes.' });
@@ -90,6 +92,21 @@ router.post('/:eventoId', verificarToken, (req, res) => {
 
       const io = req.app.get('io');
       if (io) io.emit('actualizacion-escapes', { eventoId: parseInt(eventoId) });
+
+      // ✨ ANUNCIO EN TELEGRAM (Canal)
+      db.query("SELECT nombre FROM eventos WHERE id = ?", [eventoId], (errEv, resEv) => {
+        const nombreEvento = resEv && resEv[0]?.nombre || "Jornada";
+        const mensajeTelegram = `🔐 <b>¡Nueva Sala de Escape Habilitada!</b>\n\n` +
+          `🚪 <b>${titulo}</b>\n` +
+          `📝 <i>"${descripcion}"</i>\n\n` +
+          `🔮 <b>Jornada:</b> ${nombreEvento}\n` +
+          `⚙️ <b>Dificultad:</b> ${dificultad} | 👥 <b>Cupo:</b> ${cupo_por_turno} jugadores\n` +
+          `⏰ <b>Pases disponibles:</b>\n` +
+          turnos.map(t => `  • ${t.hora_inicio.substring(0, 5)} - ${t.hora_fin.substring(0, 5)}`).join('\n') + `\n\n` +
+          `🗝️ ¡Reserva tu turno en el portal antes de que se llenen!`;
+        
+        enviarMensajeAlCanal(mensajeTelegram);
+      });
 
       res.status(201).json({ mensaje: '¡Escape Room habilitado con éxito!' });
     });
@@ -199,7 +216,7 @@ router.delete('/:id', verificarToken, (req, res) => {
   });
 });
 
-// ✨ 6. EDITAR UN ESCAPE ROOM (¡NUEVO!)
+// ✨ 6. EDITAR UN ESCAPE ROOM
 router.put('/:id', verificarToken, (req, res) => {
   const roomId = req.params.id;
   const usuarioId = req.usuario.id;
@@ -220,7 +237,7 @@ router.put('/:id', verificarToken, (req, res) => {
     // Extraemos los nuevos datos enviados por el frontend
     const { titulo, descripcion, dificultad, edad_minima, cupo_por_turno, materiales_pedidos } = req.body;
 
-    // Actualizamos los datos principales de la sala (No tocamos los turnos en esta ruta por seguridad y simplicidad)
+    // Actualizamos los datos principales de la sala
     const sqlUpdate = `
       UPDATE escape_rooms 
       SET titulo = ?, descripcion = ?, dificultad = ?, edad_minima = ?, cupo_por_turno = ?, materiales_pedidos = ?

@@ -1,85 +1,84 @@
 import { useState, useEffect } from 'react';
-import Swal from 'sweetalert2'; 
-import { fetchProtegido } from '../utils/api'; 
-import { io } from 'socket.io-client';
-// ✨ IMPORTAMOS EL NUEVO COMPONENTE DE AVATARES
-import AvatarUsuario from '../components/AvatarUsuario';
-// ✨ Importamos el componente de la solicitud de DM
-import SolicitudDM from './SolicitudDM';
+import Swal from 'sweetalert2';
+import SolicitudDM from './SolicitudDM'; 
+import { fetchProtegido } from '../utils/api';
 
-function MisCronicas({ alActualizarUsuario }) { 
-  const [cronicas, setCronicas] = useState({ dirigiendo: [], jugando: [] });
-  const [cargando, setCargando] = useState(true);
-  
+const AVATARES = ['guerrero', 'mago', 'ladron', 'clerigo', 'bardo', 'explorador', 'nigromante', 'paladin'];
+
+const CONFIG_AVATARES = {
+  guerrero: { emoji: '🛡️', nombre: 'Guerrero' },
+  mago: { emoji: '🔮', nombre: 'Mago' },
+  ladron: { emoji: '🗡️', nombre: 'Pícaro' },
+  clerigo: { emoji: '✨', nombre: 'Clérigo' },
+  bardo: { emoji: '🎵', nombre: 'Bardo' },
+  explorador: { emoji: '🏹', nombre: 'Explorador' },
+  nigromante: { emoji: '💀', nombre: 'Nigromante' },
+  paladin: { emoji: '⚔️', nombre: 'Paladín' }
+};
+
+function MisCronicas({ alActualizarUsuario }) {
   const [usuarioGuardado, setUsuarioGuardado] = useState(JSON.parse(localStorage.getItem('usuario')));
-  const [editando, setEditando] = useState(false);
-  
-  const [peticionEnviada, setPeticionEnviada] = useState(usuarioGuardado?.solicitudDmPendiente || false);
-  const esJugadorBase = usuarioGuardado?.rol === 'jugador';
-  
-  // ✨ Estado para mostrar el modal de Solicitud de DM
-  const [mostrarSolicitudDM, setMostrarSolicitudDM] = useState(false);
   
   const [perfil, setPerfil] = useState({ 
     nombre: usuarioGuardado?.nombre || '', 
     nombre_completo: usuarioGuardado?.nombre_completo || '', 
     email: usuarioGuardado?.email || '',
     avatar: usuarioGuardado?.avatar || 'guerrero',
+    telegram_chet_id: usuarioGuardado?.telegram_chet_id || '',
     password: '' // ✨ AGREGADO: Campo para la nueva contraseña
   });
 
-  const cargarCronicas = () => {
-    fetchProtegido('/api/usuarios/mis-cronicas')
-      .then(res => res.json())
-      .then(datos => {
-        setCronicas(datos);
-        setCargando(false);
-      })
-      .catch(err => {
-        if (err === 'Sesión expirada') return;
-        console.error("Error cargando crónicas:", err);
-      });
-  };
+  const [cronicas, setCronicas] = useState({ jugando: [], dirigiendo: [] });
+  const [editando, setEditando] = useState(false);
+  const [cargandoCronicas, setCargandoCronicas] = useState(true);
+  const [peticionEnviada, setPeticionEnviada] = useState(usuarioGuardado?.solicitudDmPendiente || false);
+
+  // Nuevo estado para controlar la visibilidad del modal del reglamento
+  const [mostrarSolicitudDM, setMostrarSolicitudDM] = useState(false);
+
+  useEffect(() => {
+    actualizarPerfilDesdeDB();
+    cargarCronicas();
+  }, []);
 
   const actualizarPerfilDesdeDB = () => {
     fetchProtegido('/api/usuarios/yo') 
       .then(res => res.json())
       .then(datosUsuario => {
-         if(datosUsuario.rol !== usuarioGuardado.rol) {
-            const nuevoUsuario = { ...usuarioGuardado, rol: datosUsuario.rol, solicitudDmPendiente: false };
+         if(datosUsuario.rol !== usuarioGuardado.rol || datosUsuario.telegram_chet_id !== usuarioGuardado.telegram_chet_id) {
+            const nuevoUsuario = { 
+              ...usuarioGuardado, 
+              rol: datosUsuario.rol, 
+              telegram_chet_id: datosUsuario.telegram_chet_id,
+              solicitudDmPendiente: false 
+            };
             localStorage.setItem('usuario', JSON.stringify(nuevoUsuario));
             setUsuarioGuardado(nuevoUsuario);
+            setPerfil(prev => ({ 
+              ...prev, 
+              telegram_chet_id: datosUsuario.telegram_chet_id || '' 
+            }));
             setPeticionEnviada(false); 
             if (alActualizarUsuario) alActualizarUsuario(nuevoUsuario);
          }
       })
-      .catch(err => console.error("Error verificando ascenso:", err));
+      .catch(err => { if (err !== 'Sesión expirada') console.error(err); });
   };
 
-  useEffect(() => {
-    cargarCronicas();
-
-    const socket = io('/', { path: '/api/socket.io' });
-
-    socket.on('actualizacion-mesas', () => {
-      cargarCronicas();
-    });
-
-    socket.on('actualizacion-eventos', () => {
-      cargarCronicas();
-    });
-
-    socket.on('actualizacion-usuarios', () => {
-      actualizarPerfilDesdeDB();
-    });
-
-    return () => {
-      socket.disconnect();
-    };
-  }, [usuarioGuardado.rol]); 
+  const cargarCronicas = () => {
+    setCargandoCronicas(true);
+    fetchProtegido('/api/partidas/cronicas/mis-partidas')
+      .then(res => res.json())
+      .then(data => { setCronicas(data); setCargandoCronicas(false); })
+      .catch(err => { if (err !== 'Sesión expirada') console.error(err); setCargandoCronicas(false); });
+  };
 
   const manejarCambioPerfil = (e) => {
     setPerfil({ ...perfil, [e.target.name]: e.target.value });
+  };
+
+  const seleccionarAvatar = (av) => {
+    setPerfil({ ...perfil, avatar: av });
   };
 
   const guardarPerfil = async () => {
@@ -97,95 +96,89 @@ function MisCronicas({ alActualizarUsuario }) {
 
         localStorage.setItem('usuario', JSON.stringify(nuevoUsuario));
         setUsuarioGuardado(nuevoUsuario);
-        if (alActualizarUsuario) alActualizarUsuario(nuevoUsuario);
-        
-        // Limpiamos el campo del formulario
-        setPerfil(prev => ({ ...prev, password: '' }));
         setEditando(false);
-        
+        if (alActualizarUsuario) alActualizarUsuario(nuevoUsuario);
+
         Swal.fire({
-          title: '¡Ficha Actualizada!',
-          text: 'Tus datos han sido grabados en los registros del gremio.',
+          title: 'Ficha Guardada',
+          text: 'Tus datos de aventurero han sido actualizados en los anales del gremio.',
           icon: 'success',
-          background: '#09090b', 
+          background: '#09090b',
           color: '#fff',
           confirmButtonColor: '#10b981'
         });
+      } else {
+        const errorData = await res.json();
+        Swal.fire({
+          title: 'Error de Escritura',
+          text: errorData.error || 'La base de datos rechazó el pergamino.',
+          icon: 'error',
+          background: '#09090b',
+          color: '#fff',
+          confirmButtonColor: '#ef4444'
+        });
       }
-    } catch (error) {
-      if (error === 'Sesión expirada') return;
-      console.error(error);
-    }
+    } catch (err) { if (err !== 'Sesión expirada') console.error(err); }
   };
 
-  // ✨ Abrimos el modal con los términos y condiciones en lugar de enviar la petición directamente
+  // Se encarga de abrir el modal en lugar de enviar la petición directamente
   const enviarPeticionDM = () => {
     setMostrarSolicitudDM(true);
   };
 
-  // ✨ Procesa la petición a la API tras aceptar los términos y condiciones
+  // Callback que se ejecuta cuando el modal SolicitudDM.jsx es aprobado por el usuario
   const procesarPeticionDM = async () => {
     try {
-      const res = await fetchProtegido('/api/usuarios/solicitar-dm', {
-        method: 'POST'
-      });
-      
+      const res = await fetchProtegido('/api/usuarios/solicitar-dm', { method: 'POST' });
       if (res.ok) {
         setPeticionEnviada(true);
-        const usuarioActualizado = { ...usuarioGuardado, solicitudDmPendiente: true };
-        localStorage.setItem('usuario', JSON.stringify(usuarioActualizado));
-        setUsuarioGuardado(usuarioActualizado);
-        if (alActualizarUsuario) alActualizarUsuario(usuarioActualizado);
+        const nuevoUsuario = { ...usuarioGuardado, solicitudDmPendiente: true };
+        localStorage.setItem('usuario', JSON.stringify(nuevoUsuario));
+        setUsuarioGuardado(nuevoUsuario);
+        
+        // Cerramos el modal una vez completado
         setMostrarSolicitudDM(false);
+
+        Swal.fire({
+          title: 'Petición Presentada',
+          text: 'Tu solicitud de rango ha sido elevada al Senado de Administradores.',
+          icon: 'success',
+          background: '#09090b',
+          color: '#fff',
+          confirmButtonColor: '#a855f7'
+        });
+      } else {
+        const errorData = await res.json();
+        Swal.fire({
+          title: 'Petición Denegada',
+          text: errorData.error || 'Tu petición no pudo ser entregada.',
+          icon: 'warning',
+          background: '#09090b',
+          color: '#fff',
+          confirmButtonColor: '#f59e0b'
+        });
       }
-    } catch (e) { 
-      if (e !== 'Sesión expirada') console.error(e); 
-    }
+    } catch (err) { if (err !== 'Sesión expirada') console.error(err); }
   };
 
   const formatearFecha = (fechaStr) => {
-    if (!fechaStr) return "Fecha Desconocida";
-    try {
-      const soloFecha = fechaStr.split('T')[0];
-      const [anio, mes, dia] = soloFecha.split('-');
-      const meses = ["enero", "febrero", "marzo", "abril", "mayo", "junio", "julio", "agosto", "septiembre", "octubre", "noviembre", "diciembre"];
-      return `${parseInt(dia)} de ${meses[parseInt(mes) - 1]} de ${anio}`;
-    } catch (error) {
-      return "Fecha en el limbo";
-    }
+    if (!fechaStr) return '';
+    const partes = fechaStr.split('-');
+    return `${partes[2]}/${partes[1]}/${partes[0]}`;
   };
 
-  if (cargando) return (
-    <div className="flex justify-center items-center min-h-[50vh]">
-      <div className="flex flex-col items-center gap-4">
-        <div className="w-12 h-12 border-4 border-emerald-500/20 border-t-emerald-500 rounded-full animate-spin"></div>
-        <p className="text-emerald-500 font-black animate-pulse uppercase tracking-widest text-xs">Consultando Archivos...</p>
-      </div>
-    </div>
-  );
+  const esJugadorBase = usuarioGuardado?.rol === 'jugador' || usuarioGuardado?.rol === 'aventurero';
 
   return (
-    <div className="max-w-5xl mx-auto p-4 md:p-8 animate-in fade-in duration-700">
-      
-      {/* 📜 ENCABEZADO DE PERFIL */}
-      <section className="bg-zinc-900/50 backdrop-blur-xl border border-zinc-800 p-6 md:p-10 rounded-[2.5rem] shadow-2xl mb-12 relative overflow-hidden">
-        <div className="absolute top-0 right-0 w-64 h-64 bg-emerald-500/5 blur-[100px] rounded-full pointer-events-none"></div>
-        
+    <div className="space-y-12">
+      {/* 🔮 PERFIL GENERAL */}
+      <section className="bg-zinc-900/40 p-8 md:p-12 rounded-[2.5rem] border border-zinc-800 backdrop-blur-xl relative overflow-hidden shadow-2xl">
+        <div className="absolute top-0 right-0 w-80 h-80 bg-emerald-500/5 blur-[100px] rounded-full pointer-events-none"></div>
+        <div className="absolute bottom-0 left-0 w-80 h-80 bg-purple-500/5 blur-[100px] rounded-full pointer-events-none"></div>
+
         {editando ? (
-          <div className="relative z-10 flex flex-col gap-8 animate-in zoom-in-95 duration-300">
-            
-            <div className="space-y-4 relative">
-              <label className="text-[10px] font-black text-zinc-500 uppercase tracking-widest ml-2">Identidad Visual</label>
-              <div className="flex flex-col sm:flex-row items-center gap-6 bg-zinc-950/50 p-6 rounded-[2rem] border border-zinc-800/50">
-                <div className="w-20 h-20 bg-zinc-950 rounded-full border-2 border-emerald-500/50 flex items-center justify-center shadow-[0_0_20px_rgba(16,185,129,0.2)] overflow-hidden">
-                  <AvatarUsuario nombre={perfil.nombre} tamaño={80} variante="beam" />
-                </div>
-                <div className="text-zinc-400 text-sm italic font-medium text-center sm:text-left">
-                  Tu avatar se forja mágicamente en base a tu Alias.<br/>
-                  <span className="text-emerald-500/70 text-xs">Prueba a escribir un nuevo nombre abajo para ver cómo cambia.</span>
-                </div>
-              </div>
-            </div>
+          <div className="space-y-8 relative z-10">
+            <h3 className="text-3xl font-black text-white uppercase tracking-tighter italic">Reescribir Ficha de Personaje</h3>
             
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div className="space-y-2">
@@ -198,7 +191,7 @@ function MisCronicas({ alActualizarUsuario }) {
               </div>
             </div>
 
-            {/* ✨ ZONA DE CONTRASEÑA AGREGADA AQUÍ */}
+            {/* ✨ ZONA DE CONTRASEÑA Y TELEGRAM AGREGADOS AQUÍ */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div className="space-y-2">
                 <label className="text-[10px] font-black text-zinc-500 uppercase tracking-widest ml-2 flex items-center gap-2">
@@ -229,22 +222,55 @@ function MisCronicas({ alActualizarUsuario }) {
                 />
               </div>
             </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="space-y-2">
+                <label className="text-[10px] font-black text-zinc-500 uppercase tracking-widest ml-2 flex items-center gap-2">
+                  <span className="w-1.5 h-1.5 bg-sky-500 rounded-full animate-pulse"></span> 
+                  ID de Telegram (para notificaciones)
+                </label>
+                <input 
+                  name="telegram_chet_id" 
+                  placeholder="Ej: 123456789" 
+                  className="w-full bg-zinc-950 border border-zinc-800 rounded-2xl py-4 px-6 text-white focus:border-sky-500 outline-none transition-all font-mono" 
+                  value={perfil.telegram_chet_id} 
+                  onChange={manejarCambioPerfil} 
+                />
+                <p className="text-[9px] text-zinc-500 italic ml-2 mt-1">
+                  Obtén tu ID escribiendo al bot <a href="https://t.me/userinfobot" target="_blank" rel="noreferrer" className="text-sky-400 hover:underline">@userinfobot</a>.
+                </p>
+              </div>
+            </div>
             
             <div className="flex flex-col sm:flex-row gap-3 mt-2">
               <button onClick={guardarPerfil} className="flex-1 bg-emerald-600 hover:bg-emerald-500 text-white font-black py-4 rounded-2xl uppercase text-xs tracking-widest transition-all shadow-lg shadow-emerald-900/20">Grabar Ficha</button>
               <button onClick={() => setEditando(false)} className="px-8 bg-zinc-800 hover:bg-zinc-700 text-zinc-400 font-black py-4 rounded-2xl uppercase text-xs tracking-widest transition-all">Descartar</button>
             </div>
+
+            <div className="space-y-4 pt-6 border-t border-zinc-800/80">
+              <label className="text-[10px] font-black text-zinc-500 uppercase tracking-widest ml-2 block">Retrato del Aventurero (Avatar)</label>
+              <div className="grid grid-cols-4 sm:grid-cols-8 gap-4">
+                {AVATARES.map(av => (
+                  <button 
+                    key={av} 
+                    onClick={() => seleccionarAvatar(av)}
+                    type="button" 
+                    className={`aspect-square text-3xl rounded-2xl flex items-center justify-center transition-all border ${perfil.avatar === av ? 'bg-emerald-500/20 border-emerald-500 scale-105 shadow-lg shadow-emerald-900/10' : 'bg-zinc-950 border-zinc-800 hover:border-zinc-700'}`}
+                    title={CONFIG_AVATARES[av].nombre}
+                  >
+                    {CONFIG_AVATARES[av].emoji}
+                  </button>
+                ))}
+              </div>
+            </div>
           </div>
         ) : (
-          <div className="flex flex-col md:flex-row md:items-center justify-between gap-8 relative z-10">
-            <div className="flex items-center gap-6 md:gap-8">
-                <div className="relative group">
-                    <div className="absolute inset-0 bg-emerald-500/20 blur-xl rounded-full group-hover:bg-emerald-500/40 transition-all"></div>
-                    <div className="w-24 h-24 md:w-32 md:h-32 bg-zinc-950 rounded-full flex items-center justify-center border-2 border-emerald-500/50 shadow-2xl relative z-10 overflow-hidden">
-                        <AvatarUsuario nombre={perfil.nombre} tamaño={128} variante="beam" />
-                    </div>
+          <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-8 relative z-10">
+            <div className="flex items-center gap-6 min-w-0">
+                <div className="shrink-0 w-24 h-24 bg-zinc-950 border border-zinc-800 rounded-[2rem] flex items-center justify-center text-5xl shadow-2xl relative">
+                  {CONFIG_AVATARES[perfil.avatar]?.emoji || '🛡️'}
                 </div>
-                <div>
+                <div className="min-w-0">
                   <p className="text-4xl md:text-5xl font-black text-white tracking-tighter uppercase italic">{perfil.nombre}</p>
                   
                   {perfil.nombre_completo && (
@@ -255,6 +281,15 @@ function MisCronicas({ alActualizarUsuario }) {
 
                   <p className="text-emerald-500 font-black text-[10px] uppercase tracking-[0.4em] mb-2">{usuarioGuardado?.rol === 'admin' ? '👑 Administrador' : usuarioGuardado?.rol === 'dm' ? '🛡️ Dungeon Master' : '⚔️ Aventurero'}</p>
                   <p className="text-zinc-500 font-mono text-sm">{perfil.email}</p>
+                  {usuarioGuardado?.telegram_chet_id ? (
+                    <p className="text-sky-400 font-bold text-xs mt-2 flex items-center gap-2 select-none">
+                      🤖 Telegram Vinculado (ID: {usuarioGuardado.telegram_chet_id})
+                    </p>
+                  ) : (
+                    <p className="text-zinc-500 italic text-[11px] mt-2 flex items-center gap-2 select-none">
+                      ⚠️ Telegram no vinculado (edita tu perfil para recibir alertas)
+                    </p>
+                  )}
                 </div>
             </div>
             
@@ -338,7 +373,6 @@ function MisCronicas({ alActualizarUsuario }) {
       {mostrarSolicitudDM && (
         <div className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-black/95 backdrop-blur-md animate-in fade-in duration-300">
           <div className="relative w-full max-w-2xl max-h-[90vh] overflow-y-auto scrollbar-hide rounded-[2.5rem]">
-            {/* Botón para cerrar el modal si el usuario lo desea */}
             <button 
               onClick={() => setMostrarSolicitudDM(false)} 
               className="absolute top-4 right-4 z-[210] text-zinc-500 hover:text-white bg-zinc-900 w-10 h-10 rounded-full border border-zinc-800 flex items-center justify-center transition-colors shadow-lg"

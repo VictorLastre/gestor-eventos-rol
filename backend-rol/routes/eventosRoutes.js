@@ -47,6 +47,8 @@ router.get('/', (req, res) => {
   });
 });
 
+const { enviarMensajeAlCanal } = require('../utils/telegram');
+
 // 2. Crear un nuevo evento (Solo Admins)
 router.post('/', verificarToken, (req, res) => {
   if (req.usuario.rol !== 'admin') return res.status(403).json({ error: 'Solo Admins.' });
@@ -79,6 +81,16 @@ router.post('/', verificarToken, (req, res) => {
     const io = req.app.get('io');
     if (io) io.emit('actualizacion-eventos');
     
+    // ✨ ANUNCIO EN TELEGRAM (Canal)
+    const mensajeTelegram = `📅 <b>¡Nueva Jornada Convocada!</b>\n\n` +
+      `⚔️ <b>${nombre}</b>\n` +
+      `📝 <i>"${descripcion}"</i>\n\n` +
+      `🗓️ <b>Fecha:</b> ${fechaLimpia}\n` +
+      `⏰ <b>Horario:</b> ${hora_inicio.substring(0, 5)} a ${hora_fin.substring(0, 5)}\n` +
+      `📍 <b>Lugar:</b> ${lugar}, ${ciudad}\n\n` +
+      `🔮 ¡Regístrate en el portal y asegura tu lugar!`;
+    enviarMensajeAlCanal(mensajeTelegram);
+
     res.status(201).json({ mensaje: '¡Evento convocado con éxito!' });
   });
 });

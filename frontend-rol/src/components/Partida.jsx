@@ -41,6 +41,8 @@ function Partida(props) {
   const [listaJugadores, setListaJugadores] = useState([]);
   const [modalAbierto, setModalAbierto] = useState(false);
   const [cargandoJugadores, setCargandoJugadores] = useState(false);
+  const [mensajeTelegram, setMensajeTelegram] = useState('');
+  const [enviandoMensaje, setEnviandoMensaje] = useState(false);
 
   const [modoEdicion, setModoEdicion] = useState(false);
   const [sistemas, setSistemas] = useState([]);
@@ -120,6 +122,40 @@ function Partida(props) {
   const soyAdmin = props.esAdmin;
 
   // ✨ INSCRIPCIÓN CON SOPORTE PARA MESAS PRIVADAS
+  const enviarAvisoTelegram = async () => {
+    if (!mensajeTelegram.trim()) {
+      return Swal.fire({ title: 'Aviso', text: 'Escribe un mensaje antes de enviar.', icon: 'warning', background: '#09090b', color: '#fff' });
+    }
+
+    setEnviandoMensaje(true);
+    try {
+      const res = await fetchProtegido(`/api/partidas/${props.id}/notificar-jugadores`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ mensaje: mensajeTelegram })
+      });
+
+      if (res.ok) {
+        Swal.fire({
+          title: 'Aviso Enviado',
+          text: 'Tus jugadores han sido notificados.',
+          icon: 'success',
+          background: '#09090b',
+          color: '#fff',
+          confirmButtonColor: '#0ea5e9'
+        });
+        setMensajeTelegram('');
+      } else {
+        const text = await res.text();
+        Swal.fire({ title: 'Error', text: text || 'No se pudo enviar el aviso.', icon: 'error', background: '#09090b', color: '#fff' });
+      }
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setEnviandoMensaje(false);
+    }
+  };
+
   const alternarInscripcion = async (e) => {
     e.stopPropagation(); 
     const metodo = anotado ? 'DELETE' : 'POST';
@@ -253,17 +289,16 @@ function Partida(props) {
     setDatosEdicion({...datosEdicion, codigo_privado: clave});
   };
 
-  // Lógica de colores por disponibilidad
   const estaLlena = jugadoresAnotados >= props.cupo;
   const tieneJugadores = jugadoresAnotados > 0 && !estaLlena;
   
   let estiloBordeDisponibilidad = "";
   if (estaLlena) {
-    estiloBordeDisponibilidad = "border-red-500/60 hover:border-red-500 shadow-[0_0_15px_rgba(239,68,68,0.15)]"; // Rojo
+    estiloBordeDisponibilidad = "border-red-500/60 hover:border-red-500 shadow-[0_0_15px_rgba(239,68,68,0.15)]"; 
   } else if (tieneJugadores) {
-    estiloBordeDisponibilidad = "border-orange-500/60 hover:border-orange-500 shadow-[0_0_15px_rgba(249,115,22,0.15)]"; // Naranja
+    estiloBordeDisponibilidad = "border-orange-500/60 hover:border-orange-500 shadow-[0_0_15px_rgba(249,115,22,0.15)]"; 
   } else {
-    estiloBordeDisponibilidad = "border-emerald-500/60 hover:border-emerald-500 shadow-[0_0_15px_rgba(16,185,129,0.15)]"; // Verde
+    estiloBordeDisponibilidad = "border-emerald-500/60 hover:border-emerald-500 shadow-[0_0_15px_rgba(16,185,129,0.15)]"; 
   }
 
   return (
@@ -281,7 +316,6 @@ function Partida(props) {
         <div className="flex justify-between items-start mb-6 relative z-10 gap-3">
           <div className="flex-1 min-w-0 space-y-3 pr-2">
             <div className="flex flex-wrap gap-2">
-              {/* ✨ ETIQUETA DE MESA PRIVADA (NUEVO) */}
               {Boolean(props.es_privada) && (
                 <span className="text-[9px] font-black text-purple-900 bg-purple-400 uppercase tracking-widest px-3 py-1 rounded-full shadow-[0_0_12px_rgba(168,85,247,0.5)] flex items-center gap-1.5 whitespace-nowrap animate-pulse">
                   🔒 Privada
@@ -575,15 +609,14 @@ function Partida(props) {
 
             <div className="relative z-10 pt-4 md:pt-0">
               <div className="flex flex-wrap gap-2 mb-6">
-                {/* ✨ ETIQUETA DE MESA PRIVADA EN EL MODAL (NUEVO) */}
                 {Boolean(props.es_privada) && (
-                  <span className="text-[10px] font-black text-purple-950 uppercase tracking-widest bg-purple-400 px-3 py-1.5 rounded-full shadow-[0_0_15px_rgba(168,85,247,0.4)] flex items-center gap-1.5 animate-pulse">
+                  <span className="text-[10px] font-black text-purple-955 uppercase tracking-widest bg-purple-400 px-3 py-1.5 rounded-full shadow-[0_0_15px_rgba(168,85,247,0.4)] flex items-center gap-1.5 animate-pulse">
                     🔒 Mesa Privada
                   </span>
                 )}
 
                 {Boolean(props.apta_novatos) && (
-                  <span className="text-[10px] font-black text-emerald-950 uppercase tracking-widest bg-emerald-400 px-3 py-1.5 rounded-full shadow-[0_0_15px_rgba(52,211,153,0.4)] flex items-center gap-1.5">
+                  <span className="text-[10px] font-black text-emerald-955 uppercase tracking-widest bg-emerald-400 px-3 py-1.5 rounded-full shadow-[0_0_15px_rgba(52,211,153,0.4)] flex items-center gap-1.5">
                     🌱 {esJuegoMesa ? 'Enseña a jugar' : 'Apta Novatos'}
                   </span>
                 )}
@@ -674,6 +707,44 @@ function Partida(props) {
                   )}
                 </div>
               </div>
+
+              {soyElMaster && !props.eventoEsPasado && (
+                <div className="mb-10">
+                  <h4 className="text-[10px] font-black text-sky-500 uppercase tracking-[0.3em] mb-4 flex items-center gap-2">
+                    <span className="w-2 h-2 bg-sky-500 rounded-full animate-pulse shadow-[0_0_8px_rgba(14,165,233,0.8)]"></span> 
+                    Enviar Aviso de Telegram (Solo DM)
+                  </h4>
+                  <div className="bg-sky-950/10 rounded-[2rem] p-6 border border-sky-500/20 shadow-inner space-y-4">
+                    <p className="text-zinc-500 text-xs font-bold leading-relaxed">
+                      Escribe un aviso para tus jugadores. Se enviará un mensaje privado a través del bot a todos los inscritos en la mesa que tengan su Telegram vinculado.
+                    </p>
+                    <textarea 
+                      value={mensajeTelegram} 
+                      onChange={e => setMensajeTelegram(e.target.value)} 
+                      placeholder="Ej: Recuerden traer hojas de personaje nivel 3. ¡Nos vemos en el evento!"
+                      rows="3" 
+                      className="w-full bg-zinc-950 border border-zinc-800 rounded-2xl py-4 px-5 text-white focus:border-sky-500 outline-none transition-all resize-none font-medium placeholder:text-zinc-700 shadow-inner"
+                    />
+                    <div className="flex justify-end">
+                      <button 
+                        type="button"
+                        onClick={enviarAvisoTelegram}
+                        disabled={enviandoMensaje || cargandoJugadores || listaJugadores.length === 0}
+                        className="bg-sky-600 hover:bg-sky-500 disabled:bg-zinc-800 disabled:text-zinc-600 text-white font-black py-3 px-6 rounded-xl uppercase text-[10px] tracking-wider transition-all select-none active:scale-95 shadow-lg shadow-sky-900/10 flex items-center gap-2"
+                      >
+                        {enviandoMensaje ? (
+                          <>
+                            <span className="w-3.5 h-3.5 border-2 border-white/20 border-t-white rounded-full animate-spin"></span>
+                            Enviando...
+                          </>
+                        ) : (
+                          '📣 Enviar Mensaje'
+                        )}
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              )}
 
               <div className="mb-10">
                 <h4 className="text-[10px] font-black text-zinc-500 uppercase tracking-[0.3em] mb-4">{esJuegoMesa ? 'Notas del Organizador' : 'El Relato'}</h4>
