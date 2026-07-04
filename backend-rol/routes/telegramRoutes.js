@@ -1,69 +1,37 @@
-// Módulo de integración con Telegram API usando native https (compatible con cualquier versión de Node)
-const https = require('https');
+const express = require('express');
+const router = express.Router();
+const db = require('../config/db');
+const { enviarMensajeTelegram } = require('../utils/telegram');
 
-// Envía un mensaje a un chat ID (usuario o grupo)
-function enviarMensajeTelegram(chatId, mensaje) {
-  return new Promise((resolve, reject) => {
-    const token = process.env.TELEGRAM_BOT_TOKEN;
-    if (!token) {
-      console.warn("⚠️ Telegram warning: TELEGRAM_BOT_TOKEN no configurado.");
-      return resolve(false);
-    }
-    if (!chatId) {
-      return resolve(false);
-    }
-
-    const payload = JSON.stringify({
-      chat_id: chatId,
-      text: mensaje,
-      parse_mode: 'HTML'
-    });
-
-    const options = {
-      hostname: 'api.telegram.org',
-      port: 443,
-      path: `/bot${token}/sendMessage`,
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Content-Length': Buffer.byteLength(payload)
-      }
-    };
-
-    const req = https.request(options, (res) => {
-      let data = '';
-      res.on('data', (chunk) => { data += chunk; });
-      res.on('end', () => {
-        if (res.statusCode >= 200 && res.statusCode < 300) {
-          resolve(true);
-        } else {
-          console.error("❌ Telegram API error:", data);
-          resolve(false);
+router.post('/webhook', async (req, res) => {
+  try {
+    const { message } = req.body;
+    if (message && message.text && message.text.startsWith('/start')) {
+      const chatId = message.chat.id;
+      const partes = message.text.split(' ');
+      if (partes.length > 1) {
+        const userId = parseInt(partes[1], 10);
+        if (!isNaN(userId)) {
+          db.query(
+            'UPDATE usuarios SET telegram_chet_id = ? WHERE id = ?',
+            [chatId, userId],
+            async (err, resultado) => {
+              if (err) return;
+              if (resultado.affectedRows > 0) {
+                await enviarMensajeTelegram(
+                  chatId,
+                  `✅ <b>¡Vinculación Exitosa!</b>\n\nTu cuenta de la Asociación de Rol La Pampa ha sido enlazada correctamente.`
+                );
+              }
+            }
+          );
         }
-      });
-    });
-
-    req.on('error', (error) => {
-      console.error("❌ Telegram network error:", error.message);
-      resolve(false); // resolvemos false para no crashear
-    });
-
-    req.write(payload);
-    req.end();
-  });
-}
-
-// Envía un anuncio al canal configurado
-function enviarMensajeAlCanal(mensaje) {
-  const canalId = process.env.CANALGENERALID || process.env.TELEGRAM_CHANNEL_ID;
-  if (!canalId) {
-    console.warn("⚠️ Telegram warning: CANALGENERALID o TELEGRAM_CHANNEL_ID no configurado.");
-    return Promise.resolve(false);
+      }
+    }
+    res.status(200).send('OK');
+  } catch (error) {
+    res.status(200).send('OK'); 
   }
-  return enviarMensajeTelegram(canalId, mensaje);
-}
+});
 
-module.exports = {
-  enviarMensajeTelegram,
-  enviarMensajeAlCanal
-};
+module.exports = router;
