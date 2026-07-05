@@ -228,6 +228,28 @@ router.post('/:id/partidas', verificarToken, (req, res) => {
         });
       }
 
+      // ✨ ANUNCIO EN TELEGRAM (Canal)
+      const { enviarMensajeAlCanal } = require('../utils/telegram');
+      const mensajeTelegram = etiqueta === 'Juegos de Mesa'
+        ? `🃏 <b>¡Nuevo Juego de Mesa Convocado!</b>\n\n` +
+          `📦 <b>${titulo}</b>\n` +
+          `🎲 <b>Juego:</b> ${sistema}\n` +
+          `📝 <i>"${descripcion}"</i>\n\n` +
+          `🔮 <b>Jornada:</b> ${nombre_evento}\n` +
+          `⏰ <b>Turno:</b> ${turno} | 👥 <b>Cupo:</b> ${cupo} jugadores\n` +
+          `🌱 <b>¿Enseña reglas?:</b> ${apta_novatos ? 'Sí, apto para novatos' : 'No'}\n\n` +
+          `⚔️ ¡Anótate en el portal para jugar!`
+        : `🎲 <b>¡Nueva Mesa de Rol Forjada!</b>\n\n` +
+          `⚔️ <b>${titulo}</b>\n` +
+          `📜 <b>Sistema:</b> ${sistema}\n` +
+          `📝 <i>"${descripcion}"</i>\n\n` +
+          `🔮 <b>Jornada:</b> ${nombre_evento}\n` +
+          `⏰ <b>Turno:</b> ${turno} | 👥 <b>Cupo:</b> ${cupo} aventureros\n` +
+          `🌱 <b>Apta novatos:</b> ${apta_novatos ? 'Sí' : 'No'}\n\n` +
+          `🛡️ ¡Prepara tus dados y regístrate!`;
+
+      enviarMensajeAlCanal(mensajeTelegram);
+
       const io = req.app.get('io');
       if (io) io.emit('actualizacion-mesas', { eventoId: parseInt(eventoId) });
       
