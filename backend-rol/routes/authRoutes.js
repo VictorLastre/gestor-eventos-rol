@@ -60,7 +60,7 @@ router.post('/login', async (req, res) => {
 
     const token = jwt.sign({ id: usuario.id, rol: usuario.rol, nombre: usuario.nombre }, JWT_SECRET, { expiresIn: '2h' });
     
-    // ✨ LOGIN EXITOSO: Enviamos los datos al Frontend
+        // ✨ LOGIN EXITOSO: Enviamos los datos al Frontend
     res.json({ 
       token, 
       usuario: { 
@@ -69,7 +69,8 @@ router.post('/login', async (req, res) => {
         nombre_completo: usuario.nombre_completo, // Enviamos el nombre real
         rol: usuario.rol, 
         email: usuario.email,
-        avatar: usuario.avatar || 'guerrero' 
+        avatar: usuario.avatar || 'guerrero',
+        telegram_chat_id: usuario.telegram_chat_id // ✨ AGREGADO: Enviar estado de Telegram al loguear
       } 
     });
   } catch (error) {

@@ -311,15 +311,15 @@ function MisCronicas({ alActualizarUsuario }) {
 
                   <p className="text-emerald-500 font-black text-[10px] uppercase tracking-[0.4em] mb-2">{usuarioGuardado?.rol === 'admin' ? '👑 Administrador' : usuarioGuardado?.rol === 'dm' ? '🛡️ Dungeon Master' : '⚔️ Aventurero'}</p>
                   <p className="text-zinc-500 font-mono text-sm">{perfil.email}</p>
-                  {usuarioGuardado?.telegram_chat_id ? (
-                    <p className="text-sky-400 font-bold text-xs mt-2 flex items-center gap-2 select-none">
-                      🤖 Telegram Vinculado (ID: {usuarioGuardado.telegram_chat_id})
+                   {usuarioGuardado?.telegram_chat_id ? (
+                    <p className="text-emerald-500 font-bold text-xs mt-2 flex items-center gap-2 select-none">
+                      🤖 Cuenta vinculada ✅
                     </p>
                   ) : (
-                    <p className="text-zinc-500 italic text-[11px] mt-2 flex items-center gap-2 select-none">
-                      ⚠️ Telegram no vinculado (edita tu perfil para recibir alertas)
+                    <p className="text-red-500 font-bold text-[11px] mt-2 flex items-center gap-2 select-none">
+                      ❌ Cuenta no vinculada
                     </p>
-                  )}
+                  )}                  
                 </div>
             </div>
             

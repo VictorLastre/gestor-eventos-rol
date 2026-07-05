@@ -13,7 +13,7 @@ const registrarLog = (usuario, accion, descripcion) => {
 };
 
 // =======================================================
-// 🚨 1. RUTAS RECUPERADAS (¡Aquí está la de Crónicas!) 🚨
+// 1. CRÓNICAS, SENADO (CONSULTAS) Y ESTADÍSTICAS
 // =======================================================
 
 router.get('/mis-cronicas', verificarToken, (req, res) => {
@@ -86,31 +86,8 @@ router.get('/estadisticas', verificarToken, (req, res) => {
   });
 });
 
-router.put('/:id/rol', verificarToken, (req, res) => {
-  if (req.usuario.rol !== 'admin') return res.status(403).json({ error: 'Sin autoridad.' });
-
-  const { rol } = req.body; 
-  const usuarioId = req.params.id;
-  let sqlUpdate = rol === 'dm' ? 
-    'UPDATE usuarios SET rol = ?, solicita_dm = 0, es_dm_nuevo = 1 WHERE id = ?' : 
-    'UPDATE usuarios SET rol = ?, solicita_dm = 0, es_dm_nuevo = 0 WHERE id = ?';
-
-  db.query(sqlUpdate, [rol, usuarioId], (err) => {
-    if (err) return res.status(500).json({ error: 'Error.' });
-    
-    db.query("SELECT nombre FROM usuarios WHERE id = ?", [usuarioId], (err, result) => {
-        registrarLog(req.usuario, 'CAMBIO_ROL_MANUAL', `Cambió el rango de ${result[0]?.nombre} a ${rol.toUpperCase()}.`);
-    });
-
-    const io = req.app.get('io');
-    if (io) io.emit('actualizacion-usuarios');
-    res.status(200).json({ mensaje: 'Rango modificado.' });
-  });
-});
-
-
 // =======================================================
-// ✨ 2. TUS RUTAS (Las que me pasaste, intactas) ✨
+// 2. GESTIÓN Y ACCIONES DE USUARIO
 // =======================================================
 
 router.put('/perfil', verificarToken, async (req, res) => {
@@ -187,33 +164,42 @@ router.post('/solicitar-dm', verificarToken, (req, res) => {
   });
 });
 
-router.post('/:id/aceptar-dm', verificarToken, (req, res) => {
-  if (req.usuario.rol !== 'admin') return res.status(403).json({ error: 'Solo admins.' });
+// ✨ RUTAS DE ASCENSO MEJORADAS (Soportan PUT y POST para evitar desincronizaciones del frontend)
+router.put('/:id/promover', verificarToken, promoverHandler);
+router.post('/:id/promover', verificarToken, promoverHandler);
+
+function promoverHandler(req, res) {
+  if (req.usuario.rol !== 'admin') return res.status(403).json({ error: 'Denegado.' });
   
   const idUsuario = req.params.id;
 
-  db.query("UPDATE usuarios SET rol = 'dm', solicita_dm = 0, es_dm_nuevo = 0 WHERE id = ?", [idUsuario], (err) => {
-    if (err) return res.status(500).json({ error: 'Error.' });
-
-    db.query("SELECT nombre FROM usuarios WHERE id = ?", [idUsuario], (err, userRes) => {
-       const nombreAscendido = userRes[0]?.nombre || 'Desconocido';
-       registrarLog(req.usuario, 'ASCENDER_DM', `Ascendió a ${nombreAscendido} a Director de Juego.`);
-       
-       const mensaje = `📜 ¡Felicidades! Los líderes del Gremio han aprobado tu ascenso. Ahora posees el rango de Director de Juego (DM).`;
-       db.query("INSERT INTO notificaciones (usuario_id, mensaje) VALUES (?, ?)", [idUsuario, mensaje]);
+  // IMPORTANTE: es_dm_nuevo = 1 para que le permita forjar el pergamino
+  db.query("UPDATE usuarios SET rol = 'dm', solicita_dm = 0, es_dm_nuevo = 1 WHERE id = ?", [idUsuario], (err) => {
+    if (err) return res.status(500).send('Error al forjar el ascenso.');
+    
+    db.query("SELECT nombre FROM usuarios WHERE id = ?", [idUsuario], (err, result) => {
+        const nombrePromovido = result[0]?.nombre || 'Desconocido';
+        registrarLog(req.usuario, 'PROMOVER_DM', `Promovió a ${nombrePromovido} al rango de Dungeon Master.`);
+        
+        const mensaje = `📜 ¡Felicidades! Los líderes del Gremio han aprobado tu ascenso. Ahora posees el rango de Director de Juego (DM).`;
+        db.query("INSERT INTO notificaciones (usuario_id, mensaje) VALUES (?, ?)", [idUsuario, mensaje]);
     });
 
     const io = req.app.get('io');
     if (io) {
       io.emit('actualizacion-usuarios');
+      io.emit('actualizacion-solicitudes');
       io.emit('actualizacion-senado');
     }
-    
-    res.json({ mensaje: 'Ascendido.' });
+    res.send('¡Ascenso completado!');
   });
-});
+}
 
-router.post('/:id/rechazar-dm', verificarToken, (req, res) => {
+// ✨ RUTA DE RECHAZO MEJORADA
+router.put('/:id/rechazar-dm', verificarToken, rechazarHandler);
+router.post('/:id/rechazar-dm', verificarToken, rechazarHandler);
+
+function rechazarHandler(req, res) {
   if (req.usuario.rol !== 'admin') return res.status(403).json({ error: 'Solo admins.' });
   
   const idUsuario = req.params.id;
@@ -237,9 +223,32 @@ router.post('/:id/rechazar-dm', verificarToken, (req, res) => {
     
     res.json({ mensaje: 'Archivado.' });
   });
+}
+
+router.put('/:id/rol', verificarToken, (req, res) => {
+  if (req.usuario.rol !== 'admin') return res.status(403).json({ error: 'Sin autoridad.' });
+
+  const { rol } = req.body; 
+  const usuarioId = req.params.id;
+  let sqlUpdate = rol === 'dm' ? 
+    'UPDATE usuarios SET rol = ?, solicita_dm = 0, es_dm_nuevo = 1 WHERE id = ?' : 
+    'UPDATE usuarios SET rol = ?, solicita_dm = 0, es_dm_nuevo = 0 WHERE id = ?';
+
+  db.query(sqlUpdate, [rol, usuarioId], (err) => {
+    if (err) return res.status(500).json({ error: 'Error.' });
+    
+    db.query("SELECT nombre FROM usuarios WHERE id = ?", [usuarioId], (err, result) => {
+        registrarLog(req.usuario, 'CAMBIO_ROL_MANUAL', `Cambió el rango de ${result[0]?.nombre} a ${rol.toUpperCase()}.`);
+    });
+
+    const io = req.app.get('io');
+    if (io) io.emit('actualizacion-usuarios');
+    res.status(200).json({ mensaje: 'Rango modificado.' });
+  });
 });
 
-router.post('/:id/convocar-senado', verificarToken, (req, res) => {
+// ✨ RUTA SENADO: Ahora se llama /proponer-admin para coincidir con tu frontend
+router.post('/:id/proponer-admin', verificarToken, (req, res) => {
   if (req.usuario.rol !== 'admin') return res.status(403).json({ error: 'Solo admins.' });
   
   const candidatoId = req.params.id;
@@ -333,6 +342,10 @@ router.put('/:id/hard-reset', verificarToken, async (req, res) => {
     res.status(500).json({ error: 'Error interno en la magia del servidor.' });
   }
 });
+
+// =======================================================
+// 3. NOTIFICACIONES Y CENSO GENERAL
+// =======================================================
 
 router.get('/notificaciones', verificarToken, (req, res) => {
     const sql = "SELECT id, mensaje, fecha FROM notificaciones WHERE usuario_id = ? AND leida = FALSE ORDER BY fecha DESC";
