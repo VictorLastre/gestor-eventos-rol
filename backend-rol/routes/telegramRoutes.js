@@ -22,7 +22,7 @@ router.post('/webhook', async (req, res) => {
         const userId = parseInt(partes[1], 10);
         
         if (!isNaN(userId)) {
-          // Actualizamos el usuario en la BD asignándole su ID de Telegram (corregido a telegram_chat_id)
+          // Actualizamos el usuario en la BD asignándole su ID de Telegram
           db.query(
             'UPDATE usuarios SET telegram_chat_id = ? WHERE id = ?',
             [chatId, userId],
@@ -38,6 +38,10 @@ router.post('/webhook', async (req, res) => {
                   chatId,
                   `✅ <b>¡Vinculación Exitosa!</b>\n\nTu cuenta de la Asociación de Rol La Pampa ha sido enlazada correctamente.\n\nA partir de ahora recibirás aquí los avisos de tus mesas y los mensajes de tu Master. ¡Que rueden los dados!`
                 );
+                
+                // ✨ AVISAR AL FRONTEND QUE SE ACTUALIZÓ EL USUARIO
+                const io = req.app.get('io');
+                if (io) io.emit('actualizacion-usuarios');
               }
             }
           );
