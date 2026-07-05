@@ -166,7 +166,7 @@ router.post('/:id/inscripciones', verificarToken, (req, res) => {
   const sqlInfoMesa = `
     SELECT 
       p.evento_id, p.cupo, p.titulo, p.etiqueta, p.dungeon_master_id,
-      u.telegram_chet_id AS dm_telegram_id, u.nombre AS dm_nombre,
+      u.telegram_chat_id AS dm_telegram_id, u.nombre AS dm_nombre,
       (SELECT COUNT(*) FROM inscripciones WHERE partida_id = p.id) as anotados 
     FROM partidas p
     JOIN usuarios u ON p.dungeon_master_id = u.id
@@ -225,7 +225,7 @@ router.delete('/:id/inscripciones', verificarToken, (req, res) => {
   const idUsuario = req.usuario.id;
 
   db.query(`
-    SELECT p.evento_id, p.titulo, p.etiqueta, u.telegram_chet_id AS dm_telegram_id 
+    SELECT p.evento_id, p.titulo, p.etiqueta, u.telegram_chat_id AS dm_telegram_id 
     FROM partidas p 
     JOIN usuarios u ON p.dungeon_master_id = u.id 
     WHERE p.id = ?`, [idPartida], (err, resultados) => {
@@ -284,7 +284,7 @@ router.delete('/:id', verificarToken, (req, res) => {
     }
 
     db.query(`
-      SELECT i.usuario_id, u.telegram_chet_id 
+      SELECT i.usuario_id, u.telegram_chat_id 
       FROM inscripciones i 
       JOIN usuarios u ON i.usuario_id = u.id 
       WHERE i.partida_id = ?`, [partidaId], (err, inscritos) => {
@@ -297,12 +297,12 @@ router.delete('/:id', verificarToken, (req, res) => {
 
         // ✨ ALERTA DE CANCELACIÓN EN TELEGRAM A LOS JUGADORES
         inscritos.forEach(jugador => {
-          if (jugador.telegram_chet_id) {
+          if (jugador.telegram_chat_id) {
             const mensajeTelegram = `⚠️ <b>Mesa Cancelada</b>\n\n` +
               `El Dungeon Master ha disuelto la mesa de ${etiqueta} a la que estabas inscrito:\n` +
               `🛡️ <b>${titulo}</b>\n\n` +
               `Tu inscripción ha sido cancelada.`;
-            enviarMensajeTelegram(jugador.telegram_chet_id, mensajeTelegram);
+            enviarMensajeTelegram(jugador.telegram_chat_id, mensajeTelegram);
           }
         });
       }
@@ -389,7 +389,7 @@ router.post('/:id/notificar-jugadores', verificarToken, (req, res) => {
     }
 
     const sqlInscritos = `
-      SELECT u.nombre, u.telegram_chet_id 
+      SELECT u.nombre, u.telegram_chat_id 
       FROM inscripciones i 
       JOIN usuarios u ON i.usuario_id = u.id 
       WHERE i.partida_id = ?
@@ -398,7 +398,7 @@ router.post('/:id/notificar-jugadores', verificarToken, (req, res) => {
     db.query(sqlInscritos, [partidaId], (err, jugadores) => {
       if (err) return res.status(500).json({ error: 'Error al consultar jugadores.' });
       
-      const jugadoresConTelegram = jugadores.filter(j => j.telegram_chet_id);
+      const jugadoresConTelegram = jugadores.filter(j => j.telegram_chat_id);
 
       if (jugadoresConTelegram.length === 0) {
         return res.status(200).json({ mensaje: 'No hay jugadores con Telegram vinculado en esta mesa.' });
@@ -408,7 +408,7 @@ router.post('/:id/notificar-jugadores', verificarToken, (req, res) => {
         const mensajeTelegram = `🧙‍♂️ <b>Aviso de tu DM en "${titulo}":</b>\n\n` +
           `${mensaje}`;
         
-        await enviarMensajeTelegram(jugador.telegram_chet_id, mensajeTelegram);
+        await enviarMensajeTelegram(jugador.telegram_chat_id, mensajeTelegram);
       });
 
       res.json({ mensaje: `Mensaje enviado con éxito a los jugadores con Telegram.` });
