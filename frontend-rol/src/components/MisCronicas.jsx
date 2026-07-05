@@ -26,7 +26,7 @@ function MisCronicas({ alActualizarUsuario }) {
     email: usuarioGuardado?.email || '',
     avatar: usuarioGuardado?.avatar || 'guerrero',
     telegram_chat_id: usuarioGuardado?.telegram_chat_id || '',
-    password: '' // ✨ AGREGADO: Campo para la nueva contraseña
+    password: '' 
   });
 
   const cargarCronicas = () => {
@@ -46,15 +46,24 @@ function MisCronicas({ alActualizarUsuario }) {
     fetchProtegido('/api/usuarios/yo') 
       .then(res => res.json())
       .then(datosUsuario => {
-         if(datosUsuario.rol !== usuarioGuardado.rol) {
-            const nuevoUsuario = { ...usuarioGuardado, rol: datosUsuario.rol, solicitudDmPendiente: false };
+         // Verificamos si cambió algo importante (rol, telegram, etc)
+         const cambioRol = datosUsuario.rol !== usuarioGuardado.rol;
+         const cambioTelegram = datosUsuario.telegram_chat_id !== usuarioGuardado.telegram_chat_id;
+         
+         if(cambioRol || cambioTelegram || !usuarioGuardado.telegram_chat_id) {
+            const nuevoUsuario = { 
+              ...usuarioGuardado, 
+              rol: datosUsuario.rol, 
+              telegram_chat_id: datosUsuario.telegram_chat_id,
+              solicitudDmPendiente: false 
+            };
             localStorage.setItem('usuario', JSON.stringify(nuevoUsuario));
             setUsuarioGuardado(nuevoUsuario);
             setPeticionEnviada(false); 
             if (alActualizarUsuario) alActualizarUsuario(nuevoUsuario);
          }
       })
-      .catch(err => console.error("Error verificando ascenso:", err));
+      .catch(err => console.error("Error verificando usuario:", err));
   };
 
   useEffect(() => {
@@ -119,12 +128,10 @@ function MisCronicas({ alActualizarUsuario }) {
     }
   };
 
-  // ✨ Abrimos el modal con los términos y condiciones en lugar de enviar la petición directamente
   const enviarPeticionDM = () => {
     setMostrarSolicitudDM(true);
   };
 
-  // ✨ Procesa la petición a la API tras aceptar los términos y condiciones
   const procesarPeticionDM = async () => {
     try {
       const res = await fetchProtegido('/api/usuarios/solicitar-dm', {
@@ -175,6 +182,21 @@ function MisCronicas({ alActualizarUsuario }) {
         {editando ? (
           <div className="relative z-10 flex flex-col gap-8 animate-in zoom-in-95 duration-300">
             
+            <div className="flex flex-col md:flex-row items-center gap-6 bg-zinc-950/50 p-6 rounded-[2rem] border border-zinc-800/50 mb-6">
+              <div className="w-24 h-24 rounded-full shadow-2xl overflow-hidden shrink-0">
+                  <Avatar
+                    size="100%"
+                    name={perfil.nombre}
+                    variant="beam"
+                    colors={['#10b981', '#059669', '#34d399', '#065f46', '#047857']}
+                  />
+              </div>
+              <div>
+                <h4 className="text-white font-bold text-lg">Retrato Dinámico</h4>
+                <p className="text-zinc-400 text-sm mt-1">Tu avatar se forja mágicamente usando la energía de tu alias. <b>¡Cambia tu Alias abajo y verás cómo tu retrato se transforma en vivo!</b> 🎨✨</p>
+              </div>
+            </div>
+            
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div className="space-y-2">
                 <label className="text-[10px] font-black text-zinc-500 uppercase tracking-widest ml-2">Nombre en los registros (Alias)</label>
@@ -186,7 +208,6 @@ function MisCronicas({ alActualizarUsuario }) {
               </div>
             </div>
 
-            {/* ✨ ZONA DE CONTRASEÑA Y TELEGRAM AGREGADOS AQUÍ */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div className="space-y-2">
                 <label className="text-[10px] font-black text-zinc-500 uppercase tracking-widest ml-2 flex items-center gap-2">
@@ -370,11 +391,9 @@ function MisCronicas({ alActualizarUsuario }) {
         </div>
       </div>
 
-      {/* ✨ Renderizamos el modal si se solicita el rango de DM */}
       {mostrarSolicitudDM && (
         <div className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-black/95 backdrop-blur-md animate-in fade-in duration-300">
           <div className="relative w-full max-w-2xl max-h-[90vh] overflow-y-auto scrollbar-hide rounded-[2.5rem]">
-            {/* Botón para cerrar el modal si el usuario lo desea */}
             <button 
               onClick={() => setMostrarSolicitudDM(false)} 
               className="absolute top-4 right-4 z-[210] text-zinc-500 hover:text-white bg-zinc-900 w-10 h-10 rounded-full border border-zinc-800 flex items-center justify-center transition-colors shadow-lg"
