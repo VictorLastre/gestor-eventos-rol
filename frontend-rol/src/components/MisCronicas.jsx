@@ -59,6 +59,14 @@ function MisCronicas({ alActualizarUsuario }) {
             };
             localStorage.setItem('usuario', JSON.stringify(nuevoUsuario));
             setUsuarioGuardado(nuevoUsuario);
+            
+            // ✨ REPARACIÓN CLAVE: Actualizamos también el formulario 'perfil'
+            // para que no mande un valor vacío al grabar.
+            setPerfil(prev => ({
+              ...prev,
+              telegram_chat_id: datosUsuario.telegram_chat_id || ''
+            }));
+            
             setPeticionEnviada(false); 
             if (alActualizarUsuario) alActualizarUsuario(nuevoUsuario);
          }
