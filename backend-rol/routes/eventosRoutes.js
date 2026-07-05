@@ -230,25 +230,45 @@ router.post('/:id/partidas', verificarToken, (req, res) => {
 
       // ✨ ANUNCIO EN TELEGRAM (Canal)
       const { enviarMensajeAlCanal } = require('../utils/telegram');
-      const mensajeTelegram = etiqueta === 'Juegos de Mesa'
-        ? `🃏 <b>¡Nuevo Juego de Mesa Convocado!</b>\n\n` +
-          `📦 <b>${titulo}</b>\n` +
-          `🎲 <b>Juego:</b> ${sistema}\n` +
-          `📝 <i>"${descripcion}"</i>\n\n` +
-          `🔮 <b>Jornada:</b> ${nombre_evento}\n` +
-          `⏰ <b>Turno:</b> ${turno} | 👥 <b>Cupo:</b> ${cupo} jugadores\n` +
-          `🌱 <b>¿Enseña reglas?:</b> ${apta_novatos ? 'Sí, apto para novatos' : 'No'}\n\n` +
-          `⚔️ ¡Anótate en el portal para jugar!`
-        : `🎲 <b>¡Nueva Mesa de Rol Forjada!</b>\n\n` +
-          `⚔️ <b>${titulo}</b>\n` +
-          `📜 <b>Sistema:</b> ${sistema}\n` +
-          `📝 <i>"${descripcion}"</i>\n\n` +
-          `🔮 <b>Jornada:</b> ${nombre_evento}\n` +
-          `⏰ <b>Turno:</b> ${turno} | 👥 <b>Cupo:</b> ${cupo} aventureros\n` +
-          `🌱 <b>Apta novatos:</b> ${apta_novatos ? 'Sí' : 'No'}\n\n` +
-          `🛡️ ¡Prepara tus dados y regístrate!`;
+      
+      // Función auxiliar para obtener el nombre del sistema
+      const obtenerNombreSistema = () => {
+        return new Promise((resolve) => {
+          if (sistema) return resolve(sistema);
+          if (sistema_id) {
+            db.query("SELECT nombre FROM sistemas WHERE id = ?", [sistema_id], (err, res) => {
+              if (!err && res.length > 0) return resolve(res[0].nombre);
+              resolve("Desconocido");
+            });
+          } else {
+            resolve("Desconocido");
+          }
+        });
+      };
 
-      enviarMensajeAlCanal(mensajeTelegram);
+      obtenerNombreSistema().then(sistemaNombre => {
+        const mensajeTelegram = etiqueta === 'Juegos de Mesa'
+          ? `🃏 <b>¡Nuevo Juego de Mesa Convocado!</b>\n\n` +
+            `📦 <b>${titulo}</b>\n` +
+            `🎲 <b>Juego:</b> ${sistemaNombre}\n` +
+            `📝 <i>"${descripcion}"</i>\n\n` +
+            `👤 <b>Organiza:</b> ${req.usuario.nombre}\n` +
+            `🔮 <b>Jornada:</b> ${nombre_evento}\n` +
+            `⏰ <b>Turno:</b> ${turno} | 👥 <b>Cupo:</b> ${cupo} jugadores\n` +
+            `🌱 <b>¿Enseña reglas?:</b> ${apta_novatos ? 'Sí, apto para novatos' : 'No'}\n\n` +
+            `⚔️ ¡Anótate en el portal para jugar!`
+          : `🎲 <b>¡Nueva Mesa de Rol Forjada!</b>\n\n` +
+            `⚔️ <b>${titulo}</b>\n` +
+            `📜 <b>Sistema:</b> ${sistemaNombre}\n` +
+            `📝 <i>"${descripcion}"</i>\n\n` +
+            `🧙‍♂️ <b>Master:</b> ${req.usuario.nombre}\n` +
+            `🔮 <b>Jornada:</b> ${nombre_evento}\n` +
+            `⏰ <b>Turno:</b> ${turno} | 👥 <b>Cupo:</b> ${cupo} aventureros\n` +
+            `🌱 <b>Apta novatos:</b> ${apta_novatos ? 'Sí' : 'No'}\n\n` +
+            `🛡️ ¡Prepara tus dados y regístrate!`;
+
+        enviarMensajeAlCanal(mensajeTelegram);
+      });
 
       const io = req.app.get('io');
       if (io) io.emit('actualizacion-mesas', { eventoId: parseInt(eventoId) });
