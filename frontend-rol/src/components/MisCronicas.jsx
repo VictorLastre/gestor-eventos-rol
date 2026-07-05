@@ -2,23 +2,7 @@ import { useState, useEffect } from 'react';
 import Swal from 'sweetalert2'; 
 import { fetchProtegido } from '../utils/api'; 
 import { io } from 'socket.io-client';
-
-// ✨ AVATARES CLÁSICOS
-const AVATARES = [
-  { id: 'guerrero', icono: '🛡️' },
-  { id: 'mago', icono: '🔮' },
-  { id: 'picaro', icono: '🗡️' },
-  { id: 'clerigo', icono: '✨' },
-  { id: 'bardo', icono: '🎵' },
-  { id: 'arquero', icono: '🏹' },
-  { id: 'nigromante', icono: '💀' },
-  { id: 'barbaro', icono: '⚔️' }
-];
-
-const obtenerIconoAvatar = (id) => {
-  const av = AVATARES.find(a => a.id === id);
-  return av ? av.icono : '🛡️';
-};
+import Avatar from 'boring-avatars';
 
 // ✨ Importamos el componente de la solicitud de DM
 import SolicitudDM from './SolicitudDM';
@@ -135,10 +119,12 @@ function MisCronicas({ alActualizarUsuario }) {
     }
   };
 
+  // ✨ Abrimos el modal con los términos y condiciones en lugar de enviar la petición directamente
   const enviarPeticionDM = () => {
     setMostrarSolicitudDM(true);
   };
 
+  // ✨ Procesa la petición a la API tras aceptar los términos y condiciones
   const procesarPeticionDM = async () => {
     try {
       const res = await fetchProtegido('/api/usuarios/solicitar-dm', {
@@ -189,22 +175,6 @@ function MisCronicas({ alActualizarUsuario }) {
         {editando ? (
           <div className="relative z-10 flex flex-col gap-8 animate-in zoom-in-95 duration-300">
             
-            <div className="space-y-4 relative">
-              <label className="text-[10px] font-black text-zinc-500 uppercase tracking-widest ml-2">Retrato del Aventurero (Avatar)</label>
-              <div className="flex flex-wrap gap-4 bg-zinc-950/50 p-6 rounded-[2rem] border border-zinc-800/50">
-                {AVATARES.map(av => (
-                  <button 
-                    key={av.id}
-                    type="button"
-                    onClick={() => setPerfil({...perfil, avatar: av.id})}
-                    className={`w-16 h-16 rounded-2xl flex items-center justify-center text-3xl transition-all ${perfil.avatar === av.id ? 'bg-zinc-800 border-2 border-emerald-500 shadow-[0_0_15px_rgba(16,185,129,0.3)]' : 'bg-zinc-950 border border-zinc-800 hover:border-zinc-600'}`}
-                  >
-                    {av.icono}
-                  </button>
-                ))}
-              </div>
-            </div>
-            
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div className="space-y-2">
                 <label className="text-[10px] font-black text-zinc-500 uppercase tracking-widest ml-2">Nombre en los registros (Alias)</label>
@@ -216,6 +186,7 @@ function MisCronicas({ alActualizarUsuario }) {
               </div>
             </div>
 
+            {/* ✨ ZONA DE CONTRASEÑA Y TELEGRAM AGREGADOS AQUÍ */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div className="space-y-2">
                 <label className="text-[10px] font-black text-zinc-500 uppercase tracking-widest ml-2 flex items-center gap-2">
@@ -260,7 +231,7 @@ function MisCronicas({ alActualizarUsuario }) {
                     <p className="text-zinc-400 text-xs mt-1">Conecta tu cuenta para recibir avisos de tus mesas, cancelaciones o inscripciones.</p>
                   </div>
                   
-                  {usuarioGuardado?.telegram_chet_id ? (
+                  {usuarioGuardado?.telegram_chat_id ? (
                     <div className="bg-emerald-500/10 border border-emerald-500/30 px-4 py-2 rounded-xl text-emerald-400 text-sm font-bold flex items-center gap-2">
                       ✅ Cuenta Vinculada
                     </div>
@@ -291,8 +262,13 @@ function MisCronicas({ alActualizarUsuario }) {
             <div className="flex items-center gap-6 md:gap-8">
                 <div className="relative group">
                     <div className="absolute inset-0 bg-emerald-500/20 blur-xl rounded-full group-hover:bg-emerald-500/40 transition-all"></div>
-                    <div className="w-24 h-24 md:w-32 md:h-32 bg-zinc-950 rounded-full flex items-center justify-center border-2 border-emerald-500/50 shadow-2xl relative z-10 overflow-hidden text-6xl">
-                        {obtenerIconoAvatar(perfil.avatar)}
+                    <div className="w-24 h-24 md:w-32 md:h-32 rounded-full shadow-2xl relative z-10 overflow-hidden">
+                        <Avatar
+                          size="100%"
+                          name={perfil.nombre}
+                          variant="beam"
+                          colors={['#10b981', '#059669', '#34d399', '#065f46', '#047857']}
+                        />
                     </div>
                 </div>
                 <div>
@@ -306,13 +282,13 @@ function MisCronicas({ alActualizarUsuario }) {
 
                   <p className="text-emerald-500 font-black text-[10px] uppercase tracking-[0.4em] mb-2">{usuarioGuardado?.rol === 'admin' ? '👑 Administrador' : usuarioGuardado?.rol === 'dm' ? '🛡️ Dungeon Master' : '⚔️ Aventurero'}</p>
                   <p className="text-zinc-500 font-mono text-sm">{perfil.email}</p>
-                  {usuarioGuardado?.telegram_chet_id ? (
+                  {usuarioGuardado?.telegram_chat_id ? (
                     <p className="text-sky-400 font-bold text-xs mt-2 flex items-center gap-2 select-none">
-                      🤖 Telegram Vinculado
+                      🤖 Telegram Vinculado (ID: {usuarioGuardado.telegram_chat_id})
                     </p>
                   ) : (
                     <p className="text-zinc-500 italic text-[11px] mt-2 flex items-center gap-2 select-none">
-                      ⚠️ Telegram no vinculado (edita tu perfil)
+                      ⚠️ Telegram no vinculado (edita tu perfil para recibir alertas)
                     </p>
                   )}
                 </div>
