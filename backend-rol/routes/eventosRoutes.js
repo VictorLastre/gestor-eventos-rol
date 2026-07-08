@@ -81,23 +81,22 @@ router.post('/', verificarToken, (req, res) => {
     const io = req.app.get('io');
     if (io) io.emit('actualizacion-eventos');
     
-    // ✨ ANUNCIO EN TELEGRAM (Canal)
-    const fechaObj = new Date(fechaLimpia);
-    const dia = fechaObj.getUTCDate().toString().padStart(2, '0');
-    
-    const meses = ["Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio", "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"];
-    const mes = meses[fechaObj.getUTCMonth()];
-    
-    const diasSemana = ["Domingo", "Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado"];
-    const diaSemana = diasSemana[fechaObj.getUTCDay()];
-    
+    // ✨ ANUNCIO EN TELEGRAM (Canal) - Mensaje 1 (Detalles del evento, Inmediato)
     const hInicio = hora_inicio ? hora_inicio.substring(0, 5) : '15:00';
     const hFin = hora_fin ? hora_fin.substring(0, 5) : '20:30';
 
-    const mensajeTelegram = `⚔️ <b>Convocatoria de Narradores</b> ⚔️ – ${nombre}\n\n` +
-      `📍 ${lugar}, ${ciudad}\n` +
-      `📅 ${diaSemana}, ${dia} de ${mes}\n` +
-      `⏰ De ${hInicio} a ${hFin} hs\n\n` +
+    const mensajeEvento = `📅 <b>¡Nueva Jornada Convocada!</b>\n\n` +
+      `⚔️ <b>${nombre}</b>\n` +
+      `📝 <i>"${descripcion}"</i>\n\n` +
+      `🗓️ <b>Fecha:</b> ${fechaLimpia}\n` +
+      `⏰ <b>Horario:</b> ${hInicio} a ${hFin}\n` +
+      `📍 <b>Lugar:</b> ${lugar}, ${ciudad}\n\n` +
+      `🔮 ¡Regístrate en el portal y asegura tu lugar!`;
+      
+    enviarMensajeAlCanal(mensajeEvento);
+
+    // ✨ ANUNCIO EN TELEGRAM (Canal) - Mensaje 2 (Convocatoria DMs, a los 5 minutos)
+    const mensajeConvocatoria = `⚔️ <b>Convocatoria de Narradores</b> ⚔️\n\n` +
       `Buscamos narradores y cronistas de cualquier sistema:\n` +
       `🎲 Pampa Primigenia, Call of Cthulhu, Vampiro, Alien etc.\n` +
       `🎭 Mesas para principiantes o avanzadas.\n` +
@@ -108,7 +107,10 @@ router.post('/', verificarToken, (req, res) => {
       `🔴 Puedes crear tu mesa hasta 24 horas antes del evento. Y puedes sumarte como aventurero hasta 1 hora antes del evento.\n\n` +
       `Nos vemos en la mesa. ✨`;
 
-    enviarMensajeAlCanal(mensajeTelegram);
+    // 5 minutos = 300,000 milisegundos
+    setTimeout(() => {
+      enviarMensajeAlCanal(mensajeConvocatoria);
+    }, 300000);
 
     res.status(201).json({ mensaje: '¡Evento convocado con éxito!' });
   });
