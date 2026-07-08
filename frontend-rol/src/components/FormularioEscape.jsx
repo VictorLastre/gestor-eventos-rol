@@ -110,18 +110,18 @@ function FormularioEscape({ eventoId, onClose, onSuccess }) {
             
             <div>
               <label className="block text-[10px] text-zinc-400 font-black uppercase tracking-widest mb-2 ml-2">Nombre de la Sala</label>
-              <input type="text" name="titulo" value={formData.titulo} onChange={handleChange} required placeholder="Ej: El Laboratorio del Dr. Muerte" className="w-full bg-zinc-950 border border-zinc-800 text-white text-sm font-bold rounded-2xl py-4 px-5 focus:border-indigo-500 outline-none transition-all" />
+              <input type="text" name="titulo" value={formData.titulo} onChange={handleChange} required placeholder="Ej: El Laboratorio del Dr. Muerte" className="w-full bg-zinc-950 border border-zinc-800 text-white text-sm font-bold rounded-2xl py-3 px-4 md:py-4 md:px-5 focus:border-indigo-500 outline-none transition-all" />
             </div>
 
             <div>
               <label className="block text-[10px] text-zinc-400 font-black uppercase tracking-widest mb-2 ml-2">Misión / Sinopsis</label>
-              <textarea name="descripcion" value={formData.descripcion} onChange={handleChange} required placeholder="¿De qué trata? ¿Qué tienen que resolver?" rows="3" className="w-full bg-zinc-950 border border-zinc-800 text-white text-sm font-bold rounded-2xl py-4 px-5 focus:border-indigo-500 outline-none transition-all resize-none"></textarea>
+              <textarea name="descripcion" value={formData.descripcion} onChange={handleChange} required placeholder="¿De qué trata? ¿Qué tienen que resolver?" rows="3" className="w-full bg-zinc-950 border border-zinc-800 text-white text-sm font-bold rounded-2xl py-3 px-4 md:py-4 md:px-5 focus:border-indigo-500 outline-none transition-all resize-none"></textarea>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div>
                 <label className="block text-[10px] text-zinc-400 font-black uppercase tracking-widest mb-2 ml-2">Dificultad</label>
-                <select name="dificultad" value={formData.dificultad} onChange={handleChange} className="w-full bg-zinc-950 border border-zinc-800 text-white text-sm font-bold rounded-2xl py-4 px-5 focus:border-indigo-500 outline-none appearance-none">
+                <select name="dificultad" value={formData.dificultad} onChange={handleChange} className="w-full bg-zinc-950 border border-zinc-800 text-white text-sm font-bold rounded-2xl py-3 px-4 md:py-4 md:px-5 focus:border-indigo-500 outline-none appearance-none">
                   <option value="Fácil">🟢 Fácil</option>
                   <option value="Intermedia">🟡 Intermedia</option>
                   <option value="Experta">🔴 Experta</option>
@@ -130,7 +130,7 @@ function FormularioEscape({ eventoId, onClose, onSuccess }) {
               
               <div>
                 <label className="block text-[10px] text-zinc-400 font-black uppercase tracking-widest mb-2 ml-2">Restricción de Edad</label>
-                <select name="edad_minima" value={formData.edad_minima} onChange={handleChange} className="w-full bg-zinc-950 border border-zinc-800 text-white text-sm font-bold rounded-2xl py-4 px-5 focus:border-indigo-500 outline-none appearance-none">
+                <select name="edad_minima" value={formData.edad_minima} onChange={handleChange} className="w-full bg-zinc-950 border border-zinc-800 text-white text-sm font-bold rounded-2xl py-3 px-4 md:py-4 md:px-5 focus:border-indigo-500 outline-none appearance-none">
                   <option value="Apta para todo público">Todo Público</option>
                   <option value="+13 años">+13 años</option>
                   <option value="+16 años">+16 años</option>
@@ -140,13 +140,13 @@ function FormularioEscape({ eventoId, onClose, onSuccess }) {
 
               <div>
                 <label className="block text-[10px] text-zinc-400 font-black uppercase tracking-widest mb-2 ml-2">Jugadores por Pase</label>
-                <input type="number" name="cupo_por_turno" value={formData.cupo_por_turno} onChange={handleChange} min="1" max="20" required className="w-full bg-zinc-950 border border-zinc-800 text-white text-sm font-bold rounded-2xl py-4 px-5 focus:border-indigo-500 outline-none transition-all" />
+                <input type="number" name="cupo_por_turno" value={formData.cupo_por_turno} onChange={handleChange} min="1" max="20" required className="w-full bg-zinc-950 border border-zinc-800 text-white text-sm font-bold rounded-2xl py-3 px-4 md:py-4 md:px-5 focus:border-indigo-500 outline-none transition-all" />
               </div>
             </div>
 
             <div>
               <label className="block text-[10px] text-zinc-400 font-black uppercase tracking-widest mb-2 ml-2">Materiales / Logística (Para los organizadores)</label>
-              <textarea name="materiales_pedidos" value={formData.materiales_pedidos} onChange={handleChange} placeholder="Ej: Necesito 2 mesas chicas, oscuridad total, y enchufes." rows="2" className="w-full bg-zinc-950 border border-zinc-800 text-zinc-400 text-sm font-bold rounded-2xl py-4 px-5 focus:border-indigo-500 outline-none transition-all resize-none"></textarea>
+              <textarea name="materiales_pedidos" value={formData.materiales_pedidos} onChange={handleChange} placeholder="Ej: Necesito 2 mesas chicas, oscuridad total, y enchufes." rows="2" className="w-full bg-zinc-950 border border-zinc-800 text-zinc-400 text-sm font-bold rounded-2xl py-3 px-4 md:py-4 md:px-5 focus:border-indigo-500 outline-none transition-all resize-none"></textarea>
             </div>
           </div>
 

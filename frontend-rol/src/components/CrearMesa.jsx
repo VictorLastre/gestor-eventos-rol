@@ -91,7 +91,7 @@ function CrearMesa({ idEvento, alCrearMesa }) {
       etiqueta, 
       apta_novatos: aptaNovatos,
       materiales_pedidos: materialesPedidos,
-      codigo_privado: esPrivada ? codigoPrivado : null
+      codigo_privado: esPrivada ? codigoPrivado : null // ✨ AÑADIMOS LA CLAVE SI ES PRIVADA
     };
 
     try {
@@ -183,7 +183,7 @@ function CrearMesa({ idEvento, alCrearMesa }) {
                 value={titulo} 
                 onChange={e => setTitulo(e.target.value)} 
                 required 
-                className="w-full bg-zinc-950 border border-zinc-800 rounded-2xl py-4 px-6 text-white focus:border-amber-500 focus:ring-1 focus:ring-amber-500/30 outline-none transition-all font-bold placeholder:text-zinc-800"
+                className="w-full bg-zinc-950 border border-zinc-800 rounded-2xl py-3 px-4 md:py-4 md:px-6 text-white focus:border-amber-500 focus:ring-1 focus:ring-amber-500/30 outline-none transition-all font-bold placeholder:text-zinc-800"
               />
             </div>
 
@@ -195,7 +195,7 @@ function CrearMesa({ idEvento, alCrearMesa }) {
                 onChange={e => setDescripcion(e.target.value)} 
                 required 
                 rows="3" 
-                className="w-full bg-zinc-950 border border-zinc-800 rounded-2xl py-4 px-6 text-white focus:border-amber-500 focus:ring-1 focus:ring-amber-500/30 outline-none transition-all resize-none italic font-medium placeholder:text-zinc-800"
+                className="w-full bg-zinc-950 border border-zinc-800 rounded-2xl py-3 px-4 md:py-4 md:px-6 text-white focus:border-amber-500 focus:ring-1 focus:ring-amber-500/30 outline-none transition-all resize-none italic font-medium placeholder:text-zinc-800"
               />
             </div>
 
@@ -205,7 +205,7 @@ function CrearMesa({ idEvento, alCrearMesa }) {
                 <select 
                   value={etiqueta} 
                   onChange={e => setEtiqueta(e.target.value)}
-                  className={`w-full bg-zinc-950 border border-zinc-800 rounded-2xl py-4 px-6 text-white focus:ring-1 outline-none font-bold [color-scheme:dark] transition-all ${estiloActual.color}`}
+                  className={`w-full bg-zinc-950 border border-zinc-800 rounded-2xl py-3 px-4 md:py-4 md:px-6 text-white focus:ring-1 outline-none font-bold [color-scheme:dark] transition-all ${estiloActual.color}`}
                 >
                   {Object.keys(CONFIG_ETIQUETAS).map(opcion => (
                     <option key={opcion} value={opcion}>{CONFIG_ETIQUETAS[opcion].icon} {opcion}</option>
@@ -240,7 +240,7 @@ function CrearMesa({ idEvento, alCrearMesa }) {
                   value={sistemaId} 
                   onChange={e => setSistemaId(e.target.value)}
                   required
-                  className="w-full bg-zinc-950 border border-zinc-800 rounded-2xl py-4 px-6 text-white focus:border-amber-500 outline-none font-bold [color-scheme:dark]"
+                  className="w-full bg-zinc-950 border border-zinc-800 rounded-2xl py-3 px-4 md:py-4 md:px-6 text-white focus:border-amber-500 outline-none font-bold [color-scheme:dark]"
                 >
                   <option value="">Seleccionar...</option>
                   {sistemas.map(s => (
@@ -256,7 +256,7 @@ function CrearMesa({ idEvento, alCrearMesa }) {
                   value={cupo} 
                   onChange={e => setCupo(e.target.value)} 
                   min="1" max="10" required 
-                  className="w-full bg-zinc-950 border border-zinc-800 rounded-2xl py-4 px-6 text-white focus:border-amber-500 outline-none font-bold text-center" 
+                  className="w-full bg-zinc-950 border border-zinc-800 rounded-2xl py-3 px-4 md:py-4 md:px-6 text-white focus:border-amber-500 outline-none font-bold text-center" 
                 />
               </div>
 
@@ -265,7 +265,7 @@ function CrearMesa({ idEvento, alCrearMesa }) {
                 <select 
                   value={turno} 
                   onChange={e => setTurno(e.target.value)} 
-                  className="w-full bg-zinc-950 border border-zinc-800 rounded-2xl py-4 px-6 text-white focus:border-amber-500 outline-none font-bold [color-scheme:dark]"
+                  className="w-full bg-zinc-950 border border-zinc-800 rounded-2xl py-3 px-4 md:py-4 md:px-6 text-white focus:border-amber-500 outline-none font-bold [color-scheme:dark]"
                 >
                   <option value="Mañana">Mañana</option>
                   <option value="Tarde">Tarde</option>
@@ -282,7 +282,7 @@ function CrearMesa({ idEvento, alCrearMesa }) {
                   placeholder="Ej: Nivel 3, traer ficha lista" 
                   value={requisitos} 
                   onChange={e => setRequisitos(e.target.value)} 
-                  className="w-full bg-zinc-950 border border-zinc-800 rounded-2xl py-4 px-6 text-white focus:border-amber-500 outline-none font-bold placeholder:text-zinc-800 h-[60px]"
+                  className="w-full bg-zinc-950 border border-zinc-800 rounded-2xl py-3 px-4 md:py-4 md:px-6 text-white focus:border-amber-500 outline-none font-bold placeholder:text-zinc-800 h-[60px]"
                 />
               </div>
 
@@ -296,7 +296,7 @@ function CrearMesa({ idEvento, alCrearMesa }) {
                   placeholder="¿Necesitas dados, mapas...?" 
                   value={materialesPedidos} 
                   onChange={e => setMaterialesPedidos(e.target.value)} 
-                  className="w-full bg-amber-500/5 border border-amber-500/20 rounded-2xl py-4 px-6 text-amber-200 focus:border-amber-500 outline-none italic text-sm placeholder:text-amber-900/50 shadow-inner h-[60px]"
+                  className="w-full bg-amber-500/5 border border-amber-500/20 rounded-2xl py-3 px-4 md:py-4 md:px-6 text-amber-200 focus:border-amber-500 outline-none italic text-sm placeholder:text-amber-900/50 shadow-inner h-[60px]"
                 />
               </div>
             </div>

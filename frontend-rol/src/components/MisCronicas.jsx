@@ -26,7 +26,7 @@ function MisCronicas({ alActualizarUsuario }) {
     email: usuarioGuardado?.email || '',
     avatar: usuarioGuardado?.avatar || 'guerrero',
     telegram_chat_id: usuarioGuardado?.telegram_chat_id || '',
-    password: '' 
+    password: '' // ✨ AGREGADO: Campo para la nueva contraseña
   });
 
   const cargarCronicas = () => {
@@ -46,6 +46,7 @@ function MisCronicas({ alActualizarUsuario }) {
     fetchProtegido('/api/usuarios/yo') 
       .then(res => res.json())
       .then(datosUsuario => {
+         // Verificamos si cambió algo importante (rol, telegram, etc)
          const cambioRol = datosUsuario.rol !== usuarioGuardado.rol;
          const cambioTelegram = datosUsuario.telegram_chat_id !== usuarioGuardado.telegram_chat_id;
          
@@ -59,6 +60,8 @@ function MisCronicas({ alActualizarUsuario }) {
             localStorage.setItem('usuario', JSON.stringify(nuevoUsuario));
             setUsuarioGuardado(nuevoUsuario);
             
+            // ✨ REPARACIÓN CLAVE: Actualizamos también el formulario 'perfil'
+            // para que no mande un valor vacío al grabar.
             setPerfil(prev => ({
               ...prev,
               telegram_chat_id: datosUsuario.telegram_chat_id || ''
@@ -106,12 +109,15 @@ function MisCronicas({ alActualizarUsuario }) {
       
       if (res.ok) {
         const nuevoUsuario = { ...usuarioGuardado, ...perfil };
+        
+        // ✨ SEGURIDAD: Borramos la contraseña antes de guardar en el navegador
         delete nuevoUsuario.password;
 
         localStorage.setItem('usuario', JSON.stringify(nuevoUsuario));
         setUsuarioGuardado(nuevoUsuario);
         if (alActualizarUsuario) alActualizarUsuario(nuevoUsuario);
         
+        // Limpiamos el campo del formulario
         setPerfil(prev => ({ ...prev, password: '' }));
         setEditando(false);
         
@@ -130,10 +136,12 @@ function MisCronicas({ alActualizarUsuario }) {
     }
   };
 
+  // ✨ Abrimos el modal con los términos y condiciones en lugar de enviar la petición directamente
   const enviarPeticionDM = () => {
     setMostrarSolicitudDM(true);
   };
 
+  // ✨ Procesa la petición a la API tras aceptar los términos y condiciones
   const procesarPeticionDM = async () => {
     try {
       const res = await fetchProtegido('/api/usuarios/solicitar-dm', {
@@ -202,11 +210,11 @@ function MisCronicas({ alActualizarUsuario }) {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div className="space-y-2">
                 <label className="text-[10px] font-black text-zinc-500 uppercase tracking-widest ml-2">Nombre en los registros (Alias)</label>
-                <input name="nombre" className="w-full bg-zinc-950 border border-zinc-800 rounded-2xl py-4 px-6 text-white focus:border-emerald-500 outline-none transition-all font-bold" value={perfil.nombre} onChange={manejarCambioPerfil} />
+                <input name="nombre" className="w-full bg-zinc-950 border border-zinc-800 rounded-2xl py-3 px-4 md:py-4 md:px-6 text-white focus:border-emerald-500 outline-none transition-all font-bold" value={perfil.nombre} onChange={manejarCambioPerfil} />
               </div>
               <div className="space-y-2">
                 <label className="text-[10px] font-black text-zinc-500 uppercase tracking-widest ml-2">Mensajería (Email)</label>
-                <input name="email" className="w-full bg-zinc-950 border border-zinc-800 rounded-2xl py-4 px-6 text-white focus:border-emerald-500 outline-none transition-all font-mono" value={perfil.email} onChange={manejarCambioPerfil} />
+                <input name="email" className="w-full bg-zinc-950 border border-zinc-800 rounded-2xl py-3 px-4 md:py-4 md:px-6 text-white focus:border-emerald-500 outline-none transition-all font-mono" value={perfil.email} onChange={manejarCambioPerfil} />
               </div>
             </div>
 
@@ -220,7 +228,7 @@ function MisCronicas({ alActualizarUsuario }) {
                 <input 
                   name="nombre_completo" 
                   placeholder="Ej: Bilbo Bolsón" 
-                  className="w-full bg-zinc-950 border border-zinc-800 rounded-2xl py-4 px-6 text-white focus:border-emerald-500 outline-none transition-all font-bold" 
+                  className="w-full bg-zinc-950 border border-zinc-800 rounded-2xl py-3 px-4 md:py-4 md:px-6 text-white focus:border-emerald-500 outline-none transition-all font-bold" 
                   value={perfil.nombre_completo} 
                   onChange={manejarCambioPerfil} 
                 />
@@ -235,7 +243,7 @@ function MisCronicas({ alActualizarUsuario }) {
                   type="password"
                   name="password" 
                   placeholder="Dejar vacío para no cambiarla" 
-                  className="w-full bg-zinc-950 border border-zinc-800 rounded-2xl py-4 px-6 text-white focus:border-amber-500 outline-none transition-all font-bold" 
+                  className="w-full bg-zinc-950 border border-zinc-800 rounded-2xl py-3 px-4 md:py-4 md:px-6 text-white focus:border-amber-500 outline-none transition-all font-bold" 
                   value={perfil.password} 
                   onChange={manejarCambioPerfil} 
                 />
@@ -265,7 +273,7 @@ function MisCronicas({ alActualizarUsuario }) {
                         href="https://t.me/+VctZXScrUAgxYTVh" 
                         target="_blank" 
                         rel="noreferrer"
-                        className="bg-zinc-800 hover:bg-zinc-700 text-[#24A1DE] border border-zinc-700 px-6 py-3 rounded-xl text-sm font-black tracking-wide transition-all flex items-center justify-center gap-2 whitespace-nowrap"
+                        className="bg-zinc-800 hover:bg-zinc-700 text-[#24A1DE] border border-zinc-700 px-4 py-2.5 md:px-6 md:py-3 rounded-xl text-xs md:text-sm font-black tracking-wide transition-all flex items-center justify-center gap-2 whitespace-nowrap"
                       >
                         📢 1. Unirse al Canal
                       </a>
@@ -273,9 +281,9 @@ function MisCronicas({ alActualizarUsuario }) {
                         href={`https://t.me/CuervosMensajeros_bot?start=${usuarioGuardado?.id}`} 
                         target="_blank" 
                         rel="noreferrer"
-                        className="bg-[#24A1DE] hover:bg-[#1d8ec5] text-white px-6 py-3 rounded-xl text-sm font-black tracking-wide transition-all shadow-lg shadow-sky-900/20 flex items-center justify-center gap-2 whitespace-nowrap"
+                        className="bg-[#24A1DE] hover:bg-[#1d8ec5] text-white px-4 py-2.5 md:px-6 md:py-3 rounded-xl text-xs md:text-sm font-black tracking-wide transition-all shadow-lg shadow-sky-900/20 flex items-center justify-center gap-2 whitespace-nowrap"
                       >
-                        <svg viewBox="0 0 24 24" className="w-5 h-5 fill-current" xmlns="http://www.w3.org/2000/svg">
+                        <svg viewBox="0 0 24 24" className="w-4 h-4 md:w-5 md:h-5 fill-current" xmlns="http://www.w3.org/2000/svg">
                           <path d="M11.944 0A12 12 0 0 0 0 12a12 12 0 0 0 12 12 12 12 0 0 0 12-12A12 12 0 0 0 12 0a12 12 0 0 0-.056 0zm4.962 7.224c.1-.002.321.023.465.14a.506.506 0 0 1 .171.325c.016.093.036.306.02.472-.18 1.898-.962 6.502-1.36 8.627-.168.9-.499 1.201-.82 1.23-.696.065-1.225-.46-1.9-.902-1.056-.693-1.653-1.124-2.678-1.8-1.185-.78-.417-1.21.258-1.91.177-.184 3.247-2.977 3.307-3.23.007-.032.014-.15-.056-.212s-.174-.041-.249-.024c-.106.024-1.793 1.14-5.061 3.345-.48.33-.913.49-1.302.48-.428-.008-1.252-.241-1.865-.44-.752-.245-1.349-.374-1.297-.789.027-.216.325-.437.892-.663 3.498-1.524 5.83-2.529 6.998-3.014 3.332-1.386 4.025-1.627 4.476-1.635z"/>
                         </svg>
                         2. Activar Notificaciones
@@ -293,8 +301,8 @@ function MisCronicas({ alActualizarUsuario }) {
           </div>
         ) : (
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-8 relative z-10">
-            <div className="flex items-center gap-6 md:gap-8">
-                <div className="relative group">
+            <div className="flex flex-col md:flex-row items-center md:items-start text-center md:text-left gap-6 md:gap-8 w-full max-w-full overflow-hidden">
+                <div className="relative group shrink-0">
                     <div className="absolute inset-0 bg-emerald-500/20 blur-xl rounded-full group-hover:bg-emerald-500/40 transition-all"></div>
                     <div className="w-24 h-24 md:w-32 md:h-32 rounded-full shadow-2xl relative z-10 overflow-hidden">
                         <Avatar
@@ -305,17 +313,17 @@ function MisCronicas({ alActualizarUsuario }) {
                         />
                     </div>
                 </div>
-                <div>
-                  <p className="text-4xl md:text-5xl font-black text-white tracking-tighter uppercase italic">{perfil.nombre}</p>
+                <div className="flex flex-col items-center md:items-start max-w-full min-w-0">
+                  <p className="text-3xl sm:text-4xl md:text-5xl font-black text-white tracking-tighter uppercase italic w-full truncate" title={perfil.nombre}>{perfil.nombre}</p>
                   
                   {perfil.nombre_completo && (
-                    <p className="text-zinc-400 font-bold text-sm tracking-wide mb-2 flex items-center gap-2">
-                      📜 {perfil.nombre_completo}
+                    <p className="text-zinc-400 font-bold text-xs sm:text-sm tracking-wide mb-2 flex items-center justify-center md:justify-start gap-2 w-full truncate">
+                      📜 <span className="truncate">{perfil.nombre_completo}</span>
                     </p>
                   )}
 
-                  <p className="text-emerald-500 font-black text-[10px] uppercase tracking-[0.4em] mb-2">{usuarioGuardado?.rol === 'admin' ? '👑 Administrador' : usuarioGuardado?.rol === 'dm' ? '🛡️ Dungeon Master' : '⚔️ Aventurero'}</p>
-                  <p className="text-zinc-500 font-mono text-sm">{perfil.email}</p>
+                  <p className="text-emerald-500 font-black text-[10px] uppercase tracking-[0.4em] mb-2 w-full truncate">{usuarioGuardado?.rol === 'admin' ? '👑 Administrador' : usuarioGuardado?.rol === 'dm' ? '🛡️ Dungeon Master' : '⚔️ Aventurero'}</p>
+                  <p className="text-zinc-500 font-mono text-xs sm:text-sm w-full truncate">{perfil.email}</p>
                   {usuarioGuardado?.telegram_chat_id ? (
                     <p className="text-emerald-500 font-bold text-xs mt-2 flex items-center gap-2 select-none">
                       🤖 Cuenta vinculada ✅
@@ -404,9 +412,11 @@ function MisCronicas({ alActualizarUsuario }) {
         </div>
       </div>
 
+      {/* ✨ Renderizamos el modal si se solicita el rango de DM */}
       {mostrarSolicitudDM && (
         <div className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-black/95 backdrop-blur-md animate-in fade-in duration-300">
           <div className="relative w-full max-w-2xl max-h-[90vh] overflow-y-auto scrollbar-hide rounded-[2.5rem]">
+            {/* Botón para cerrar el modal si el usuario lo desea */}
             <button 
               onClick={() => setMostrarSolicitudDM(false)} 
               className="absolute top-4 right-4 z-[210] text-zinc-500 hover:text-white bg-zinc-900 w-10 h-10 rounded-full border border-zinc-800 flex items-center justify-center transition-colors shadow-lg"

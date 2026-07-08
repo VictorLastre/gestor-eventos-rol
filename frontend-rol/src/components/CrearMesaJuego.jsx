@@ -121,7 +121,7 @@ function CrearMesaJuego({ idEvento, alCrearMesa }) {
                 value={titulo} 
                 onChange={e => setTitulo(e.target.value)} 
                 required 
-                className="w-full bg-zinc-950 border border-zinc-800 rounded-2xl py-4 px-6 text-white focus:border-rose-500 focus:ring-1 focus:ring-rose-500/30 outline-none transition-all font-bold placeholder:text-zinc-800"
+                className="w-full bg-zinc-950 border border-zinc-800 rounded-2xl py-3 px-4 md:py-4 md:px-6 text-white focus:border-rose-500 focus:ring-1 focus:ring-rose-500/30 outline-none transition-all font-bold placeholder:text-zinc-800"
               />
             </div>
 
@@ -134,7 +134,7 @@ function CrearMesaJuego({ idEvento, alCrearMesa }) {
                 value={juego} 
                 onChange={e => setJuego(e.target.value)} 
                 required 
-                className="w-full bg-zinc-950 border border-zinc-800 rounded-2xl py-4 px-6 text-rose-300 focus:border-rose-500 focus:ring-1 focus:ring-rose-500/30 outline-none transition-all font-bold placeholder:text-zinc-800"
+                className="w-full bg-zinc-950 border border-zinc-800 rounded-2xl py-3 px-4 md:py-4 md:px-6 text-rose-300 focus:border-rose-500 focus:ring-1 focus:ring-rose-500/30 outline-none transition-all font-bold placeholder:text-zinc-800"
               />
             </div>
 
@@ -147,7 +147,7 @@ function CrearMesaJuego({ idEvento, alCrearMesa }) {
                 onChange={e => setDescripcion(e.target.value)} 
                 required 
                 rows="3" 
-                className="w-full bg-zinc-950 border border-zinc-800 rounded-2xl py-4 px-6 text-white focus:border-rose-500 focus:ring-1 focus:ring-rose-500/30 outline-none transition-all resize-none italic font-medium placeholder:text-zinc-800"
+                className="w-full bg-zinc-950 border border-zinc-800 rounded-2xl py-3 px-4 md:py-4 md:px-6 text-white focus:border-rose-500 focus:ring-1 focus:ring-rose-500/30 outline-none transition-all resize-none italic font-medium placeholder:text-zinc-800"
               />
             </div>
 
@@ -160,7 +160,7 @@ function CrearMesaJuego({ idEvento, alCrearMesa }) {
                   placeholder="Ej: Conocer las reglas, mazos family friendly..." 
                   value={requisitos} 
                   onChange={e => setRequisitos(e.target.value)} 
-                  className="w-full bg-zinc-950 border border-zinc-800 rounded-2xl py-4 px-6 text-white focus:border-rose-500 outline-none font-bold placeholder:text-zinc-800 h-[60px]"
+                  className="w-full bg-zinc-950 border border-zinc-800 rounded-2xl py-3 px-4 md:py-4 md:px-6 text-white focus:border-rose-500 outline-none font-bold placeholder:text-zinc-800 h-[60px]"
                 />
               </div>
 
@@ -193,7 +193,7 @@ function CrearMesaJuego({ idEvento, alCrearMesa }) {
                   value={cupo} 
                   onChange={e => setCupo(e.target.value)} 
                   min="2" max="20" required 
-                  className="w-full bg-zinc-950 border border-zinc-800 rounded-2xl py-4 px-6 text-white focus:border-rose-500 outline-none font-black text-center text-lg" 
+                  className="w-full bg-zinc-950 border border-zinc-800 rounded-2xl py-3 px-4 md:py-4 md:px-6 text-white focus:border-rose-500 outline-none font-black text-center text-lg" 
                 />
               </div>
 
@@ -202,7 +202,7 @@ function CrearMesaJuego({ idEvento, alCrearMesa }) {
                 <select 
                   value={turno} 
                   onChange={e => setTurno(e.target.value)} 
-                  className="w-full bg-zinc-950 border border-zinc-800 rounded-2xl py-4 px-6 text-white focus:border-rose-500 outline-none font-bold [color-scheme:dark] cursor-pointer text-lg text-center"
+                  className="w-full bg-zinc-950 border border-zinc-800 rounded-2xl py-3 px-4 md:py-4 md:px-6 text-white focus:border-rose-500 outline-none font-bold [color-scheme:dark] cursor-pointer text-lg text-center"
                 >
                   <option value="Mañana">Mañana</option>
                   <option value="Tarde">Tarde</option>
@@ -222,7 +222,7 @@ function CrearMesaJuego({ idEvento, alCrearMesa }) {
                 placeholder="¿Necesitas que llevemos algún juego de la ludoteca, dados, fichas...?" 
                 value={materialesPedidos} 
                 onChange={e => setMaterialesPedidos(e.target.value)} 
-                className="w-full bg-rose-500/5 border border-rose-500/20 rounded-2xl py-4 px-6 text-rose-200 focus:border-rose-500 outline-none italic text-sm placeholder:text-rose-900/50 shadow-inner"
+                className="w-full bg-rose-500/5 border border-rose-500/20 rounded-2xl py-3 px-4 md:py-4 md:px-6 text-rose-200 focus:border-rose-500 outline-none italic text-sm placeholder:text-rose-900/50 shadow-inner"
               />
             </div>
 

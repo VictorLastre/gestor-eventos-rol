@@ -147,7 +147,7 @@ function Landing({ irALogin }) {
         </div>
 
         {/* Menú Móvil Desplegable */}
-        <div className={`fixed inset-0 bg-zinc-950/98 z-[105] flex flex-col items-center justify-center gap-8 transition-transform duration-500 md:hidden ${menuAbierto ? 'translate-x-0' : 'translate-x-full'}`}>
+        <div className={`fixed inset-0 bg-zinc-950/95 z-[105] flex flex-col items-center justify-center gap-8 transition-transform duration-500 md:hidden ${menuAbierto ? 'translate-x-0' : 'translate-x-full'}`}>
           <button onClick={() => {setSeccionActiva('inicio'); setMenuAbierto(false);}} className="text-xl font-black uppercase tracking-widest text-white">Inicio</button>
           <button onClick={() => {setSeccionActiva('nosotros'); setMenuAbierto(false);}} className="text-xl font-black uppercase tracking-widest text-white">Nosotros</button>
           <button onClick={irALogin} className="bg-emerald-600 text-white px-8 py-3 rounded-xl font-black uppercase tracking-widest">Ingresar</button>
@@ -183,7 +183,7 @@ function Landing({ irALogin }) {
             </h2>
             
             {/* ✨ CUADRO ROLERO CORREGIDO CON shrink-0 PARA QUE JAMÁS SE APLASTE ✨ */}
-            <div className="shrink-0 relative p-2 bg-zinc-950 border-4 border-double border-amber-700/80 rounded-sm shadow-[0_0_30px_rgba(180,83,9,0.2)] mb-8 max-w-4xl w-full group overflow-hidden transition-transform hover:scale-[1.01] duration-500">
+            <div className="shrink-0 relative p-1 md:p-2 bg-zinc-950 border-4 border-double border-amber-700/80 rounded-sm shadow-[0_0_30px_rgba(180,83,9,0.2)] mb-8 max-w-4xl w-full group overflow-hidden transition-transform hover:scale-[1.01] duration-500">
                <div className="absolute inset-0 border border-amber-500/30 pointer-events-none z-10"></div>
                
                {/* aspect-video asegura una proporción estricta de 16:9, idéntica a 1200x675 */}

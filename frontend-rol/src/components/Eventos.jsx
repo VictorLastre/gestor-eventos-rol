@@ -185,6 +185,43 @@ function Eventos() {
     cargarEscapesDelEvento(evento.id); 
   };
 
+  const enviarConvocatoriaDMs = async (evento, e) => {
+    if (e) e.stopPropagation();
+    
+    const result = await Swal.fire({
+      title: '¿Llamar a los Dungeon Masters?',
+      text: `Se enviará un mensaje oficial al canal de Telegram pidiendo Masters para "${evento.nombre}".`,
+      icon: 'question',
+      showCancelButton: true,
+      background: '#09090b', color: '#fff', confirmButtonColor: '#10b981', cancelButtonColor: '#27272a',
+      confirmButtonText: 'Sí, enviar cuervos',
+      cancelButtonText: 'Cancelar',
+      customClass: { popup: 'border border-zinc-800 rounded-[2rem]' }
+    });
+
+    if (result.isConfirmed) {
+      try {
+        const res = await fetchProtegido(`/api/eventos/${evento.id}/convocatoria`, { method: 'POST' });
+        const data = await res.json();
+        
+        if (res.ok) {
+          Swal.fire({ 
+            title: '¡Cuervos Enviados!', 
+            text: 'El llamado ha resonado en Telegram.',
+            icon: 'success', 
+            background: '#09090b', 
+            color: '#fff', 
+            customClass: { popup: 'border border-emerald-500/30 rounded-[2rem]' } 
+          });
+        } else {
+          Swal.fire({ title: 'Aviso', text: data.error, icon: 'error', background: '#09090b', color: '#fff' });
+        }
+      } catch (err) {
+        if (err !== 'Sesión expirada') console.error(err);
+      }
+    }
+  };
+
   const eventosProximos = eventos.filter(e => e.estado === 'Proximo' || e.estado === 'En Curso').sort((a, b) => a.fecha.localeCompare(b.fecha));
   const eventosPasados = eventos.filter(e => e.estado === 'Finalizado' || e.estado === 'Suspendido').sort((a, b) => b.fecha.localeCompare(a.fecha)); 
 
@@ -262,10 +299,19 @@ function Eventos() {
               </span>
             </div>
           </div>
+
+          {esAdmin && (
+             <button 
+               onClick={() => enviarConvocatoriaDMs(eventoSeleccionado)} 
+               className="absolute bottom-6 right-6 bg-sky-600/20 hover:bg-sky-500 text-sky-400 hover:text-white border border-sky-500/30 px-6 py-3 rounded-full text-xs font-black uppercase tracking-widest transition-all shadow-lg flex items-center gap-2"
+             >
+               📢 Llamar Masters
+             </button>
+          )}
         </header>
 
         <div className="flex justify-center mb-16">
-          <div className="bg-zinc-950/80 p-2 rounded-full border border-zinc-800 flex flex-col md:flex-row gap-2 shadow-2xl backdrop-blur-sm">
+          <div className="bg-zinc-950/80 p-2 rounded-[2.5rem] md:rounded-full border border-zinc-800 flex flex-col md:flex-row gap-2 shadow-2xl backdrop-blur-sm w-full sm:w-auto">
             <button 
               onClick={() => setVistaActiva('rol')} 
               className={`flex justify-center items-center gap-3 px-8 py-4 font-black text-[10px] md:text-xs uppercase tracking-[0.2em] transition-all rounded-full ${
@@ -601,8 +647,9 @@ function Eventos() {
 
                 {esAdmin && (
                   <div className="absolute top-6 right-6 flex flex-col gap-2 z-20">
-                    <button onClick={(e) => abrirEdicion(evento, e)} className="w-10 h-10 bg-zinc-950/80 backdrop-blur-sm text-purple-400 rounded-full border border-purple-500/20 flex items-center justify-center hover:bg-purple-500 hover:text-white transition-all text-sm shadow-xl">✏️</button>
-                    <button onClick={(e) => borrarEvento(evento.id, e)} className="w-10 h-10 bg-zinc-950/80 backdrop-blur-sm text-red-500 rounded-full border border-red-500/20 flex items-center justify-center hover:bg-red-500 hover:text-white transition-all text-sm shadow-xl">🗑️</button>
+                    <button onClick={(e) => abrirEdicion(evento, e)} className="w-10 h-10 bg-zinc-950/80 backdrop-blur-sm text-purple-400 rounded-full border border-purple-500/20 flex items-center justify-center hover:bg-purple-500 hover:text-white transition-all text-sm shadow-xl" title="Editar Evento">✏️</button>
+                    <button onClick={(e) => enviarConvocatoriaDMs(evento, e)} className="w-10 h-10 bg-zinc-950/80 backdrop-blur-sm text-sky-400 rounded-full border border-sky-500/20 flex items-center justify-center hover:bg-sky-500 hover:text-white transition-all text-sm shadow-xl" title="Convocar DMs en Telegram">📢</button>
+                    <button onClick={(e) => borrarEvento(evento.id, e)} className="w-10 h-10 bg-zinc-950/80 backdrop-blur-sm text-red-500 rounded-full border border-red-500/20 flex items-center justify-center hover:bg-red-500 hover:text-white transition-all text-sm shadow-xl" title="Borrar Evento">🗑️</button>
                   </div>
                 )}
               </div>
