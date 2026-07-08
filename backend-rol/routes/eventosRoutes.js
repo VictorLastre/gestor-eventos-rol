@@ -155,10 +155,10 @@ router.post('/:id/partidas', verificarToken, (req, res) => {
     });
   }
 
-  // ✨ RESTRICCIÓN: NO ESTAR EN DOS LUGARES AL MISMO TIEMPO
   const sqlCheck = `
     SELECT 
       DATE_FORMAT(e.fecha, '%Y-%m-%d') as evento_fecha,
+      e.hora_inicio,
       e.nombre as nombre_evento,
       (SELECT COUNT(*) FROM partidas WHERE evento_id = ? AND dungeon_master_id = ?) as es_creador,
       (SELECT COUNT(*) FROM inscripciones i JOIN partidas p ON i.partida_id = p.id WHERE p.evento_id = ? AND i.usuario_id = ?) as es_jugador,
@@ -170,14 +170,17 @@ router.post('/:id/partidas', verificarToken, (req, res) => {
     if (err) return res.status(500).json({ error: 'Error al consultar los registros del gremio.' });
     if (resultados.length === 0) return res.status(404).json({ error: 'El evento no existe.' });
     
-    const { evento_fecha, nombre_evento, es_creador, es_jugador, es_escape } = resultados[0];
+    const { evento_fecha, hora_inicio, nombre_evento, es_creador, es_jugador, es_escape } = resultados[0];
 
-    const tzOffset = -3 * 60 * 60 * 1000; 
-    const hoyArg = new Date(Date.now() + tzOffset).toISOString().split('T')[0];
+    const ahoraMs = Date.now();
+    // Parseamos la fecha del evento junto a su hora de inicio (Asumiendo zona horaria de Argentina UTC-3)
+    const eventoDateStr = `${evento_fecha}T${hora_inicio || '00:00:00'}-03:00`;
+    const msEvento = Date.parse(eventoDateStr);
+    const horasRestantes = (msEvento - ahoraMs) / (1000 * 60 * 60);
 
-    // Chequeamos si el evento ya pasó o está transcurriendo
-    if (hoyArg >= evento_fecha) {
-      return res.status(400).json({ error: 'La convocatoria ha cerrado. Ya estamos en la fecha del evento y la organización está preparando la logística.' });
+    // Chequeamos si faltan menos de 24 horas
+    if (horasRestantes < 24) {
+      return res.status(400).json({ error: 'La convocatoria ha cerrado. Solo se pueden publicar mesas hasta 24 horas antes del inicio del evento.' });
     }
 
     // Bloqueamos si ya tiene otra mesa, si está inscrito en otra, o si está en un escape
@@ -325,6 +328,52 @@ router.delete('/:id', verificarToken, (req, res) => {
         
         res.send('Evento borrado');
       });
+  });
+});
+
+// 7. Enviar convocatoria de DMs a Telegram (Solo Admins)
+router.post('/:id/convocatoria', verificarToken, (req, res) => {
+  if (req.usuario.rol !== 'admin') return res.status(403).json({ error: 'Sin autorización.' });
+  
+  db.query("SELECT * FROM eventos WHERE id = ?", [req.params.id], (err, result) => {
+    if (err || result.length === 0) return res.status(404).json({ error: 'Evento no encontrado.' });
+    
+    const evento = result[0];
+    
+    // Formatear la fecha correctamente usando UTC para evitar desfases de zona horaria
+    const fechaObj = new Date(evento.fecha);
+    const dia = fechaObj.getUTCDate().toString().padStart(2, '0');
+    
+    const meses = ["Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio", "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"];
+    const mes = meses[fechaObj.getUTCMonth()];
+    
+    const diasSemana = ["Domingo", "Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado"];
+    const diaSemana = diasSemana[fechaObj.getUTCDay()];
+    
+    const horaInicio = evento.hora_inicio ? evento.hora_inicio.substring(0, 5) : '15:00';
+    const horaFin = evento.hora_fin ? evento.hora_fin.substring(0, 5) : '20:30';
+    
+    const { enviarMensajeAlCanal } = require('../utils/telegram');
+    
+    const mensajeTelegram = `⚔️ <b>Convocatoria de Narradores</b> ⚔️ – ${evento.nombre}\n\n` +
+      `📍 ${evento.lugar}, ${evento.ciudad}\n` +
+      `📅 ${diaSemana}, ${dia} de ${mes}\n` +
+      `⏰ De ${horaInicio} a ${horaFin} hs\n\n` +
+      `Buscamos narradores y cronistas de cualquier sistema:\n` +
+      `🎲 Pampa Primigenia, Call of Cthulhu, Vampiro, Alien etc.\n` +
+      `🎭 Mesas para principiantes o avanzadas.\n` +
+      `⌛ Cada master decide a qué hora realiza su mesa. Siéntete libre de ponerte en contacto con tu grupo y llegar dentro del horario que disponemos.\n\n` +
+      `¡Gracias por hacer parte de esta hermosa comunidad!.\n\n` +
+      `👉 Puedes registrar tu aventura o crónica en:\n` +
+      `https://rollapampa.org/\n` +
+      `🔴 Puedes crear tu mesa hasta 24 horas antes del evento. Y puedes sumarte como aventurero hasta 1 hora antes del evento.\n\n` +
+      `Nos vemos en la mesa. ✨`;
+
+    enviarMensajeAlCanal(mensajeTelegram);
+    
+    registrarLog(req.usuario, 'CONVOCATORIA_DMS', `Envió llamado a DMs por Telegram para: "${evento.nombre}".`);
+    
+    res.json({ mensaje: 'Convocatoria enviada al canal de Telegram.' });
   });
 });
 

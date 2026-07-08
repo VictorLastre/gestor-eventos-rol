@@ -59,7 +59,7 @@ const partidasRoutes = require('./routes/partidasRoutes');
 const usuariosRoutes = require('./routes/usuariosRoutes');
 const sistemasRoutes = require('./routes/sistemasRoutes'); 
 const escapeRoutes = require('./routes/escapeRoutes'); 
-const telegramRoutes = require('./routes/telegramRoutes'); // ✨ NUEVO: Ruta webhook Telegram
+const telegramRoutes = require('./routes/telegramRoutes');
 
 // ✨ RUTAS DEL BACKEND ✨
 app.use('/api', authRoutes); 
@@ -68,17 +68,24 @@ app.use('/api/partidas', partidasRoutes);
 app.use('/api/usuarios', usuariosRoutes); 
 app.use('/api/sistemas', sistemasRoutes);
 app.use('/api/escapes', escapeRoutes);
-app.use('/api/telegram', telegramRoutes); // ✨ NUEVO: Endpoint webhook Telegram
+app.use('/api/telegram', telegramRoutes);
 
 // ✨ SERVIR EL FRONTEND DE VITE ✨
+// Le decimos a Express que busque los archivos visuales en tu carpeta 'public'
 app.use(express.static(path.join(__dirname, 'public')));
 
+// Catch-all actualizado: Usamos una expresión regular /.*/ en lugar del string '*'
+// Esto evita el PathError de las nuevas versiones de Express
 app.get(/.*/, (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
 
 // ✨ 4. PUERTO DINÁMICO
 const PUERTO = process.env.PORT || 8080;
+
+// ✨ INICIAR CRON DE AVISOS SEMANALES
+const iniciarCronAvisos = require('./cron/avisosSemanales');
+iniciarCronAvisos();
 
 server.listen(PUERTO, () => {
   console.log(`⚔️ Asociación de Rol La Pampa activa en el puerto ${PUERTO}`);
