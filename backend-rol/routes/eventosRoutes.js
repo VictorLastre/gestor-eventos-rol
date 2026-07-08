@@ -82,13 +82,32 @@ router.post('/', verificarToken, (req, res) => {
     if (io) io.emit('actualizacion-eventos');
     
     // ✨ ANUNCIO EN TELEGRAM (Canal)
-    const mensajeTelegram = `📅 <b>¡Nueva Jornada Convocada!</b>\n\n` +
-      `⚔️ <b>${nombre}</b>\n` +
-      `📝 <i>"${descripcion}"</i>\n\n` +
-      `🗓️ <b>Fecha:</b> ${fechaLimpia}\n` +
-      `⏰ <b>Horario:</b> ${hora_inicio.substring(0, 5)} a ${hora_fin.substring(0, 5)}\n` +
-      `📍 <b>Lugar:</b> ${lugar}, ${ciudad}\n\n` +
-      `🔮 ¡Regístrate en el portal y asegura tu lugar!`;
+    const fechaObj = new Date(fechaLimpia);
+    const dia = fechaObj.getUTCDate().toString().padStart(2, '0');
+    
+    const meses = ["Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio", "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"];
+    const mes = meses[fechaObj.getUTCMonth()];
+    
+    const diasSemana = ["Domingo", "Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado"];
+    const diaSemana = diasSemana[fechaObj.getUTCDay()];
+    
+    const hInicio = hora_inicio ? hora_inicio.substring(0, 5) : '15:00';
+    const hFin = hora_fin ? hora_fin.substring(0, 5) : '20:30';
+
+    const mensajeTelegram = `⚔️ <b>Convocatoria de Narradores</b> ⚔️ – ${nombre}\n\n` +
+      `📍 ${lugar}, ${ciudad}\n` +
+      `📅 ${diaSemana}, ${dia} de ${mes}\n` +
+      `⏰ De ${hInicio} a ${hFin} hs\n\n` +
+      `Buscamos narradores y cronistas de cualquier sistema:\n` +
+      `🎲 Pampa Primigenia, Call of Cthulhu, Vampiro, Alien etc.\n` +
+      `🎭 Mesas para principiantes o avanzadas.\n` +
+      `⌛ Cada master decide a qué hora realiza su mesa. Siéntete libre de ponerte en contacto con tu grupo y llegar dentro del horario que disponemos.\n\n` +
+      `¡Gracias por hacer parte de esta hermosa comunidad!.\n\n` +
+      `👉 Puedes registrar tu aventura o crónica en:\n` +
+      `https://rollapampa.org/\n` +
+      `🔴 Puedes crear tu mesa hasta 24 horas antes del evento. Y puedes sumarte como aventurero hasta 1 hora antes del evento.\n\n` +
+      `Nos vemos en la mesa. ✨`;
+
     enviarMensajeAlCanal(mensajeTelegram);
 
     res.status(201).json({ mensaje: '¡Evento convocado con éxito!' });
