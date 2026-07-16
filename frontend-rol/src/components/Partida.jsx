@@ -289,16 +289,17 @@ function Partida(props) {
     setDatosEdicion({...datosEdicion, codigo_privado: clave});
   };
 
+  // Lógica de colores por disponibilidad
   const estaLlena = jugadoresAnotados >= props.cupo;
   const tieneJugadores = jugadoresAnotados > 0 && !estaLlena;
   
   let estiloBordeDisponibilidad = "";
   if (estaLlena) {
-    estiloBordeDisponibilidad = "border-red-500/60 hover:border-red-500 shadow-[0_0_15px_rgba(239,68,68,0.15)]"; 
+    estiloBordeDisponibilidad = "border-red-500/60 hover:border-red-500 shadow-[0_0_15px_rgba(239,68,68,0.15)]"; // Rojo
   } else if (tieneJugadores) {
-    estiloBordeDisponibilidad = "border-orange-500/60 hover:border-orange-500 shadow-[0_0_15px_rgba(249,115,22,0.15)]"; 
+    estiloBordeDisponibilidad = "border-orange-500/60 hover:border-orange-500 shadow-[0_0_15px_rgba(249,115,22,0.15)]"; // Naranja
   } else {
-    estiloBordeDisponibilidad = "border-emerald-500/60 hover:border-emerald-500 shadow-[0_0_15px_rgba(16,185,129,0.15)]"; 
+    estiloBordeDisponibilidad = "border-emerald-500/60 hover:border-emerald-500 shadow-[0_0_15px_rgba(16,185,129,0.15)]"; // Verde
   }
 
   return (
@@ -316,6 +317,7 @@ function Partida(props) {
         <div className="flex justify-between items-start mb-6 relative z-10 gap-3">
           <div className="flex-1 min-w-0 space-y-3 pr-2">
             <div className="flex flex-wrap gap-2">
+              {/* ✨ ETIQUETA DE MESA PRIVADA (NUEVO) */}
               {Boolean(props.es_privada) && (
                 <span className="text-[9px] font-black text-purple-900 bg-purple-400 uppercase tracking-widest px-3 py-1 rounded-full shadow-[0_0_12px_rgba(168,85,247,0.5)] flex items-center gap-1.5 whitespace-nowrap animate-pulse">
                   🔒 Privada
@@ -343,7 +345,7 @@ function Partida(props) {
               )}
             </div>
 
-            <h3 className={`text-2xl font-black text-white italic uppercase tracking-tighter leading-tight line-clamp-2 drop-shadow-md break-words transition-colors ${soyElMaster ? 'group-hover:text-amber-400' : tema.hoverText}`}>
+            <h3 className={`text-xl sm:text-2xl font-black text-white italic uppercase tracking-tighter leading-tight line-clamp-2 drop-shadow-md break-words transition-colors ${soyElMaster ? 'group-hover:text-amber-400' : tema.hoverText}`}>
               {props.titulo}
             </h3>
           </div>
@@ -582,7 +584,7 @@ function Partida(props) {
             className="bg-zinc-900 border border-zinc-800 w-full max-w-3xl max-h-[95vh] overflow-y-auto rounded-[2.5rem] p-8 md:p-12 relative shadow-[0_0_100px_rgba(0,0,0,0.8)] scrollbar-hide"
             style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
           >
-            <div className="flex justify-end gap-3 absolute top-6 right-6 z-20">
+            <div className="flex justify-end gap-2 md:gap-3 mb-6 md:mb-0 md:absolute md:top-6 md:right-6 z-20 w-full md:w-auto">
               {(soyElMaster || soyAdmin) && !props.eventoEsPasado && (
                 <>
                   <button 
@@ -607,16 +609,17 @@ function Partida(props) {
               </button>
             </div>
 
-            <div className="relative z-10 pt-4 md:pt-0">
+            <div className="relative z-10">
               <div className="flex flex-wrap gap-2 mb-6">
+                {/* ✨ ETIQUETA DE MESA PRIVADA EN EL MODAL (NUEVO) */}
                 {Boolean(props.es_privada) && (
-                  <span className="text-[10px] font-black text-purple-955 uppercase tracking-widest bg-purple-400 px-3 py-1.5 rounded-full shadow-[0_0_15px_rgba(168,85,247,0.4)] flex items-center gap-1.5 animate-pulse">
+                  <span className="text-[10px] font-black text-purple-950 uppercase tracking-widest bg-purple-400 px-3 py-1.5 rounded-full shadow-[0_0_15px_rgba(168,85,247,0.4)] flex items-center gap-1.5 animate-pulse">
                     🔒 Mesa Privada
                   </span>
                 )}
 
                 {Boolean(props.apta_novatos) && (
-                  <span className="text-[10px] font-black text-emerald-955 uppercase tracking-widest bg-emerald-400 px-3 py-1.5 rounded-full shadow-[0_0_15px_rgba(52,211,153,0.4)] flex items-center gap-1.5">
+                  <span className="text-[10px] font-black text-emerald-950 uppercase tracking-widest bg-emerald-400 px-3 py-1.5 rounded-full shadow-[0_0_15px_rgba(52,211,153,0.4)] flex items-center gap-1.5">
                     🌱 {esJuegoMesa ? 'Enseña a jugar' : 'Apta Novatos'}
                   </span>
                 )}
@@ -635,7 +638,7 @@ function Partida(props) {
                 )}
               </div>
               
-              <h2 className="text-4xl md:text-5xl font-black text-white mb-8 uppercase italic tracking-tighter leading-none border-b border-zinc-800 pb-8 break-words">
+              <h2 className="text-3xl sm:text-4xl md:text-5xl font-black text-white mb-8 uppercase italic tracking-tighter leading-none border-b border-zinc-800 pb-8 break-words">
                 {props.titulo}
               </h2>
 

@@ -396,7 +396,7 @@ function Eventos() {
             {mesasOrdenadas.length > 0 ? (
               <div ref={carruselPartidasRef} className="flex gap-6 overflow-x-auto pb-12 scrollbar-hide snap-x" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
                 {mesasOrdenadas.map(p => (
-                  <div key={p.id} className="w-[85vw] sm:w-[350px] lg:w-[calc(33.333%-1rem)] flex-none snap-center">
+                  <div key={p.id} className="w-[85vw] sm:w-[350px] lg:w-[calc(33.333%-1rem)] flex-none snap-start">
                     <Partida 
                       {...p} 
                       eventoEsPasado={eventoSeleccionado.estado === 'Finalizado' || eventoSeleccionado.estado === 'Suspendido'} 
@@ -466,7 +466,7 @@ function Eventos() {
             {escapesDelEvento.length > 0 ? (
               <div ref={carruselEscapesRef} className="flex gap-6 overflow-x-auto pb-12 scrollbar-hide snap-x" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
                 {escapesDelEvento.map(sala => (
-                  <div key={sala.id} className="w-[85vw] sm:w-[350px] lg:w-[calc(33.333%-1rem)] flex-none snap-center">
+                  <div key={sala.id} className="w-[85vw] sm:w-[350px] lg:w-[calc(33.333%-1rem)] flex-none snap-start">
                     <TarjetaEscape 
                       sala={sala} 
                       usuarioGuardado={usuarioGuardado} 
@@ -536,7 +536,7 @@ function Eventos() {
             {juegosOrdenados.length > 0 ? (
               <div ref={carruselJuegosRef} className="flex gap-6 overflow-x-auto pb-12 scrollbar-hide snap-x" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
                 {juegosOrdenados.map(p => (
-                  <div key={p.id} className="w-[85vw] sm:w-[350px] lg:w-[calc(33.333%-1rem)] flex-none snap-center">
+                  <div key={p.id} className="w-[85vw] sm:w-[350px] lg:w-[calc(33.333%-1rem)] flex-none snap-start">
                     <Partida 
                       {...p} 
                       eventoEsPasado={eventoSeleccionado.estado === 'Finalizado' || eventoSeleccionado.estado === 'Suspendido'} 
@@ -614,7 +614,7 @@ function Eventos() {
               <div 
                 key={evento.id} 
                 onClick={() => entrarAlEvento(evento)}
-                className="group min-w-[300px] md:min-w-[450px] bg-zinc-900/50 hover:bg-zinc-900 border border-zinc-800 hover:border-emerald-500/40 p-10 rounded-[2.5rem] transition-all cursor-pointer snap-center shadow-2xl relative overflow-hidden flex flex-col justify-between"
+                className="group min-w-[300px] md:min-w-[450px] bg-zinc-900/50 hover:bg-zinc-900 border border-zinc-800 hover:border-emerald-500/40 p-10 rounded-[2.5rem] transition-all cursor-pointer snap-start shadow-2xl relative overflow-hidden flex flex-col justify-between"
               >
                 <div className="absolute top-0 right-0 w-32 h-32 bg-emerald-500/5 blur-[80px] rounded-full pointer-events-none"></div>
                 
