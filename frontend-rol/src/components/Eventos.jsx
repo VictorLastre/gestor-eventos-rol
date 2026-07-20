@@ -249,312 +249,293 @@ function Eventos() {
       inscripcionesCerradas = ahora >= limiteInscripcion;
     }
 
-    // ✨ DIVIDIMOS LAS PARTIDAS SEGÚN SU ETIQUETA
-    const mesasDeRol = partidasDelEvento.filter(p => p.etiqueta !== 'Juegos de Mesa');
-    const mesasDeJuego = partidasDelEvento.filter(p => p.etiqueta === 'Juegos de Mesa');
+    // ✨ Separar las partidas de Rol y las de Juegos de Mesa
+    const mesasRol = partidasDelEvento.filter(p => p.tipo === 'rol');
+    const juegosMesa = partidasDelEvento.filter(p => p.tipo === 'juego_mesa');
 
-    // ✨ ORDENAMIENTO (Novatos primero, luego las más vacías)
-    const ordenamientoMesas = (a, b) => {
-      if (a.apta_novatos && !b.apta_novatos) return -1;
-      if (!a.apta_novatos && b.apta_novatos) return 1;
-      const libresA = Math.max(0, (a.cupo || 0) - (a.jugadoresIniciales || 0));
-      const libresB = Math.max(0, (b.cupo || 0) - (b.jugadoresIniciales || 0));
-      return libresB - libresA; 
-    };
+    // Ordenar para mostrar primero las que tienen lugar
+    const mesasOrdenadas = [...mesasRol].sort((a, b) => {
+      const aLlena = a.jugadores_anotados >= a.cupo_maximo;
+      const bLlena = b.jugadores_anotados >= b.cupo_maximo;
+      if (aLlena === bLlena) return 0;
+      return aLlena ? 1 : -1;
+    });
 
-    const mesasOrdenadas = [...mesasDeRol].sort(ordenamientoMesas);
-    const juegosOrdenados = [...mesasDeJuego].sort(ordenamientoMesas);
+    const juegosOrdenados = [...juegosMesa].sort((a, b) => {
+      const aLlena = a.jugadores_anotados >= a.cupo_maximo;
+      const bLlena = b.jugadores_anotados >= b.cupo_maximo;
+      if (aLlena === bLlena) return 0;
+      return aLlena ? 1 : -1;
+    });
 
     return (
-      <div className="max-w-7xl mx-auto p-4 md:p-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
-        <button onClick={() => setEventoSeleccionado(null)} className="group flex items-center gap-2 text-zinc-500 hover:text-emerald-400 transition-colors font-black text-[10px] uppercase tracking-[0.3em] mb-8">
-          <span className="group-hover:-translate-x-1 transition-transform">←</span> Volver al Tablón
-        </button>
-
-        <header className="relative bg-zinc-900 border border-zinc-800 p-8 md:p-12 rounded-[2.5rem] shadow-2xl mb-12 overflow-hidden">
-          <div className={`absolute top-6 right-6 px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest border ${
-            eventoSeleccionado.estado === 'En Curso' ? 'bg-blue-500/20 text-blue-400 border-blue-500/30 animate-pulse' : 
-            eventoSeleccionado.estado === 'Suspendido' ? 'bg-red-500/20 text-red-400 border-red-500/30' : 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30'
-          }`}>
-            {eventoSeleccionado.estado}
-          </div>
-
-          <h2 className="text-4xl md:text-6xl font-black text-white mb-4 tracking-tighter uppercase italic">{eventoSeleccionado.nombre}</h2>
-          <p className="text-zinc-400 text-lg italic mb-10 border-l-4 border-emerald-500/30 pl-6 max-w-2xl leading-relaxed">"{eventoSeleccionado.descripcion}"</p>
+      <div className="min-h-screen bg-black font-sans pb-32 overflow-x-hidden">
+        <main className="pt-24 md:pt-32 px-4 sm:px-6 max-w-7xl mx-auto relative z-10">
           
-          <div className="flex flex-wrap gap-4">
-            <div className="bg-zinc-950 px-5 py-3 rounded-2xl border border-zinc-800 flex items-center gap-3">
-              <span className="text-emerald-500">📅</span>
-              <span className="font-bold text-zinc-300 text-sm">{formatearFechaManual(eventoSeleccionado.fecha)}</span>
-            </div>
-            <div className="bg-zinc-950 px-5 py-3 rounded-2xl border border-zinc-800 flex items-center gap-3">
-              <span className="text-emerald-500">⏰</span>
-              <span className="font-bold text-zinc-300 text-sm">{eventoSeleccionado.hora_inicio?.substring(0,5)} a {eventoSeleccionado.hora_fin?.substring(0,5)}</span>
-            </div>
-            <div className="bg-zinc-950 px-5 py-3 rounded-2xl border border-zinc-800 flex items-center gap-3">
-              <span className="text-emerald-500">📍</span>
-              <span className="font-bold text-zinc-300 text-sm">
-                {eventoSeleccionado.lugar ? `${eventoSeleccionado.lugar}, ` : ''} 
-                {eventoSeleccionado.ciudad || 'Ubicación Desconocida'}
-              </span>
+          <button 
+            onClick={() => setEventoSeleccionado(null)}
+            className="mb-8 text-zinc-500 hover:text-white font-black tracking-widest text-xs uppercase transition-colors flex items-center gap-2 group"
+          >
+            <span className="bg-zinc-900 border border-zinc-800 p-2 rounded-full group-hover:bg-zinc-800 transition-colors">←</span> 
+            Volver a la Agenda
+          </button>
+
+          <div className="mb-12 border-b border-zinc-900 pb-8">
+            <h2 className="text-5xl md:text-7xl font-black text-white italic uppercase tracking-tighter leading-none mb-4 drop-shadow-2xl">
+              {eventoSeleccionado.nombre}
+            </h2>
+            <div className="flex flex-wrap gap-4 text-sm font-bold uppercase tracking-widest text-zinc-400">
+              <span className="flex items-center gap-2 bg-zinc-900/50 px-4 py-2 rounded-full border border-zinc-800/50 backdrop-blur-sm">🗓️ {formatearFechaManual(eventoSeleccionado.fecha)}</span>
+              {eventoSeleccionado.hora_inicio && <span className="flex items-center gap-2 bg-zinc-900/50 px-4 py-2 rounded-full border border-zinc-800/50 backdrop-blur-sm">⏰ {eventoSeleccionado.hora_inicio} a {eventoSeleccionado.hora_fin}</span>}
+              {eventoSeleccionado.lugar && <span className="flex items-center gap-2 bg-zinc-900/50 px-4 py-2 rounded-full border border-zinc-800/50 backdrop-blur-sm">📍 {eventoSeleccionado.lugar}</span>}
             </div>
           </div>
 
-          {esAdmin && (
-             <button 
-               onClick={() => enviarConvocatoriaDMs(eventoSeleccionado)} 
-               className="mt-6 sm:mt-0 sm:absolute sm:bottom-6 sm:right-6 w-full sm:w-auto bg-sky-600/20 hover:bg-sky-500 text-sky-400 hover:text-white border border-sky-500/30 px-6 py-4 sm:py-3 rounded-full text-xs font-black uppercase tracking-widest transition-all shadow-lg flex items-center justify-center gap-2"
-             >
-               📢 Llamar Masters
-             </button>
-          )}
-        </header>
-
-        <div className="flex justify-center mb-16">
-          <div className="bg-zinc-950/80 p-2 rounded-[2.5rem] md:rounded-full border border-zinc-800 flex flex-col md:flex-row gap-2 shadow-2xl backdrop-blur-sm w-full sm:w-auto">
+          {/* MENÚ DE PESTAÑAS */}
+          <div className="flex flex-col sm:flex-row gap-2 sm:gap-4 mb-10 overflow-x-auto pb-4 scrollbar-hide snap-x">
             <button 
-              onClick={() => setVistaActiva('rol')} 
-              className={`flex justify-center items-center gap-3 px-8 py-4 font-black text-[10px] md:text-xs uppercase tracking-[0.2em] transition-all rounded-full ${
+              onClick={() => setVistaActiva('rol')}
+              className={`snap-start whitespace-nowrap flex-1 py-4 px-6 rounded-2xl font-black uppercase tracking-widest text-xs transition-all duration-300 border ${
                 vistaActiva === 'rol' 
-                  ? 'bg-gradient-to-r from-amber-500 to-orange-500 text-black shadow-lg shadow-amber-500/30 transform scale-105' 
-                  : 'text-zinc-500 hover:text-white hover:bg-zinc-900'
+                  ? 'bg-amber-500 text-black border-amber-400 shadow-lg shadow-amber-500/20' 
+                  : 'bg-zinc-900 text-zinc-500 border-zinc-800 hover:text-zinc-300 hover:bg-zinc-800'
               }`}
             >
-              <span className="text-lg">🎲</span> Mesas de Rol
+              🎲 Mesas de Rol ({mesasRol.length})
             </button>
             <button 
-              onClick={() => setVistaActiva('escape')} 
-              className={`flex justify-center items-center gap-3 px-8 py-4 font-black text-[10px] md:text-xs uppercase tracking-[0.2em] transition-all rounded-full ${
-                vistaActiva === 'escape' 
-                  ? 'bg-gradient-to-r from-indigo-500 to-purple-600 text-white shadow-lg shadow-indigo-500/30 transform scale-105' 
-                  : 'text-zinc-500 hover:text-white hover:bg-zinc-900'
-              }`}
-            >
-              <span className="text-lg">🔐</span> Escape Rooms
-            </button>
-            <button 
-              onClick={() => setVistaActiva('juegos')} 
-              className={`flex justify-center items-center gap-3 px-8 py-4 font-black text-[10px] md:text-xs uppercase tracking-[0.2em] transition-all rounded-full ${
+              onClick={() => setVistaActiva('juegos')}
+              className={`snap-start whitespace-nowrap flex-1 py-4 px-6 rounded-2xl font-black uppercase tracking-widest text-xs transition-all duration-300 border ${
                 vistaActiva === 'juegos' 
-                  ? 'bg-gradient-to-r from-rose-500 to-pink-600 text-white shadow-lg shadow-rose-500/30 transform scale-105' 
-                  : 'text-zinc-500 hover:text-white hover:bg-zinc-900'
+                  ? 'bg-rose-500 text-white border-rose-400 shadow-lg shadow-rose-500/20' 
+                  : 'bg-zinc-900 text-zinc-500 border-zinc-800 hover:text-zinc-300 hover:bg-zinc-800'
               }`}
             >
-              <span className="text-lg">🃏</span> Juegos de Mesa
+              🃏 Juegos de Mesa ({juegosMesa.length})
+            </button>
+            <button 
+              onClick={() => setVistaActiva('escape')}
+              className={`snap-start whitespace-nowrap flex-1 py-4 px-6 rounded-2xl font-black uppercase tracking-widest text-xs transition-all duration-300 border ${
+                vistaActiva === 'escape' 
+                  ? 'bg-indigo-500 text-white border-indigo-400 shadow-lg shadow-indigo-500/20' 
+                  : 'bg-zinc-900 text-zinc-500 border-zinc-800 hover:text-zinc-300 hover:bg-zinc-800'
+              }`}
+            >
+              🔐 Escape Rooms ({escapesDelEvento.length})
             </button>
           </div>
-        </div>
 
-        {/* ========================================= */}
-        {/* 🎲 VISTA: MESAS DE ROL                    */}
-        {/* ========================================= */}
-        {vistaActiva === 'rol' && (
-          <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
-            {esDungeonMaster && (eventoSeleccionado.estado !== 'Finalizado' && eventoSeleccionado.estado !== 'Suspendido') && !yaParticipa && (
-              <div className="mb-12">
-                {!convocatoriaCerrada ? (
-                  <>
-                    <div className="flex justify-center w-full">
-                      <button 
-                        onClick={() => setMostrarFormularioMesa(!mostrarFormularioMesa)}
-                        className={`w-full max-w-md py-5 rounded-full font-black transition-all duration-300 flex items-center justify-center gap-3 tracking-widest text-xs md:text-sm uppercase transform hover:-translate-y-1 ${
-                          mostrarFormularioMesa 
-                            ? 'bg-zinc-900 text-zinc-500 border border-zinc-800 hover:text-white hover:bg-red-500/20 hover:border-red-500/50' 
-                            : 'bg-gradient-to-r from-amber-500 to-orange-500 text-black shadow-lg shadow-amber-500/20 hover:shadow-amber-500/40'
-                        }`}
-                      >
-                        {mostrarFormularioMesa ? '✕ Cancelar Convocatoria' : '⚔️ Convocar Nueva Mesa'}
-                      </button>
-                    </div>
-
-                    {mostrarFormularioMesa && (
-                      <div className="mt-8 p-1 bg-gradient-to-b from-amber-500/20 to-transparent rounded-[2.5rem]">
-                        <div className="bg-zinc-900 p-8 rounded-[2.5rem] border border-zinc-800 shadow-3xl">
-                          <CrearMesa idEvento={eventoSeleccionado.id} alCrearMesa={() => {setMostrarFormularioMesa(false);}} />
-                        </div>
+          {/* ========================================= */}
+          {/* 🎲 VISTA: MESAS DE ROL                    */}
+          {/* ========================================= */}
+          {vistaActiva === 'rol' && (
+            <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
+              {esDungeonMaster && (eventoSeleccionado.estado !== 'Finalizado' && eventoSeleccionado.estado !== 'Suspendido') && !yaParticipa && (
+                <div className="mb-12">
+                  {!convocatoriaCerrada ? (
+                    <>
+                      <div className="flex justify-center w-full">
+                        <button 
+                          onClick={() => setMostrarFormularioMesa(!mostrarFormularioMesa)}
+                          className={`w-full max-w-md py-5 rounded-full font-black transition-all duration-300 flex items-center justify-center gap-3 tracking-widest text-xs md:text-sm uppercase transform hover:-translate-y-1 ${
+                            mostrarFormularioMesa 
+                              ? 'bg-zinc-900 text-zinc-500 border border-zinc-800 hover:text-white hover:bg-red-500/20 hover:border-red-500/50' 
+                              : 'bg-gradient-to-r from-amber-500 to-orange-500 text-black shadow-lg shadow-amber-500/20 hover:shadow-amber-500/40'
+                          }`}
+                        >
+                          {mostrarFormularioMesa ? '✕ Cancelar Convocatoria' : '⚔️ Convocar Nueva Mesa'}
+                        </button>
                       </div>
-                    )}
-                  </>
-                ) : (
-                  <div className="bg-amber-500/10 border border-amber-500/30 p-8 rounded-[2.5rem] flex flex-col items-center justify-center text-center shadow-inner">
-                    <span className="text-3xl mb-3">🛡️</span>
-                    <h4 className="text-amber-500 font-black uppercase tracking-widest text-sm mb-2">Convocatoria Cerrada</h4>
-                    <p className="text-zinc-400 text-sm italic max-w-lg">Ya nos encontramos en la fecha del evento. La organización está finalizando los preparativos logísticos y no es posible registrar nuevas mesas.</p>
-                  </div>
-                )}
-              </div>
-            )}
 
-            <div className="flex items-center justify-between mb-8">
-              <h3 className="text-2xl font-black text-white uppercase tracking-tighter italic">Mesas de la Jornada</h3>
-              <div className="flex gap-2">
-                <button onClick={() => carruselPartidasRef.current?.scrollBy({left: -350, behavior: 'smooth'})} className="w-10 h-10 bg-zinc-900 border border-zinc-800 rounded-full flex items-center justify-center hover:bg-zinc-800 text-zinc-500 transition-colors">‹</button>
-                <button onClick={() => carruselPartidasRef.current?.scrollBy({left: 350, behavior: 'smooth'})} className="w-10 h-10 bg-zinc-900 border border-zinc-800 rounded-full flex items-center justify-center hover:bg-zinc-800 text-zinc-500 transition-colors">›</button>
-              </div>
-            </div>
-
-            {mesasOrdenadas.length > 0 ? (
-              <div ref={carruselPartidasRef} className="flex gap-6 overflow-x-auto pb-12 scrollbar-hide snap-x" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
-                {mesasOrdenadas.map(p => (
-                  <div key={p.id} className="w-[85vw] sm:w-[350px] lg:w-[calc(33.333%-1rem)] flex-none snap-start">
-                    <Partida 
-                      {...p} 
-                      eventoEsPasado={eventoSeleccionado.estado === 'Finalizado' || eventoSeleccionado.estado === 'Suspendido'} 
-                      esAdmin={esAdmin} 
-                      esMiMesa={usuarioGuardado?.id === p.dungeon_master_id} 
-                      inscripcionesCerradas={inscripcionesCerradas} 
-                    />
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <div className="text-center py-24 bg-zinc-900/30 border-2 border-dashed border-zinc-800 rounded-[2.5rem]">
-                <p className="text-zinc-600 font-black uppercase tracking-widest text-xs">No hay expediciones registradas para este evento</p>
-              </div>
-            )}
-          </div>
-        )}
-
-        {/* ========================================= */}
-        {/* 🔐 VISTA: ESCAPE ROOMS                    */}
-        {/* ========================================= */}
-        {vistaActiva === 'escape' && (
-          <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
-            {esDungeonMaster && (eventoSeleccionado.estado !== 'Finalizado' && eventoSeleccionado.estado !== 'Suspendido') && (
-              <div className="mb-12">
-                {!convocatoriaCerrada ? (
-                  <>
-                    <div className="flex justify-center w-full">
-                      <button 
-                        onClick={() => setMostrarFormularioEscape(!mostrarFormularioEscape)}
-                        className={`w-full max-w-md py-5 rounded-full font-black transition-all duration-300 flex items-center justify-center gap-3 tracking-widest text-xs md:text-sm uppercase transform hover:-translate-y-1 ${
-                          mostrarFormularioEscape 
-                            ? 'bg-zinc-900 text-zinc-500 border border-zinc-800 hover:text-white hover:bg-red-500/20 hover:border-red-500/50' 
-                            : 'bg-gradient-to-r from-indigo-500 to-purple-600 text-white shadow-lg shadow-indigo-500/20 hover:shadow-indigo-500/40'
-                        }`}
-                      >
-                        {mostrarFormularioEscape ? '✕ Cancelar Instalación' : '🔐 Habilitar Nueva Sala'}
-                      </button>
+                      {mostrarFormularioMesa && (
+                        <div className="mt-8 p-1 bg-gradient-to-b from-amber-500/20 to-transparent rounded-[2.5rem]">
+                          <div className="bg-zinc-900 p-8 rounded-[2.5rem] border border-zinc-800 shadow-3xl">
+                            <CrearMesa idEvento={eventoSeleccionado.id} alCrearMesa={() => {setMostrarFormularioMesa(false);}} />
+                          </div>
+                        </div>
+                      )}
+                    </>
+                  ) : (
+                    <div className="bg-amber-500/10 border border-amber-500/30 p-8 rounded-[2.5rem] flex flex-col items-center justify-center text-center shadow-inner">
+                      <span className="text-3xl mb-3">🛡️</span>
+                      <h4 className="text-amber-500 font-black uppercase tracking-widest text-sm mb-2">Convocatoria Cerrada</h4>
+                      <p className="text-zinc-400 text-sm italic max-w-lg">Ya nos encontramos en la fecha del evento. La organización está finalizando los preparativos logísticos y no es posible registrar nuevas mesas.</p>
                     </div>
+                  )}
+                </div>
+              )}
 
-                    {mostrarFormularioEscape && (
-                      <FormularioEscape 
-                        eventoId={eventoSeleccionado.id} 
-                        onClose={() => setMostrarFormularioEscape(false)} 
-                        onSuccess={() => cargarEscapesDelEvento(eventoSeleccionado.id)} 
+              <div className="flex items-center justify-between mb-8">
+                <h3 className="text-2xl font-black text-white uppercase tracking-tighter italic">Mesas de la Jornada</h3>
+                <div className="flex gap-2">
+                  <button onClick={() => carruselPartidasRef.current?.scrollBy({left: -350, behavior: 'smooth'})} className="w-10 h-10 bg-zinc-900 border border-zinc-800 rounded-full flex items-center justify-center hover:bg-zinc-800 text-zinc-500 transition-colors">‹</button>
+                  <button onClick={() => carruselPartidasRef.current?.scrollBy({left: 350, behavior: 'smooth'})} className="w-10 h-10 bg-zinc-900 border border-zinc-800 rounded-full flex items-center justify-center hover:bg-zinc-800 text-zinc-500 transition-colors">›</button>
+                </div>
+              </div>
+
+              {mesasOrdenadas.length > 0 ? (
+                <div ref={carruselPartidasRef} className="flex gap-6 overflow-x-auto pb-12 scrollbar-hide snap-x" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
+                  {mesasOrdenadas.map(p => (
+                    <div key={p.id} className="w-[85vw] sm:w-[350px] lg:w-[calc(33.333%-1rem)] flex-none snap-start min-w-0">
+                      <Partida 
+                        {...p} 
+                        eventoEsPasado={eventoSeleccionado.estado === 'Finalizado' || eventoSeleccionado.estado === 'Suspendido'} 
+                        esAdmin={esAdmin} 
+                        esMiMesa={usuarioGuardado?.id === p.dungeon_master_id} 
+                        inscripcionesCerradas={inscripcionesCerradas} 
                       />
-                    )}
-                  </>
-                ) : (
-                  <div className="bg-indigo-500/10 border border-indigo-500/30 p-8 rounded-[2.5rem] flex flex-col items-center justify-center text-center shadow-inner">
-                    <span className="text-3xl mb-3">⏳</span>
-                    <h4 className="text-indigo-400 font-black uppercase tracking-widest text-sm mb-2">Convocatoria Cerrada</h4>
-                    <p className="text-zinc-400 text-sm italic max-w-lg">La jornada ya comenzó y los espacios físicos están asignados. No se pueden armar nuevas salas.</p>
-                  </div>
-                )}
-              </div>
-            )}
-
-            <div className="flex items-center justify-between mb-8">
-              <h3 className="text-2xl font-black text-white uppercase tracking-tighter italic">Salas Disponibles</h3>
-              <div className="flex gap-2">
-                <button onClick={() => carruselEscapesRef.current?.scrollBy({left: -350, behavior: 'smooth'})} className="w-10 h-10 bg-zinc-900 border border-zinc-800 rounded-full flex items-center justify-center hover:bg-zinc-800 text-zinc-500 transition-colors">‹</button>
-                <button onClick={() => carruselEscapesRef.current?.scrollBy({left: 350, behavior: 'smooth'})} className="w-10 h-10 bg-zinc-900 border border-zinc-800 rounded-full flex items-center justify-center hover:bg-zinc-800 text-zinc-500 transition-colors">›</button>
-              </div>
-            </div>
-
-            {escapesDelEvento.length > 0 ? (
-              <div ref={carruselEscapesRef} className="flex gap-6 overflow-x-auto pb-12 scrollbar-hide snap-x" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
-                {escapesDelEvento.map(sala => (
-                  <div key={sala.id} className="w-[85vw] sm:w-[350px] lg:w-[calc(33.333%-1rem)] flex-none snap-start">
-                    <TarjetaEscape 
-                      sala={sala} 
-                      usuarioGuardado={usuarioGuardado} 
-                      esAdmin={esAdmin} 
-                      inscripcionesCerradas={inscripcionesCerradas}
-                    />
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <div className="text-center py-24 bg-zinc-900/30 border-2 border-dashed border-zinc-800 rounded-[2.5rem]">
-                <p className="text-zinc-600 font-black uppercase tracking-widest text-xs">No hay salas de escape en construcción para esta jornada</p>
-              </div>
-            )}
-          </div>
-        )}
-
-        {/* ========================================= */}
-        {/* 🃏 VISTA: JUEGOS DE MESA                  */}
-        {/* ========================================= */}
-        {vistaActiva === 'juegos' && (
-          <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
-            {/* Cualquier usuario logueado (incluido 'aventurero') puede convocar si no participa en otra cosa */}
-            {usuarioGuardado && (eventoSeleccionado.estado !== 'Finalizado' && eventoSeleccionado.estado !== 'Suspendido') && !yaParticipa && (
-              <div className="mb-12">
-                {!convocatoriaCerrada ? (
-                  <>
-                    <div className="flex justify-center w-full">
-                      <button 
-                        onClick={() => setMostrarFormularioJuegoMesa(!mostrarFormularioJuegoMesa)}
-                        className={`w-full max-w-md py-5 rounded-full font-black transition-all duration-300 flex items-center justify-center gap-3 tracking-widest text-xs md:text-sm uppercase transform hover:-translate-y-1 ${
-                          mostrarFormularioJuegoMesa 
-                            ? 'bg-zinc-900 text-zinc-500 border border-zinc-800 hover:text-white hover:bg-red-500/20 hover:border-red-500/50' 
-                            : 'bg-gradient-to-r from-rose-500 to-pink-600 text-white shadow-lg shadow-rose-500/20 hover:shadow-rose-500/40'
-                        }`}
-                      >
-                        {mostrarFormularioJuegoMesa ? '✕ Cancelar Convocatoria' : '🃏 Convocar Juego de Mesa'}
-                      </button>
                     </div>
-
-                    {mostrarFormularioJuegoMesa && (
-                      <div className="mt-8 p-1 bg-gradient-to-b from-rose-500/20 to-transparent rounded-[2.5rem]">
-                        <div className="bg-zinc-900 p-8 rounded-[2.5rem] border border-zinc-800 shadow-3xl">
-                          <CrearMesaJuego idEvento={eventoSeleccionado.id} alCrearMesa={() => {setMostrarFormularioJuegoMesa(false);}} />
-                        </div>
-                      </div>
-                    )}
-                  </>
-                ) : (
-                  <div className="bg-rose-500/10 border border-rose-500/30 p-8 rounded-[2.5rem] flex flex-col items-center justify-center text-center shadow-inner">
-                    <span className="text-3xl mb-3">🃏</span>
-                    <h4 className="text-rose-500 font-black uppercase tracking-widest text-sm mb-2">Convocatoria Cerrada</h4>
-                    <p className="text-zinc-400 text-sm italic max-w-lg">Ya nos encontramos en la fecha del evento. La organización está finalizando los preparativos logísticos y no es posible registrar nuevas mesas.</p>
-                  </div>
-                )}
-              </div>
-            )}
-
-            <div className="flex items-center justify-between mb-8">
-              <h3 className="text-2xl font-black text-white uppercase tracking-tighter italic">Juegos de la Jornada</h3>
-              <div className="flex gap-2">
-                <button onClick={() => carruselJuegosRef.current?.scrollBy({left: -350, behavior: 'smooth'})} className="w-10 h-10 bg-zinc-900 border border-zinc-800 rounded-full flex items-center justify-center hover:bg-zinc-800 text-zinc-500 transition-colors">‹</button>
-                <button onClick={() => carruselJuegosRef.current?.scrollBy({left: 350, behavior: 'smooth'})} className="w-10 h-10 bg-zinc-900 border border-zinc-800 rounded-full flex items-center justify-center hover:bg-zinc-800 text-zinc-500 transition-colors">›</button>
-              </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="text-center py-24 bg-zinc-900/30 border-2 border-dashed border-zinc-800 rounded-[2.5rem]">
+                  <p className="text-zinc-600 font-black uppercase tracking-widest text-xs">No hay expediciones registradas para este evento</p>
+                </div>
+              )}
             </div>
+          )}
 
-            {juegosOrdenados.length > 0 ? (
-              <div ref={carruselJuegosRef} className="flex gap-6 overflow-x-auto pb-12 scrollbar-hide snap-x" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
-                {juegosOrdenados.map(p => (
-                  <div key={p.id} className="w-[85vw] sm:w-[350px] lg:w-[calc(33.333%-1rem)] flex-none snap-start">
-                    <Partida 
-                      {...p} 
-                      eventoEsPasado={eventoSeleccionado.estado === 'Finalizado' || eventoSeleccionado.estado === 'Suspendido'} 
-                      esAdmin={esAdmin} 
-                      esMiMesa={usuarioGuardado?.id === p.dungeon_master_id} 
-                      inscripcionesCerradas={inscripcionesCerradas} 
-                    />
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <div className="text-center py-24 bg-zinc-900/30 border-2 border-dashed border-zinc-800 rounded-[2.5rem]">
-                <p className="text-zinc-600 font-black uppercase tracking-widest text-xs">No hay juegos de mesa registrados para este evento</p>
-              </div>
-            )}
-          </div>
-        )}
+          {/* ========================================= */}
+          {/* 🔐 VISTA: ESCAPE ROOMS                    */}
+          {/* ========================================= */}
+          {vistaActiva === 'escape' && (
+            <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
+              {esDungeonMaster && (eventoSeleccionado.estado !== 'Finalizado' && eventoSeleccionado.estado !== 'Suspendido') && (
+                <div className="mb-12">
+                  {!convocatoriaCerrada ? (
+                    <>
+                      <div className="flex justify-center w-full">
+                        <button 
+                          onClick={() => setMostrarFormularioEscape(!mostrarFormularioEscape)}
+                          className={`w-full max-w-md py-5 rounded-full font-black transition-all duration-300 flex items-center justify-center gap-3 tracking-widest text-xs md:text-sm uppercase transform hover:-translate-y-1 ${
+                            mostrarFormularioEscape 
+                              ? 'bg-zinc-900 text-zinc-500 border border-zinc-800 hover:text-white hover:bg-red-500/20 hover:border-red-500/50' 
+                              : 'bg-gradient-to-r from-indigo-500 to-purple-600 text-white shadow-lg shadow-indigo-500/20 hover:shadow-indigo-500/40'
+                          }`}
+                        >
+                          {mostrarFormularioEscape ? '✕ Cancelar Instalación' : '🔐 Habilitar Nueva Sala'}
+                        </button>
+                      </div>
 
+                      {mostrarFormularioEscape && (
+                        <FormularioEscape 
+                          eventoId={eventoSeleccionado.id} 
+                          onClose={() => setMostrarFormularioEscape(false)} 
+                          onSuccess={() => cargarEscapesDelEvento(eventoSeleccionado.id)} 
+                        />
+                      )}
+                    </>
+                  ) : (
+                    <div className="bg-indigo-500/10 border border-indigo-500/30 p-8 rounded-[2.5rem] flex flex-col items-center justify-center text-center shadow-inner">
+                      <span className="text-3xl mb-3">⏳</span>
+                      <h4 className="text-indigo-400 font-black uppercase tracking-widest text-sm mb-2">Convocatoria Cerrada</h4>
+                      <p className="text-zinc-400 text-sm italic max-w-lg">La jornada ya comenzó y los espacios físicos están asignados. No se pueden armar nuevas salas.</p>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              <div className="flex items-center justify-between mb-8">
+                <h3 className="text-2xl font-black text-white uppercase tracking-tighter italic">Salas Disponibles</h3>
+                <div className="flex gap-2">
+                  <button onClick={() => carruselEscapesRef.current?.scrollBy({left: -350, behavior: 'smooth'})} className="w-10 h-10 bg-zinc-900 border border-zinc-800 rounded-full flex items-center justify-center hover:bg-zinc-800 text-zinc-500 transition-colors">‹</button>
+                  <button onClick={() => carruselEscapesRef.current?.scrollBy({left: 350, behavior: 'smooth'})} className="w-10 h-10 bg-zinc-900 border border-zinc-800 rounded-full flex items-center justify-center hover:bg-zinc-800 text-zinc-500 transition-colors">›</button>
+                </div>
+              </div>
+
+              {escapesDelEvento.length > 0 ? (
+                <div ref={carruselEscapesRef} className="flex gap-6 overflow-x-auto pb-12 scrollbar-hide snap-x" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
+                  {escapesDelEvento.map(sala => (
+                    <div key={sala.id} className="w-[85vw] sm:w-[350px] lg:w-[calc(33.333%-1rem)] flex-none snap-start min-w-0">
+                      <TarjetaEscape 
+                        sala={sala} 
+                        usuarioGuardado={usuarioGuardado} 
+                        esAdmin={esAdmin} 
+                        inscripcionesCerradas={inscripcionesCerradas}
+                      />
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="text-center py-24 bg-zinc-900/30 border-2 border-dashed border-zinc-800 rounded-[2.5rem]">
+                  <p className="text-zinc-600 font-black uppercase tracking-widest text-xs">No hay salas de escape en construcción para esta jornada</p>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* ========================================= */}
+          {/* 🃏 VISTA: JUEGOS DE MESA                  */}
+          {/* ========================================= */}
+          {vistaActiva === 'juegos' && (
+            <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
+              {/* Cualquier usuario logueado (incluido 'aventurero') puede convocar si no participa en otra cosa */}
+              {usuarioGuardado && (eventoSeleccionado.estado !== 'Finalizado' && eventoSeleccionado.estado !== 'Suspendido') && !yaParticipa && (
+                <div className="mb-12">
+                  {!convocatoriaCerrada ? (
+                    <>
+                      <div className="flex justify-center w-full">
+                        <button 
+                          onClick={() => setMostrarFormularioJuegoMesa(!mostrarFormularioJuegoMesa)}
+                          className={`w-full max-w-md py-5 rounded-full font-black transition-all duration-300 flex items-center justify-center gap-3 tracking-widest text-xs md:text-sm uppercase transform hover:-translate-y-1 ${
+                            mostrarFormularioJuegoMesa 
+                              ? 'bg-zinc-900 text-zinc-500 border border-zinc-800 hover:text-white hover:bg-red-500/20 hover:border-red-500/50' 
+                              : 'bg-gradient-to-r from-rose-500 to-pink-600 text-white shadow-lg shadow-rose-500/20 hover:shadow-rose-500/40'
+                          }`}
+                        >
+                          {mostrarFormularioJuegoMesa ? '✕ Cancelar Convocatoria' : '🃏 Convocar Juego de Mesa'}
+                        </button>
+                      </div>
+
+                      {mostrarFormularioJuegoMesa && (
+                        <div className="mt-8 p-1 bg-gradient-to-b from-rose-500/20 to-transparent rounded-[2.5rem]">
+                          <div className="bg-zinc-900 p-8 rounded-[2.5rem] border border-zinc-800 shadow-3xl">
+                            <CrearMesaJuego idEvento={eventoSeleccionado.id} alCrearMesa={() => {setMostrarFormularioJuegoMesa(false);}} />
+                          </div>
+                        </div>
+                      )}
+                    </>
+                  ) : (
+                    <div className="bg-rose-500/10 border border-rose-500/30 p-8 rounded-[2.5rem] flex flex-col items-center justify-center text-center shadow-inner">
+                      <span className="text-3xl mb-3">🃏</span>
+                      <h4 className="text-rose-500 font-black uppercase tracking-widest text-sm mb-2">Convocatoria Cerrada</h4>
+                      <p className="text-zinc-400 text-sm italic max-w-lg">Ya nos encontramos en la fecha del evento. La organización está finalizando los preparativos logísticos y no es posible registrar nuevas mesas.</p>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              <div className="flex items-center justify-between mb-8">
+                <h3 className="text-2xl font-black text-white uppercase tracking-tighter italic">Juegos de la Jornada</h3>
+                <div className="flex gap-2">
+                  <button onClick={() => carruselJuegosRef.current?.scrollBy({left: -350, behavior: 'smooth'})} className="w-10 h-10 bg-zinc-900 border border-zinc-800 rounded-full flex items-center justify-center hover:bg-zinc-800 text-zinc-500 transition-colors">‹</button>
+                  <button onClick={() => carruselJuegosRef.current?.scrollBy({left: 350, behavior: 'smooth'})} className="w-10 h-10 bg-zinc-900 border border-zinc-800 rounded-full flex items-center justify-center hover:bg-zinc-800 text-zinc-500 transition-colors">›</button>
+                </div>
+              </div>
+
+              {juegosOrdenados.length > 0 ? (
+                <div ref={carruselJuegosRef} className="flex gap-6 overflow-x-auto pb-12 scrollbar-hide snap-x" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
+                  {juegosOrdenados.map(p => (
+                    <div key={p.id} className="w-[85vw] sm:w-[350px] lg:w-[calc(33.333%-1rem)] flex-none snap-start min-w-0">
+                      <Partida 
+                        {...p} 
+                        eventoEsPasado={eventoSeleccionado.estado === 'Finalizado' || eventoSeleccionado.estado === 'Suspendido'} 
+                        esAdmin={esAdmin} 
+                        esMiMesa={usuarioGuardado?.id === p.dungeon_master_id} 
+                        inscripcionesCerradas={inscripcionesCerradas} 
+                      />
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="text-center py-24 bg-zinc-900/30 border-2 border-dashed border-zinc-800 rounded-[2.5rem]">
+                  <p className="text-zinc-600 font-black uppercase tracking-widest text-xs">No hay juegos de mesa registrados para este evento</p>
+                </div>
+              )}
+            </div>
+          )}
+
+        </main>
       </div>
     );
   }
@@ -598,80 +579,136 @@ function Eventos() {
       )}
 
       <section className="mb-20 relative">
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-12">
-          <h2 className="text-4xl md:text-6xl font-black text-white tracking-tighter uppercase italic leading-none">
-            Tablón de <br /><span className="text-emerald-500 not-italic">Misiones</span>
-          </h2>
-          <div className="flex gap-3">
-             <button onClick={scrollEventosIzq} className="w-14 h-14 bg-zinc-900 border border-zinc-800 rounded-full flex items-center justify-center hover:border-emerald-500/50 text-zinc-500 hover:text-emerald-500 transition-all shadow-xl">‹</button>
-             <button onClick={scrollEventosDer} className="w-14 h-14 bg-zinc-900 border border-zinc-800 rounded-full flex items-center justify-center hover:border-emerald-500/50 text-zinc-500 hover:text-emerald-500 transition-all shadow-xl">›</button>
+        <div className="absolute inset-0 bg-gradient-to-r from-amber-500/5 via-transparent to-purple-500/5 blur-3xl pointer-events-none -z-10 rounded-[3rem]"></div>
+        
+        <div className="flex items-center justify-between mb-10">
+          <h2 className="text-4xl md:text-5xl font-black text-white italic uppercase tracking-tighter">Eventos <span className="text-zinc-500">Próximos</span></h2>
+          
+          <div className="flex gap-2">
+            <button onClick={scrollEventosIzq} className="w-12 h-12 bg-zinc-900 border border-zinc-800 rounded-full flex items-center justify-center hover:bg-zinc-800 text-zinc-500 transition-colors hidden sm:flex">‹</button>
+            <button onClick={scrollEventosDer} className="w-12 h-12 bg-zinc-900 border border-zinc-800 rounded-full flex items-center justify-center hover:bg-zinc-800 text-zinc-500 transition-colors hidden sm:flex">›</button>
           </div>
         </div>
         
         {eventosProximos.length > 0 ? (
-          <div ref={carruselEventosRef} className="flex gap-8 overflow-x-auto pb-10 scrollbar-hide snap-x" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
-            {eventosProximos.map(evento => (
+          <div ref={carruselEventosRef} className="flex gap-6 overflow-x-auto pb-12 scrollbar-hide snap-x" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
+            {eventosProximos.map(e => (
               <div 
-                key={evento.id} 
-                onClick={() => entrarAlEvento(evento)}
-                className="group min-w-[300px] md:min-w-[450px] bg-zinc-900/50 hover:bg-zinc-900 border border-zinc-800 hover:border-emerald-500/40 p-10 rounded-[2.5rem] transition-all cursor-pointer snap-start shadow-2xl relative overflow-hidden flex flex-col justify-between"
+                key={e.id} 
+                className="min-w-[85vw] sm:min-w-[400px] bg-zinc-900/60 p-8 rounded-[2.5rem] border border-zinc-800 cursor-pointer hover:bg-zinc-900 hover:border-zinc-700 transition-all duration-300 group flex flex-col snap-start relative overflow-hidden"
+                onClick={() => entrarAlEvento(e)}
               >
-                <div className="absolute top-0 right-0 w-32 h-32 bg-emerald-500/5 blur-[80px] rounded-full pointer-events-none"></div>
-                
-                <div>
-                  <h3 className="text-3xl font-black text-white mb-4 group-hover:text-emerald-400 uppercase tracking-tighter italic transition-colors leading-tight pr-12">{evento.nombre}</h3>
-                  <p className="text-zinc-500 text-sm mb-8 line-clamp-3 italic leading-relaxed">"{evento.descripcion}"</p>
-                </div>
-
-                <div className="space-y-4 mb-8">
-                  <div className="flex items-center gap-3">
-                    <div className="w-8 h-8 rounded-full bg-zinc-950 flex items-center justify-center border border-zinc-800 text-xs shadow-inner">📅</div>
-                    <span className="text-zinc-300 font-bold text-sm">{formatearFechaManual(evento.fecha)}</span>
-                  </div>
-                  <div className="flex items-center gap-3">
-                    <div className="w-8 h-8 rounded-full bg-zinc-950 flex items-center justify-center border border-zinc-800 text-xs shadow-inner">📍</div>
-                    <span className="text-zinc-400 font-medium text-sm truncate pr-4">
-                      {evento.lugar ? `${evento.lugar}, ` : ''} 
-                      {evento.ciudad || 'Ubicación Desconocida'}
-                    </span>
-                  </div>
-                </div>
-
-                <div className="flex justify-between items-center pt-6 border-t border-zinc-800/50 mt-auto">
-                  <div className="flex flex-col">
-                    <span className="text-[9px] font-black text-zinc-600 uppercase tracking-[0.2em] mb-1">Estado de la Misión</span>
-                    <span className={`font-black text-sm uppercase tracking-tighter ${evento.estado === 'En Curso' ? 'text-blue-400 animate-pulse' : 'text-emerald-500'}`}>{evento.estado}</span>
-                  </div>
-                  <span className="w-12 h-12 bg-zinc-950 rounded-full flex items-center justify-center border border-zinc-800 group-hover:border-emerald-500 group-hover:text-emerald-500 transition-all shadow-lg text-lg">→</span>
-                </div>
-
-                {esAdmin && (
-                  <div className="absolute top-6 right-6 flex flex-col gap-2 z-20">
-                    <button onClick={(e) => abrirEdicion(evento, e)} className="w-10 h-10 bg-zinc-950/80 backdrop-blur-sm text-purple-400 rounded-full border border-purple-500/20 flex items-center justify-center hover:bg-purple-500 hover:text-white transition-all text-sm shadow-xl" title="Editar Evento">✏️</button>
-                    <button onClick={(e) => enviarConvocatoriaDMs(evento, e)} className="w-10 h-10 bg-zinc-950/80 backdrop-blur-sm text-sky-400 rounded-full border border-sky-500/20 flex items-center justify-center hover:bg-sky-500 hover:text-white transition-all text-sm shadow-xl" title="Convocar DMs en Telegram">📢</button>
-                    <button onClick={(e) => borrarEvento(evento.id, e)} className="w-10 h-10 bg-zinc-950/80 backdrop-blur-sm text-red-500 rounded-full border border-red-500/20 flex items-center justify-center hover:bg-red-500 hover:text-white transition-all text-sm shadow-xl" title="Borrar Evento">🗑️</button>
-                  </div>
+                {e.estado === 'En Curso' && (
+                  <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-emerald-400 to-teal-500"></div>
                 )}
+                
+                <div className="flex justify-between items-start mb-6">
+                  <div>
+                    <p className="text-zinc-500 font-bold uppercase tracking-widest text-xs mb-2">
+                      {formatearFechaManual(e.fecha)}
+                    </p>
+                    <h3 className="text-3xl font-black text-white italic uppercase tracking-tighter group-hover:text-amber-400 transition-colors">
+                      {e.nombre}
+                    </h3>
+                  </div>
+                  <span className={`px-4 py-1 rounded-full text-[9px] font-black uppercase tracking-widest border shadow-inner ${
+                    e.estado === 'En Curso' ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30' : 'bg-amber-500/10 text-amber-500 border-amber-500/30'
+                  }`}>
+                    {e.estado}
+                  </span>
+                </div>
+                
+                <p className="text-zinc-400 text-sm italic line-clamp-2 mb-8 flex-1">
+                  {e.descripcion}
+                </p>
+
+                <div className="flex flex-col gap-2 mb-8">
+                  {e.lugar && (
+                    <div className="flex items-center gap-3 text-xs font-bold text-zinc-500 uppercase tracking-widest">
+                      <span className="w-6 h-6 rounded-full bg-zinc-800 flex items-center justify-center">📍</span>
+                      {e.lugar} {e.ciudad ? ` - ${e.ciudad}` : ''}
+                    </div>
+                  )}
+                  {e.hora_inicio && (
+                    <div className="flex items-center gap-3 text-xs font-bold text-zinc-500 uppercase tracking-widest">
+                      <span className="w-6 h-6 rounded-full bg-zinc-800 flex items-center justify-center">⏰</span>
+                      {e.hora_inicio} a {e.hora_fin}
+                    </div>
+                  )}
+                </div>
+
+                <div className="flex justify-between items-center pt-6 border-t border-zinc-800/50 mt-auto gap-2">
+                  <div className="flex gap-2">
+                    {esDungeonMaster && (
+                       <button 
+                         onClick={(evt) => enviarConvocatoriaDMs(e, evt)}
+                         className="p-3 bg-zinc-950 text-emerald-500 rounded-xl hover:bg-emerald-500/10 hover:text-emerald-400 transition-colors border border-emerald-500/20 group/btn"
+                         title="Enviar cuervos para buscar Masters"
+                       >
+                         <span className="group-hover/btn:scale-110 inline-block transition-transform">🦅</span>
+                       </button>
+                    )}
+                    
+                    {esAdmin && (
+                      <>
+                        <button onClick={(evt) => abrirEdicion(e, evt)} className="p-3 bg-zinc-950 text-zinc-500 rounded-xl hover:text-white transition-colors border border-zinc-800">
+                          ✏️
+                        </button>
+                        <button onClick={(evt) => borrarEvento(e.id, evt)} className="p-3 bg-zinc-950 text-zinc-500 rounded-xl hover:text-red-500 hover:bg-red-500/10 transition-colors border border-zinc-800">
+                          🗑️
+                        </button>
+                      </>
+                    )}
+                  </div>
+                  
+                  <div className="text-amber-500 font-black uppercase tracking-widest text-xs flex items-center gap-2 group-hover:translate-x-2 transition-transform">
+                    Entrar <span className="text-lg leading-none">→</span>
+                  </div>
+                </div>
               </div>
             ))}
           </div>
-        ) : <p className="text-center py-24 bg-zinc-900/20 border-2 border-dashed border-zinc-800 rounded-[3rem] text-zinc-600 font-black uppercase tracking-widest text-xs italic">No hay pergaminos convocados por el momento</p>}
+        ) : (
+          <div className="text-center py-32 bg-zinc-900/30 border-2 border-dashed border-zinc-800 rounded-[3rem]">
+            <span className="text-5xl mb-4 block opacity-50">🏕️</span>
+            <p className="text-zinc-500 font-black uppercase tracking-widest text-sm">El horizonte está despejado</p>
+            <p className="text-zinc-600 text-xs mt-2">No hay eventos próximos agendados</p>
+          </div>
+        )}
       </section>
 
-      <section className="opacity-60 hover:opacity-100 transition-opacity duration-500">
-        <h3 className="text-xl font-black text-zinc-600 uppercase tracking-[0.3em] mb-10 italic">Eventos Pasados</h3>
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-          {eventosPasados.map(evento => (
-            <div key={evento.id} onClick={() => entrarAlEvento(evento)} className="group bg-zinc-950 border border-zinc-900 p-6 rounded-[2rem] transition-all cursor-pointer hover:bg-zinc-900 hover:border-zinc-700 relative overflow-hidden">
-              <h4 className="text-sm font-black text-zinc-500 mb-2 group-hover:text-zinc-300 uppercase italic truncate relative z-10">{evento.nombre}</h4>
-              <p className="text-[10px] font-bold text-zinc-700 uppercase tracking-widest relative z-10 flex flex-col gap-1">
-                <span>{formatearFechaManual(evento.fecha)}</span>
-                <span className="truncate opacity-50">{evento.ciudad || 'Ubicación Desconocida'}</span>
-              </p>
+
+      <section className="opacity-70 grayscale hover:grayscale-0 hover:opacity-100 transition-all duration-700">
+        <h2 className="text-3xl md:text-4xl font-black text-zinc-700 italic uppercase tracking-tighter mb-10 pl-2 border-l-4 border-zinc-800">
+          Crónicas Pasadas
+        </h2>
+        
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+          {eventosPasados.map(e => (
+            <div 
+              key={e.id} 
+              className="bg-zinc-950 p-6 rounded-[2rem] border border-zinc-900 cursor-pointer hover:border-zinc-700 transition-colors group"
+              onClick={() => entrarAlEvento(e)}
+            >
+              <div className="flex justify-between items-start mb-4">
+                <p className="text-zinc-600 font-bold uppercase tracking-widest text-[10px]">
+                  {formatearFechaManual(e.fecha)}
+                </p>
+                <span className="text-[9px] font-black uppercase tracking-widest text-zinc-500 bg-zinc-900 px-3 py-1 rounded-full border border-zinc-800">
+                  {e.estado}
+                </span>
+              </div>
+              <h3 className="text-xl font-black text-zinc-400 italic uppercase tracking-tighter group-hover:text-zinc-200 transition-colors mb-2">
+                {e.nombre}
+              </h3>
+              <div className="flex items-center gap-2 text-[10px] font-bold text-zinc-600 uppercase tracking-widest mt-4">
+                <span>Explorar</span> <span className="group-hover:translate-x-1 transition-transform">→</span>
+              </div>
             </div>
           ))}
         </div>
       </section>
+
     </div>
   );
 }

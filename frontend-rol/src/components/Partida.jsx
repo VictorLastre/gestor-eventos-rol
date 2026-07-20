@@ -306,7 +306,7 @@ function Partida(props) {
     <>
       <div 
         onClick={() => setModalAbierto(true)}
-        className={`relative p-6 sm:p-8 rounded-[2rem] border-2 transition-all duration-500 flex flex-col min-h-[450px] h-full cursor-pointer w-full group overflow-hidden ${
+        className={`relative p-6 sm:p-8 rounded-[2rem] border-2 transition-all duration-500 flex flex-col min-h-[450px] h-full cursor-pointer w-full min-w-0 group overflow-hidden ${
           soyElMaster 
           ? "bg-amber-900/10 border-amber-500/80 shadow-[0_0_20px_rgba(245,158,11,0.25)]" 
           : `bg-zinc-900/60 hover:bg-zinc-900 hover:shadow-xl ${estiloBordeDisponibilidad}`
@@ -360,7 +360,7 @@ function Partida(props) {
           </div>
         </div>
 
-        <p className="text-zinc-400 text-sm leading-relaxed mb-6 border-l-2 border-zinc-800 pl-4 py-1 italic line-clamp-4 flex-grow relative z-10">
+        <p className="text-zinc-400 text-sm leading-relaxed mb-6 border-l-2 border-zinc-800 pl-4 py-1 italic line-clamp-4 flex-grow relative z-10 break-words whitespace-normal">
           "{props.description || props.descripcion}"
         </p>
 
@@ -446,7 +446,8 @@ function Partida(props) {
                   <div className="flex flex-col gap-2">
                     <label className="text-[10px] font-black text-zinc-500 uppercase tracking-widest ml-1">Género</label>
                     <select value={datosEdicion.etiqueta} onChange={e => setDatosEdicion({...datosEdicion, etiqueta: e.target.value})} className={`bg-zinc-950 border border-zinc-800 rounded-2xl py-4 px-5 text-white outline-none font-bold appearance-none cursor-pointer ${CONFIG_TEMAS[datosEdicion.etiqueta]?.color || ''}`}>
-                      {Object.keys(CONFIG_TEMAS).filter(op => op !== 'Juegos de Mesa').map(opcion => (                         <option key={opcion} value={opcion}>{CONFIG_TEMAS[opcion].icon} {opcion}</option>
+                      {Object.keys(CONFIG_TEMAS).filter(op => op !== 'Juegos de Mesa').map(opcion => (
+                         <option key={opcion} value={opcion}>{CONFIG_TEMAS[opcion].icon} {opcion}</option>
                       ))}
                     </select>
                   </div>
