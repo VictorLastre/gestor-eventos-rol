@@ -46,23 +46,13 @@ function Eventos() {
       .catch(err => console.error("Error:", err));
   };
 
-  /*const cargarMesasDelEvento = (idEvento) => {
+  const cargarMesasDelEvento = (idEvento) => {
     fetchProtegido(`/api/eventos/${idEvento}/partidas`)
       .then(res => res.json())
       .then(datos => setPartidasDelEvento(Array.isArray(datos) ? datos : []))
       .catch(err => { if (err !== 'Sesión expirada') console.error(err); });
-  };*/
-  const cargarMesasDelEvento = (idEvento) => {
-    fetchProtegido(`/api/eventos/${idEvento}/partidas`)
-      .then(res => res.json())
-      .then(datos => {
-        console.log("DATOS RECIBIDOS DEL BACKEND:", datos); // 👀 ¡El chivato!
-        setPartidasDelEvento(Array.isArray(datos) ? datos : []);
-      })
-      .catch(err => { 
-        if (err !== 'Sesión expirada') console.error("Error en el fetch:", err); 
-      });
   };
+  
 
   const cargarEscapesDelEvento = (idEvento) => {
     fetchProtegido(`/api/escapes/${idEvento}`)
@@ -260,21 +250,19 @@ function Eventos() {
       inscripcionesCerradas = ahora >= limiteInscripcion;
     }
 
-    // ✨ Separar las partidas de Rol y las de Juegos de Mesa
-    const mesasRol = partidasDelEvento.filter(p => p.tipo === 'rol');
-    const juegosMesa = partidasDelEvento.filter(p => p.tipo === 'juego_mesa');
-
+     // ✨ Separar las partidas de Rol y las de Juegos de Mesa usando los nombres REALES de la base de datos
+    const mesasRol = partidasDelEvento.filter(p => p.etiqueta !== 'Juegos de Mesa');
+    const juegosMesa = partidasDelEvento.filter(p => p.etiqueta === 'Juegos de Mesa');
     // Ordenar para mostrar primero las que tienen lugar
     const mesasOrdenadas = [...mesasRol].sort((a, b) => {
-      const aLlena = a.jugadores_anotados >= a.cupo_maximo;
-      const bLlena = b.jugadores_anotados >= b.cupo_maximo;
+      const aLlena = (a.jugadoresIniciales || 0) >= (a.cupo || 0);
+      const bLlena = (b.jugadoresIniciales || 0) >= (b.cupo || 0);
       if (aLlena === bLlena) return 0;
       return aLlena ? 1 : -1;
     });
-
     const juegosOrdenados = [...juegosMesa].sort((a, b) => {
-      const aLlena = a.jugadores_anotados >= a.cupo_maximo;
-      const bLlena = b.jugadores_anotados >= b.cupo_maximo;
+      const aLlena = (a.jugadoresIniciales || 0) >= (a.cupo || 0);
+      const bLlena = (b.jugadoresIniciales || 0) >= (b.cupo || 0);
       if (aLlena === bLlena) return 0;
       return aLlena ? 1 : -1;
     });
