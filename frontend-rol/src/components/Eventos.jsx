@@ -66,7 +66,7 @@ function Eventos() {
 
     const socket = io('/', {
       path: '/api/socket.io',
-      transports: ['websocket', 'polling'],
+      transports: ['websocket'], 
       reconnectionAttempts: 5
     });
 
