@@ -46,11 +46,22 @@ function Eventos() {
       .catch(err => console.error("Error:", err));
   };
 
-  const cargarMesasDelEvento = (idEvento) => {
+  /*const cargarMesasDelEvento = (idEvento) => {
     fetchProtegido(`/api/eventos/${idEvento}/partidas`)
       .then(res => res.json())
       .then(datos => setPartidasDelEvento(Array.isArray(datos) ? datos : []))
       .catch(err => { if (err !== 'Sesión expirada') console.error(err); });
+  };*/
+  const cargarMesasDelEvento = (idEvento) => {
+    fetchProtegido(`/api/eventos/${idEvento}/partidas`)
+      .then(res => res.json())
+      .then(datos => {
+        console.log("DATOS RECIBIDOS DEL BACKEND:", datos); // 👀 ¡El chivato!
+        setPartidasDelEvento(Array.isArray(datos) ? datos : []);
+      })
+      .catch(err => { 
+        if (err !== 'Sesión expirada') console.error("Error en el fetch:", err); 
+      });
   };
 
   const cargarEscapesDelEvento = (idEvento) => {
