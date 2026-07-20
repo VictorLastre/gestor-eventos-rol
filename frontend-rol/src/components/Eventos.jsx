@@ -303,7 +303,7 @@ function Eventos() {
           {esAdmin && (
              <button 
                onClick={() => enviarConvocatoriaDMs(eventoSeleccionado)} 
-               className="absolute bottom-6 right-6 bg-sky-600/20 hover:bg-sky-500 text-sky-400 hover:text-white border border-sky-500/30 px-6 py-3 rounded-full text-xs font-black uppercase tracking-widest transition-all shadow-lg flex items-center gap-2"
+               className="mt-6 sm:mt-0 sm:absolute sm:bottom-6 sm:right-6 w-full sm:w-auto bg-sky-600/20 hover:bg-sky-500 text-sky-400 hover:text-white border border-sky-500/30 px-6 py-4 sm:py-3 rounded-full text-xs font-black uppercase tracking-widest transition-all shadow-lg flex items-center justify-center gap-2"
              >
                📢 Llamar Masters
              </button>

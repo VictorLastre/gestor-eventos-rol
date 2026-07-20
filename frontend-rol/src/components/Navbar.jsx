@@ -135,7 +135,7 @@ function Navbar({ usuario, alCerrarSesion, setVista }) {
             </button>
 
             {mostrarCampana && (
-              <div className="absolute top-[3rem] md:top-[3.5rem] right-0 xl:right-auto xl:-left-32 w-72 sm:w-80 bg-zinc-900/95 backdrop-blur-xl border border-zinc-700 rounded-3xl shadow-[0_20px_50px_rgba(0,0,0,0.5)] overflow-hidden z-[200] animate-in slide-in-from-top-2 fade-in duration-200">
+              <div className="fixed sm:absolute top-[4rem] sm:top-[3.5rem] left-4 right-4 sm:left-auto sm:right-0 xl:-left-32 sm:w-80 bg-zinc-900/95 backdrop-blur-xl border border-zinc-700 rounded-3xl shadow-[0_20px_50px_rgba(0,0,0,0.5)] overflow-hidden z-[200] animate-in slide-in-from-top-2 fade-in duration-200">
                 <div className="bg-zinc-950/80 p-4 md:p-5 border-b border-zinc-800 flex justify-between items-center backdrop-blur-md">
                   <h3 className="text-[10px] md:text-xs font-black text-zinc-400 uppercase tracking-widest flex items-center gap-2">
                     <span className="w-1.5 h-1.5 bg-red-500 rounded-full animate-pulse"></span>

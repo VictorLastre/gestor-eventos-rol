@@ -330,11 +330,11 @@ function Partida(props) {
                 </span>
               )}
               {props.etiqueta && !esJuegoMesa && (
-                <span className={`text-[9px] font-black uppercase tracking-widest px-3 py-1 rounded-full border flex items-center gap-1.5 whitespace-nowrap ${tema.color} ${tema.bg} ${tema.border}`}>
+                <span className={`text-[9px] font-black uppercase tracking-widest px-3 py-1 rounded-full border flex items-center gap-1.5 truncate max-w-[200px] sm:max-w-none sm:whitespace-nowrap ${tema.color} ${tema.bg} ${tema.border}`}>
                   {tema.icon} {props.etiqueta}
                 </span>
               )}
-              <span className="text-[9px] font-black text-zinc-300 uppercase tracking-widest bg-zinc-800 px-3 py-1 rounded-full border border-zinc-700 shadow-inner whitespace-nowrap">
+              <span className="text-[9px] font-black text-zinc-300 uppercase tracking-widest bg-zinc-800 px-3 py-1 rounded-full border border-zinc-700 shadow-inner truncate max-w-[200px] sm:max-w-none sm:whitespace-nowrap">
                 {esJuegoMesa ? '🃏' : '🎲'} {props.sistema || 'Sistema Desconocido'}
               </span>
               
@@ -446,8 +446,7 @@ function Partida(props) {
                   <div className="flex flex-col gap-2">
                     <label className="text-[10px] font-black text-zinc-500 uppercase tracking-widest ml-1">Género</label>
                     <select value={datosEdicion.etiqueta} onChange={e => setDatosEdicion({...datosEdicion, etiqueta: e.target.value})} className={`bg-zinc-950 border border-zinc-800 rounded-2xl py-4 px-5 text-white outline-none font-bold appearance-none cursor-pointer ${CONFIG_TEMAS[datosEdicion.etiqueta]?.color || ''}`}>
-                      {Object.keys(CONFIG_TEMAS).filter(op => op !== 'Juegos de Mesa').map(opcion => (
-                         <option key={opcion} value={opcion}>{CONFIG_TEMAS[opcion].icon} {opcion}</option>
+                      {Object.keys(CONFIG_TEMAS).filter(op => op !== 'Juegos de Mesa').map(opcion => (                         <option key={opcion} value={opcion}>{CONFIG_TEMAS[opcion].icon} {opcion}</option>
                       ))}
                     </select>
                   </div>
