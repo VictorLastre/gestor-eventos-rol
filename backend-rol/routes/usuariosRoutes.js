@@ -385,4 +385,35 @@ router.get('/yo', verificarToken, (req, res) => {
     });
 });
 
+// ✨ CERTIFICADOS: Marcar a un DM como Veterano tras entregarle su certificado
+router.put('/:id/certificado-entregado', verificarToken, (req, res) => {
+  if (req.usuario.rol !== 'admin') {
+    return res.status(403).json({ error: 'Solo el Consejo puede validar certificados.' });
+  }
+
+  const dmId = req.params.id;
+
+  db.query("UPDATE usuarios SET es_dm_nuevo = 0 WHERE id = ?", [dmId], (err, resultado) => {
+    if (err) {
+      console.error(err);
+      return res.status(500).json({ error: 'Error al forjar el estatus de Veterano.' });
+    }
+
+    if (resultado.affectedRows === 0) {
+      return res.status(404).json({ error: 'Dungeon Master no encontrado.' });
+    }
+
+    // Opcional: Registrar en la bitácora que se entregó el certificado
+    db.query("SELECT nombre FROM usuarios WHERE id = ?", [dmId], (err, result) => {
+      const nombreDM = result && result[0] ? result[0].nombre : 'Desconocido';
+      registrarLog(req.usuario, 'ENTREGAR_CERTIFICADO', `Entregó el Certificado Oficial y marcó como Veterano a ${nombreDM}.`);
+    });
+
+    const io = req.app.get('io');
+    if (io) io.emit('actualizacion-usuarios');
+
+    res.json({ mensaje: '¡Estatus de Veterano concedido!' });
+  });
+});
+
 module.exports = router;
