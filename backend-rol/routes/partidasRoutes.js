@@ -416,4 +416,44 @@ router.post('/:id/notificar-jugadores', verificarToken, (req, res) => {
   });
 });
 
+// ✨ LOGÍSTICA: Reporte completo para Fundadores (Rol y Juegos de Mesa)
+router.get('/reporte-logistico/:eventoId', verificarToken, (req, res) => {
+  if (req.usuario.rol !== 'admin') return res.status(403).json({ error: 'Acceso reservado a los fundadores.' });
+
+  const sql = `
+    SELECT 
+      p.titulo as mesa, 
+      p.etiqueta,
+      p.sistema, 
+      p.turno, 
+      p.materiales_pedidos,
+      u.nombre as dm_o_creador_nombre, 
+      u.nombre_completo,
+      u.es_dm_nuevo, 
+      GROUP_CONCAT(uj.nombre SEPARATOR ', ') as jugadores
+    FROM partidas p
+    JOIN usuarios u ON p.dungeon_master_id = u.id
+    LEFT JOIN inscripciones i ON p.id = i.partida_id
+    LEFT JOIN usuarios uj ON i.usuario_id = uj.id
+    WHERE p.evento_id = ?
+    GROUP BY p.id
+    ORDER BY p.turno ASC, p.etiqueta ASC
+  `;
+
+  db.query(sql, [req.params.eventoId], (err, resultados) => {
+    if (err) {
+      console.error(err);
+      return res.status(500).json({ error: 'Error al generar el reporte logístico.' });
+    }
+    
+    // Registrar en bitácora quién y cuándo exportó la logística
+    db.query("SELECT nombre FROM eventos WHERE id = ?", [req.params.eventoId], (err2, result2) => {
+       const nombreEv = result2 && result2[0] ? result2[0].nombre : 'Desconocido';
+       registrarLog(req.usuario, 'REPORTE_LOGISTICA', `Exportó la planilla logística de la jornada "${nombreEv}".`);
+    });
+
+    res.json(resultados);
+  });
+});
+
 module.exports = router;
