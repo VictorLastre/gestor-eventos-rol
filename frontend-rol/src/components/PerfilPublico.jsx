@@ -84,7 +84,7 @@ function PerfilPublico({ usuarioId, volver }) {
                     <span className="text-emerald-500 font-black text-[10px] md:text-xs uppercase tracking-[0.4em]">🛡️ Dungeon Master</span>
                     <span className="w-1 h-1 bg-zinc-700 rounded-full hidden sm:block"></span>
                     <span className={`text-[10px] font-black uppercase tracking-widest bg-black/30 px-2 py-1 rounded-md border border-zinc-800 ${rango?.colorClase}`}>
-                      {rango?.icono} Nvl. {rango?.nivel} - {rango?.rango}
+                      {rango?.icono} Nvl. {rango?.nivel} - {rango?.nombre}
                     </span>
                   </div>
                 ) : (

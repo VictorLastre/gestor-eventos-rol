@@ -379,7 +379,7 @@ function Partida(props) {
             <div className="shrink-0 w-8 h-8 sm:w-10 sm:h-10 bg-zinc-900 border border-zinc-700 rounded-full flex items-center justify-center text-sm shadow-inner relative">
               {esJuegoMesa ? '👑' : '🛡️'}
               <div className="absolute -bottom-2 -right-2 bg-gradient-to-br from-amber-400 to-amber-600 text-black text-[9px] font-black px-1.5 py-0.5 rounded-full border border-zinc-900 shadow-md">
-                Lv{props.dm_nivel || 1}
+                Lv{obtenerRangoDM(props.dm_honor || 0).nivel}
               </div>
             </div>
             <div className="min-w-0 flex-1 pr-1 sm:pr-2">
@@ -664,7 +664,7 @@ function Partida(props) {
                   <div className="shrink-0 w-14 h-14 bg-zinc-900 border border-zinc-700 rounded-full flex items-center justify-center text-2xl relative">
                     {esJuegoMesa ? '👑' : '🛡️'}
                     <div className="absolute -bottom-2 -right-2 bg-gradient-to-br from-amber-400 to-amber-600 text-black text-[11px] font-black px-2 py-0.5 rounded-full border-2 border-zinc-900 shadow-md">
-                      Lv{props.dm_nivel || 1}
+                      Lv{obtenerRangoDM(props.dm_honor || 0).nivel}
                     </div>
                   </div>
                   <div className="min-w-0 flex-1">

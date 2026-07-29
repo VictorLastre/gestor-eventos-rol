@@ -322,7 +322,7 @@ router.get('/notificaciones', verificarToken, (req, res) => {
     const offset = (page - 1) * limit;
     db.query("SELECT COUNT(*) AS total FROM usuarios", (err, countResult) => {
       if (err) return res.status(500).json({ error: 'Error.' });
-      const sql = `SELECT id, nombre, nombre_completo, email, rol, avatar, biografia, solicita_dm, es_dm_nuevo, telegram_chat_id, (SELECT COUNT(*) FROM honor_dm WHERE dm_id = usuarios.id) as honor_total FROM usuarios ORDER BY nombre ASC LIMIT ${limit} OFFSET ${offset}`;
+      const sql = `SELECT id, nombre, nombre_completo, email, rol, avatar, biografia, solicita_dm, es_dm_nuevo, telegram_chat_id, ((SELECT COUNT(*) FROM honor_dm WHERE dm_id = usuarios.id) + ((SELECT COUNT(*) FROM partidas WHERE dungeon_master_id = usuarios.id) * 5)) as honor_total FROM usuarios ORDER BY nombre ASC LIMIT ${limit} OFFSET ${offset}`;
       db.query(sql, (err, resultados) => {
         if (err) return res.status(500).json({ error: 'Error.' });
         res.json({ datos: resultados, paginacion: { paginaActual: page, totalPaginas: Math.ceil(countResult[0].total / limit) } });
@@ -331,7 +331,7 @@ router.get('/notificaciones', verificarToken, (req, res) => {
   });
   
   router.get('/yo', verificarToken, (req, res) => {
-    db.query("SELECT id, nombre, nombre_completo, email, rol, avatar, biografia, solicita_dm, es_dm_nuevo, telegram_chat_id, (SELECT COUNT(*) FROM honor_dm WHERE dm_id = usuarios.id) as honor_total FROM usuarios WHERE id = ?", [req.usuario.id], (err, resultados) => {
+    db.query("SELECT id, nombre, nombre_completo, email, rol, avatar, biografia, solicita_dm, es_dm_nuevo, telegram_chat_id, ((SELECT COUNT(*) FROM honor_dm WHERE dm_id = usuarios.id) + ((SELECT COUNT(*) FROM partidas WHERE dungeon_master_id = usuarios.id) * 5)) as honor_total FROM usuarios WHERE id = ?", [req.usuario.id], (err, resultados) => {
       if (err || resultados.length === 0) return res.status(404).json({ error: 'No encontrado.' });
       res.json(resultados[0]);
     });
@@ -342,7 +342,7 @@ router.get('/notificaciones', verificarToken, (req, res) => {
     const idObj = req.params.id;
     const sqlPerfil = `
       SELECT id, nombre, rol, avatar, biografia, 
-      (SELECT COUNT(*) FROM honor_dm WHERE dm_id = usuarios.id) as honor_total 
+      ((SELECT COUNT(*) FROM honor_dm WHERE dm_id = usuarios.id) + ((SELECT COUNT(*) FROM partidas WHERE dungeon_master_id = usuarios.id) * 5)) as honor_total 
       FROM usuarios WHERE id = ?`;
 
     db.query(sqlPerfil, [idObj], (err, resPerfil) => {
