@@ -11,7 +11,6 @@ function GestionUsuarios() {
   const [solicitudes, setSolicitudes] = useState([]);
   const [votaciones, setVotaciones] = useState([]); 
   const [eventos, setEventos] = useState([]); 
-  const [topSistemas, setTopSistemas] = useState([]);
   const [pestanaActiva, setPestanaActiva] = useState('peticiones');
   const [filtroRol, setFiltroRol] = useState('todos'); 
   const [busqueda, setBusqueda] = useState('');
@@ -36,13 +35,6 @@ function GestionUsuarios() {
       .catch(err => console.error(err));
   };
 
-  const cargarOraculo = () => {
-    fetchProtegido('/api/partidas/estadisticas/sistemas')
-      .then(res => res.json())
-      .then(datos => setTopSistemas(Array.isArray(datos) ? datos : []))
-      .catch(err => { if (err !== 'Sesión expirada') console.error("Error cargando oráculo:", err); });
-  };
-
   const cargarCenso = () => {
     fetchProtegido('/api/usuarios?limit=1000')
       .then(res => res.json())
@@ -55,7 +47,6 @@ function GestionUsuarios() {
 
   useEffect(() => { 
     cargarDatosPrincipales(); 
-    cargarOraculo();
     cargarCenso();
 
     // ✨ Conexión a socket usando ruta relativa
@@ -64,8 +55,7 @@ function GestionUsuarios() {
     socket.on('actualizacion-solicitudes', cargarDatosPrincipales);
     socket.on('actualizacion-senado', cargarDatosPrincipales);
     socket.on('actualizacion-usuarios', cargarCenso);
-    socket.on('actualizacion-sistemas', () => { cargarDatosPrincipales(); cargarOraculo(); });
-    socket.on('actualizacion-mesas', cargarOraculo);
+    socket.on('actualizacion-sistemas', cargarDatosPrincipales);
 
     return () => socket.disconnect();
   }, []);
@@ -327,7 +317,6 @@ function GestionUsuarios() {
   const startIndex = (paginaCenso - 1) * usuariosPorPagina;
   const usuariosPaginados = usuariosProcesados.slice(startIndex, startIndex + usuariosPorPagina);
 
-  const maxMesaEnTop = topSistemas.length > 0 ? topSistemas[0].cantidad : 1;
 
   return (
     <div className="animate-in fade-in slide-in-from-bottom-4 duration-700">
@@ -342,9 +331,6 @@ function GestionUsuarios() {
         <button onClick={() => setPestanaActiva('senado')} className={`flex items-center gap-2 px-4 md:px-6 py-3 font-black text-[9px] md:text-[10px] uppercase tracking-[0.2em] transition-all rounded-xl ${pestanaActiva === 'senado' ? 'bg-amber-600 text-white shadow-lg shadow-amber-900/40' : 'text-zinc-500 hover:bg-zinc-900'}`}>
           🏛️ Senado {votaciones.length > 0 && <span className="bg-white text-amber-600 px-2 py-0.5 rounded-full text-[9px] animate-pulse">{votaciones.length}</span>}
         </button>      
-        <button onClick={() => setPestanaActiva('oraculo')} className={`flex items-center gap-2 px-4 md:px-6 py-3 font-black text-[9px] md:text-[10px] uppercase tracking-[0.2em] transition-all rounded-xl ${pestanaActiva === 'oraculo' ? 'bg-blue-600 text-white shadow-lg shadow-blue-900/40' : 'text-zinc-500 hover:bg-zinc-900'}`}>
-          👁️ Oráculo de Datos
-        </button>
       </div>
 
       {pestanaActiva === 'peticiones' && (
@@ -543,54 +529,6 @@ function GestionUsuarios() {
         </div>
       )}
 
-      {pestanaActiva === 'oraculo' && (
-        <div className="animate-in fade-in slide-in-from-right-4 duration-500">
-          <div className="flex items-center gap-3 mb-10">
-            <div className="w-12 h-12 bg-blue-500/10 text-blue-400 flex items-center justify-center rounded-2xl border border-blue-500/20 text-xl">👁️</div>
-            <div>
-              <h3 className="text-2xl font-black text-white uppercase tracking-tighter italic">Oráculo de Datos</h3>
-              <p className="text-[10px] text-blue-500/60 font-black uppercase tracking-[0.4em]">Los Tomos Más Jugados del Gremio</p>
-            </div>
-          </div>
-
-          <div className="bg-zinc-900 border border-zinc-800 rounded-[2rem] md:rounded-[2.5rem] p-6 md:p-12 shadow-2xl relative overflow-hidden">
-            <div className="absolute top-0 right-0 w-64 h-64 bg-blue-500/5 blur-[100px] rounded-full pointer-events-none"></div>
-
-            {topSistemas.length === 0 ? (
-              <p className="text-zinc-700 font-black uppercase tracking-[0.3em] text-xs italic text-center py-12">El Oráculo aún no tiene visiones...</p>
-            ) : (
-              <div className="flex flex-col gap-6 relative z-10">
-                {topSistemas.map((sistema, index) => {
-                  const esPrimero = index === 0;
-                  const porcentaje = maxMesaEnTop > 0 ? (sistema.cantidad / maxMesaEnTop) * 100 : 0;
-                  
-                  return (
-                    <div key={index} className="group relative">
-                      <div className="flex justify-between items-end mb-2">
-                        <h4 className={`font-black uppercase tracking-tighter italic flex items-center gap-2 md:gap-3 ${esPrimero ? 'text-xl md:text-2xl text-amber-400' : 'text-lg md:text-xl text-zinc-300 group-hover:text-blue-400 transition-colors'}`}>
-                          {esPrimero ? '👑' : <span className="text-zinc-600 text-sm">#{index + 1}</span>}
-                          {sistema.sistema || 'Sistema Desconocido'}
-                        </h4>
-                        <div className="flex flex-col items-end">
-                          <span className="text-[9px] md:text-[10px] font-black text-zinc-600 uppercase tracking-widest">Mesas</span>
-                          <span className={`text-lg md:text-xl font-black leading-none ${esPrimero ? 'text-amber-500' : 'text-blue-500'}`}>{sistema.cantidad}</span>
-                        </div>
-                      </div>
-                      
-                      <div className="w-full h-4 bg-zinc-950 rounded-full overflow-hidden border border-zinc-800/80 shadow-inner">
-                        <div 
-                          className={`h-full rounded-full transition-all duration-1000 ease-out ${esPrimero ? 'bg-gradient-to-r from-amber-600 to-amber-400 shadow-[0_0_15px_rgba(251,191,36,0.4)]' : 'bg-gradient-to-r from-blue-900 to-blue-500 shadow-[0_0_10px_rgba(59,130,246,0.3)]'}`}
-                          style={{ width: `${porcentaje}%` }}
-                        ></div>
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            )}
-          </div>
-        </div>
-      )}
 
     </div>
   );

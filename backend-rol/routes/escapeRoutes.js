@@ -11,6 +11,27 @@ const registrarLog = (usuario, accion, descripcion) => {
   });
 };
 
+// ✨ ESTADÍSTICAS: Obtener el Top de Escape Rooms
+router.get('/estadisticas/top', verificarToken, (req, res) => {
+  const eventoId = req.query.eventoId;
+  let sql = `
+    SELECT er.titulo as sistema, COUNT(et.id) as cantidad 
+    FROM escape_rooms er
+    JOIN escape_turnos et ON er.id = et.escape_room_id
+  `;
+  const params = [];
+  if (eventoId) {
+    sql += " WHERE er.evento_id = ?";
+    params.push(eventoId);
+  }
+  sql += " GROUP BY er.titulo ORDER BY cantidad DESC LIMIT 5";
+  
+  db.query(sql, params, (err, resultados) => {
+    if (err) return res.status(500).json({ error: 'Error leyendo estadísticas de escape rooms.' });
+    res.json(resultados);
+  });
+});
+
 // 1. OBTENER TODOS LOS ESCAPES DE UN EVENTO
 router.get('/:eventoId', verificarToken, (req, res) => {
   const eventoId = req.params.eventoId;
