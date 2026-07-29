@@ -63,6 +63,7 @@ router.post('/', verificarToken, (req, res) => {
     ciudad = 'Santa Rosa'
   } = req.body;
   
+  // Limpiamos la fecha por si viene con barras / la pasamos a guiones -
   const fechaLimpia = fecha.replace(/\//g, '-');
 
   const sqlInsert = 'INSERT INTO eventos (nombre, descripcion, fecha, hora_inicio, hora_fin, estado, lugar, ciudad) VALUES (?, ?, ?, ?, ?, ?, ?, ?)';
@@ -73,11 +74,14 @@ router.post('/', verificarToken, (req, res) => {
       return res.status(500).json({ error: 'Error al convocar el evento.' });
     }
     
+    // ✨ REGISTRO EN BITÁCORA
     registrarLog(req.usuario, 'CREAR_EVENTO', `Ha convocado una nueva jornada: "${nombre}" para el ${fechaLimpia}.`);
 
+    // ✨ WEBSOCKETS: Avisar a todos que hay un nuevo evento
     const io = req.app.get('io');
     if (io) io.emit('actualizacion-eventos');
     
+    // ✨ ANUNCIO EN TELEGRAM (Canal) - Mensaje 1 (Detalles del evento, Inmediato)
     const hInicio = hora_inicio ? hora_inicio.substring(0, 5) : '15:00';
     const hFin = hora_fin ? hora_fin.substring(0, 5) : '20:30';
 
@@ -91,6 +95,7 @@ router.post('/', verificarToken, (req, res) => {
       
     enviarMensajeAlCanal(mensajeEvento);
 
+    // ✨ ANUNCIO EN TELEGRAM (Canal) - Mensaje 2 (Convocatoria DMs, a los 5 minutos)
     const mensajeConvocatoria = `⚔️ <b>Convocatoria de Narradores</b> ⚔️\n\n` +
       `Buscamos narradores y cronistas de cualquier sistema:\n` +
       `🎲 Pampa Primigenia, Call of Cthulhu, Vampiro, Alien etc.\n` +
@@ -102,6 +107,7 @@ router.post('/', verificarToken, (req, res) => {
       `🔴 Puedes crear tu mesa hasta 24 horas antes del evento. Y puedes sumarte como aventurero hasta 1 hora antes del evento.\n\n` +
       `Nos vemos en la mesa. ✨`;
 
+    // 5 minutos = 300,000 milisegundos
     setTimeout(() => {
       enviarMensajeAlCanal(mensajeConvocatoria);
     }, 300000);
@@ -110,7 +116,7 @@ router.post('/', verificarToken, (req, res) => {
   });
 });
 
-// 3. Obtener partidas de un evento específico (✨ CORREGIDO PARA HOSTINGER: SIN GROUP BY INNECESARIO)
+// 3. Obtener partidas de un evento específico (✨ CON SISTEMA DE NIVEL PARA DMs Y SEGURIDAD DE MESAS PRIVADAS)
 router.get('/:id/partidas', verificarToken, (req, res) => {
   const sql = `
     SELECT 
@@ -127,19 +133,21 @@ router.get('/:id/partidas', verificarToken, (req, res) => {
         FROM partidas ph 
         JOIN eventos eh ON ph.evento_id = eh.id 
         WHERE ph.dungeon_master_id = p.dungeon_master_id AND eh.estado = 'Finalizado'
-      )) AS dm_nivel
+      )) AS dm_nivel,
+      (SELECT COUNT(*) FROM honor_dm WHERE dm_id = p.dungeon_master_id) AS dm_honor
     FROM partidas p 
     JOIN usuarios u ON p.dungeon_master_id = u.id
     LEFT JOIN sistemas s ON p.sistema_id = s.id 
-    WHERE p.evento_id = ?
+    WHERE p.evento_id = ? 
   `;
-  
+  // Se agregó req.usuario.id por partida doble para la lógica de la contraseña y de si está anotado
   db.query(sql, [req.usuario.id, req.usuario.id, req.params.id], (err, resultados) => {
     if (err) {
       console.error(err);
       return res.status(500).json({ error: 'Error al consultar las mesas.' });
     }
     
+    // Hacemos que si hay un sistema_id, mande el nombre de la BD, si no, que mande el string libre
     const formateados = resultados.map(r => ({
       ...r,
       sistema: r.sistema_db_nombre || r.sistema
@@ -155,8 +163,10 @@ router.post('/:id/partidas', verificarToken, (req, res) => {
   const usuarioId = req.usuario.id;
   const rolUsuario = req.usuario.rol;
   
+  // Extraemos también el codigo_privado del cuerpo de la petición
   const { titulo, descripcion, requisitos, sistema, sistema_id, cupo, turno, etiqueta, apta_novatos, materiales_pedidos, codigo_privado } = req.body;
 
+  // ✨ VALIDACIÓN DEL TIPO DE MESA Y ROL ✨
   const esOrganizadorValido = rolUsuario === 'dm' || rolUsuario === 'admin';
   const esMesaJuegoValida = (rolUsuario === 'jugador' || rolUsuario === 'aventurero') && etiqueta === 'Juegos de Mesa';
 
@@ -184,20 +194,24 @@ router.post('/:id/partidas', verificarToken, (req, res) => {
     const { evento_fecha, hora_inicio, nombre_evento, es_creador, es_jugador, es_escape } = resultados[0];
 
     const ahoraMs = Date.now();
+    // Parseamos la fecha del evento junto a su hora de inicio (Asumiendo zona horaria de Argentina UTC-3)
     const eventoDateStr = `${evento_fecha}T${hora_inicio || '00:00:00'}-03:00`;
     const msEvento = Date.parse(eventoDateStr);
     const horasRestantes = (msEvento - ahoraMs) / (1000 * 60 * 60);
 
+    // Chequeamos si faltan menos de 24 horas
     if (horasRestantes < 24) {
       return res.status(400).json({ error: 'La convocatoria ha cerrado. Solo se pueden publicar mesas hasta 24 horas antes del inicio del evento.' });
     }
 
+    // Bloqueamos si ya tiene otra mesa, si está inscrito en otra, o si está en un escape
     if (es_creador > 0 || es_jugador > 0 || es_escape > 0) {
       return res.status(400).json({ 
-        error: 'No puedes organizar esta mesa porque ya tienes otro compromiso en este evento.' 
+        error: 'No puedes organizar esta mesa porque ya tienes otro compromiso (como jugador, creador o en un Escape Room) en este evento.' 
       });
     }
 
+    // Añadimos el codigo_privado a la inserción
     const sqlInsert = `
         INSERT INTO partidas 
         (evento_id, dungeon_master_id, titulo, descripcion, requisitos, sistema, sistema_id, cupo, turno, estado, etiqueta, apta_novatos, materiales_pedidos, codigo_privado) 
@@ -210,6 +224,7 @@ router.post('/:id/partidas', verificarToken, (req, res) => {
         return res.status(500).json({ error: 'Error al crear la mesa.' });
       }
       
+      // ✨ REGISTRO EN BITÁCORA
       const tipoMesaLog = etiqueta === 'Juegos de Mesa' ? 'CONVOCAR_JUEGO' : 'CREAR_MESA';
       const descLog = etiqueta === 'Juegos de Mesa' 
         ? `Convocó el juego de mesa "${titulo}" para la jornada "${nombre_evento}".`
@@ -217,6 +232,7 @@ router.post('/:id/partidas', verificarToken, (req, res) => {
 
       registrarLog(req.usuario, tipoMesaLog, descLog);
 
+      // ✨ MAGIA DE NOTIFICACIÓN (Solo para DMs creando su PRIMERA mesa de Rol)
       if (etiqueta !== 'Juegos de Mesa') {
         db.query("SELECT COUNT(*) AS total_mesas FROM partidas WHERE dungeon_master_id = ? AND etiqueta != 'Juegos de Mesa'", [usuarioId], (err, countResult) => {
           if (err) console.error("Error al contar las mesas del DM:", err);
@@ -228,14 +244,18 @@ router.post('/:id/partidas', verificarToken, (req, res) => {
               const mensajeNotif = `¡El Escriba announces que el DM ${req.usuario.nombre} ha convocado su primera mesa de ROL ("${titulo}")! Recuerda forjar su Certificado del Gremio en el Censo.`;
               const notificacionesValues = admins.map(admin => [admin.id, mensajeNotif]);
               
-              db.query("INSERT INTO notificaciones (usuario_id, mensaje) VALUES ?", [notificacionesValues], (err) => {});
+              db.query("INSERT INTO notificaciones (usuario_id, mensaje) VALUES ?", [notificacionesValues], (err) => {
+                  if(err) console.error("Error al enviar los cuervos a los admins:", err);
+              });
             });
           }
         });
       }
 
+      // ✨ ANUNCIO EN TELEGRAM (Canal)
       const { enviarMensajeAlCanal } = require('../utils/telegram');
       
+      // Función auxiliar para obtener el nombre del sistema
       const obtenerNombreSistema = () => {
         return new Promise((resolve) => {
           if (sistema) return resolve(sistema);
@@ -341,6 +361,7 @@ router.post('/:id/convocatoria', verificarToken, (req, res) => {
     
     const evento = result[0];
     
+    // Formatear la fecha correctamente usando UTC para evitar desfases de zona horaria
     const fechaObj = new Date(evento.fecha);
     const dia = fechaObj.getUTCDate().toString().padStart(2, '0');
     
@@ -376,8 +397,5 @@ router.post('/:id/convocatoria', verificarToken, (req, res) => {
     res.json({ mensaje: 'Convocatoria enviada al canal de Telegram.' });
   });
 });
-
-
-
 
 module.exports = router;

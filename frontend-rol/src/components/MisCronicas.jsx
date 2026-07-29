@@ -3,13 +3,14 @@ import Swal from 'sweetalert2';
 import { fetchProtegido } from '../utils/api'; 
 import { io } from 'socket.io-client';
 import Avatar from 'boring-avatars';
-
+import { obtenerRangoDM } from '../utils/rangoHonor';
 // ✨ Importamos el componente de la solicitud de DM
 import SolicitudDM from './SolicitudDM';
 
 function MisCronicas({ alActualizarUsuario }) { 
   const [cronicas, setCronicas] = useState({ dirigiendo: [], jugando: [] });
   const [cargando, setCargando] = useState(true);
+  const [honoresOtorgados, setHonoresOtorgados] = useState([]);
   
   const [usuarioGuardado, setUsuarioGuardado] = useState(JSON.parse(localStorage.getItem('usuario')));
   const [editando, setEditando] = useState(false);
@@ -29,17 +30,53 @@ function MisCronicas({ alActualizarUsuario }) {
     password: '' // ✨ AGREGADO: Campo para la nueva contraseña
   });
 
-  const cargarCronicas = () => {
-    fetchProtegido('/api/usuarios/mis-cronicas')
-      .then(res => res.json())
-      .then(datos => {
-        setCronicas(datos);
-        setCargando(false);
-      })
-      .catch(err => {
-        if (err === 'Sesión expirada') return;
-        console.error("Error cargando crónicas:", err);
-      });
+  const cargarCronicas = async () => {
+    try {
+      const [resCronicas, resHonor] = await Promise.all([
+        fetchProtegido('/api/usuarios/mis-cronicas'),
+        fetchProtegido('/api/usuarios/honor-otorgado')
+      ]);
+      const datosCronicas = await resCronicas.json();
+      const datosHonor = await resHonor.json();
+      
+      setCronicas(datosCronicas);
+      setHonoresOtorgados(datosHonor);
+      setCargando(false);
+    } catch (err) {
+      if (err === 'Sesión expirada') return;
+      console.error("Error cargando crónicas:", err);
+    }
+  };
+
+  const darHonor = async (dmId, partidaId, dmNombre) => {
+    const { value: mensaje, isConfirmed } = await Swal.fire({
+      title: `¡Otorgar Honor! 🏆`,
+      html: `¿Quieres dejarle un mensaje a <b>${dmNombre}</b>? <br><small class="text-zinc-400">El Master recibirá 1 Punto de Honor por esta aventura.</small>`,
+      input: 'text',
+      inputPlaceholder: 'Ej: ¡Increíble narración!',
+      showCancelButton: true,
+      confirmButtonText: 'Otorgar Honor',
+      cancelButtonText: 'Cancelar',
+      background: '#09090b', color: '#fff', confirmButtonColor: '#10b981'
+    });
+
+    if (isConfirmed) {
+      try {
+        const res = await fetchProtegido('/api/usuarios/honor', {
+          method: 'POST',
+          body: JSON.stringify({ dm_id: dmId, partida_id: partidaId, mensaje })
+        });
+        if (res.ok) {
+          Swal.fire({ title: '¡Honor Otorgado!', icon: 'success', background: '#09090b', color: '#fff', confirmButtonColor: '#10b981', timer: 2000, showConfirmButton: false });
+          setHonoresOtorgados([...honoresOtorgados, partidaId]);
+        } else {
+          const data = await res.json();
+          Swal.fire({ title: 'Error', text: data.error, icon: 'error', background: '#09090b', color: '#fff' });
+        }
+      } catch (err) {
+        console.error(err);
+      }
+    }
   };
 
   const actualizarPerfilDesdeDB = () => {
@@ -182,6 +219,8 @@ function MisCronicas({ alActualizarUsuario }) {
     </div>
   );
 
+  const rango = usuarioGuardado?.rol === 'dm' ? obtenerRangoDM(usuarioGuardado.honor_total) : null;
+
   return (
     <div className="max-w-5xl mx-auto p-4 md:p-8 animate-in fade-in duration-700">
       
@@ -322,7 +361,19 @@ function MisCronicas({ alActualizarUsuario }) {
                     </p>
                   )}
 
-                  <p className="text-emerald-500 font-black text-[10px] uppercase tracking-[0.4em] mb-2 w-full truncate">{usuarioGuardado?.rol === 'admin' ? '👑 Administrador' : usuarioGuardado?.rol === 'dm' ? '🛡️ Dungeon Master' : '⚔️ Aventurero'}</p>
+                  {usuarioGuardado?.rol === 'admin' ? (
+                    <p className="text-emerald-500 font-black text-[10px] uppercase tracking-[0.4em] mb-2 w-full truncate">👑 Administrador</p>
+                  ) : usuarioGuardado?.rol === 'dm' ? (
+                    <div className="flex flex-wrap items-center gap-2 mb-2 w-full">
+                      <span className="text-emerald-500 font-black text-[10px] uppercase tracking-[0.4em]">🛡️ Dungeon Master</span>
+                      <span className="w-1 h-1 bg-zinc-700 rounded-full hidden sm:block"></span>
+                      <span className={`text-[10px] font-black uppercase tracking-widest bg-black/30 px-2 py-1 rounded-md border border-zinc-800 ${rango?.colorClase}`}>
+                        {rango?.icono} Rango {rango?.nombre} ({usuarioGuardado.honor_total || 0})
+                      </span>
+                    </div>
+                  ) : (
+                    <p className="text-emerald-500 font-black text-[10px] uppercase tracking-[0.4em] mb-2 w-full truncate">⚔️ Aventurero</p>
+                  )}
                   <p className="text-zinc-500 font-mono text-xs sm:text-sm w-full truncate">{perfil.email}</p>
                   {usuarioGuardado?.telegram_chat_id ? (
                     <p className="text-emerald-500 font-bold text-xs mt-2 flex items-center gap-2 select-none">
@@ -374,10 +425,20 @@ function MisCronicas({ alActualizarUsuario }) {
               cronicas.jugando.map(p => (
                 <div key={p.id} className="group bg-zinc-900/40 border border-zinc-800 p-6 rounded-3xl hover:border-emerald-500/30 transition-all hover:bg-zinc-900">
                   <h4 className="font-black text-lg text-white group-hover:text-emerald-400 transition-colors uppercase italic leading-tight">{p.titulo}</h4>
-                  <div className="flex items-center gap-2 mt-3">
-                    <span className="text-[10px] font-black text-zinc-500 uppercase tracking-widest">{p.evento_nombre}</span>
-                    <span className="w-1 h-1 bg-zinc-700 rounded-full"></span>
-                    <span className="text-[10px] font-black text-emerald-500/70 uppercase tracking-widest">{formatearFecha(p.evento_fecha)}</span>
+                  <div className="flex justify-between items-center mt-4">
+                    <div className="flex items-center gap-2">
+                      <span className="text-[10px] font-black text-zinc-500 uppercase tracking-widest">{p.evento_nombre}</span>
+                      <span className="w-1 h-1 bg-zinc-700 rounded-full"></span>
+                      <span className="text-[10px] font-black text-emerald-500/70 uppercase tracking-widest">{formatearFecha(p.evento_fecha)}</span>
+                    </div>
+                    
+                    {honoresOtorgados.includes(p.id) ? (
+                      <span className="text-[10px] font-bold text-amber-500 bg-amber-500/10 px-2 py-1 rounded-md border border-amber-500/20">👑 Honor Otorgado</span>
+                    ) : (
+                      <button onClick={() => darHonor(p.dungeon_master_id, p.id, p.dm_nombre)} className="text-[10px] font-bold text-zinc-400 hover:text-amber-400 bg-zinc-900 hover:bg-zinc-800 px-3 py-1.5 rounded-lg transition-all border border-zinc-700 hover:border-amber-500/50 flex items-center gap-1.5 shadow-lg">
+                        <span className="text-sm">👑</span> <span className="hidden sm:inline">Dar Honor a</span> <span className="sm:hidden">Honor:</span> {p.dm_nombre}
+                      </button>
+                    )}
                   </div>
                 </div>
               ))

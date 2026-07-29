@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import Swal from 'sweetalert2'; 
 import { fetchProtegido } from '../utils/api'; 
 import { io } from 'socket.io-client';
+import { obtenerRangoDM } from '../utils/rangoHonor';
 
 const CONFIG_TEMAS = {
   "Fantasía Medieval": { color: "text-amber-400", bg: "bg-amber-500/10", border: "border-amber-500/30", hoverBorder: "hover:border-amber-500/30", hoverText: "group-hover:text-amber-400", icon: "🏰" },
@@ -374,7 +375,14 @@ function Partida(props) {
             </div>
             <div className="min-w-0 flex-1 pr-2">
               <p className="text-[9px] font-black text-zinc-500 uppercase tracking-[0.2em] truncate">{esJuegoMesa ? 'Organizador' : 'Director de Juego'}</p>
-              <p className="text-sm text-zinc-200 font-bold truncate">{props.dmNombre || props.dungeon_master_nombre || 'Desconocido'}</p>
+              <div className="flex flex-wrap items-center gap-1.5 min-w-0">
+                <p className="text-sm text-zinc-200 font-bold truncate">{props.dmNombre || props.dungeon_master_nombre || 'Desconocido'}</p>
+                {!esJuegoMesa && props.dm_honor !== undefined && (
+                  <span title={`Honor: ${props.dm_honor}`} className={`text-[10px] font-black uppercase tracking-widest ${obtenerRangoDM(props.dm_honor).colorClase}`}>
+                    {obtenerRangoDM(props.dm_honor).icono}
+                  </span>
+                )}
+              </div>
             </div>
           </div>
           
@@ -652,8 +660,13 @@ function Partida(props) {
                   </div>
                   <div className="min-w-0 flex-1">
                     <p className="text-[10px] font-black text-zinc-500 uppercase tracking-[0.2em] mb-1 truncate">{esJuegoMesa ? 'Organizador' : 'Director de Juego'}</p>
-                    <div className="flex items-center gap-2 min-w-0">
+                    <div className="flex items-center gap-2 flex-wrap min-w-0">
                         <p className="text-xl text-zinc-200 font-black truncate">{props.dmNombre || props.dungeon_master_nombre}</p>
+                        {!esJuegoMesa && props.dm_honor !== undefined && (
+                          <span className={`text-[10px] font-black uppercase tracking-widest px-2 py-1 rounded-md bg-black/30 border border-zinc-800 shadow-inner ${obtenerRangoDM(props.dm_honor).colorClase}`}>
+                            {obtenerRangoDM(props.dm_honor).icono} Rango {obtenerRangoDM(props.dm_honor).nombre} ({props.dm_honor})
+                          </span>
+                        )}
                     </div>
                   </div>
                 </div>

@@ -2,20 +2,17 @@ const express = require('express');
 const router = express.Router();
 const db = require('../config/db');
 const verificarToken = require('../middlewares/auth');
-const bcrypt = require('bcrypt');
+const bcrypt = require('bcrypt'); 
 
 // ✨ FUNCIÓN DEL ESCRIBA: REGISTRO EN LA BITÁCORA
 const registrarLog = (usuario, accion, descripcion) => {
   const sql = "INSERT INTO logs_actividad (usuario_id, nombre_usuario, accion, descripcion) VALUES (?, ?, ?, ?)";
   db.query(sql, [usuario.id, usuario.nombre, accion, descripcion], (err) => {
-    if (err) console.error("❌ Error en bitácora (Usuarios):", err);
+    if (err) console.error("❌ Error en bitácora:", err);
   });
 };
 
-// =======================================================
-// 1. CRÓNICAS, SENADO (CONSULTAS) Y ESTADÍSTICAS
-// =======================================================
-
+// 1. MIS CRÓNICAS
 router.get('/mis-cronicas', verificarToken, (req, res) => {
   const idUsuario = req.usuario.id;
 
@@ -27,10 +24,11 @@ router.get('/mis-cronicas', verificarToken, (req, res) => {
   `;
   
   const sqlJugando = `
-    SELECT p.*, e.nombre as evento_nombre, DATE_FORMAT(e.fecha, '%Y-%m-%d') as evento_fecha 
+    SELECT p.*, e.nombre as evento_nombre, DATE_FORMAT(e.fecha, '%Y-%m-%d') as evento_fecha, u.nombre as dm_nombre
     FROM inscripciones i 
     JOIN partidas p ON i.partida_id = p.id 
     JOIN eventos e ON p.evento_id = e.id 
+    JOIN usuarios u ON p.dungeon_master_id = u.id
     WHERE i.usuario_id = ?
   `;
   
@@ -40,7 +38,10 @@ router.get('/mis-cronicas', verificarToken, (req, res) => {
     db.query(sqlJugando, [idUsuario], (err, jugando) => {
       if (err) return res.status(500).json({ error: 'Error en crónicas de jugador.' });
       
-      res.json({ dirigiendo: dirigiendo || [], jugando: jugando || [] });
+      res.json({ 
+        dirigiendo: dirigiendo || [], 
+        jugando: jugando || [] 
+      });
     });
   });
 });
@@ -53,6 +54,7 @@ router.get('/solicitudes-dm', verificarToken, (req, res) => {
   });
 });
 
+// ✨ SENADO 1: OBTENER VOTACIONES ACTIVAS
 router.get('/votaciones/activas', verificarToken, (req, res) => {
   if (req.usuario.rol !== 'admin') return res.status(403).json({ error: 'Acceso denegado.' });
 
@@ -86,10 +88,7 @@ router.get('/estadisticas', verificarToken, (req, res) => {
   });
 });
 
-// =======================================================
-// 2. GESTIÓN Y ACCIONES DE USUARIO
-// =======================================================
-
+// ✨ ACTUALIZAR PERFIL (Con registro en bitácora)
 router.put('/perfil', verificarToken, async (req, res) => {
   const { nombre, nombre_completo, email, password, avatar, telegram_chat_id } = req.body;
   const idUsuario = req.usuario.id;
@@ -99,8 +98,9 @@ router.put('/perfil', verificarToken, async (req, res) => {
     let params;
     let cambioPass = false;
 
-    if (password && password.trim() !== '') {
-      const hash = await bcrypt.hash(password, 10);
+    if (password && password.trim() !== "") {
+      const salt = await bcrypt.genSalt(10);
+      const hash = await bcrypt.hash(password, salt);
       sql = "UPDATE usuarios SET nombre = ?, nombre_completo = ?, email = ?, password = ?, avatar = ?, telegram_chat_id = ? WHERE id = ?";
       params = [nombre, nombre_completo, email, hash, avatar, telegram_chat_id || null, idUsuario];
       cambioPass = true;
@@ -110,120 +110,73 @@ router.put('/perfil', verificarToken, async (req, res) => {
     }
 
     db.query(sql, params, (err) => {
-      if (err) {
-        console.error(err);
-        return res.status(500).json({ error: 'Error al actualizar el perfil.' });
-      }
+      if (err) return res.status(500).json({ error: 'Error al actualizar tu ficha.' });
       
-      registrarLog({ id: idUsuario, nombre }, 'ACTUALIZAR_PERFIL', `Actualizó sus datos de perfil${cambioPass ? ' (cambió contraseña)' : ''}.`);
-      res.status(200).json({ mensaje: 'Perfil actualizado con éxito' });
+      registrarLog(req.usuario, 'ACTUALIZAR_PERFIL', `Actualizó sus datos de aventurero${cambioPass ? ' (incluyendo contraseña)' : ''}.`);
+      
+      res.json({ mensaje: '¡Perfil actualizado con éxito!' });
     });
   } catch (error) {
-    res.status(500).json({ error: 'Error en la actualización.' });
+    res.status(500).json({ error: 'Error interno en la magia del servidor.' });
   }
 });
 
 router.post('/solicitar-dm', verificarToken, (req, res) => {
-  const idUsuario = req.usuario.id;
-  const nombreUsuario = req.usuario.nombre;
-
-  if (req.usuario.rol === 'dm' || req.usuario.rol === 'admin') {
-    return res.status(400).json({ error: 'Ya eres miembro de la orden de Directores de Juego.' });
+  if (req.usuario.rol !== 'jugador') {
+    return res.status(400).json({ error: 'Ya tienes rango o no puedes solicitarlo.' });
   }
 
-  const sqlCheck = "SELECT solicita_dm, es_dm_nuevo FROM usuarios WHERE id = ?";
-  db.query(sqlCheck, [idUsuario], (err, results) => {
-    if (err) return res.status(500).json({ error: 'Error al consultar pergaminos.' });
+  db.query("UPDATE usuarios SET solicita_dm = 1 WHERE id = ?", [req.usuario.id], (err) => {
+    if (err) return res.status(500).json({ error: 'Error al enviar la petición.' });
     
-    if (results.length > 0 && (results[0].solicita_dm === 1 || results[0].es_dm_nuevo === 1)) {
-        return res.status(400).json({ error: 'Tu solicitud ya está siendo evaluada en el Senado.' });
-    }
+    registrarLog(req.usuario, 'PEDIDO_DM', 'Ha solicitado formalmente el rango de Dungeon Master.');
 
-    const sql = "UPDATE usuarios SET solicita_dm = 1, es_dm_nuevo = 1 WHERE id = ?";
-    db.query(sql, [idUsuario], (err) => {
-      if (err) return res.status(500).json({ error: 'Error al grabar solicitud.' });
-
-      registrarLog(req.usuario, 'SOLICITAR_DM', "Envió su solicitud de rango al senado.");
-
-      db.query("SELECT id FROM usuarios WHERE rol = 'admin'", (err, admins) => {
-        if (err || admins.length === 0) return;
-        
-        const mensajeNotif = `⚔️ ¡El aventurero ${nombreUsuario} solicita el rango de DM! Revisa las votaciones en el Senado.`;
-        const notificationsValues = admins.map(admin => [admin.id, mensajeNotif]);
-        
-        db.query("INSERT INTO notificaciones (usuario_id, mensaje) VALUES ?", [notificationsValues], (err) => {
-           if (err) console.error("Error enviando cuervos de solicitud:", err);
-        });
-      });
-
-      const io = req.app.get('io');
-      if (io) io.emit('actualizacion-senado');
-
-      res.status(200).json({ mensaje: 'Solicitud enviada al Senado con éxito.' });
-    });
+    const io = req.app.get('io');
+    if (io) io.emit('actualizacion-solicitudes');
+    res.status(200).send('¡Tu solicitud ha sido enviada!');
   });
 });
 
-// ✨ RUTAS DE ASCENSO MEJORADAS (Soportan PUT y POST para evitar desincronizaciones del frontend)
+// Aceptamos tanto PUT como POST para evitar problemas de caché en el frontend
 router.put('/:id/promover', verificarToken, promoverHandler);
 router.post('/:id/promover', verificarToken, promoverHandler);
 
 function promoverHandler(req, res) {
   if (req.usuario.rol !== 'admin') return res.status(403).json({ error: 'Denegado.' });
   
-  const idUsuario = req.params.id;
-
-  // IMPORTANTE: es_dm_nuevo = 1 para que le permita forjar el pergamino
-  db.query("UPDATE usuarios SET rol = 'dm', solicita_dm = 0, es_dm_nuevo = 1 WHERE id = ?", [idUsuario], (err) => {
+  db.query("UPDATE usuarios SET rol = 'dm', solicita_dm = 0, es_dm_nuevo = 1 WHERE id = ?", [req.params.id], (err) => {
     if (err) return res.status(500).send('Error al forjar el ascenso.');
     
-    db.query("SELECT nombre FROM usuarios WHERE id = ?", [idUsuario], (err, result) => {
+    db.query("SELECT nombre FROM usuarios WHERE id = ?", [req.params.id], (err, result) => {
         const nombrePromovido = result[0]?.nombre || 'Desconocido';
         registrarLog(req.usuario, 'PROMOVER_DM', `Promovió a ${nombrePromovido} al rango de Dungeon Master.`);
-        
-        const mensaje = `📜 ¡Felicidades! Los líderes del Gremio han aprobado tu ascenso. Ahora posees el rango de Director de Juego (DM).`;
-        db.query("INSERT INTO notificaciones (usuario_id, mensaje) VALUES (?, ?)", [idUsuario, mensaje]);
     });
 
     const io = req.app.get('io');
     if (io) {
       io.emit('actualizacion-usuarios');
       io.emit('actualizacion-solicitudes');
-      io.emit('actualizacion-senado');
     }
     res.send('¡Ascenso completado!');
   });
 }
 
-// ✨ RUTA DE RECHAZO MEJORADA
-router.put('/:id/rechazar-dm', verificarToken, rechazarHandler);
-router.post('/:id/rechazar-dm', verificarToken, rechazarHandler);
-
-function rechazarHandler(req, res) {
-  if (req.usuario.rol !== 'admin') return res.status(403).json({ error: 'Solo admins.' });
+router.put('/:id/rechazar-dm', verificarToken, (req, res) => {
+  if (req.usuario.rol !== 'admin') return res.status(403).json({ error: 'Denegado.' });
   
-  const idUsuario = req.params.id;
-
-  db.query("UPDATE usuarios SET solicita_dm = 0, es_dm_nuevo = 0 WHERE id = ?", [idUsuario], (err) => {
-    if (err) return res.status(500).json({ error: 'Error.' });
-
-    db.query("SELECT nombre FROM usuarios WHERE id = ?", [idUsuario], (err, userRes) => {
-       const nombreRechazado = userRes[0]?.nombre || 'Desconocido';
-       registrarLog(req.usuario, 'RECHAZAR_DM', `Rechazó la solicitud de DM de ${nombreRechazado}.`);
-       
-       const mensaje = `⚠️ Tu solicitud para el rango de DM ha sido archivada por los líderes del Gremio.`;
-       db.query("INSERT INTO notificaciones (usuario_id, mensaje) VALUES (?, ?)", [idUsuario, mensaje]);
+  db.query("UPDATE usuarios SET solicita_dm = 0 WHERE id = ?", [req.params.id], (err) => {
+    if (err) return res.status(500).send('Error al rechazar la petición.');
+    
+    db.query("SELECT nombre FROM usuarios WHERE id = ?", [req.params.id], (err, result) => {
+        const nombreRechazado = result[0]?.nombre || 'Desconocido';
+        registrarLog(req.usuario, 'RECHAZAR_DM', `Denegó la solicitud de DM de ${nombreRechazado}.`);
     });
 
     const io = req.app.get('io');
-    if (io) {
-      io.emit('actualizacion-usuarios');
-      io.emit('actualizacion-senado');
-    }
-    
-    res.json({ mensaje: 'Archivado.' });
+    if (io) io.emit('actualizacion-solicitudes');
+    res.status(200).send('Petición denegada.');
   });
-}
+});
 
 router.put('/:id/rol', verificarToken, (req, res) => {
   if (req.usuario.rol !== 'admin') return res.status(403).json({ error: 'Sin autoridad.' });
@@ -247,7 +200,7 @@ router.put('/:id/rol', verificarToken, (req, res) => {
   });
 });
 
-// ✨ RUTA SENADO: Ahora se llama /proponer-admin para coincidir con tu frontend
+// ✨ SENADO: PROPONER ADMIN
 router.post('/:id/proponer-admin', verificarToken, (req, res) => {
   if (req.usuario.rol !== 'admin') return res.status(403).json({ error: 'Solo admins.' });
   
@@ -272,6 +225,7 @@ router.post('/:id/proponer-admin', verificarToken, (req, res) => {
   });
 });
 
+// ✨ SENADO: VOTAR
 router.post('/votaciones/:id/votar', verificarToken, (req, res) => {
   if (req.usuario.rol !== 'admin') return res.status(403).json({ error: 'Solo admins.' });
 
@@ -315,12 +269,13 @@ router.post('/votaciones/:id/votar', verificarToken, (req, res) => {
   });
 });
 
+// ✨ HARD RESET DE CONTRASEÑA (NUEVO - SOLO PARA ADMINS)
 router.put('/:id/hard-reset', verificarToken, async (req, res) => {
   if (req.usuario.rol !== 'admin') {
     return res.status(403).json({ error: 'Solo los líderes del gremio tienen este poder.' });
   }
 
-  const defaultPassword = 'Aventurero2026!'; 
+  const defaultPassword = 'Aventurero2026!'; // Contraseña por defecto
 
   try {
     const hash = await bcrypt.hash(defaultPassword, 10);
@@ -343,77 +298,83 @@ router.put('/:id/hard-reset', verificarToken, async (req, res) => {
   }
 });
 
-// =======================================================
-// 3. NOTIFICACIONES Y CENSO GENERAL
-// =======================================================
-
+// NOTIFICACIONES Y CENSO
 router.get('/notificaciones', verificarToken, (req, res) => {
     const sql = "SELECT id, mensaje, fecha FROM notificaciones WHERE usuario_id = ? AND leida = FALSE ORDER BY fecha DESC";
     db.query(sql, [req.usuario.id], (err, resultados) => {
       if (err) return res.status(500).json({ error: 'Error.' });
       res.json(resultados);
     });
-});
+  });
   
-router.put('/notificaciones/:id/leida', verificarToken, (req, res) => {
+  router.put('/notificaciones/:id/leida', verificarToken, (req, res) => {
     const sql = "UPDATE notificaciones SET leida = TRUE WHERE id = ? AND usuario_id = ?";
     db.query(sql, [req.params.id, req.usuario.id], (err) => {
       if (err) return res.status(500).json({ error: 'Error.' });
       res.json({ mensaje: 'Leída.' });
     });
-});
+  });
   
-router.get('/', verificarToken, (req, res) => {
+  router.get('/', verificarToken, (req, res) => {
     if (req.usuario.rol !== 'admin') return res.status(403).json({ error: 'Denegado.' });
     const page = parseInt(req.query.page) || 1;
     const limit = parseInt(req.query.limit) || 10;
     const offset = (page - 1) * limit;
     db.query("SELECT COUNT(*) AS total FROM usuarios", (err, countResult) => {
       if (err) return res.status(500).json({ error: 'Error.' });
-      const sql = `SELECT id, nombre, nombre_completo, email, rol, avatar, solicita_dm, es_dm_nuevo, telegram_chat_id FROM usuarios ORDER BY nombre ASC LIMIT ${limit} OFFSET ${offset}`;
+      const sql = `SELECT id, nombre, nombre_completo, email, rol, avatar, solicita_dm, es_dm_nuevo, telegram_chat_id, (SELECT COUNT(*) FROM honor_dm WHERE dm_id = usuarios.id) as honor_total FROM usuarios ORDER BY nombre ASC LIMIT ${limit} OFFSET ${offset}`;
       db.query(sql, (err, resultados) => {
         if (err) return res.status(500).json({ error: 'Error.' });
         res.json({ datos: resultados, paginacion: { paginaActual: page, totalPaginas: Math.ceil(countResult[0].total / limit) } });
       });
     });
-});
+  });
   
-router.get('/yo', verificarToken, (req, res) => {
-    db.query("SELECT id, nombre, nombre_completo, email, rol, avatar, solicita_dm, es_dm_nuevo, telegram_chat_id FROM usuarios WHERE id = ?", [req.usuario.id], (err, resultados) => {
+  router.get('/yo', verificarToken, (req, res) => {
+    db.query("SELECT id, nombre, nombre_completo, email, rol, avatar, solicita_dm, es_dm_nuevo, telegram_chat_id, (SELECT COUNT(*) FROM honor_dm WHERE dm_id = usuarios.id) as honor_total FROM usuarios WHERE id = ?", [req.usuario.id], (err, resultados) => {
       if (err || resultados.length === 0) return res.status(404).json({ error: 'No encontrado.' });
       res.json(resultados[0]);
     });
-});
-
-// ✨ CERTIFICADOS: Marcar a un DM como Veterano tras entregarle su certificado
-router.put('/:id/certificado-entregado', verificarToken, (req, res) => {
-  if (req.usuario.rol !== 'admin') {
-    return res.status(403).json({ error: 'Solo el Consejo puede validar certificados.' });
-  }
-
-  const dmId = req.params.id;
-
-  db.query("UPDATE usuarios SET es_dm_nuevo = 0 WHERE id = ?", [dmId], (err, resultado) => {
-    if (err) {
-      console.error(err);
-      return res.status(500).json({ error: 'Error al forjar el estatus de Veterano.' });
-    }
-
-    if (resultado.affectedRows === 0) {
-      return res.status(404).json({ error: 'Dungeon Master no encontrado.' });
-    }
-
-    // Opcional: Registrar en la bitácora que se entregó el certificado
-    db.query("SELECT nombre FROM usuarios WHERE id = ?", [dmId], (err, result) => {
-      const nombreDM = result && result[0] ? result[0].nombre : 'Desconocido';
-      registrarLog(req.usuario, 'ENTREGAR_CERTIFICADO', `Entregó el Certificado Oficial y marcó como Veterano a ${nombreDM}.`);
-    });
-
-    const io = req.app.get('io');
-    if (io) io.emit('actualizacion-usuarios');
-
-    res.json({ mensaje: '¡Estatus de Veterano concedido!' });
   });
-});
+
+  // ✨ HONOR: Dar honor a un DM por una partida
+  router.post('/honor', verificarToken, (req, res) => {
+    const { dm_id, partida_id, mensaje } = req.body;
+    const jugador_id = req.usuario.id;
+
+    if (!dm_id || !partida_id) return res.status(400).json({ error: 'Datos incompletos.' });
+    if (dm_id === jugador_id) return res.status(400).json({ error: 'No puedes darte honor a ti mismo.' });
+
+    // Validar que el jugador efectivamente jugó esa partida
+    db.query("SELECT * FROM inscripciones WHERE usuario_id = ? AND partida_id = ?", [jugador_id, partida_id], (err, insc) => {
+      if (err) return res.status(500).json({ error: 'Error al verificar inscripción.' });
+      if (insc.length === 0) return res.status(403).json({ error: 'No participaste en esta aventura.' });
+
+      const sql = "INSERT INTO honor_dm (dm_id, jugador_id, partida_id, mensaje) VALUES (?, ?, ?, ?)";
+      db.query(sql, [dm_id, jugador_id, partida_id, mensaje || ''], (err2) => {
+        if (err2) {
+          if (err2.code === 'ER_DUP_ENTRY') return res.status(400).json({ error: 'Ya otorgaste honor a este DM en esta partida.' });
+          console.error(err2);
+          return res.status(500).json({ error: 'Error al otorgar honor.' });
+        }
+        
+        db.query("SELECT nombre FROM usuarios WHERE id = ?", [dm_id], (err3, dmInfo) => {
+          const nombreDM = dmInfo[0] ? dmInfo[0].nombre : 'un Dungeon Master';
+          registrarLog(req.usuario, 'OTORGAR_HONOR', `Le otorgó honor a ${nombreDM}.`);
+        });
+
+        res.json({ mensaje: '¡Honor otorgado con éxito!' });
+      });
+    });
+  });
+
+  // ✨ HONOR: Obtener la lista de partidas a las que el usuario ya dio honor
+  router.get('/honor-otorgado', verificarToken, (req, res) => {
+    db.query("SELECT partida_id FROM honor_dm WHERE jugador_id = ?", [req.usuario.id], (err, resultados) => {
+      if (err) return res.status(500).json({ error: 'Error.' });
+      // Devolver un array simple con los IDs de las partidas
+      res.json(resultados.map(r => r.partida_id));
+    });
+  });
 
 module.exports = router;
