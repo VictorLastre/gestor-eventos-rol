@@ -91,7 +91,7 @@ function Estadisticas() {
     Promise.all([
       fetchProtegido(`/api/partidas/estadisticas/sistemas${params}`).then(r => r.json()),
       fetchProtegido(`/api/partidas/estadisticas/juegos-mesa${params}`).then(r => r.json()),
-      fetchProtegido(`/api/escape/estadisticas/top${params}`).then(r => r.json())
+      fetchProtegido(`/api/escapes/estadisticas/top${params}`).then(r => r.json())
     ]).then(([rol, juegos, escapes]) => {
       setTopRol(Array.isArray(rol) ? rol : []);
       setTopJuegosMesa(Array.isArray(juegos) ? juegos : []);
@@ -102,7 +102,7 @@ function Estadisticas() {
       setCargandoDetalles(true);
       Promise.all([
         fetchProtegido(`/api/eventos/${eventoSeleccionado}/partidas`).then(r => r.json()),
-        fetchProtegido(`/api/escape/${eventoSeleccionado}`).then(r => r.json())
+        fetchProtegido(`/api/escapes/${eventoSeleccionado}`).then(r => r.json())
       ]).then(([partidasData, escapeData]) => {
         const pRol = (Array.isArray(partidasData) ? partidasData : []).filter(p => p.etiqueta !== 'Juegos de Mesa');
         const pJuegos = (Array.isArray(partidasData) ? partidasData : []).filter(p => p.etiqueta === 'Juegos de Mesa');

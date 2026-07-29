@@ -79,7 +79,7 @@ router.get('/votaciones/activas', verificarToken, (req, res) => {
 router.get('/estadisticas', verificarToken, (req, res) => {
   if (req.usuario.rol !== 'admin') return res.status(403).json({ error: 'Acceso denegado.' });
   const sql = `
-    SELECT e.nombre, COUNT(DISTINCT p.id) AS total_mesas, COUNT(i.id) AS total_jugadores
+    SELECT e.id, e.nombre, COUNT(DISTINCT p.id) AS total_mesas, COUNT(i.id) AS total_jugadores
     FROM eventos e LEFT JOIN partidas p ON e.id = p.evento_id LEFT JOIN inscripciones i ON p.id = i.partida_id
     GROUP BY e.id ORDER BY e.fecha DESC`;
   db.query(sql, (err, resultados) => {
