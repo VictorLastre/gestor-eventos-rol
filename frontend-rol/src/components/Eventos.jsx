@@ -373,9 +373,9 @@ function Eventos() {
               </div>
 
               {mesasOrdenadas.length > 0 ? (
-                <div ref={carruselPartidasRef} className="flex gap-6 overflow-x-auto pb-12 scrollbar-hide snap-x" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
+                <div ref={carruselPartidasRef} className="flex flex-col sm:flex-row gap-4 sm:gap-6 sm:overflow-x-auto pb-6 sm:pb-12 scrollbar-hide sm:snap-x" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
                   {mesasOrdenadas.map(p => (
-                    <div key={p.id} className="w-[85vw] sm:w-[350px] lg:w-[calc(33.333%-1rem)] flex-none snap-start min-w-0">
+                    <div key={p.id} className="w-full sm:w-[350px] lg:w-[calc(33.333%-1rem)] flex-none sm:snap-start min-w-0">
                       <Partida 
                         {...p} 
                         eventoEsPasado={eventoSeleccionado.estado === 'Finalizado' || eventoSeleccionado.estado === 'Suspendido'} 
@@ -443,9 +443,9 @@ function Eventos() {
               </div>
 
               {escapesDelEvento.length > 0 ? (
-                <div ref={carruselEscapesRef} className="flex gap-6 overflow-x-auto pb-12 scrollbar-hide snap-x" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
+                <div ref={carruselEscapesRef} className="flex flex-col sm:flex-row gap-4 sm:gap-6 sm:overflow-x-auto pb-6 sm:pb-12 scrollbar-hide sm:snap-x" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
                   {escapesDelEvento.map(sala => (
-                    <div key={sala.id} className="w-[85vw] sm:w-[350px] lg:w-[calc(33.333%-1rem)] flex-none snap-start min-w-0">
+                    <div key={sala.id} className="w-full sm:w-[350px] lg:w-[calc(33.333%-1rem)] flex-none sm:snap-start min-w-0">
                       <TarjetaEscape 
                         sala={sala} 
                         usuarioGuardado={usuarioGuardado} 
@@ -513,9 +513,9 @@ function Eventos() {
               </div>
 
               {juegosOrdenados.length > 0 ? (
-                <div ref={carruselJuegosRef} className="flex gap-6 overflow-x-auto pb-12 scrollbar-hide snap-x" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
+                <div ref={carruselJuegosRef} className="flex flex-col sm:flex-row gap-4 sm:gap-6 sm:overflow-x-auto pb-6 sm:pb-12 scrollbar-hide sm:snap-x" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
                   {juegosOrdenados.map(p => (
-                    <div key={p.id} className="w-[85vw] sm:w-[350px] lg:w-[calc(33.333%-1rem)] flex-none snap-start min-w-0">
+                    <div key={p.id} className="w-full sm:w-[350px] lg:w-[calc(33.333%-1rem)] flex-none sm:snap-start min-w-0">
                       <Partida 
                         {...p} 
                         eventoEsPasado={eventoSeleccionado.estado === 'Finalizado' || eventoSeleccionado.estado === 'Suspendido'} 

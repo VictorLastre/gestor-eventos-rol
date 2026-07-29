@@ -307,7 +307,7 @@ function Partida(props) {
     <>
       <div 
         onClick={() => setModalAbierto(true)}
-        className={`relative p-6 sm:p-8 rounded-[2rem] border-2 transition-all duration-500 flex flex-col min-h-[450px] h-full cursor-pointer w-full min-w-0 group overflow-hidden ${
+        className={`relative p-5 sm:p-8 rounded-[1.5rem] sm:rounded-[2rem] border-2 transition-all duration-500 flex flex-col min-h-[350px] sm:min-h-[450px] h-full cursor-pointer w-full min-w-0 group overflow-hidden ${
           soyElMaster 
           ? "bg-amber-900/10 border-amber-500/80 shadow-[0_0_20px_rgba(245,158,11,0.25)]" 
           : `bg-zinc-900/60 hover:bg-zinc-900 hover:shadow-xl ${estiloBordeDisponibilidad}`
@@ -361,22 +361,22 @@ function Partida(props) {
           </div>
         </div>
 
-        <p className="text-zinc-400 text-sm leading-relaxed mb-6 border-l-2 border-zinc-800 pl-4 py-1 italic line-clamp-4 flex-grow relative z-10 break-words whitespace-normal">
+        <p className="text-zinc-400 text-xs sm:text-sm leading-relaxed mb-4 sm:mb-6 border-l-2 border-zinc-800 pl-3 sm:pl-4 py-1 italic line-clamp-3 sm:line-clamp-4 flex-grow relative z-10 break-words whitespace-normal">
           "{props.description || props.descripcion}"
         </p>
 
-        <div className="mb-6 bg-zinc-950/80 p-3 rounded-2xl border border-zinc-800/80 flex justify-between items-center transition-all group-hover:bg-zinc-950 relative z-10 gap-2">
-          <div className="flex items-center gap-3 min-w-0 flex-1">
-            <div className="shrink-0 w-10 h-10 bg-zinc-900 border border-zinc-700 rounded-full flex items-center justify-center text-sm shadow-inner relative">
+        <div className="mb-4 sm:mb-6 bg-zinc-950/80 p-2.5 sm:p-3 rounded-2xl border border-zinc-800/80 flex justify-between items-center transition-all group-hover:bg-zinc-950 relative z-10 gap-2">
+          <div className="flex items-center gap-2 sm:gap-3 min-w-0 flex-1">
+            <div className="shrink-0 w-8 h-8 sm:w-10 sm:h-10 bg-zinc-900 border border-zinc-700 rounded-full flex items-center justify-center text-sm shadow-inner relative">
               {esJuegoMesa ? '👑' : '🛡️'}
               <div className="absolute -bottom-2 -right-2 bg-gradient-to-br from-amber-400 to-amber-600 text-black text-[9px] font-black px-1.5 py-0.5 rounded-full border border-zinc-900 shadow-md">
                 Lv{props.dm_nivel || 1}
               </div>
             </div>
-            <div className="min-w-0 flex-1 pr-2">
-              <p className="text-[9px] font-black text-zinc-500 uppercase tracking-[0.2em] truncate">{esJuegoMesa ? 'Organizador' : 'Director de Juego'}</p>
-              <div className="flex flex-wrap items-center gap-1.5 min-w-0">
-                <p className="text-sm text-zinc-200 font-bold truncate">{props.dmNombre || props.dungeon_master_nombre || 'Desconocido'}</p>
+            <div className="min-w-0 flex-1 pr-1 sm:pr-2">
+              <p className="text-[8px] sm:text-[9px] font-black text-zinc-500 uppercase tracking-[0.2em] truncate">{esJuegoMesa ? 'Organizador' : 'Director de Juego'}</p>
+              <div className="flex flex-wrap items-center gap-1 sm:gap-1.5 min-w-0">
+                <p className="text-xs sm:text-sm text-zinc-200 font-bold truncate">{props.dmNombre || props.dungeon_master_nombre || 'Desconocido'}</p>
                 {!esJuegoMesa && props.dm_honor !== undefined && (
                   <span title={`Honor: ${props.dm_honor}`} className={`text-[10px] font-black uppercase tracking-widest ${obtenerRangoDM(props.dm_honor).colorClase}`}>
                     {obtenerRangoDM(props.dm_honor).icono}
@@ -406,12 +406,12 @@ function Partida(props) {
           )}
         </div>
 
-        <div className="flex gap-3 mt-auto relative z-10">
+        <div className="flex gap-2 sm:gap-3 mt-auto relative z-10">
           {!soyElMaster && !props.eventoEsPasado && (
             <button 
               onClick={alternarInscripcion}
               disabled={cargandoJugadores || (props.inscripcionesCerradas && !anotado) || (estaLlena && !anotado)}
-              className={`flex-1 min-w-0 py-4 rounded-2xl font-black text-[10px] uppercase tracking-[0.2em] transition-all shadow-xl truncate px-2 ${
+              className={`flex-1 min-w-0 py-3 sm:py-4 rounded-xl sm:rounded-2xl font-black text-[9px] sm:text-[10px] uppercase tracking-[0.2em] transition-all shadow-xl truncate px-2 ${
                 anotado 
                 ? 'bg-red-500/10 text-red-500 border border-red-500/40 hover:bg-red-600 hover:text-white' 
                 : props.inscripcionesCerradas
@@ -424,7 +424,7 @@ function Partida(props) {
               {anotado ? 'Abandonar' : props.inscripcionesCerradas ? 'Cerrado' : estaLlena ? 'Llena' : (props.es_privada ? '🔒 Alistarse' : 'Alistarse')}
             </button>
           )}
-          <div className={`px-6 shrink-0 flex items-center justify-center bg-zinc-950 text-zinc-500 rounded-2xl border transition-all ${soyElMaster || props.eventoEsPasado ? 'w-full py-4 text-xs tracking-widest hover:text-white hover:bg-zinc-800 uppercase font-black border-zinc-800 cursor-pointer' : 'border-zinc-800/80 group-hover:border-zinc-700 group-hover:text-zinc-300'}`}>
+          <div className={`px-4 sm:px-6 shrink-0 flex items-center justify-center bg-zinc-950 text-zinc-500 rounded-xl sm:rounded-2xl border transition-all ${soyElMaster || props.eventoEsPasado ? 'w-full py-3 sm:py-4 text-[10px] sm:text-xs tracking-widest hover:text-white hover:bg-zinc-800 uppercase font-black border-zinc-800 cursor-pointer' : 'border-zinc-800/80 group-hover:border-zinc-700 group-hover:text-zinc-300'}`}>
             {soyElMaster || props.eventoEsPasado ? '👁️ Ver Pergamino' : '👁️'}
           </div>
         </div>

@@ -110,12 +110,12 @@ function TarjetaEscape({ sala, usuarioGuardado, esAdmin, inscripcionesCerradas }
 
   return (
     <>
-      <div className="bg-zinc-900/80 border border-zinc-800 p-8 md:p-10 rounded-[3rem] relative overflow-hidden group flex flex-col h-full shadow-2xl">
-        <div className="absolute top-0 right-0 w-64 h-64 bg-indigo-500/10 blur-[80px] rounded-full pointer-events-none group-hover:bg-indigo-500/20 transition-colors"></div>
+      <div className="bg-zinc-900/80 border border-zinc-800 p-5 sm:p-8 md:p-10 rounded-[2rem] md:rounded-[3rem] relative overflow-hidden group flex flex-col h-full shadow-2xl">
+        <div className="absolute top-0 right-0 w-48 h-48 sm:w-64 sm:h-64 bg-indigo-500/10 blur-[60px] sm:blur-[80px] rounded-full pointer-events-none group-hover:bg-indigo-500/20 transition-colors"></div>
         
-        <div className="flex justify-between items-start mb-6 border-b border-zinc-800/50 pb-6 relative z-10">
+        <div className="flex justify-between items-start mb-4 sm:mb-6 border-b border-zinc-800/50 pb-4 sm:pb-6 relative z-10">
           <div className="max-w-[70%]">
-            <h4 className="text-3xl md:text-4xl font-black text-white uppercase tracking-tighter italic mb-2 line-clamp-2">{sala.titulo}</h4>
+            <h4 className="text-xl sm:text-3xl md:text-4xl font-black text-white uppercase tracking-tighter italic mb-2 line-clamp-2">{sala.titulo}</h4>
             <span className="bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest inline-flex items-center gap-2">
               🔐 Escape Room
             </span>
@@ -126,23 +126,23 @@ function TarjetaEscape({ sala, usuarioGuardado, esAdmin, inscripcionesCerradas }
           </div>
         </div>
         
-        <p className="text-zinc-300 text-base md:text-lg mb-8 line-clamp-4 leading-relaxed italic border-l-4 border-indigo-500/50 pl-6 flex-grow relative z-10">
+        <p className="text-zinc-300 text-xs sm:text-base md:text-lg mb-6 sm:mb-8 line-clamp-3 sm:line-clamp-4 leading-relaxed italic border-l-4 border-indigo-500/50 pl-4 sm:pl-6 flex-grow relative z-10">
           "{sala.descripcion}"
         </p>
         
-        <div className="grid grid-cols-2 gap-4 mb-8 relative z-10">
-          <div className="bg-zinc-950 p-4 rounded-2xl border border-zinc-800 flex flex-col">
-            <span className="text-[10px] text-zinc-500 font-black uppercase tracking-widest mb-1">Dificultad</span>
-            <span className="text-white font-bold">{sala.dificultad}</span>
+        <div className="grid grid-cols-2 gap-3 sm:gap-4 mb-6 sm:mb-8 relative z-10">
+          <div className="bg-zinc-950 p-3 sm:p-4 rounded-xl sm:rounded-2xl border border-zinc-800 flex flex-col">
+            <span className="text-[9px] sm:text-[10px] text-zinc-500 font-black uppercase tracking-widest mb-1">Dificultad</span>
+            <span className="text-white font-bold text-sm sm:text-base">{sala.dificultad}</span>
           </div>
-          <div className="bg-zinc-950 p-4 rounded-2xl border border-zinc-800 flex flex-col">
-            <span className="text-[10px] text-zinc-500 font-black uppercase tracking-widest mb-1">Restricción</span>
-            <span className="text-white font-bold">{sala.edad_minima}</span>
+          <div className="bg-zinc-950 p-3 sm:p-4 rounded-xl sm:rounded-2xl border border-zinc-800 flex flex-col">
+            <span className="text-[9px] sm:text-[10px] text-zinc-500 font-black uppercase tracking-widest mb-1">Restricción</span>
+            <span className="text-white font-bold text-sm sm:text-base">{sala.edad_minima}</span>
           </div>
         </div>
 
-        <div className="bg-zinc-950 border border-zinc-800 rounded-[2rem] p-6 mt-auto relative z-10">
-          <p className="text-left text-zinc-500 font-black uppercase tracking-[0.2em] text-[10px] mb-4 flex items-center gap-2">
+        <div className="bg-zinc-950 border border-zinc-800 rounded-2xl sm:rounded-[2rem] p-4 sm:p-6 mt-auto relative z-10">
+          <p className="text-left text-zinc-500 font-black uppercase tracking-[0.2em] text-[9px] sm:text-[10px] mb-3 sm:mb-4 flex items-center gap-2">
             <span>⏱️ Pases Habilitados</span>
             <span className="bg-zinc-900 px-2 py-0.5 rounded-md text-zinc-400">{sala.turnos?.length || 0}</span>
           </p>
