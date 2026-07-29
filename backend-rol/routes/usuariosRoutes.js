@@ -90,7 +90,7 @@ router.get('/estadisticas', verificarToken, (req, res) => {
 
 // ✨ ACTUALIZAR PERFIL (Con registro en bitácora)
 router.put('/perfil', verificarToken, async (req, res) => {
-  const { nombre, nombre_completo, email, password, avatar, telegram_chat_id } = req.body;
+  const { nombre, nombre_completo, email, password, avatar, telegram_chat_id, biografia } = req.body;
   const idUsuario = req.usuario.id;
 
   try {
@@ -101,12 +101,12 @@ router.put('/perfil', verificarToken, async (req, res) => {
     if (password && password.trim() !== "") {
       const salt = await bcrypt.genSalt(10);
       const hash = await bcrypt.hash(password, salt);
-      sql = "UPDATE usuarios SET nombre = ?, nombre_completo = ?, email = ?, password = ?, avatar = ?, telegram_chat_id = ? WHERE id = ?";
-      params = [nombre, nombre_completo, email, hash, avatar, telegram_chat_id || null, idUsuario];
+      sql = "UPDATE usuarios SET nombre = ?, nombre_completo = ?, email = ?, password = ?, avatar = ?, telegram_chat_id = ?, biografia = ? WHERE id = ?";
+      params = [nombre, nombre_completo, email, hash, avatar, telegram_chat_id || null, biografia || null, idUsuario];
       cambioPass = true;
     } else {
-      sql = "UPDATE usuarios SET nombre = ?, nombre_completo = ?, email = ?, avatar = ?, telegram_chat_id = ? WHERE id = ?";
-      params = [nombre, nombre_completo, email, avatar, telegram_chat_id || null, idUsuario];
+      sql = "UPDATE usuarios SET nombre = ?, nombre_completo = ?, email = ?, avatar = ?, telegram_chat_id = ?, biografia = ? WHERE id = ?";
+      params = [nombre, nombre_completo, email, avatar, telegram_chat_id || null, biografia || null, idUsuario];
     }
 
     db.query(sql, params, (err) => {
@@ -322,7 +322,7 @@ router.get('/notificaciones', verificarToken, (req, res) => {
     const offset = (page - 1) * limit;
     db.query("SELECT COUNT(*) AS total FROM usuarios", (err, countResult) => {
       if (err) return res.status(500).json({ error: 'Error.' });
-      const sql = `SELECT id, nombre, nombre_completo, email, rol, avatar, solicita_dm, es_dm_nuevo, telegram_chat_id, (SELECT COUNT(*) FROM honor_dm WHERE dm_id = usuarios.id) as honor_total FROM usuarios ORDER BY nombre ASC LIMIT ${limit} OFFSET ${offset}`;
+      const sql = `SELECT id, nombre, nombre_completo, email, rol, avatar, biografia, solicita_dm, es_dm_nuevo, telegram_chat_id, (SELECT COUNT(*) FROM honor_dm WHERE dm_id = usuarios.id) as honor_total FROM usuarios ORDER BY nombre ASC LIMIT ${limit} OFFSET ${offset}`;
       db.query(sql, (err, resultados) => {
         if (err) return res.status(500).json({ error: 'Error.' });
         res.json({ datos: resultados, paginacion: { paginaActual: page, totalPaginas: Math.ceil(countResult[0].total / limit) } });
@@ -331,9 +331,49 @@ router.get('/notificaciones', verificarToken, (req, res) => {
   });
   
   router.get('/yo', verificarToken, (req, res) => {
-    db.query("SELECT id, nombre, nombre_completo, email, rol, avatar, solicita_dm, es_dm_nuevo, telegram_chat_id, (SELECT COUNT(*) FROM honor_dm WHERE dm_id = usuarios.id) as honor_total FROM usuarios WHERE id = ?", [req.usuario.id], (err, resultados) => {
+    db.query("SELECT id, nombre, nombre_completo, email, rol, avatar, biografia, solicita_dm, es_dm_nuevo, telegram_chat_id, (SELECT COUNT(*) FROM honor_dm WHERE dm_id = usuarios.id) as honor_total FROM usuarios WHERE id = ?", [req.usuario.id], (err, resultados) => {
       if (err || resultados.length === 0) return res.status(404).json({ error: 'No encontrado.' });
       res.json(resultados[0]);
+    });
+  });
+
+  // ✨ PERFIL PÚBLICO DE CUALQUIER USUARIO
+  router.get('/:id/perfil_publico', verificarToken, (req, res) => {
+    const idObj = req.params.id;
+    const sqlPerfil = `
+      SELECT id, nombre, rol, avatar, biografia, 
+      (SELECT COUNT(*) FROM honor_dm WHERE dm_id = usuarios.id) as honor_total 
+      FROM usuarios WHERE id = ?`;
+
+    db.query(sqlPerfil, [idObj], (err, resPerfil) => {
+      if (err || resPerfil.length === 0) return res.status(404).json({ error: 'Aventurero no encontrado.' });
+      
+      const usuarioPublico = resPerfil[0];
+      
+      // Obtener mesas que dirigió
+      const sqlDirigiendo = `
+        SELECT p.id, p.titulo, p.etiqueta, e.nombre as evento_nombre, DATE_FORMAT(e.fecha, '%Y-%m-%d') as evento_fecha 
+        FROM partidas p JOIN eventos e ON p.evento_id = e.id WHERE p.dungeon_master_id = ? ORDER BY e.fecha DESC
+      `;
+      // Obtener mesas que jugó
+      const sqlJugando = `
+        SELECT p.id, p.titulo, p.etiqueta, e.nombre as evento_nombre, DATE_FORMAT(e.fecha, '%Y-%m-%d') as evento_fecha 
+        FROM inscripciones i JOIN partidas p ON i.partida_id = p.id JOIN eventos e ON p.evento_id = e.id WHERE i.usuario_id = ? ORDER BY e.fecha DESC
+      `;
+      
+      db.query(sqlDirigiendo, [idObj], (err2, dirigiendo) => {
+        if (err2) return res.status(500).json({ error: 'Error cargando crónicas.' });
+        
+        db.query(sqlJugando, [idObj], (err3, jugando) => {
+          if (err3) return res.status(500).json({ error: 'Error cargando crónicas.' });
+          
+          res.json({
+            ...usuarioPublico,
+            dirigiendo: dirigiendo || [],
+            jugando: jugando || []
+          });
+        });
+      });
     });
   });
 

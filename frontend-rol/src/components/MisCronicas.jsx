@@ -27,6 +27,7 @@ function MisCronicas({ alActualizarUsuario }) {
     email: usuarioGuardado?.email || '',
     avatar: usuarioGuardado?.avatar || 'guerrero',
     telegram_chat_id: usuarioGuardado?.telegram_chat_id || '',
+    biografia: usuarioGuardado?.biografia || '',
     password: '' // ✨ AGREGADO: Campo para la nueva contraseña
   });
 
@@ -257,6 +258,21 @@ function MisCronicas({ alActualizarUsuario }) {
               </div>
             </div>
 
+            <div className="space-y-2">
+              <label className="text-[10px] font-black text-zinc-500 uppercase tracking-widest ml-2 flex items-center gap-2">
+                <span className="w-1.5 h-1.5 bg-amber-500 rounded-full animate-pulse"></span> 
+                Tu Historia (Biografía)
+              </label>
+              <textarea 
+                name="biografia" 
+                rows="3"
+                placeholder="Cuenta al gremio quién eres, qué juegos diriges o qué tipo de aventuras buscas..." 
+                className="w-full bg-zinc-950 border border-zinc-800 rounded-2xl py-3 px-4 md:py-4 md:px-6 text-white focus:border-amber-500 outline-none transition-all font-bold resize-none" 
+                value={perfil.biografia} 
+                onChange={manejarCambioPerfil} 
+              />
+            </div>
+
             {/* ✨ ZONA DE CONTRASEÑA Y TELEGRAM AGREGADOS AQUÍ */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div className="space-y-2">
@@ -358,6 +374,11 @@ function MisCronicas({ alActualizarUsuario }) {
                   {perfil.nombre_completo && (
                     <p className="text-zinc-400 font-bold text-xs sm:text-sm tracking-wide mb-2 flex items-center justify-center md:justify-start gap-2 w-full truncate">
                       📜 <span className="truncate">{perfil.nombre_completo}</span>
+                    </p>
+                  )}
+                  {perfil.biografia && (
+                    <p className="text-zinc-300 italic text-sm mt-1 mb-4 border-l-2 border-emerald-500/50 pl-3">
+                      "{perfil.biografia}"
                     </p>
                   )}
 

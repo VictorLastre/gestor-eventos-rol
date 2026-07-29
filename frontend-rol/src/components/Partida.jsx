@@ -365,7 +365,16 @@ function Partida(props) {
           "{props.description || props.descripcion}"
         </p>
 
-        <div className="mb-4 sm:mb-6 bg-zinc-950/80 p-2.5 sm:p-3 rounded-2xl border border-zinc-800/80 flex justify-between items-center transition-all group-hover:bg-zinc-950 relative z-10 gap-2">
+        <div 
+          className="mb-4 sm:mb-6 bg-zinc-950/80 p-2.5 sm:p-3 rounded-2xl border border-zinc-800/80 flex justify-between items-center transition-all group-hover:bg-zinc-950 relative z-10 gap-2 cursor-pointer hover:border-emerald-500/50"
+          onClick={(e) => {
+            e.stopPropagation();
+            if (props.setVista && props.dungeon_master_id) {
+              props.setVista(`perfil:${props.dungeon_master_id}`);
+            }
+          }}
+          title="Ver Perfil"
+        >
           <div className="flex items-center gap-2 sm:gap-3 min-w-0 flex-1">
             <div className="shrink-0 w-8 h-8 sm:w-10 sm:h-10 bg-zinc-900 border border-zinc-700 rounded-full flex items-center justify-center text-sm shadow-inner relative">
               {esJuegoMesa ? '👑' : '🛡️'}
@@ -376,7 +385,7 @@ function Partida(props) {
             <div className="min-w-0 flex-1 pr-1 sm:pr-2">
               <p className="text-[8px] sm:text-[9px] font-black text-zinc-500 uppercase tracking-[0.2em] truncate">{esJuegoMesa ? 'Organizador' : 'Director de Juego'}</p>
               <div className="flex flex-wrap items-center gap-1 sm:gap-1.5 min-w-0">
-                <p className="text-xs sm:text-sm text-zinc-200 font-bold truncate">{props.dmNombre || props.dungeon_master_nombre || 'Desconocido'}</p>
+                <p className="text-xs sm:text-sm text-zinc-200 font-bold truncate group-hover:text-emerald-400 transition-colors">{props.dmNombre || props.dungeon_master_nombre || 'Desconocido'}</p>
                 {!esJuegoMesa && props.dm_honor !== undefined && (
                   <span title={`Honor: ${props.dm_honor}`} className={`text-[10px] font-black uppercase tracking-widest ${obtenerRangoDM(props.dm_honor).colorClase}`}>
                     {obtenerRangoDM(props.dm_honor).icono}
@@ -711,7 +720,14 @@ function Partida(props) {
                         return (
                           <span 
                             key={idx} 
-                            className={`px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest border flex items-center gap-2 ${estilosRol}`}
+                            onClick={() => {
+                              if (props.setVista && jugador.usuario_id) {
+                                props.setVista(`perfil:${jugador.usuario_id}`);
+                                setModalAbierto(false);
+                              }
+                            }}
+                            className={`px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest border flex items-center gap-2 cursor-pointer hover:scale-105 transition-transform ${estilosRol}`}
+                            title="Ver Perfil"
                           >
                             <span className="text-base">{iconoRol}</span> {jugador.nombre}
                           </span>

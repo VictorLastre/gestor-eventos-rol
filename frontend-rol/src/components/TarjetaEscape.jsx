@@ -2,7 +2,7 @@ import { useState } from 'react';
 import Swal from 'sweetalert2';
 import { fetchProtegido } from '../utils/api';
 
-function TarjetaEscape({ sala, usuarioGuardado, esAdmin, inscripcionesCerradas }) {
+function TarjetaEscape({ sala, usuarioGuardado, esAdmin, inscripcionesCerradas, setVista }) {
   const [cargando, setCargando] = useState(false);
   
   // ✨ Estados para la edición
@@ -122,7 +122,17 @@ function TarjetaEscape({ sala, usuarioGuardado, esAdmin, inscripcionesCerradas }
           </div>
           <div className="flex flex-col items-end gap-2 text-right">
             <p className="text-[10px] text-zinc-500 font-black uppercase tracking-widest">Arquitecto</p>
-            <span className="text-zinc-300 font-bold bg-zinc-950 px-4 py-2 rounded-xl border border-zinc-800 truncate max-w-[120px] sm:max-w-[180px]">{sala.organizador_nombre}</span>
+            <span 
+              className="text-zinc-300 font-bold bg-zinc-950 px-4 py-2 rounded-xl border border-zinc-800 truncate max-w-[120px] sm:max-w-[180px] cursor-pointer hover:border-indigo-500/50 hover:text-indigo-400 transition-colors"
+              title="Ver Perfil"
+              onClick={() => {
+                if (setVista && sala.organizador_id) {
+                  setVista(`perfil:${sala.organizador_id}`);
+                }
+              }}
+            >
+              {sala.organizador_nombre}
+            </span>
           </div>
         </div>
         

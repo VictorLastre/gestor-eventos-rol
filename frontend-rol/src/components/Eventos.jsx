@@ -8,7 +8,7 @@ import TarjetaEscape from './TarjetaEscape';
 import { fetchProtegido } from '../utils/api'; 
 import { io } from 'socket.io-client';
 
-function Eventos() {
+function Eventos({ setVista }) {
   const [eventos, setEventos] = useState([]);
   const [eventoSeleccionado, setEventoSeleccionado] = useState(null);
   const [partidasDelEvento, setPartidasDelEvento] = useState([]);
@@ -382,6 +382,7 @@ function Eventos() {
                         esAdmin={esAdmin} 
                         esMiMesa={usuarioGuardado?.id === p.dungeon_master_id} 
                         inscripcionesCerradas={inscripcionesCerradas} 
+                        setVista={setVista}
                       />
                     </div>
                   ))}
@@ -451,6 +452,7 @@ function Eventos() {
                         usuarioGuardado={usuarioGuardado} 
                         esAdmin={esAdmin} 
                         inscripcionesCerradas={inscripcionesCerradas}
+                        setVista={setVista}
                       />
                     </div>
                   ))}
@@ -522,6 +524,7 @@ function Eventos() {
                         esAdmin={esAdmin} 
                         esMiMesa={usuarioGuardado?.id === p.dungeon_master_id} 
                         inscripcionesCerradas={inscripcionesCerradas} 
+                        setVista={setVista}
                       />
                     </div>
                   ))}

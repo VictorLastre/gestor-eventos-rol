@@ -5,7 +5,8 @@ import Registro from './components/Registro';
 import Eventos from './components/Eventos';
 import MisCronicas from './components/MisCronicas';
 import Navbar from './components/Navbar'; 
-import PanelAdmin from './components/PanelAdmin'; // ✨ IMPORTAMOS EL CENTRO DE MANDO
+import PanelAdmin from './components/PanelAdmin'; 
+import PerfilPublico from './components/PerfilPublico'; // ✨ IMPORTAMOS PERFIL PÚBLICO
 import './App.css';
 
 function App() {
@@ -89,9 +90,15 @@ function App() {
 
       {/* ✨ REEMPLAZAMOS EL TERNARIO POR RENDERIZADO CONDICIONAL LIMPIO */}
       <main className="container mx-auto pb-20 relative z-0">
-        {vistaActual === 'eventos' && <Eventos />}
+        {vistaActual === 'eventos' && <Eventos setVista={setVistaActual} />}
         {vistaActual === 'mis-cronicas' && <MisCronicas alActualizarUsuario={setUsuarioLogueado} />}
         {vistaActual === 'admin' && <PanelAdmin />}
+        {vistaActual.startsWith('perfil:') && (
+          <PerfilPublico 
+            usuarioId={vistaActual.split(':')[1]} 
+            volver={() => setVistaActual('eventos')} 
+          />
+        )}
       </main>
     </div>
   );
