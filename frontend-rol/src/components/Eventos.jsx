@@ -392,6 +392,7 @@ function Eventos({ setVista }) {
                         {...p} 
                         eventoEsPasado={eventoSeleccionado.estado === 'Finalizado' || eventoSeleccionado.estado === 'Suspendido'} 
                         esAdmin={esAdmin} 
+                        setVista={setVista} 
                         esMiMesa={usuarioGuardado?.id === p.dungeon_master_id} 
                         inscripcionesCerradas={inscripcionesCerradas} 
                         setVista={setVista}
@@ -550,6 +551,7 @@ function Eventos({ setVista }) {
                         {...p} 
                         eventoEsPasado={eventoSeleccionado.estado === 'Finalizado' || eventoSeleccionado.estado === 'Suspendido'} 
                         esAdmin={esAdmin} 
+                        setVista={setVista} 
                         esMiMesa={usuarioGuardado?.id === p.dungeon_master_id} 
                         inscripcionesCerradas={inscripcionesCerradas} 
                         setVista={setVista}
