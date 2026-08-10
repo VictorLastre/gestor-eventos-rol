@@ -683,7 +683,7 @@ function Eventos({ setVista }) {
                          className="p-3 bg-zinc-950 text-emerald-500 rounded-xl hover:bg-emerald-500/10 hover:text-emerald-400 transition-colors border border-emerald-500/20 group/btn"
                          title="Enviar cuervos para buscar Masters"
                        >
-                         <span className="group-hover/btn:scale-110 inline-block transition-transform">🐦‍⬛</span>
+                         <span className="group-hover/btn:scale-110 inline-block transition-transform">📣</span>
                        </button>
                     )}
                     
