@@ -52,9 +52,21 @@ function MisCronicas({ alActualizarUsuario }) {
   const darHonor = async (dmId, partidaId, dmNombre) => {
     const { value: mensaje, isConfirmed } = await Swal.fire({
       title: `¡Otorgar Honor! 🏆`,
-      html: `¿Quieres dejarle un mensaje a <b>${dmNombre}</b>? <br><small class="text-zinc-400">El Master recibirá 1 Punto de Honor por esta aventura.</small>`,
-      input: 'text',
-      inputPlaceholder: 'Ej: ¡Increíble narración!',
+      html: `¿Qué deseas destacar de <b>${dmNombre}</b>? <br><small class="text-zinc-400">El Master recibirá 1 Punto de Honor por esta aventura.</small>`,
+      input: 'select',
+      inputOptions: {
+        '¡Mundo asombroso! La inmersión fue total y épica.': '🌍 ¡Mundo asombroso! La inmersión fue total y épica.',
+        'Un director brillante. Las reglas fueron justas y divertidas.': '📜 Un director brillante. Las reglas fueron justas y divertidas.',
+        '¡Qué giros en la trama! Me mantuvo al borde del asiento.': '🎭 ¡Qué giros en la trama! Me mantuvo al borde del asiento.',
+        'Interpretación magistral de los NPCs. ¡Me creí todo!': '🗣️ Interpretación magistral de los NPCs. ¡Me creí todo!',
+        'Excelente ritmo de partida. Ni muy lento, ni muy rápido.': '⏳ Excelente ritmo de partida. Ni muy lento, ni muy rápido.',
+        'Combates épicos y desafiantes, sudé cada tirada de dados.': '⚔️ Combates épicos y desafiantes, sudé cada tirada.',
+        'Creaste un espacio súper seguro y cómodo para rolear.': '🛡️ Creaste un espacio súper seguro y cómodo para rolear.',
+        'Impresionante creatividad con los puzzles y misterios.': '🧩 Impresionante creatividad con los puzzles y misterios.',
+        '¡La banda sonora y la ambientación fueron de otro nivel!': '🎶 ¡La banda sonora y la ambientación fueron de otro nivel!',
+        'Mucha paciencia y dedicación, genial para jugadores nuevos.': '🎓 Mucha paciencia y dedicación, genial para jugadores.'
+      },
+      inputPlaceholder: 'Selecciona un elogio',
       showCancelButton: true,
       confirmButtonText: 'Otorgar Honor',
       cancelButtonText: 'Cancelar',
@@ -453,12 +465,14 @@ function MisCronicas({ alActualizarUsuario }) {
                       <span className="text-[10px] font-black text-emerald-500/70 uppercase tracking-widest">{formatearFecha(p.evento_fecha)}</span>
                     </div>
                     
-                    {honoresOtorgados.includes(p.id) ? (
-                      <span className="text-[10px] font-bold text-amber-500 bg-amber-500/10 px-2 py-1 rounded-md border border-amber-500/20">👑 Honor Otorgado</span>
-                    ) : (
-                      <button onClick={() => darHonor(p.dungeon_master_id, p.id, p.dm_nombre)} className="text-[10px] font-bold text-zinc-400 hover:text-amber-400 bg-zinc-900 hover:bg-zinc-800 px-3 py-1.5 rounded-lg transition-all border border-zinc-700 hover:border-amber-500/50 flex items-center gap-1.5 shadow-lg">
-                        <span className="text-sm">👑</span> <span className="hidden sm:inline">Dar Honor a</span> <span className="sm:hidden">Honor:</span> {p.dm_nombre}
-                      </button>
+                    {p.etiqueta !== 'Juegos de Mesa' && p.etiqueta !== 'Escape Room' && (
+                      honoresOtorgados.includes(p.id) ? (
+                        <span className="text-[10px] font-bold text-amber-500 bg-amber-500/10 px-2 py-1 rounded-md border border-amber-500/20">🏆 Honor Otorgado</span>
+                      ) : (
+                        <button onClick={() => darHonor(p.dungeon_master_id, p.id, p.dm_nombre)} className="text-[10px] font-bold text-zinc-400 hover:text-amber-400 bg-zinc-900 hover:bg-zinc-800 px-3 py-1.5 rounded-lg transition-all border border-zinc-700 hover:border-amber-500/50 flex items-center gap-1.5 shadow-lg">
+                          <span className="text-sm">🏆</span> <span className="hidden sm:inline">Dar Honor a</span> <span className="sm:hidden">Honor:</span> {p.dm_nombre}
+                        </button>
+                      )
                     )}
                   </div>
                 </div>
