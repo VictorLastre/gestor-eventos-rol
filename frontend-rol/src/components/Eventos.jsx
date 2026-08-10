@@ -267,6 +267,10 @@ function Eventos({ setVista }) {
       return aLlena ? 1 : -1;
     });
 
+    const cupoRolLleno = eventoSeleccionado.cupo_rol !== null && mesasRol.length >= eventoSeleccionado.cupo_rol;
+    const cupoJuegosLleno = eventoSeleccionado.cupo_juegos_mesa !== null && juegosMesa.length >= eventoSeleccionado.cupo_juegos_mesa;
+    const cupoEscapeLleno = eventoSeleccionado.cupo_escape_room !== null && escapesDelEvento.length >= eventoSeleccionado.cupo_escape_room;
+
     return (
       <div className="min-h-screen bg-black font-sans pb-32 overflow-x-hidden">
         <main className="pt-24 md:pt-32 px-4 sm:px-6 max-w-7xl mx-auto relative z-10">
@@ -300,7 +304,7 @@ function Eventos({ setVista }) {
                   : 'bg-zinc-900 text-zinc-500 border-zinc-800 hover:text-zinc-300 hover:bg-zinc-800'
               }`}
             >
-              🎲 Mesas de Rol ({mesasRol.length})
+              🎲 Mesas de Rol ({mesasRol.length}{eventoSeleccionado.cupo_rol !== null ? `/${eventoSeleccionado.cupo_rol}` : ''})
             </button>
             <button 
               onClick={() => setVistaActiva('juegos')}
@@ -310,7 +314,7 @@ function Eventos({ setVista }) {
                   : 'bg-zinc-900 text-zinc-500 border-zinc-800 hover:text-zinc-300 hover:bg-zinc-800'
               }`}
             >
-              🃏 Juegos de Mesa ({juegosMesa.length})
+              🃏 Juegos de Mesa ({juegosMesa.length}{eventoSeleccionado.cupo_juegos_mesa !== null ? `/${eventoSeleccionado.cupo_juegos_mesa}` : ''})
             </button>
             <button 
               onClick={() => setVistaActiva('escape')}
@@ -320,7 +324,7 @@ function Eventos({ setVista }) {
                   : 'bg-zinc-900 text-zinc-500 border-zinc-800 hover:text-zinc-300 hover:bg-zinc-800'
               }`}
             >
-              🔐 Escape Rooms ({escapesDelEvento.length})
+              🔐 Escape Rooms ({escapesDelEvento.length}{eventoSeleccionado.cupo_escape_room !== null ? `/${eventoSeleccionado.cupo_escape_room}` : ''})
             </button>
           </div>
 
@@ -332,6 +336,13 @@ function Eventos({ setVista }) {
               {esDungeonMaster && (eventoSeleccionado.estado !== 'Finalizado' && eventoSeleccionado.estado !== 'Suspendido') && !yaParticipa && (
                 <div className="mb-12">
                   {!convocatoriaCerrada ? (
+                    cupoRolLleno ? (
+                      <div className="bg-amber-500/10 border border-amber-500/30 p-8 rounded-[2.5rem] flex flex-col items-center justify-center text-center shadow-inner">
+                        <span className="text-3xl mb-3">🛡️</span>
+                        <h4 className="text-amber-500 font-black uppercase tracking-widest text-sm mb-2">Cupo de Mesas Lleno</h4>
+                        <p className="text-zinc-400 text-sm italic max-w-lg">Ya se ha alcanzado el límite logístico de mesas de rol para esta jornada.</p>
+                      </div>
+                    ) : (
                     <>
                       <div className="flex justify-center w-full">
                         <button 
@@ -354,6 +365,7 @@ function Eventos({ setVista }) {
                         </div>
                       )}
                     </>
+                    )
                   ) : (
                     <div className="bg-amber-500/10 border border-amber-500/30 p-8 rounded-[2.5rem] flex flex-col items-center justify-center text-center shadow-inner">
                       <span className="text-3xl mb-3">🛡️</span>
@@ -403,6 +415,13 @@ function Eventos({ setVista }) {
               {esDungeonMaster && (eventoSeleccionado.estado !== 'Finalizado' && eventoSeleccionado.estado !== 'Suspendido') && (
                 <div className="mb-12">
                   {!convocatoriaCerrada ? (
+                    cupoEscapeLleno ? (
+                      <div className="bg-indigo-500/10 border border-indigo-500/30 p-8 rounded-[2.5rem] flex flex-col items-center justify-center text-center shadow-inner">
+                        <span className="text-3xl mb-3">🔐</span>
+                        <h4 className="text-indigo-400 font-black uppercase tracking-widest text-sm mb-2">Cupo de Salas Lleno</h4>
+                        <p className="text-zinc-400 text-sm italic max-w-lg">Ya se ha alcanzado el límite logístico de Escape Rooms para esta jornada.</p>
+                      </div>
+                    ) : (
                     <>
                       <div className="flex justify-center w-full">
                         <button 
@@ -425,6 +444,7 @@ function Eventos({ setVista }) {
                         />
                       )}
                     </>
+                    )
                   ) : (
                     <div className="bg-indigo-500/10 border border-indigo-500/30 p-8 rounded-[2.5rem] flex flex-col items-center justify-center text-center shadow-inner">
                       <span className="text-3xl mb-3">⏳</span>
@@ -474,6 +494,13 @@ function Eventos({ setVista }) {
               {usuarioGuardado && (eventoSeleccionado.estado !== 'Finalizado' && eventoSeleccionado.estado !== 'Suspendido') && !yaParticipa && (
                 <div className="mb-12">
                   {!convocatoriaCerrada ? (
+                    cupoJuegosLleno ? (
+                      <div className="bg-rose-500/10 border border-rose-500/30 p-8 rounded-[2.5rem] flex flex-col items-center justify-center text-center shadow-inner">
+                        <span className="text-3xl mb-3">👑</span>
+                        <h4 className="text-rose-500 font-black uppercase tracking-widest text-sm mb-2">Cupo de Juegos Lleno</h4>
+                        <p className="text-zinc-400 text-sm italic max-w-lg">Ya se ha alcanzado el límite logístico de Juegos de Mesa para esta jornada.</p>
+                      </div>
+                    ) : (
                     <>
                       <div className="flex justify-center w-full">
                         <button 
@@ -496,6 +523,7 @@ function Eventos({ setVista }) {
                         </div>
                       )}
                     </>
+                    )
                   ) : (
                     <div className="bg-rose-500/10 border border-rose-500/30 p-8 rounded-[2.5rem] flex flex-col items-center justify-center text-center shadow-inner">
                       <span className="text-3xl mb-3">🃏</span>
@@ -568,6 +596,12 @@ function Eventos({ setVista }) {
               <div className="grid grid-cols-2 gap-4">
                 <input type="text" placeholder="Lugar" value={eventoEditando.lugar || ''} onChange={e => setEventoEditando({...eventoEditando, lugar: e.target.value})} className="bg-zinc-950 border border-zinc-800 rounded-2xl py-4 px-6 text-white text-sm outline-none focus:border-purple-500" />
                 <input type="text" placeholder="Ciudad" value={eventoEditando.ciudad || ''} onChange={e => setEventoEditando({...eventoEditando, ciudad: e.target.value})} className="bg-zinc-950 border border-zinc-800 rounded-2xl py-4 px-6 text-white text-sm outline-none focus:border-purple-500" />
+              </div>
+
+              <div className="grid grid-cols-3 gap-4">
+                <input type="number" min="1" placeholder="Cupo Rol" value={eventoEditando.cupo_rol || ''} onChange={e => setEventoEditando({...eventoEditando, cupo_rol: e.target.value ? parseInt(e.target.value) : null})} className="bg-zinc-950 border border-zinc-800 rounded-2xl py-4 px-4 text-white text-sm outline-none focus:border-yellow-500" title="Cupo de Mesas de Rol" />
+                <input type="number" min="1" placeholder="Cupo Juegos" value={eventoEditando.cupo_juegos_mesa || ''} onChange={e => setEventoEditando({...eventoEditando, cupo_juegos_mesa: e.target.value ? parseInt(e.target.value) : null})} className="bg-zinc-950 border border-zinc-800 rounded-2xl py-4 px-4 text-white text-sm outline-none focus:border-yellow-500" title="Cupo de Juegos de Mesa" />
+                <input type="number" min="1" placeholder="Cupo Escape" value={eventoEditando.cupo_escape_room || ''} onChange={e => setEventoEditando({...eventoEditando, cupo_escape_room: e.target.value ? parseInt(e.target.value) : null})} className="bg-zinc-950 border border-zinc-800 rounded-2xl py-4 px-4 text-white text-sm outline-none focus:border-yellow-500" title="Cupo de Escape Rooms" />
               </div>
 
               <div className="flex gap-4 mt-4">

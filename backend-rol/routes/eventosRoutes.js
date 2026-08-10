@@ -35,7 +35,11 @@ router.get('/', (req, res) => {
       SELECT 
         id, nombre, descripcion, 
         DATE_FORMAT(fecha, '%Y-%m-%d') as fecha, 
-        hora_inicio, hora_fin, estado, lugar, ciudad
+        hora_inicio, hora_fin, estado, lugar, ciudad,
+        cupo_rol, cupo_juegos_mesa, cupo_escape_room,
+        (SELECT COUNT(*) FROM partidas WHERE evento_id = eventos.id AND etiqueta != 'Juegos de Mesa') as mesas_rol_actuales,
+        (SELECT COUNT(*) FROM partidas WHERE evento_id = eventos.id AND etiqueta = 'Juegos de Mesa') as mesas_juegos_actuales,
+        (SELECT COUNT(*) FROM escape_rooms WHERE evento_id = eventos.id) as salas_escape_actuales
       FROM eventos 
       ORDER BY fecha DESC
     `;
@@ -60,15 +64,18 @@ router.post('/', verificarToken, (req, res) => {
     hora_inicio = '16:00', 
     hora_fin = '20:00',
     lugar = 'Centro Cultural El Molino',
-    ciudad = 'Santa Rosa'
+    ciudad = 'Santa Rosa',
+    cupo_rol = null,
+    cupo_juegos_mesa = null,
+    cupo_escape_room = null
   } = req.body;
   
   // Limpiamos la fecha por si viene con barras / la pasamos a guiones -
   const fechaLimpia = fecha.replace(/\//g, '-');
 
-  const sqlInsert = 'INSERT INTO eventos (nombre, descripcion, fecha, hora_inicio, hora_fin, estado, lugar, ciudad) VALUES (?, ?, ?, ?, ?, ?, ?, ?)';
+  const sqlInsert = 'INSERT INTO eventos (nombre, descripcion, fecha, hora_inicio, hora_fin, estado, lugar, ciudad, cupo_rol, cupo_juegos_mesa, cupo_escape_room) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)';
   
-  db.query(sqlInsert, [nombre, descripcion, fechaLimpia, hora_inicio, hora_fin, 'Proximo', lugar, ciudad], (err) => {
+  db.query(sqlInsert, [nombre, descripcion, fechaLimpia, hora_inicio, hora_fin, 'Proximo', lugar, ciudad, cupo_rol || null, cupo_juegos_mesa || null, cupo_escape_room || null], (err) => {
     if (err) {
       console.error(err);
       return res.status(500).json({ error: 'Error al convocar el evento.' });
@@ -181,17 +188,21 @@ router.post('/:id/partidas', verificarToken, (req, res) => {
       DATE_FORMAT(e.fecha, '%Y-%m-%d') as evento_fecha,
       e.hora_inicio,
       e.nombre as nombre_evento,
+      e.cupo_rol,
+      e.cupo_juegos_mesa,
+      (SELECT COUNT(*) FROM partidas WHERE evento_id = ? AND etiqueta != 'Juegos de Mesa') as total_mesas_rol,
+      (SELECT COUNT(*) FROM partidas WHERE evento_id = ? AND etiqueta = 'Juegos de Mesa') as total_mesas_juegos,
       (SELECT COUNT(*) FROM partidas WHERE evento_id = ? AND dungeon_master_id = ?) as es_creador,
       (SELECT COUNT(*) FROM inscripciones i JOIN partidas p ON i.partida_id = p.id WHERE p.evento_id = ? AND i.usuario_id = ?) as es_jugador,
       (SELECT COUNT(*) FROM escape_inscripciones ei JOIN escape_turnos et ON ei.escape_turno_id = et.id JOIN escape_rooms er ON et.escape_room_id = er.id WHERE er.evento_id = ? AND ei.usuario_id = ?) as es_escape
     FROM eventos e WHERE e.id = ?
   `;
   
-  db.query(sqlCheck, [eventoId, usuarioId, eventoId, usuarioId, eventoId, usuarioId, eventoId], (err, resultados) => {
+  db.query(sqlCheck, [eventoId, eventoId, eventoId, usuarioId, eventoId, usuarioId, eventoId, usuarioId, eventoId], (err, resultados) => {
     if (err) return res.status(500).json({ error: 'Error al consultar los registros del gremio.' });
     if (resultados.length === 0) return res.status(404).json({ error: 'El evento no existe.' });
     
-    const { evento_fecha, hora_inicio, nombre_evento, es_creador, es_jugador, es_escape } = resultados[0];
+    const { evento_fecha, hora_inicio, nombre_evento, es_creador, es_jugador, es_escape, cupo_rol, cupo_juegos_mesa, total_mesas_rol, total_mesas_juegos } = resultados[0];
 
     const ahoraMs = Date.now();
     // Parseamos la fecha del evento junto a su hora de inicio (Asumiendo zona horaria de Argentina UTC-3)
@@ -209,6 +220,15 @@ router.post('/:id/partidas', verificarToken, (req, res) => {
       return res.status(400).json({ 
         error: 'No puedes organizar esta mesa porque ya tienes otro compromiso (como jugador, creador o en un Escape Room) en este evento.' 
       });
+    }
+
+    // ✨ VALIDACIÓN DE CUPOS DEL EVENTO ✨
+    if (etiqueta === 'Juegos de Mesa' && cupo_juegos_mesa !== null && total_mesas_juegos >= cupo_juegos_mesa) {
+      return res.status(400).json({ error: 'El cupo de Juegos de Mesa para este evento está lleno.' });
+    }
+
+    if (etiqueta !== 'Juegos de Mesa' && cupo_rol !== null && total_mesas_rol >= cupo_rol) {
+      return res.status(400).json({ error: 'El cupo de Mesas de Rol para este evento está lleno.' });
     }
 
     // Añadimos el codigo_privado a la inserción
@@ -307,17 +327,17 @@ router.put('/:id', verificarToken, (req, res) => {
   if (req.usuario.rol !== 'admin') return res.status(403).json({ error: 'Solo los líderes del gremio pueden alterar la historia.' });
 
   const eventoId = req.params.id;
-  let { nombre, descripcion, fecha, hora_inicio, hora_fin, estado, lugar, ciudad } = req.body;
+  let { nombre, descripcion, fecha, hora_inicio, hora_fin, estado, lugar, ciudad, cupo_rol, cupo_juegos_mesa, cupo_escape_room } = req.body;
 
   const fechaLimpia = fecha.replace(/\//g, '-');
 
   const sqlUpdate = `
     UPDATE eventos 
-    SET nombre = ?, descripcion = ?, fecha = ?, hora_inicio = ?, hora_fin = ?, estado = ?, lugar = ?, ciudad = ?
+    SET nombre = ?, descripcion = ?, fecha = ?, hora_inicio = ?, hora_fin = ?, estado = ?, lugar = ?, ciudad = ?, cupo_rol = ?, cupo_juegos_mesa = ?, cupo_escape_room = ?
     WHERE id = ?
   `;
 
-  db.query(sqlUpdate, [nombre, descripcion, fechaLimpia, hora_inicio, hora_fin, estado, lugar, ciudad, eventoId], (err) => {
+  db.query(sqlUpdate, [nombre, descripcion, fechaLimpia, hora_inicio, hora_fin, estado, lugar, ciudad, cupo_rol || null, cupo_juegos_mesa || null, cupo_escape_room || null, eventoId], (err) => {
     if (err) {
       console.error(err);
       return res.status(500).json({ error: 'Error al modificar los registros del evento.' });

@@ -92,11 +92,27 @@ router.post('/:eventoId', verificarToken, (req, res) => {
     return res.status(400).json({ error: 'Debes habilitar al menos un horario para la sala.' });
   }
 
-  const sqlInsertRoom = `
-    INSERT INTO escape_rooms 
-    (evento_id, organizador_id, titulo, descripcion, dificultad, edad_minima, cupo_por_turno, materiales_pedidos) 
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+  const sqlCheckCupo = `
+    SELECT 
+      cupo_escape_room,
+      (SELECT COUNT(*) FROM escape_rooms WHERE evento_id = ?) as total_escapes
+    FROM eventos WHERE id = ?
   `;
+
+  db.query(sqlCheckCupo, [eventoId, eventoId], (err, resultados) => {
+    if (err) return res.status(500).json({ error: 'Error verificando cupos.' });
+    if (resultados.length === 0) return res.status(404).json({ error: 'El evento no existe.' });
+
+    const { cupo_escape_room, total_escapes } = resultados[0];
+    if (cupo_escape_room !== null && total_escapes >= cupo_escape_room) {
+      return res.status(400).json({ error: 'El cupo de Escape Rooms para este evento está lleno.' });
+    }
+
+    const sqlInsertRoom = `
+      INSERT INTO escape_rooms 
+      (evento_id, organizador_id, titulo, descripcion, dificultad, edad_minima, cupo_por_turno, materiales_pedidos) 
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+    `;
 
   db.query(sqlInsertRoom, [eventoId, organizadorId, titulo, descripcion, dificultad, edad_minima, cupo_por_turno, materiales_pedidos], (err, result) => {
     if (err) return res.status(500).json({ error: 'Error al construir la sala.' });
@@ -131,6 +147,7 @@ router.post('/:eventoId', verificarToken, (req, res) => {
 
       res.status(201).json({ mensaje: '¡Escape Room habilitado con éxito!' });
     });
+  });
   });
 });
 

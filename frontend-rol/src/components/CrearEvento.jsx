@@ -14,6 +14,11 @@ function CrearEvento({ alCrearEvento }) {
   const [lugar, setLugar] = useState('Centro Cultural El Molino');
   const [ciudad, setCiudad] = useState('Santa Rosa');
 
+  // ✨ NUEVOS ESTADOS PARA CUPOS LOGÍSTICOS
+  const [cupoRol, setCupoRol] = useState('');
+  const [cupoJuegos, setCupoJuegos] = useState('');
+  const [cupoEscape, setCupoEscape] = useState('');
+
   const manejarCreacion = async (e) => {
     e.preventDefault();
     
@@ -25,7 +30,10 @@ function CrearEvento({ alCrearEvento }) {
       hora_inicio: horaInicio, 
       hora_fin: horaFin,
       lugar,
-      ciudad
+      ciudad,
+      cupo_rol: cupoRol ? parseInt(cupoRol) : null,
+      cupo_juegos_mesa: cupoJuegos ? parseInt(cupoJuegos) : null,
+      cupo_escape_room: cupoEscape ? parseInt(cupoEscape) : null
     };
 
     try {
@@ -52,6 +60,7 @@ function CrearEvento({ alCrearEvento }) {
         setNombre(''); setDescripcion(''); setFecha(''); 
         setHoraInicio('16:00'); setHoraFin('20:00');
         setLugar('Centro Cultural El Molino'); setCiudad('Santa Rosa');
+        setCupoRol(''); setCupoJuegos(''); setCupoEscape('');
         
         alCrearEvento(); 
 
@@ -217,6 +226,28 @@ function CrearEvento({ alCrearEvento }) {
                   required 
                   className="w-full bg-zinc-900/50 border border-zinc-800 rounded-2xl py-4 px-6 text-white focus:border-purple-500 focus:ring-1 focus:ring-purple-500/50 outline-none transition-all [color-scheme:dark] font-bold"
                 />
+              </div>
+            </div>
+
+            {/* CAMPOS: CUPOS LOGÍSTICOS */}
+            <div className="bg-zinc-900/30 p-6 rounded-[2rem] border border-zinc-800/50 shadow-inner">
+              <h4 className="text-[11px] font-black text-zinc-400 uppercase tracking-widest mb-4 flex items-center gap-2">
+                <span className="w-1.5 h-1.5 bg-yellow-500 rounded-full"></span>
+                Cupos Logísticos (Vacío = Sin Límite)
+              </h4>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="space-y-2">
+                  <label className="text-[10px] font-black text-zinc-500 uppercase ml-1 tracking-widest flex items-center gap-1"><span className="text-sm">🛡️</span> Mesas de Rol</label>
+                  <input type="number" min="1" placeholder="Ej: 10" value={cupoRol} onChange={e => setCupoRol(e.target.value)} className="w-full bg-zinc-900/80 border border-zinc-800 rounded-xl py-3 px-4 text-white text-sm focus:border-yellow-500 focus:ring-1 focus:ring-yellow-500/50 outline-none transition-all font-bold" />
+                </div>
+                <div className="space-y-2">
+                  <label className="text-[10px] font-black text-zinc-500 uppercase ml-1 tracking-widest flex items-center gap-1"><span className="text-sm">👑</span> Juegos de Mesa</label>
+                  <input type="number" min="1" placeholder="Ej: 5" value={cupoJuegos} onChange={e => setCupoJuegos(e.target.value)} className="w-full bg-zinc-900/80 border border-zinc-800 rounded-xl py-3 px-4 text-white text-sm focus:border-yellow-500 focus:ring-1 focus:ring-yellow-500/50 outline-none transition-all font-bold" />
+                </div>
+                <div className="space-y-2">
+                  <label className="text-[10px] font-black text-zinc-500 uppercase ml-1 tracking-widest flex items-center gap-1"><span className="text-sm">🗝️</span> Escape Rooms</label>
+                  <input type="number" min="1" placeholder="Ej: 2" value={cupoEscape} onChange={e => setCupoEscape(e.target.value)} className="w-full bg-zinc-900/80 border border-zinc-800 rounded-xl py-3 px-4 text-white text-sm focus:border-yellow-500 focus:ring-1 focus:ring-yellow-500/50 outline-none transition-all font-bold" />
+                </div>
               </div>
             </div>
 
