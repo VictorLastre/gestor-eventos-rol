@@ -105,8 +105,8 @@ function PerfilPublico({ usuarioId, volver }) {
       {/* HISTORIAL */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 md:gap-8">
         
-        {/* LIDERANDO MESAS (Solo DMs) */}
-        {perfil.rol === 'dm' && (
+        {/* LIDERANDO MESAS (Solo DMs y Admins) */}
+        {(perfil.rol === 'dm' || perfil.rol === 'admin') && (
           <div className="bg-zinc-900/40 border border-zinc-800/80 p-6 md:p-8 rounded-[2rem]">
             <h3 className="text-amber-500 font-black uppercase tracking-widest text-sm md:text-base mb-6 flex items-center gap-3">
               🛡️ Expediciones Lideradas ({perfil.dirigiendo.length})
@@ -132,14 +132,14 @@ function PerfilPublico({ usuarioId, volver }) {
         )}
 
         {/* JUGANDO MESAS */}
-        <div className={`bg-zinc-900/40 border border-zinc-800/80 p-6 md:p-8 rounded-[2rem] ${perfil.rol !== 'dm' ? 'lg:col-span-2 max-w-2xl mx-auto w-full' : ''}`}>
+        <div className={`bg-zinc-900/40 border border-zinc-800/80 p-6 md:p-8 rounded-[2rem] ${perfil.rol === 'aventurero' ? 'lg:col-span-2 max-w-2xl mx-auto w-full' : ''}`}>
           <h3 className="text-emerald-500 font-black uppercase tracking-widest text-sm md:text-base mb-6 flex items-center gap-3">
             ⚔️ Aventuras Jugadas ({perfil.jugando.length})
           </h3>
           {perfil.jugando.length === 0 ? (
             <p className="text-zinc-500 text-xs italic font-bold text-center py-8">Aún no se ha unido a ninguna aventura.</p>
           ) : (
-            <div className={`space-y-4 max-h-[500px] overflow-y-auto scrollbar-hide pr-2 ${perfil.rol !== 'dm' ? 'grid grid-cols-1 sm:grid-cols-2 gap-4 space-y-0' : ''}`}>
+            <div className={`space-y-4 max-h-[500px] overflow-y-auto scrollbar-hide pr-2 ${perfil.rol === 'aventurero' ? 'grid grid-cols-1 sm:grid-cols-2 gap-4 space-y-0' : ''}`}>
               {perfil.jugando.map(p => (
                 <div key={p.id} className="bg-zinc-950/80 p-4 rounded-2xl border border-zinc-800 flex flex-col justify-between items-start gap-2 hover:border-emerald-500/50 transition-colors group">
                   <div className="w-full">

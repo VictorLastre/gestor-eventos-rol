@@ -395,7 +395,6 @@ function Eventos({ setVista }) {
                         setVista={setVista} 
                         esMiMesa={usuarioGuardado?.id === p.dungeon_master_id} 
                         inscripcionesCerradas={inscripcionesCerradas} 
-                        setVista={setVista}
                       />
                     </div>
                   ))}
@@ -554,7 +553,6 @@ function Eventos({ setVista }) {
                         setVista={setVista} 
                         esMiMesa={usuarioGuardado?.id === p.dungeon_master_id} 
                         inscripcionesCerradas={inscripcionesCerradas} 
-                        setVista={setVista}
                       />
                     </div>
                   ))}
