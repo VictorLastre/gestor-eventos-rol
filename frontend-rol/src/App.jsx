@@ -6,7 +6,9 @@ import Eventos from './components/Eventos';
 import MisCronicas from './components/MisCronicas';
 import Navbar from './components/Navbar'; 
 import PanelAdmin from './components/PanelAdmin'; 
-import PerfilPublico from './components/PerfilPublico'; // ✨ IMPORTAMOS PERFIL PÚBLICO
+import PerfilPublico from './components/PerfilPublico'; 
+import BuzonAdmin from './components/BuzonAdmin';
+import BuzonFlotante from './components/BuzonFlotante';
 import './App.css';
 
 function App() {
@@ -75,6 +77,7 @@ function App() {
             </p>
           </div>
         )}
+        <BuzonFlotante />
       </div>
     );
   }
@@ -99,7 +102,9 @@ function App() {
             volver={() => setVistaActual('eventos')} 
           />
         )}
+        {vistaActual === 'buzon' && <BuzonAdmin usuarioLogueado={usuarioLogueado} />}
       </main>
+      <BuzonFlotante />
     </div>
   );
 }

@@ -60,6 +60,7 @@ const usuariosRoutes = require('./routes/usuariosRoutes');
 const sistemasRoutes = require('./routes/sistemasRoutes'); 
 const escapeRoutes = require('./routes/escapeRoutes'); 
 const telegramRoutes = require('./routes/telegramRoutes');
+const buzonRoutes = require('./routes/buzonRoutes');
 
 // ✨ RUTAS DEL BACKEND ✨
 app.use('/api', authRoutes); 
@@ -69,6 +70,7 @@ app.use('/api/usuarios', usuariosRoutes);
 app.use('/api/sistemas', sistemasRoutes);
 app.use('/api/escapes', escapeRoutes);
 app.use('/api/telegram', telegramRoutes);
+app.use('/api/buzon', buzonRoutes);
 
 // ✨ SERVIR EL FRONTEND DE VITE ✨
 // Le decimos a Express que busque los archivos visuales en tu carpeta 'public'

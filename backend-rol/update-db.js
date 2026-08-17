@@ -13,16 +13,21 @@ async function updateDB() {
 
     console.log('Conectado a la base de datos.');
 
-    await connection.execute(`ALTER TABLE usuarios ADD COLUMN biografia TEXT`);
-    console.log('Columna biografia añadida con éxito.');
+    const createTableQuery = `
+      CREATE TABLE IF NOT EXISTS buzon_sugerencias (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        tipo VARCHAR(50) NOT NULL,
+        mensaje TEXT NOT NULL,
+        leido BOOLEAN DEFAULT FALSE,
+        fecha TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      )
+    `;
+    await connection.execute(createTableQuery);
+    console.log('Tabla buzon_sugerencias creada o ya existente.');
 
     await connection.end();
   } catch (error) {
-    if (error.code === 'ER_DUP_FIELDNAME') {
-      console.log('La columna biografia ya existe.');
-    } else {
-      console.error('Error al actualizar BD:', error);
-    }
+    console.error('Error al actualizar BD:', error);
   }
 }
 

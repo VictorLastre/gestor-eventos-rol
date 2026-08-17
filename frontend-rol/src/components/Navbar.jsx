@@ -10,6 +10,7 @@ import AvatarUsuario from '../components/AvatarUsuario';
 function Navbar({ usuario, alCerrarSesion, setVista }) {
   const [notificaciones, setNotificaciones] = useState([]);
   const [mostrarCampana, setMostrarCampana] = useState(false);
+  const [noLeidosBuzon, setNoLeidosBuzon] = useState(0);
   const dropdownRef = useRef(null); 
 
   const esAdmin = usuario?.rol === 'admin';
@@ -27,8 +28,24 @@ function Navbar({ usuario, alCerrarSesion, setVista }) {
     }
   };
 
+  const cargarBuzon = () => {
+    if (esAdmin) {
+      fetchProtegido('/api/buzon')
+        .then(res => res.json())
+        .then(data => {
+          if (Array.isArray(data)) {
+            setNoLeidosBuzon(data.filter(m => !m.leido).length);
+          }
+        })
+        .catch(err => {
+          if (err !== 'Sesión expirada') console.error('Error con el buzón:', err);
+        });
+    }
+  };
+
   useEffect(() => {
     cargarNotificaciones();
+    cargarBuzon();
 
     const socket = io('/', { path: '/api/socket.io' });
 
@@ -38,6 +55,14 @@ function Navbar({ usuario, alCerrarSesion, setVista }) {
     
     socket.on('actualizacion-mesas', () => {
       cargarNotificaciones();
+    });
+
+    socket.on('nuevo-mensaje-buzon', () => {
+      cargarBuzon();
+    });
+    
+    socket.on('actualizacion-buzon', () => {
+      cargarBuzon();
     });
 
     return () => {
@@ -226,12 +251,25 @@ function Navbar({ usuario, alCerrarSesion, setVista }) {
               <span className="text-base md:text-lg">📖</span> Mi Diario
             </button>
             {esAdmin && (
-              <button 
-                onClick={() => setVista('admin')}
-                className="text-[10px] md:text-xs font-black uppercase tracking-widest text-purple-400 hover:text-white transition-all py-2.5 md:py-3 px-4 md:px-6 rounded-lg md:rounded-xl bg-purple-500/10 border border-purple-500/20 hover:bg-purple-600 focus:outline-none flex items-center gap-1.5 md:gap-2 whitespace-nowrap"
-              >
-                <span className="text-base md:text-lg">👑</span> Mando
-              </button>
+              <>
+                <button 
+                  onClick={() => setVista('admin')}
+                  className="text-[10px] md:text-xs font-black uppercase tracking-widest text-purple-400 hover:text-white transition-all py-2.5 md:py-3 px-4 md:px-6 rounded-lg md:rounded-xl bg-purple-500/10 border border-purple-500/20 hover:bg-purple-600 focus:outline-none flex items-center gap-1.5 md:gap-2 whitespace-nowrap"
+                >
+                  <span className="text-base md:text-lg">👑</span> Mando
+                </button>
+                <button 
+                  onClick={() => setVista('buzon')}
+                  className="relative text-[10px] md:text-xs font-black uppercase tracking-widest text-indigo-400 hover:text-white transition-all py-2.5 md:py-3 px-4 md:px-6 rounded-lg md:rounded-xl bg-indigo-500/10 border border-indigo-500/20 hover:bg-indigo-600 focus:outline-none flex items-center gap-1.5 md:gap-2 whitespace-nowrap"
+                >
+                  <span className="text-base md:text-lg">📬</span> Buzón
+                  {noLeidosBuzon > 0 && (
+                    <span className="absolute -top-1.5 -right-1.5 w-5 h-5 bg-red-500 text-white text-[10px] flex items-center justify-center rounded-full shadow-[0_0_10px_rgba(239,68,68,0.8)] border-2 border-zinc-950 animate-pulse font-bold">
+                      {noLeidosBuzon}
+                    </span>
+                  )}
+                </button>
+              </>
             )}
           </div>
         </div>
