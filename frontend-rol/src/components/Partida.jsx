@@ -388,7 +388,7 @@ function Partida(props) {
                 <p className="text-xs sm:text-sm text-zinc-200 font-bold truncate group-hover:text-emerald-400 transition-colors">{props.dmNombre || props.dungeon_master_nombre || 'Desconocido'}</p>
                 {!esJuegoMesa && props.dm_honor !== undefined && (
                   <span title={`Honor: ${props.dm_honor}`} className={`text-[10px] font-black uppercase tracking-widest ${obtenerRangoDM(props.dm_honor).colorClase}`}>
-                    {obtenerRangoDM(props.dm_honor).icono}
+                    {obtenerRangoDM(props.dm_honor).nombre}
                   </span>
                 )}
               </div>
@@ -673,7 +673,7 @@ function Partida(props) {
                         <p className="text-xl text-zinc-200 font-black truncate">{props.dmNombre || props.dungeon_master_nombre}</p>
                         {!esJuegoMesa && props.dm_honor !== undefined && (
                           <span className={`text-[10px] font-black uppercase tracking-widest px-2 py-1 rounded-md bg-black/30 border border-zinc-800 shadow-inner ${obtenerRangoDM(props.dm_honor).colorClase}`}>
-                            {obtenerRangoDM(props.dm_honor).icono} Rango {obtenerRangoDM(props.dm_honor).nombre} ({props.dm_honor})
+                            Rango {obtenerRangoDM(props.dm_honor).nombre} ({props.dm_honor})
                           </span>
                         )}
                     </div>

@@ -141,7 +141,7 @@ router.get('/:id/partidas', verificarToken, (req, res) => {
         JOIN eventos eh ON ph.evento_id = eh.id 
         WHERE ph.dungeon_master_id = p.dungeon_master_id AND eh.estado = 'Finalizado'
       )) AS dm_nivel,
-      ((SELECT COUNT(*) FROM honor_dm WHERE dm_id = p.dungeon_master_id) + ((SELECT COUNT(*) FROM partidas WHERE dungeon_master_id = p.dungeon_master_id) * 5)) AS dm_honor
+      ((SELECT COUNT(*) FROM honor_dm WHERE dm_id = p.dungeon_master_id) + ((SELECT COUNT(p2.id) FROM partidas p2 JOIN eventos e2 ON p2.evento_id = e2.id WHERE p2.dungeon_master_id = p.dungeon_master_id AND e2.estado = 'Finalizado') * 5)) AS dm_honor
     FROM partidas p 
     JOIN usuarios u ON p.dungeon_master_id = u.id
     LEFT JOIN sistemas s ON p.sistema_id = s.id 

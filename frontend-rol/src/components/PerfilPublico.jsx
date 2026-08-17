@@ -41,7 +41,7 @@ function PerfilPublico({ usuarioId, volver }) {
     </div>
   );
 
-  const rango = perfil.rol === 'dm' ? obtenerRangoDM(perfil.honor_total) : null;
+  const rango = (perfil.rol === 'dm' || perfil.rol === 'admin') ? obtenerRangoDM(perfil.honor_total) : null;
   const fundadores = ['mati', 'martín', 'martin', 'delo', 'keith', 'guille', 'diny', 'sterbern'];
   const esFundador = perfil.nombre ? fundadores.includes(perfil.nombre.toLowerCase()) : false;
 
@@ -78,14 +78,19 @@ function PerfilPublico({ usuarioId, volver }) {
                 </p>
                 
                 {perfil.rol === 'admin' ? (
-                  <p className="text-emerald-500 font-black text-[10px] md:text-xs uppercase tracking-[0.4em] mb-2 w-full truncate mt-2">👑 Administrador</p>
+                  <span className="flex items-center gap-2 text-emerald-400 font-black tracking-[0.2em] text-xs mt-2">
+                    <span className="text-sm">👑</span> ADMINISTRADOR
+                    {rango && <><span className="text-zinc-600 font-normal ml-1">•</span> <span className={`ml-1 flex items-center gap-1.5 px-2 py-0.5 rounded border border-zinc-800 bg-black/40 ${rango.colorClase}`}>NVL. {rango.nivel} - {rango.nombre.toUpperCase()}</span></>}
+                  </span>
                 ) : perfil.rol === 'dm' ? (
                   <div className="flex flex-wrap items-center justify-center md:justify-start gap-2 mb-2 w-full mt-2">
                     <span className="text-emerald-500 font-black text-[10px] md:text-xs uppercase tracking-[0.4em]">🛡️ Dungeon Master</span>
-                    <span className="w-1 h-1 bg-zinc-700 rounded-full hidden sm:block"></span>
-                    <span className={`text-[10px] font-black uppercase tracking-widest bg-black/30 px-2 py-1 rounded-md border border-zinc-800 ${rango?.colorClase}`}>
-                      {rango?.icono} Nvl. {rango?.nivel} - {rango?.nombre}
-                    </span>
+                    {rango && (
+                      <>
+                        <span className="text-zinc-600 font-normal hidden md:inline">•</span>
+                        <span className={`flex items-center gap-1.5 px-2 py-0.5 rounded border border-zinc-800 bg-black/40 ${rango.colorClase}`}>NVL. {rango.nivel} - {rango.nombre.toUpperCase()}</span>
+                      </>
+                    )}
                   </div>
                 ) : (
                   <p className="text-zinc-500 font-black text-[10px] md:text-xs uppercase tracking-[0.4em] mb-2 w-full truncate mt-2">⚔️ Aventurero</p>
