@@ -387,8 +387,8 @@ function Partida(props) {
               <div className="flex flex-wrap items-center gap-1 sm:gap-1.5 min-w-0">
                 <p className="text-xs sm:text-sm text-zinc-200 font-bold truncate group-hover:text-emerald-400 transition-colors">{props.dmNombre || props.dungeon_master_nombre || 'Desconocido'}</p>
                 {!esJuegoMesa && props.dm_honor !== undefined && (
-                  <span title={`Honor: ${props.dm_honor}`} className={`text-[10px] font-black uppercase tracking-widest ${obtenerRangoDM(props.dm_honor).colorClase}`}>
-                    {obtenerRangoDM(props.dm_honor).nombre}
+                  <span title={`Honor: ${props.dm_honor}`} className={`flex items-center gap-1.5 text-[10px] font-black uppercase tracking-widest ${obtenerRangoDM(props.dm_honor).colorClase}`}>
+                    {obtenerRangoDM(props.dm_honor).icono} {obtenerRangoDM(props.dm_honor).nombre}
                   </span>
                 )}
               </div>
@@ -672,8 +672,8 @@ function Partida(props) {
                     <div className="flex items-center gap-2 flex-wrap min-w-0">
                         <p className="text-xl text-zinc-200 font-black truncate">{props.dmNombre || props.dungeon_master_nombre}</p>
                         {!esJuegoMesa && props.dm_honor !== undefined && (
-                          <span className={`text-[10px] font-black uppercase tracking-widest px-2 py-1 rounded-md bg-black/30 border border-zinc-800 shadow-inner ${obtenerRangoDM(props.dm_honor).colorClase}`}>
-                            Rango {obtenerRangoDM(props.dm_honor).nombre} ({props.dm_honor})
+                          <span className={`flex items-center gap-1.5 text-[10px] font-black uppercase tracking-widest px-2 py-1 rounded-md bg-black/30 border border-zinc-800 shadow-inner ${obtenerRangoDM(props.dm_honor).colorClase}`}>
+                            {obtenerRangoDM(props.dm_honor).icono} Rango {obtenerRangoDM(props.dm_honor).nombre} ({props.dm_honor})
                           </span>
                         )}
                     </div>
