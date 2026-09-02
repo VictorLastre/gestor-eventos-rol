@@ -1,11 +1,12 @@
-import { useState, useEffect } from 'react';
+﻿import { useState, useEffect } from 'react';
 import Swal from 'sweetalert2'; 
 import { fetchProtegido } from '../utils/api'; 
 import { io } from 'socket.io-client';
 import Avatar from 'boring-avatars';
 import { obtenerRangoDM } from '../utils/rangoHonor';
-// ✨ Importamos el componente de la solicitud de DM
+// Ã¢Å“Â¨ Importamos el componente de la solicitud de DM
 import SolicitudDM from './SolicitudDM';
+import EvaluarMesaModal from './EvaluarMesaModal';
 
 function MisCronicas({ alActualizarUsuario }) { 
   const [cronicas, setCronicas] = useState({ dirigiendo: [], jugando: [] });
@@ -18,8 +19,9 @@ function MisCronicas({ alActualizarUsuario }) {
   const [peticionEnviada, setPeticionEnviada] = useState(usuarioGuardado?.solicitudDmPendiente || false);
   const esJugadorBase = usuarioGuardado?.rol === 'jugador';
   
-  // ✨ Estado para mostrar el modal de Solicitud de DM
+  // Ã¢Å“Â¨ Estado para mostrar el modal de Solicitud de DM
   const [mostrarSolicitudDM, setMostrarSolicitudDM] = useState(false);
+  const [partidaEvaluar, setPartidaEvaluar] = useState(null);
   
   const [perfil, setPerfil] = useState({ 
     nombre: usuarioGuardado?.nombre || '', 
@@ -28,7 +30,7 @@ function MisCronicas({ alActualizarUsuario }) {
     avatar: usuarioGuardado?.avatar || 'guerrero',
     telegram_chat_id: usuarioGuardado?.telegram_chat_id || '',
     biografia: usuarioGuardado?.biografia || '',
-    password: '' // ✨ AGREGADO: Campo para la nueva contraseña
+    password: '' // Ã¢Å“Â¨ AGREGADO: Campo para la nueva contraseÃƒÂ±a
   });
 
   const cargarCronicas = async () => {
@@ -44,27 +46,27 @@ function MisCronicas({ alActualizarUsuario }) {
       setHonoresOtorgados(datosHonor);
       setCargando(false);
     } catch (err) {
-      if (err === 'Sesión expirada') return;
-      console.error("Error cargando crónicas:", err);
+      if (err === 'SesiÃƒÂ³n expirada') return;
+      console.error("Error cargando crÃƒÂ³nicas:", err);
     }
   };
 
   const darHonor = async (dmId, partidaId, dmNombre) => {
     const { value: mensaje, isConfirmed } = await Swal.fire({
-      title: `¡Otorgar Honor! 🏆`,
-      html: `¿Qué deseas destacar de <b>${dmNombre}</b>? <br><small class="text-zinc-400">El Master recibirá 1 Punto de Honor por esta aventura.</small>`,
+      title: `Ã‚Â¡Otorgar Honor! Ã°Å¸Ââ€ `,
+      html: `Ã‚Â¿QuÃƒÂ© deseas destacar de <b>${dmNombre}</b>? <br><small class="text-zinc-400">El Master recibirÃƒÂ¡ 1 Punto de Honor por esta aventura.</small>`,
       input: 'select',
       inputOptions: {
-        '¡Mundo asombroso! La inmersión fue total y épica.': '🌍 ¡Mundo asombroso! La inmersión fue total y épica.',
-        'Un director brillante. Las reglas fueron justas y divertidas.': '📜 Un director brillante. Las reglas fueron justas y divertidas.',
-        '¡Qué giros en la trama! Me mantuvo al borde del asiento.': '🎭 ¡Qué giros en la trama! Me mantuvo al borde del asiento.',
-        'Interpretación magistral de los NPCs. ¡Me creí todo!': '🗣️ Interpretación magistral de los NPCs. ¡Me creí todo!',
-        'Excelente ritmo de partida. Ni muy lento, ni muy rápido.': '⏳ Excelente ritmo de partida. Ni muy lento, ni muy rápido.',
-        'Combates épicos y desafiantes, sudé cada tirada de dados.': '⚔️ Combates épicos y desafiantes, sudé cada tirada.',
-        'Creaste un espacio súper seguro y cómodo para rolear.': '🛡️ Creaste un espacio súper seguro y cómodo para rolear.',
-        'Impresionante creatividad con los puzzles y misterios.': '🧩 Impresionante creatividad con los puzzles y misterios.',
-        '¡La banda sonora y la ambientación fueron de otro nivel!': '🎶 ¡La banda sonora y la ambientación fueron de otro nivel!',
-        'Mucha paciencia y dedicación, genial para jugadores nuevos.': '🎓 Mucha paciencia y dedicación, genial para jugadores.'
+        'Ã‚Â¡Mundo asombroso! La inmersiÃƒÂ³n fue total y ÃƒÂ©pica.': 'Ã°Å¸Å’Â Ã‚Â¡Mundo asombroso! La inmersiÃƒÂ³n fue total y ÃƒÂ©pica.',
+        'Un director brillante. Las reglas fueron justas y divertidas.': 'Ã°Å¸â€œÅ“ Un director brillante. Las reglas fueron justas y divertidas.',
+        'Ã‚Â¡QuÃƒÂ© giros en la trama! Me mantuvo al borde del asiento.': 'Ã°Å¸Å½Â­ Ã‚Â¡QuÃƒÂ© giros en la trama! Me mantuvo al borde del asiento.',
+        'InterpretaciÃƒÂ³n magistral de los NPCs. Ã‚Â¡Me creÃƒÂ­ todo!': 'Ã°Å¸â€”Â£Ã¯Â¸Â InterpretaciÃƒÂ³n magistral de los NPCs. Ã‚Â¡Me creÃƒÂ­ todo!',
+        'Excelente ritmo de partida. Ni muy lento, ni muy rÃƒÂ¡pido.': 'Ã¢ÂÂ³ Excelente ritmo de partida. Ni muy lento, ni muy rÃƒÂ¡pido.',
+        'Combates ÃƒÂ©picos y desafiantes, sudÃƒÂ© cada tirada de dados.': 'Ã¢Å¡â€Ã¯Â¸Â Combates ÃƒÂ©picos y desafiantes, sudÃƒÂ© cada tirada.',
+        'Creaste un espacio sÃƒÂºper seguro y cÃƒÂ³modo para rolear.': 'Ã°Å¸â€ºÂ¡Ã¯Â¸Â Creaste un espacio sÃƒÂºper seguro y cÃƒÂ³modo para rolear.',
+        'Impresionante creatividad con los puzzles y misterios.': 'Ã°Å¸Â§Â© Impresionante creatividad con los puzzles y misterios.',
+        'Ã‚Â¡La banda sonora y la ambientaciÃƒÂ³n fueron de otro nivel!': 'Ã°Å¸Å½Â¶ Ã‚Â¡La banda sonora y la ambientaciÃƒÂ³n fueron de otro nivel!',
+        'Mucha paciencia y dedicaciÃƒÂ³n, genial para jugadores nuevos.': 'Ã°Å¸Å½â€œ Mucha paciencia y dedicaciÃƒÂ³n, genial para jugadores.'
       },
       inputPlaceholder: 'Selecciona un elogio',
       showCancelButton: true,
@@ -80,7 +82,7 @@ function MisCronicas({ alActualizarUsuario }) {
           body: JSON.stringify({ dm_id: dmId, partida_id: partidaId, mensaje })
         });
         if (res.ok) {
-          Swal.fire({ title: '¡Honor Otorgado!', icon: 'success', background: '#09090b', color: '#fff', confirmButtonColor: '#10b981', timer: 2000, showConfirmButton: false });
+          Swal.fire({ title: 'Ã‚Â¡Honor Otorgado!', icon: 'success', background: '#09090b', color: '#fff', confirmButtonColor: '#10b981', timer: 2000, showConfirmButton: false });
           setHonoresOtorgados([...honoresOtorgados, partidaId]);
         } else {
           const data = await res.json();
@@ -96,7 +98,7 @@ function MisCronicas({ alActualizarUsuario }) {
     fetchProtegido('/api/usuarios/yo') 
       .then(res => res.json())
       .then(datosUsuario => {
-         // Verificamos si cambió algo importante (rol, telegram, etc)
+         // Verificamos si cambiÃƒÂ³ algo importante (rol, telegram, etc)
          const cambioRol = datosUsuario.rol !== usuarioGuardado.rol;
          const cambioTelegram = datosUsuario.telegram_chat_id !== usuarioGuardado.telegram_chat_id;
          
@@ -110,8 +112,8 @@ function MisCronicas({ alActualizarUsuario }) {
             localStorage.setItem('usuario', JSON.stringify(nuevoUsuario));
             setUsuarioGuardado(nuevoUsuario);
             
-            // ✨ REPARACIÓN CLAVE: Actualizamos también el formulario 'perfil'
-            // para que no mande un valor vacío al grabar.
+            // Ã¢Å“Â¨ REPARACIÃƒâ€œN CLAVE: Actualizamos tambiÃƒÂ©n el formulario 'perfil'
+            // para que no mande un valor vacÃƒÂ­o al grabar.
             setPerfil(prev => ({
               ...prev,
               telegram_chat_id: datosUsuario.telegram_chat_id || ''
@@ -160,7 +162,7 @@ function MisCronicas({ alActualizarUsuario }) {
       if (res.ok) {
         const nuevoUsuario = { ...usuarioGuardado, ...perfil };
         
-        // ✨ SEGURIDAD: Borramos la contraseña antes de guardar en el navegador
+        // Ã¢Å“Â¨ SEGURIDAD: Borramos la contraseÃƒÂ±a antes de guardar en el navegador
         delete nuevoUsuario.password;
 
         localStorage.setItem('usuario', JSON.stringify(nuevoUsuario));
@@ -172,7 +174,7 @@ function MisCronicas({ alActualizarUsuario }) {
         setEditando(false);
         
         Swal.fire({
-          title: '¡Ficha Actualizada!',
+          title: 'Ã‚Â¡Ficha Actualizada!',
           text: 'Tus datos han sido grabados en los registros del gremio.',
           icon: 'success',
           background: '#09090b', 
@@ -181,17 +183,17 @@ function MisCronicas({ alActualizarUsuario }) {
         });
       }
     } catch (error) {
-      if (error === 'Sesión expirada') return;
+      if (error === 'SesiÃƒÂ³n expirada') return;
       console.error(error);
     }
   };
 
-  // ✨ Abrimos el modal con los términos y condiciones en lugar de enviar la petición directamente
+  // Ã¢Å“Â¨ Abrimos el modal con los tÃƒÂ©rminos y condiciones en lugar de enviar la peticiÃƒÂ³n directamente
   const enviarPeticionDM = () => {
     setMostrarSolicitudDM(true);
   };
 
-  // ✨ Procesa la petición a la API tras aceptar los términos y condiciones
+  // Ã¢Å“Â¨ Procesa la peticiÃƒÂ³n a la API tras aceptar los tÃƒÂ©rminos y condiciones
   const procesarPeticionDM = async () => {
     try {
       const res = await fetchProtegido('/api/usuarios/solicitar-dm', {
@@ -207,7 +209,7 @@ function MisCronicas({ alActualizarUsuario }) {
         setMostrarSolicitudDM(false);
       }
     } catch (e) { 
-      if (e !== 'Sesión expirada') console.error(e); 
+      if (e !== 'SesiÃƒÂ³n expirada') console.error(e); 
     }
   };
 
@@ -237,7 +239,7 @@ function MisCronicas({ alActualizarUsuario }) {
   return (
     <div className="max-w-5xl mx-auto p-4 md:p-8 animate-in fade-in duration-700">
       
-      {/* 📜 ENCABEZADO DE PERFIL */}
+      {/* Ã°Å¸â€œÅ“ ENCABEZADO DE PERFIL */}
       <section className="bg-zinc-900/50 backdrop-blur-xl border border-zinc-800 p-6 md:p-10 rounded-[2.5rem] shadow-2xl mb-12 relative overflow-hidden">
         <div className="absolute top-0 right-0 w-64 h-64 bg-emerald-500/5 blur-[100px] rounded-full pointer-events-none"></div>
         
@@ -254,8 +256,8 @@ function MisCronicas({ alActualizarUsuario }) {
                   />
               </div>
               <div>
-                <h4 className="text-white font-bold text-lg">Retrato Dinámico</h4>
-                <p className="text-zinc-400 text-sm mt-1">Tu avatar se forja mágicamente usando la energía de tu alias. <b>¡Cambia tu Alias abajo y verás cómo tu retrato se transforma en vivo!</b> 🎨✨</p>
+                <h4 className="text-white font-bold text-lg">Retrato DinÃƒÂ¡mico</h4>
+                <p className="text-zinc-400 text-sm mt-1">Tu avatar se forja mÃƒÂ¡gicamente usando la energÃƒÂ­a de tu alias. <b>Ã‚Â¡Cambia tu Alias abajo y verÃƒÂ¡s cÃƒÂ³mo tu retrato se transforma en vivo!</b> Ã°Å¸Å½Â¨Ã¢Å“Â¨</p>
               </div>
             </div>
             
@@ -265,7 +267,7 @@ function MisCronicas({ alActualizarUsuario }) {
                 <input name="nombre" className="w-full bg-zinc-950 border border-zinc-800 rounded-2xl py-3 px-4 md:py-4 md:px-6 text-white focus:border-emerald-500 outline-none transition-all font-bold" value={perfil.nombre} onChange={manejarCambioPerfil} />
               </div>
               <div className="space-y-2">
-                <label className="text-[10px] font-black text-zinc-500 uppercase tracking-widest ml-2">Mensajería (Email)</label>
+                <label className="text-[10px] font-black text-zinc-500 uppercase tracking-widest ml-2">MensajerÃƒÂ­a (Email)</label>
                 <input name="email" className="w-full bg-zinc-950 border border-zinc-800 rounded-2xl py-3 px-4 md:py-4 md:px-6 text-white focus:border-emerald-500 outline-none transition-all font-mono" value={perfil.email} onChange={manejarCambioPerfil} />
               </div>
             </div>
@@ -273,19 +275,19 @@ function MisCronicas({ alActualizarUsuario }) {
             <div className="space-y-2">
               <label className="text-[10px] font-black text-zinc-500 uppercase tracking-widest ml-2 flex items-center gap-2">
                 <span className="w-1.5 h-1.5 bg-amber-500 rounded-full animate-pulse"></span> 
-                Tu Historia (Biografía)
+                Tu Historia (BiografÃƒÂ­a)
               </label>
               <textarea 
                 name="biografia" 
                 rows="3"
-                placeholder="Cuenta al gremio quién eres, qué juegos diriges o qué tipo de aventuras buscas..." 
+                placeholder="Cuenta al gremio quiÃƒÂ©n eres, quÃƒÂ© juegos diriges o quÃƒÂ© tipo de aventuras buscas..." 
                 className="w-full bg-zinc-950 border border-zinc-800 rounded-2xl py-3 px-4 md:py-4 md:px-6 text-white focus:border-amber-500 outline-none transition-all font-bold resize-none" 
                 value={perfil.biografia} 
                 onChange={manejarCambioPerfil} 
               />
             </div>
 
-            {/* ✨ ZONA DE CONTRASEÑA Y TELEGRAM AGREGADOS AQUÍ */}
+            {/* Ã¢Å“Â¨ ZONA DE CONTRASEÃƒâ€˜A Y TELEGRAM AGREGADOS AQUÃƒÂ */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div className="space-y-2">
                 <label className="text-[10px] font-black text-zinc-500 uppercase tracking-widest ml-2 flex items-center gap-2">
@@ -294,7 +296,7 @@ function MisCronicas({ alActualizarUsuario }) {
                 </label>
                 <input 
                   name="nombre_completo" 
-                  placeholder="Ej: Bilbo Bolsón" 
+                  placeholder="Ej: Bilbo BolsÃƒÂ³n" 
                   className="w-full bg-zinc-950 border border-zinc-800 rounded-2xl py-3 px-4 md:py-4 md:px-6 text-white focus:border-emerald-500 outline-none transition-all font-bold" 
                   value={perfil.nombre_completo} 
                   onChange={manejarCambioPerfil} 
@@ -304,12 +306,12 @@ function MisCronicas({ alActualizarUsuario }) {
               <div className="space-y-2">
                 <label className="text-[10px] font-black text-zinc-500 uppercase tracking-widest ml-2 flex items-center gap-2">
                   <span className="w-1.5 h-1.5 bg-amber-500 rounded-full animate-pulse"></span> 
-                  Nueva Contraseña (Opcional)
+                  Nueva ContraseÃƒÂ±a (Opcional)
                 </label>
                 <input 
                   type="password"
                   name="password" 
-                  placeholder="Dejar vacío para no cambiarla" 
+                  placeholder="Dejar vacÃƒÂ­o para no cambiarla" 
                   className="w-full bg-zinc-950 border border-zinc-800 rounded-2xl py-3 px-4 md:py-4 md:px-6 text-white focus:border-amber-500 outline-none transition-all font-bold" 
                   value={perfil.password} 
                   onChange={manejarCambioPerfil} 
@@ -321,18 +323,18 @@ function MisCronicas({ alActualizarUsuario }) {
               <div className="space-y-2">
                 <label className="text-[10px] font-black text-zinc-500 uppercase tracking-widest ml-2 flex items-center gap-2">
                   <span className="w-1.5 h-1.5 bg-sky-500 rounded-full animate-pulse"></span> 
-                  Vinculación con Telegram
+                  VinculaciÃƒÂ³n con Telegram
                 </label>
                 
                 <div className="bg-zinc-950 border border-zinc-800 rounded-2xl p-6 flex flex-col md:flex-row items-center justify-between gap-4">
                   <div>
-                    <h4 className="text-white font-bold">Recibe notificaciones en tu móvil</h4>
+                    <h4 className="text-white font-bold">Recibe notificaciones en tu mÃƒÂ³vil</h4>
                     <p className="text-zinc-400 text-xs mt-1">Conecta tu cuenta para recibir avisos de tus mesas, cancelaciones o inscripciones.</p>
                   </div>
                   
                   {usuarioGuardado?.telegram_chat_id ? (
                     <div className="bg-emerald-500/10 border border-emerald-500/30 px-4 py-2 rounded-xl text-emerald-400 text-sm font-bold flex items-center gap-2">
-                      ✅ Cuenta Vinculada
+                      Ã¢Å“â€¦ Cuenta Vinculada
                     </div>
                   ) : (
                     <div className="flex flex-col gap-2 w-full md:w-auto mt-4 md:mt-0">
@@ -342,7 +344,7 @@ function MisCronicas({ alActualizarUsuario }) {
                         rel="noreferrer"
                         className="bg-zinc-800 hover:bg-zinc-700 text-[#24A1DE] border border-zinc-700 px-4 py-2.5 md:px-6 md:py-3 rounded-xl text-xs md:text-sm font-black tracking-wide transition-all flex items-center justify-center gap-2 whitespace-nowrap"
                       >
-                        📢 1. Unirse al Canal
+                        Ã°Å¸â€œÂ¢ 1. Unirse al Canal
                       </a>
                       <a 
                         href={`https://t.me/CuervosMensajeros_bot?start=${usuarioGuardado?.id}`} 
@@ -385,7 +387,7 @@ function MisCronicas({ alActualizarUsuario }) {
                   
                   {perfil.nombre_completo && (
                     <p className="text-zinc-400 font-bold text-xs sm:text-sm tracking-wide mb-2 flex items-center justify-center md:justify-start gap-2 w-full truncate">
-                      📜 <span className="truncate">{perfil.nombre_completo}</span>
+                      Ã°Å¸â€œÅ“ <span className="truncate">{perfil.nombre_completo}</span>
                     </p>
                   )}
                   {perfil.biografia && (
@@ -395,26 +397,26 @@ function MisCronicas({ alActualizarUsuario }) {
                   )}
 
                   {usuarioGuardado?.rol === 'admin' ? (
-                    <p className="text-emerald-500 font-black text-[10px] uppercase tracking-[0.4em] mb-2 w-full truncate">👑 Administrador</p>
+                    <p className="text-emerald-500 font-black text-[10px] uppercase tracking-[0.4em] mb-2 w-full truncate">Ã°Å¸â€˜â€˜ Administrador</p>
                   ) : usuarioGuardado?.rol === 'dm' ? (
                     <div className="flex flex-wrap items-center gap-2 mb-2 w-full">
-                      <span className="text-emerald-500 font-black text-[10px] uppercase tracking-[0.4em]">🛡️ Dungeon Master</span>
+                      <span className="text-emerald-500 font-black text-[10px] uppercase tracking-[0.4em]">Ã°Å¸â€ºÂ¡Ã¯Â¸Â Dungeon Master</span>
                       <span className="w-1 h-1 bg-zinc-700 rounded-full hidden sm:block"></span>
                       <span className={`text-[10px] font-black uppercase tracking-widest bg-black/30 px-2 py-1 rounded-md border border-zinc-800 ${rango?.colorClase}`}>
                         {rango?.icono} Rango {rango?.nombre} ({usuarioGuardado.honor_total || 0})
                       </span>
                     </div>
                   ) : (
-                    <p className="text-emerald-500 font-black text-[10px] uppercase tracking-[0.4em] mb-2 w-full truncate">⚔️ Aventurero</p>
+                    <p className="text-emerald-500 font-black text-[10px] uppercase tracking-[0.4em] mb-2 w-full truncate">Ã¢Å¡â€Ã¯Â¸Â Aventurero</p>
                   )}
                   <p className="text-zinc-500 font-mono text-xs sm:text-sm w-full truncate">{perfil.email}</p>
                   {usuarioGuardado?.telegram_chat_id ? (
                     <p className="text-emerald-500 font-bold text-xs mt-2 flex items-center gap-2 select-none">
-                      🤖 Cuenta vinculada ✅
+                      Ã°Å¸Â¤â€“ Cuenta vinculada Ã¢Å“â€¦
                     </p>
                   ) : (
                     <p className="text-red-500 font-bold text-[11px] mt-2 flex items-center gap-2 select-none">
-                      ❌ Cuenta no vinculada
+                      Ã¢ÂÅ’ Cuenta no vinculada
                     </p>
                   )}
                 </div>
@@ -422,17 +424,17 @@ function MisCronicas({ alActualizarUsuario }) {
             
             <div className="flex flex-col gap-3 min-w-50">
               <button onClick={() => setEditando(true)} className="bg-zinc-800 hover:bg-zinc-700 text-zinc-200 px-6 py-4 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all border border-zinc-700 shadow-xl">
-                ✏️ Editar Perfil
+                Ã¢Å“ÂÃ¯Â¸Â Editar Perfil
               </button>
               
               {esJugadorBase && (
                 peticionEnviada ? (
                   <div className="bg-purple-500/10 border border-purple-500/30 text-purple-400 px-6 py-4 rounded-2xl text-[9px] font-black uppercase tracking-widest text-center animate-pulse">
-                    ⏳ Evaluación en curso...
+                    Ã¢ÂÂ³ EvaluaciÃƒÂ³n en curso...
                   </div>
                 ) : (
                   <button onClick={enviarPeticionDM} className="bg-purple-600 hover:bg-purple-500 text-white px-6 py-4 rounded-2xl text-[10px] font-black uppercase tracking-widest shadow-xl shadow-purple-900/40 transition-all active:scale-95">
-                    🧙‍♂️ Pedir Rango DM
+                    Ã°Å¸Â§â„¢Ã¢â‚¬ÂÃ¢â„¢â€šÃ¯Â¸Â Pedir Rango DM
                   </button>
                 )
               )}
@@ -441,7 +443,7 @@ function MisCronicas({ alActualizarUsuario }) {
         )}
       </section>
 
-      {/* ⚔️ LISTADO DE CRÓNICAS */}
+      {/* Ã¢Å¡â€Ã¯Â¸Â LISTADO DE CRÃƒâ€œNICAS */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 md:gap-12">
         {/* JUGANDO */}
         <div className="space-y-8">
@@ -453,7 +455,7 @@ function MisCronicas({ alActualizarUsuario }) {
           
           <div className="grid gap-4">
             {cronicas.jugando.length === 0 ? (
-              <p className="text-zinc-600 italic text-sm py-4 border-2 border-dashed border-zinc-900 rounded-3xl text-center">Aún no has participado en ninguna mesa...</p>
+              <p className="text-zinc-600 italic text-sm py-4 border-2 border-dashed border-zinc-900 rounded-3xl text-center">AÃƒÂºn no has participado en ninguna mesa...</p>
             ) : (
               cronicas.jugando.map(p => (
                 <div key={p.id} className="group bg-zinc-900/40 border border-zinc-800 p-6 rounded-3xl hover:border-emerald-500/30 transition-all hover:bg-zinc-900">
@@ -466,13 +468,9 @@ function MisCronicas({ alActualizarUsuario }) {
                     </div>
                     
                     {p.etiqueta !== 'Juegos de Mesa' && p.etiqueta !== 'Escape Room' && (
-                      honoresOtorgados.includes(p.id) ? (
-                        <span className="text-[10px] font-bold text-amber-500 bg-amber-500/10 px-2 py-1 rounded-md border border-amber-500/20">🏆 Honor Otorgado</span>
-                      ) : (
-                        <button onClick={() => darHonor(p.dungeon_master_id, p.id, p.dm_nombre)} className="text-[10px] font-bold text-zinc-400 hover:text-amber-400 bg-zinc-900 hover:bg-zinc-800 px-3 py-1.5 rounded-lg transition-all border border-zinc-700 hover:border-amber-500/50 flex items-center gap-1.5 shadow-lg">
-                          <span className="text-sm">🏆</span> <span className="hidden sm:inline">Dar Honor a</span> <span className="sm:hidden">Honor:</span> {p.dm_nombre}
-                        </button>
-                      )
+                      <button onClick={() => setPartidaEvaluar(p)} className="text-[10px] font-bold text-zinc-400 hover:text-emerald-400 bg-zinc-900 hover:bg-zinc-800 px-3 py-1.5 rounded-lg transition-all border border-zinc-700 hover:border-emerald-500/50 flex items-center gap-1.5 shadow-lg">
+                        <span className="text-sm">â­</span> <span className="hidden sm:inline">Evaluar Mesa</span>
+                      </button>
                     )}
                   </div>
                 </div>
@@ -491,16 +489,12 @@ function MisCronicas({ alActualizarUsuario }) {
           
           <div className="grid gap-4">
             {cronicas.dirigiendo.length === 0 ? (
-              <p className="text-zinc-600 italic text-sm py-4 border-2 border-dashed border-zinc-900 rounded-3xl text-center">No has convocado ninguna aventura aún...</p>
+              <p className="text-zinc-600 italic text-sm py-4 border-2 border-dashed border-zinc-900 rounded-3xl text-center">No has convocado ninguna aventura aÃƒÂºn...</p>
             ) : (
               cronicas.dirigiendo.map(p => (
                 <div key={p.id} className="group bg-zinc-900/40 border border-zinc-800 p-6 rounded-3xl hover:border-amber-500/30 transition-all hover:bg-zinc-900">
                   <h4 className="font-black text-lg text-white group-hover:text-amber-400 transition-colors uppercase italic leading-tight">{p.titulo}</h4>
-                  <div className="flex items-center gap-2 mt-3">
-                    <span className="text-[10px] font-black text-zinc-500 uppercase tracking-widest">{p.evento_nombre}</span>
-                    <span className="w-1 h-1 bg-zinc-700 rounded-full"></span>
-                    <span className="text-[10px] font-black text-amber-500/70 uppercase tracking-widest">{formatearFecha(p.evento_fecha)}</span>
-                  </div>
+                  <div className="flex justify-between items-center mt-4"><div className="flex items-center gap-2"><span className="text-[10px] font-black text-zinc-500 uppercase tracking-widest">{p.evento_nombre}</span><span className="w-1 h-1 bg-zinc-700 rounded-full"></span><span className="text-[10px] font-black text-amber-500/70 uppercase tracking-widest">{formatearFecha(p.evento_fecha)}</span></div>{p.etiqueta !== 'Juegos de Mesa' && p.etiqueta !== 'Escape Room' && (<button onClick={() => setPartidaEvaluar(p)} className="text-[10px] font-bold text-zinc-400 hover:text-amber-400 bg-zinc-900 hover:bg-zinc-800 px-3 py-1.5 rounded-lg transition-all border border-zinc-700 hover:border-amber-500/50 flex items-center gap-1.5 shadow-lg"><span className="text-sm">â­</span> Evaluar Jugadores</button>)}</div>
                 </div>
               ))
             )}
@@ -508,16 +502,17 @@ function MisCronicas({ alActualizarUsuario }) {
         </div>
       </div>
 
-      {/* ✨ Renderizamos el modal si se solicita el rango de DM */}
+      {/* Ã¢Å“Â¨ Renderizamos el modal si se solicita el rango de DM */}
+      {partidaEvaluar && ( <EvaluarMesaModal partida={partidaEvaluar} cerrar={() => setPartidaEvaluar(null)} usuarioActualId={usuarioGuardado.id} /> )} 
       {mostrarSolicitudDM && (
         <div className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-black/95 backdrop-blur-md animate-in fade-in duration-300">
           <div className="relative w-full max-w-2xl max-h-[90vh] overflow-y-auto scrollbar-hide rounded-[2.5rem]">
-            {/* Botón para cerrar el modal si el usuario lo desea */}
+            {/* BotÃƒÂ³n para cerrar el modal si el usuario lo desea */}
             <button 
               onClick={() => setMostrarSolicitudDM(false)} 
               className="absolute top-4 right-4 z-[210] text-zinc-500 hover:text-white bg-zinc-900 w-10 h-10 rounded-full border border-zinc-800 flex items-center justify-center transition-colors shadow-lg"
             >
-              ✕
+              Ã¢Å“â€¢
             </button>
             <SolicitudDM onCompletado={procesarPeticionDM} />
           </div>
@@ -529,3 +524,6 @@ function MisCronicas({ alActualizarUsuario }) {
 }
 
 export default MisCronicas;
+
+
+

@@ -78,7 +78,7 @@ function PerfilPublico({ usuarioId, volver }) {
                 </p>
                 
                 {perfil.rol === 'admin' ? (
-                  <span className="flex items-center gap-2 text-emerald-400 font-black tracking-[0.2em] text-xs mt-2">
+                  <span className="flex flex-wrap items-center gap-2 text-emerald-400 font-black tracking-[0.2em] text-xs mt-2">
                     <span className="text-sm">👑</span> ADMINISTRADOR
                     {rango && <><span className="text-zinc-600 font-normal ml-1">•</span> <span className={`ml-1 flex items-center gap-1.5 px-2 py-0.5 rounded border border-zinc-800 bg-black/40 ${rango.colorClase}`}>NVL. {rango.nivel} - {rango.nombre.toUpperCase()}</span></>}
                   </span>
@@ -95,6 +95,26 @@ function PerfilPublico({ usuarioId, volver }) {
                 ) : (
                   <p className="text-zinc-500 font-black text-[10px] md:text-xs uppercase tracking-[0.4em] mb-2 w-full truncate mt-2">⚔️ Aventurero</p>
                 )}
+
+                {/* ✨ REPUTACIÓN Y ETIQUETAS */}
+                <div className="mt-3 flex flex-wrap items-center gap-3">
+                  <div className="flex flex-col items-center justify-center">
+                    <span className={`text-2xl font-black ${perfil.reputacion_neta > 0 ? 'text-emerald-500' : perfil.reputacion_neta < 0 ? 'text-red-500' : 'text-zinc-500'}`}>
+                      {perfil.reputacion_neta > 0 ? '+' : ''}{perfil.reputacion_neta || 0}
+                    </span>
+                    <span className="text-[8px] uppercase tracking-widest text-zinc-500 font-black">Reputación</span>
+                  </div>
+
+                  {perfil.topTags && perfil.topTags.length > 0 && (
+                    <div className="flex gap-2 ml-2">
+                      {perfil.topTags.map((tag, idx) => (
+                        <span key={idx} className="bg-zinc-900/80 border border-zinc-800 text-[9px] md:text-[10px] text-zinc-300 font-bold uppercase tracking-widest px-3 py-1 rounded-full shadow-inner flex items-center gap-1">
+                          {tag.etiqueta} <span className="opacity-50">({tag.cantidad})</span>
+                        </span>
+                      ))}
+                    </div>
+                  )}
+                </div>
 
                 {perfil.biografia && (
                   <div className="mt-4 bg-zinc-950/50 p-4 rounded-2xl border-l-2 border-emerald-500 w-full text-left">
