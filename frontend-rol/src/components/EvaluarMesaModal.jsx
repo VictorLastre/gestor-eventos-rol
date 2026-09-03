@@ -98,7 +98,10 @@ function EvaluarMesaModal({ partida, cerrar, usuarioActualId }) {
       inputPlaceholder: 'Selecciona una etiqueta',
       showCancelButton: true,
       background: '#09090b', color: '#fff',
-      confirmButtonColor: voto === 1 ? '#10b981' : '#ef4444'
+      confirmButtonColor: voto === 1 ? '#10b981' : '#ef4444',
+      customClass: {
+        input: 'bg-zinc-900 text-white border-zinc-800 rounded-xl px-4 py-3 w-[90%] mx-auto',
+      }
     });
 
     if (etiqueta) {
