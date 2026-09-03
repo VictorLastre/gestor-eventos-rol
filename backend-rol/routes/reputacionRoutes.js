@@ -1,4 +1,4 @@
-﻿const express = require('express');
+const express = require('express');
 const router = express.Router();
 const db = require('../config/db');
 const verificarToken = require('../middlewares/auth');
@@ -58,28 +58,40 @@ router.post('/', verificarToken, async (req, res) => {
   }
 });
 
-// GET /api/reputacion/usuario/:id - Obtener top tags de un usuario
+// GET /api/reputacion/usuario/:id - Obtener reputación de un usuario
 router.get('/usuario/:id', async (req, res) => {
   const usuario_id = req.params.id;
 
   try {
     // Top 3 etiquetas
     const sqlTags = `
-      SELECT etiqueta, COUNT(*) as cantidad
-      FROM reputacion
-      WHERE evaluado_id = ?
-      GROUP BY etiqueta
-      ORDER BY cantidad DESC
+      SELECT etiqueta, COUNT(*) as cantidad 
+      FROM reputacion 
+      WHERE evaluado_id = ? 
+      GROUP BY etiqueta 
+      ORDER BY cantidad DESC 
       LIMIT 3
     `;
     const [tags] = await db.promise().query(sqlTags, [usuario_id]);
 
-    res.json({
-      topTags: tags
-    });
+    res.json({ topTags: tags });
   } catch (error) {
     console.error('Error al obtener reputación:', error);
-    res.status(500).json({ error: 'Error interno.' });
+    res.status(500).json({ error: 'Error interno del servidor.' });
+  }
+});
+
+// GET /api/reputacion/partida/:id/mis-votos - Obtener votos emitidos por el usuario en una partida
+router.get('/partida/:id/mis-votos', verificarToken, async (req, res) => {
+  try {
+    const [votos] = await db.promise().query(
+      "SELECT evaluado_id, voto, etiqueta FROM reputacion WHERE evaluador_id = ? AND partida_id = ?",
+      [req.usuario.id, req.params.id]
+    );
+    res.json(votos);
+  } catch (error) {
+    console.error('Error al obtener mis votos:', error);
+    res.status(500).json({ error: 'Error interno del servidor.' });
   }
 });
 

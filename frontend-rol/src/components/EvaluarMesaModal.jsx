@@ -4,6 +4,7 @@ import { fetchProtegido } from '../utils/api';
 
 function EvaluarMesaModal({ partida, cerrar, usuarioActualId }) {
   const [participantes, setParticipantes] = useState([]);
+  const [votosEmitidos, setVotosEmitidos] = useState({});
   const [cargando, setCargando] = useState(true);
 
   // Opciones de tags
@@ -14,10 +15,25 @@ function EvaluarMesaModal({ partida, cerrar, usuarioActualId }) {
   const tagsJugador_deshonor = ['📱 Distraído', '🗣️ Interrumpe mucho', '🥇 Síndrome de Protagonista', '🤬 Mal perdedor', '⏳ Impuntual'];
 
   useEffect(() => {
-    // Cargar jugadores de la partida
-    fetchProtegido(`/api/partidas/${partida.id}/jugadores`)
-      .then(res => res.json())
-      .then(jugadores => {
+    const fetchData = async () => {
+      try {
+        const [resJugadores, resVotos] = await Promise.all([
+          fetchProtegido(`/api/partidas/${partida.id}/jugadores`),
+          fetchProtegido(`/api/reputacion/partida/${partida.id}/mis-votos`)
+        ]);
+
+        const jugadores = await resJugadores.json();
+        const misVotos = await resVotos.json();
+
+        // Mapear votos para acceso rapido: { evaluado_id: { voto: 1, etiqueta: '...' } }
+        const mapaVotos = {};
+        if (Array.isArray(misVotos)) {
+          misVotos.forEach(v => {
+            mapaVotos[v.evaluado_id] = v;
+          });
+        }
+        setVotosEmitidos(mapaVotos);
+
         let lista = [];
         // Si yo NO soy el DM, agrego al DM a la lista para evaluarlo
         if (partida.dungeon_master_id !== usuarioActualId) {
@@ -41,11 +57,13 @@ function EvaluarMesaModal({ partida, cerrar, usuarioActualId }) {
         
         setParticipantes(lista);
         setCargando(false);
-      })
-      .catch(err => {
+      } catch (err) {
         console.error(err);
         setCargando(false);
-      });
+      }
+    };
+
+    fetchData();
   }, [partida.id, partida.dungeon_master_id, usuarioActualId]);
 
   const enviarEvaluacion = async (evaluado_id, voto, etiqueta, btnEvent) => {
@@ -66,8 +84,13 @@ function EvaluarMesaModal({ partida, cerrar, usuarioActualId }) {
       });
       if (res.ok) {
         Swal.fire({ title: 'Voto registrado', icon: 'success', timer: 1500, showConfirmButton: false, background: '#09090b', color: '#fff' });
-        btn.innerHTML = '✅';
-        btn.classList.add('bg-emerald-600', 'text-white');
+        
+        // Actualizar el estado local
+        setVotosEmitidos(prev => ({
+          ...prev,
+          [evaluado_id]: { voto, etiqueta }
+        }));
+
       } else {
         const err = await res.json();
         Swal.fire({ title: 'Error', text: err.error, icon: 'error', background: '#09090b', color: '#fff' });
@@ -82,25 +105,38 @@ function EvaluarMesaModal({ partida, cerrar, usuarioActualId }) {
   };
 
   const seleccionarTagYVotar = async (participante, voto) => {
-    let opciones = {};
+    let opciones = [];
     if (participante.esDM) {
-      if (voto === 1) tagsDM_honor.forEach(t => opciones[t] = t);
-      else tagsDM_deshonor.forEach(t => opciones[t] = t);
+      if (voto === 1) opciones = tagsDM_honor;
+      else opciones = tagsDM_deshonor;
     } else {
-      if (voto === 1) tagsJugador_honor.forEach(t => opciones[t] = t);
-      else tagsJugador_deshonor.forEach(t => opciones[t] = t);
+      if (voto === 1) opciones = tagsJugador_honor;
+      else opciones = tagsJugador_deshonor;
     }
+
+    const htmlSelect = `
+      <div class="mt-4 text-left">
+        <label class="block text-zinc-400 text-sm mb-2 font-bold uppercase tracking-widest">Etiqueta a otorgar:</label>
+        <select id="swal-etiqueta" class="w-full bg-zinc-900 text-white p-3 rounded-xl border border-zinc-700 outline-none focus:border-emerald-500 transition-colors">
+          <option value="" disabled selected>Selecciona una etiqueta...</option>
+          ${opciones.map(opt => `<option value="${opt}" class="bg-zinc-900 text-white">${opt}</option>`).join('')}
+        </select>
+      </div>
+    `;
 
     const { value: etiqueta } = await Swal.fire({
       title: voto === 1 ? `Otorgar Honor a ${participante.nombre}` : `Dar Deshonor a ${participante.nombre}`,
-      input: 'select',
-      inputOptions: opciones,
-      inputPlaceholder: 'Selecciona una etiqueta',
+      html: htmlSelect,
       showCancelButton: true,
-      background: '#09090b', color: '#fff',
+      background: '#09090b', 
+      color: '#fff',
       confirmButtonColor: voto === 1 ? '#10b981' : '#ef4444',
-      customClass: {
-        input: 'bg-zinc-900 text-white border-zinc-800 rounded-xl px-4 py-3 w-[90%] mx-auto',
+      preConfirm: () => {
+        const val = document.getElementById('swal-etiqueta').value;
+        if (!val) {
+          Swal.showValidationMessage('Debes seleccionar una etiqueta');
+        }
+        return val;
       }
     });
 
@@ -135,30 +171,45 @@ function EvaluarMesaModal({ partida, cerrar, usuarioActualId }) {
           <p className="text-zinc-500 text-center py-8 font-bold">No hay otros participantes en esta mesa.</p>
         ) : (
           <div className="space-y-3">
-            {participantes.map(p => (
-              <div key={p.id} className="bg-zinc-900 border border-zinc-800 rounded-2xl p-4 flex flex-col sm:flex-row justify-between items-center gap-4">
-                <div>
-                  <h3 className="font-bold text-white text-lg">{p.nombre}</h3>
-                  <span className={`text-[10px] font-black uppercase tracking-widest ${p.esDM ? 'text-amber-500' : 'text-emerald-500'}`}>
-                    {p.esDM ? 'Dungeon Master' : 'Jugador'}
-                  </span>
+            {participantes.map(p => {
+              const votoPrevio = votosEmitidos[p.id];
+              return (
+                <div key={p.id} className={`bg-zinc-900 border rounded-2xl p-4 flex flex-col sm:flex-row justify-between items-center gap-4 ${votoPrevio ? (votoPrevio.voto === 1 ? 'border-emerald-500/50' : 'border-red-500/50') : 'border-zinc-800'}`}>
+                  <div>
+                    <h3 className="font-bold text-white text-lg">{p.nombre}</h3>
+                    <span className={`text-[10px] font-black uppercase tracking-widest ${p.esDM ? 'text-amber-500' : 'text-emerald-500'}`}>
+                      {p.esDM ? 'Dungeon Master' : 'Jugador'}
+                    </span>
+                  </div>
+                  
+                  {votoPrevio ? (
+                    <div className="flex flex-col items-end">
+                      <span className={`text-xs font-black uppercase tracking-widest ${votoPrevio.voto === 1 ? 'text-emerald-500' : 'text-red-500'}`}>
+                        {votoPrevio.voto === 1 ? 'Honor Otorgado' : 'Deshonor Otorgado'}
+                      </span>
+                      <span className="text-[10px] text-zinc-400 font-bold bg-zinc-950 px-2 py-1 rounded mt-1 border border-zinc-800">
+                        {votoPrevio.etiqueta}
+                      </span>
+                    </div>
+                  ) : (
+                    <div className="flex gap-2">
+                      <button 
+                        onClick={(e) => seleccionarTagYVotar(p, 1)}
+                        className="bg-zinc-800 hover:bg-emerald-900/50 text-emerald-500 border border-zinc-700 hover:border-emerald-500/50 px-4 py-2 rounded-xl text-sm font-black transition-colors"
+                      >
+                        + Honor
+                      </button>
+                      <button 
+                        onClick={(e) => seleccionarTagYVotar(p, -1)}
+                        className="bg-zinc-800 hover:bg-red-900/50 text-red-500 border border-zinc-700 hover:border-red-500/50 px-4 py-2 rounded-xl text-sm font-black transition-colors"
+                      >
+                        - Deshonor
+                      </button>
+                    </div>
+                  )}
                 </div>
-                <div className="flex gap-2">
-                  <button 
-                    onClick={(e) => seleccionarTagYVotar(p, 1)}
-                    className="bg-zinc-800 hover:bg-emerald-900/50 text-emerald-500 border border-zinc-700 hover:border-emerald-500/50 px-4 py-2 rounded-xl text-sm font-black transition-colors"
-                  >
-                    + Honor
-                  </button>
-                  <button 
-                    onClick={(e) => seleccionarTagYVotar(p, -1)}
-                    className="bg-zinc-800 hover:bg-red-900/50 text-red-500 border border-zinc-700 hover:border-red-500/50 px-4 py-2 rounded-xl text-sm font-black transition-colors"
-                  >
-                    - Deshonor
-                  </button>
-                </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         )}
       </div>
