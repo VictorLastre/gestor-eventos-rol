@@ -6,6 +6,7 @@ import Avatar from 'boring-avatars';
 import { obtenerRangoDM } from '../utils/rangoHonor';
 // ✨ Importamos el componente de la solicitud de DM
 import SolicitudDM from './SolicitudDM';
+import EvaluarMesaModal from './EvaluarMesaModal';
 
 function MisCronicas({ alActualizarUsuario }) { 
   const [cronicas, setCronicas] = useState({ dirigiendo: [], jugando: [] });
@@ -20,6 +21,7 @@ function MisCronicas({ alActualizarUsuario }) {
   
   // ✨ Estado para mostrar el modal de Solicitud de DM
   const [mostrarSolicitudDM, setMostrarSolicitudDM] = useState(false);
+  const [partidaEvaluar, setPartidaEvaluar] = useState(null);
   
   const [perfil, setPerfil] = useState({ 
     nombre: usuarioGuardado?.nombre || '', 
@@ -509,6 +511,7 @@ function MisCronicas({ alActualizarUsuario }) {
       </div>
 
       {/* ✨ Renderizamos el modal si se solicita el rango de DM */}
+      {partidaEvaluar && ( <EvaluarMesaModal partida={partidaEvaluar} cerrar={() => setPartidaEvaluar(null)} usuarioActualId={usuarioGuardado.id} /> )} 
       {mostrarSolicitudDM && (
         <div className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-black/95 backdrop-blur-md animate-in fade-in duration-300">
           <div className="relative w-full max-w-2xl max-h-[90vh] overflow-y-auto scrollbar-hide rounded-[2.5rem]">

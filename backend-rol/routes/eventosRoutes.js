@@ -418,4 +418,25 @@ router.post('/:id/convocatoria', verificarToken, (req, res) => {
   });
 });
 
+
+// GET info necesaria para crear una mesa (Aulas y DM Nuevo)
+router.get('/:id/info-crear-mesa', verificarToken, (req, res) => {
+    const eventoId = req.params.id;
+    const usuarioId = req.usuario.id;
+
+    const sql = `
+      SELECT 
+        e.aulas_disponibles,
+        (SELECT COUNT(*) FROM partidas WHERE evento_id = ? AND usa_aula = 1) as aulas_usadas,
+        (SELECT es_dm_nuevo FROM usuarios WHERE id = ?) as es_dm_nuevo
+      FROM eventos e WHERE e.id = ?
+    `;
+    
+    db.query(sql, [eventoId, usuarioId, eventoId], (err, resultados) => {
+      if (err) return res.status(500).json({ error: 'Error.' });
+      if (resultados.length === 0) return res.status(404).json({ error: 'Evento no existe.' });
+      res.json(resultados[0]);
+    });
+});
+
 module.exports = router;

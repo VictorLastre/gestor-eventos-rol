@@ -18,6 +18,7 @@ function CrearEvento({ alCrearEvento }) {
   const [cupoRol, setCupoRol] = useState('');
   const [cupoJuegos, setCupoJuegos] = useState('');
   const [cupoEscape, setCupoEscape] = useState('');
+  const [aulasDisponibles, setAulasDisponibles] = useState('2');
 
   const manejarCreacion = async (e) => {
     e.preventDefault();

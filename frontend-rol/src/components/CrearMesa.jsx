@@ -34,6 +34,26 @@ function CrearMesa({ idEvento, alCrearMesa }) {
   // ✨ NUEVOS ESTADOS PARA MESA PRIVADA
   const [esPrivada, setEsPrivada] = useState(false);
   const [codigoPrivado, setCodigoPrivado] = useState('');
+  
+  const [infoAula, setInfoAula] = useState({
+    aulas_disponibles: 0,
+    aulas_usadas: 0,
+    es_dm_nuevo: 0
+  });
+  const [usaAula, setUsaAula] = useState(false);
+
+  useEffect(() => {
+    fetchProtegido(`/api/eventos/${idEvento}/info-crear-mesa`)
+      .then(res => res.json())
+      .then(data => {
+        setInfoAula(data);
+        if (data.es_dm_nuevo) {
+          setUsaAula(true); // Default a true si es nuevo
+        }
+      })
+      .catch(err => console.error("Error al obtener info del evento:", err));
+  }, [idEvento]);
+
 
   useEffect(() => {
     // ✨ CORRECCIÓN: Ruta relativa para cargar los sistemas

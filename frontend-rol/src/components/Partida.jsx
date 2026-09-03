@@ -334,6 +334,11 @@ function Partida(props) {
                   🌱 {esJuegoMesa ? 'Enseña a jugar' : 'Novatos'}
                 </span>
               )}
+              {Boolean(props.usa_aula) && (
+                <span className="text-[9px] font-black text-amber-950 bg-amber-500 uppercase tracking-widest px-3 py-1 rounded-full shadow-[0_0_12px_rgba(245,158,11,0.5)] flex items-center gap-1.5 whitespace-nowrap">
+                  🚪 Aula Privada
+                </span>
+              )}
               {props.etiqueta && !esJuegoMesa && (
                 <span className={`text-[9px] font-black uppercase tracking-widest px-3 py-1 rounded-full border flex items-center gap-1.5 truncate max-w-[200px] sm:max-w-none sm:whitespace-nowrap ${tema.color} ${tema.bg} ${tema.border}`}>
                   {tema.icon} {props.etiqueta}
@@ -646,6 +651,11 @@ function Partida(props) {
                 {Boolean(props.apta_novatos) && (
                   <span className="text-[10px] font-black text-emerald-950 uppercase tracking-widest bg-emerald-400 px-3 py-1.5 rounded-full shadow-[0_0_15px_rgba(52,211,153,0.4)] flex items-center gap-1.5">
                     🌱 {esJuegoMesa ? 'Enseña a jugar' : 'Apta Novatos'}
+                  </span>
+                )}
+                {Boolean(props.usa_aula) && (
+                  <span className="text-[10px] font-black text-amber-950 uppercase tracking-widest bg-amber-500 px-3 py-1.5 rounded-full shadow-[0_0_15px_rgba(245,158,11,0.4)] flex items-center gap-1.5">
+                    🚪 Aula Privada (Molino)
                   </span>
                 )}
                 {props.etiqueta && !esJuegoMesa && (
