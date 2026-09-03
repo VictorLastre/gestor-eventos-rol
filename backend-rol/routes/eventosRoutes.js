@@ -1,19 +1,19 @@
-const express = require('express');
+﻿const express = require('express');
 const router = express.Router();
 const db = require('../config/db');
 const verificarToken = require('../middlewares/auth');
 
-// ✨ FUNCIÓN DEL ESCRIBA: REGISTRO EN LA BITÁCORA
+// âœ¨ FUNCIÃ“N DEL ESCRIBA: REGISTRO EN LA BITÃCORA
 const registrarLog = (usuario, accion, descripcion) => {
   const sql = "INSERT INTO logs_actividad (usuario_id, nombre_usuario, accion, descripcion) VALUES (?, ?, ?, ?)";
   db.query(sql, [usuario.id, usuario.nombre, accion, descripcion], (err) => {
-    if (err) console.error("❌ Error en bitácora:", err);
+    if (err) console.error("âŒ Error en bitÃ¡cora:", err);
   });
 };
 
-// 1. Obtener todos los eventos (Con actualización de estados y formateo de fecha SEGURO)
+// 1. Obtener todos los eventos (Con actualizaciÃ³n de estados y formateo de fecha SEGURO)
 router.get('/', (req, res) => {
-  // Ajuste para Argentina (UTC-3) para la lógica de comparación de estados
+  // Ajuste para Argentina (UTC-3) para la lÃ³gica de comparaciÃ³n de estados
   const tzOffset = -3 * 60 * 60 * 1000; 
   const ahoraArg = new Date(Date.now() + tzOffset).toISOString().slice(0, 19).replace('T', ' ');
 
@@ -30,7 +30,7 @@ router.get('/', (req, res) => {
   db.query(sqlUpdate, [ahoraArg, ahoraArg], (err) => {
     if (err) console.error("Error actualizando el reloj del gremio:", err);
     
-    // ✨ TRUCO MAESTRO: DATE_FORMAT evita que el driver de JS reste horas por zona horaria
+    // âœ¨ TRUCO MAESTRO: DATE_FORMAT evita que el driver de JS reste horas por zona horaria
     const sqlSelect = `
       SELECT 
         id, nombre, descripcion, 
@@ -81,49 +81,49 @@ router.post('/', verificarToken, (req, res) => {
       return res.status(500).json({ error: 'Error al convocar el evento.' });
     }
     
-    // ✨ REGISTRO EN BITÁCORA
+    // âœ¨ REGISTRO EN BITÃCORA
     registrarLog(req.usuario, 'CREAR_EVENTO', `Ha convocado una nueva jornada: "${nombre}" para el ${fechaLimpia}.`);
 
-    // ✨ WEBSOCKETS: Avisar a todos que hay un nuevo evento
+    // âœ¨ WEBSOCKETS: Avisar a todos que hay un nuevo evento
     const io = req.app.get('io');
     if (io) io.emit('actualizacion-eventos');
     
-    // ✨ ANUNCIO EN TELEGRAM (Canal) - Mensaje 1 (Detalles del evento, Inmediato)
+    // âœ¨ ANUNCIO EN TELEGRAM (Canal) - Mensaje 1 (Detalles del evento, Inmediato)
     const hInicio = hora_inicio ? hora_inicio.substring(0, 5) : '15:00';
     const hFin = hora_fin ? hora_fin.substring(0, 5) : '20:30';
 
-    const mensajeEvento = `📅 <b>¡Nueva Jornada Convocada!</b>\n\n` +
-      `⚔️ <b>${nombre}</b>\n` +
-      `📝 <i>"${descripcion}"</i>\n\n` +
-      `🗓️ <b>Fecha:</b> ${fechaLimpia}\n` +
-      `⏰ <b>Horario:</b> ${hInicio} a ${hFin}\n` +
-      `📍 <b>Lugar:</b> ${lugar}, ${ciudad}\n\n` +
-      `🔮 ¡Regístrate en el portal y asegura tu lugar!`;
+    const mensajeEvento = `ðŸ“… <b>Â¡Nueva Jornada Convocada!</b>\n\n` +
+      `âš”ï¸ <b>${nombre}</b>\n` +
+      `ðŸ“ <i>"${descripcion}"</i>\n\n` +
+      `ðŸ—“ï¸ <b>Fecha:</b> ${fechaLimpia}\n` +
+      `â° <b>Horario:</b> ${hInicio} a ${hFin}\n` +
+      `ðŸ“ <b>Lugar:</b> ${lugar}, ${ciudad}\n\n` +
+      `ðŸ”® Â¡RegÃ­strate en el portal y asegura tu lugar!`;
       
     enviarMensajeAlCanal(mensajeEvento);
 
-    // ✨ ANUNCIO EN TELEGRAM (Canal) - Mensaje 2 (Convocatoria DMs, a los 5 minutos)
-    const mensajeConvocatoria = `⚔️ <b>Convocatoria de Narradores</b> ⚔️\n\n` +
+    // âœ¨ ANUNCIO EN TELEGRAM (Canal) - Mensaje 2 (Convocatoria DMs, a los 5 minutos)
+    const mensajeConvocatoria = `âš”ï¸ <b>Convocatoria de Narradores</b> âš”ï¸\n\n` +
       `Buscamos narradores y cronistas de cualquier sistema:\n` +
-      `🎲 Pampa Primigenia, Call of Cthulhu, Vampiro, Alien etc.\n` +
-      `🎭 Mesas para principiantes o avanzadas.\n` +
-      `⌛ Cada master decide a qué hora realiza su mesa. Siéntete libre de ponerte en contacto con tu grupo y llegar dentro del horario que disponemos.\n\n` +
-      `¡Gracias por hacer parte de esta hermosa comunidad!.\n\n` +
-      `👉 Puedes registrar tu aventura o crónica en:\n` +
+      `ðŸŽ² Pampa Primigenia, Call of Cthulhu, Vampiro, Alien etc.\n` +
+      `ðŸŽ­ Mesas para principiantes o avanzadas.\n` +
+      `âŒ› Cada master decide a quÃ© hora realiza su mesa. SiÃ©ntete libre de ponerte en contacto con tu grupo y llegar dentro del horario que disponemos.\n\n` +
+      `Â¡Gracias por hacer parte de esta hermosa comunidad!.\n\n` +
+      `ðŸ‘‰ Puedes registrar tu aventura o crÃ³nica en:\n` +
       `https://rollapampa.org/\n` +
-      `🔴 Puedes crear tu mesa hasta 24 horas antes del evento. Y puedes sumarte como aventurero hasta 1 hora antes del evento.\n\n` +
-      `Nos vemos en la mesa. ✨`;
+      `ðŸ”´ Puedes crear tu mesa hasta 24 horas antes del evento. Y puedes sumarte como aventurero hasta 1 hora antes del evento.\n\n` +
+      `Nos vemos en la mesa. âœ¨`;
 
     // 5 minutos = 300,000 milisegundos
     setTimeout(() => {
       enviarMensajeAlCanal(mensajeConvocatoria);
     }, 300000);
 
-    res.status(201).json({ mensaje: '¡Evento convocado con éxito!' });
+    res.status(201).json({ mensaje: 'Â¡Evento convocado con Ã©xito!' });
   });
 });
 
-// 3. Obtener partidas de un evento específico (✨ CON SISTEMA DE NIVEL PARA DMs Y SEGURIDAD DE MESAS PRIVADAS)
+// 3. Obtener partidas de un evento especÃ­fico (âœ¨ CON SISTEMA DE NIVEL PARA DMs Y SEGURIDAD DE MESAS PRIVADAS)
 router.get('/:id/partidas', verificarToken, (req, res) => {
   const sql = `
     SELECT 
@@ -141,13 +141,13 @@ router.get('/:id/partidas', verificarToken, (req, res) => {
         JOIN eventos eh ON ph.evento_id = eh.id 
         WHERE ph.dungeon_master_id = p.dungeon_master_id AND eh.estado = 'Finalizado'
       )) AS dm_nivel,
-      (SELECT COUNT(*) FROM honor_dm WHERE dm_id = p.dungeon_master_id) + (SELECT COUNT(p2.id) FROM partidas p2 JOIN eventos e2 ON p2.evento_id = e2.id WHERE p2.dungeon_master_id = p.dungeon_master_id AND e2.estado = 'Finalizado') AS dm_honor
+      (SELECT COUNT(*) FROM honor_dm WHERE dm_id = p.dungeon_master_id) + (SELECT COUNT(p2.id) FROM partidas p2 JOIN eventos e2 ON p2.evento_id = e2.id WHERE p2.dungeon_master_id = p.dungeon_master_id AND e2.estado = 'Finalizado') AS dm_honor, IFNULL((SELECT SUM(voto) FROM reputacion WHERE evaluado_id = p.dungeon_master_id), 0) AS dm_reputacion_neta
     FROM partidas p 
     JOIN usuarios u ON p.dungeon_master_id = u.id
     LEFT JOIN sistemas s ON p.sistema_id = s.id 
     WHERE p.evento_id = ? 
   `;
-  // Se agregó req.usuario.id por partida doble para la lógica de la contraseña y de si está anotado
+  // Se agregÃ³ req.usuario.id por partida doble para la lÃ³gica de la contraseÃ±a y de si estÃ¡ anotado
   db.query(sql, [req.usuario.id, req.usuario.id, req.params.id], (err, resultados) => {
     if (err) {
       console.error(err);
@@ -164,16 +164,16 @@ router.get('/:id/partidas', verificarToken, (req, res) => {
   });
 });
 
-// 4. Crear una mesa en un evento (✨ ACTUALIZADO PARA JUEGOS DE MESA Y SEGURIDAD MÁXIMA)
+// 4. Crear una mesa en un evento (âœ¨ ACTUALIZADO PARA JUEGOS DE MESA Y SEGURIDAD MÃXIMA)
 router.post('/:id/partidas', verificarToken, (req, res) => {
   const eventoId = req.params.id;
   const usuarioId = req.usuario.id;
   const rolUsuario = req.usuario.rol;
   
-  // Extraemos también el codigo_privado del cuerpo de la petición
+  // Extraemos tambiÃ©n el codigo_privado del cuerpo de la peticiÃ³n
   const { titulo, descripcion, requisitos, sistema, sistema_id, cupo, turno, etiqueta, apta_novatos, materiales_pedidos, codigo_privado } = req.body;
 
-  // ✨ VALIDACIÓN DEL TIPO DE MESA Y ROL ✨
+  // âœ¨ VALIDACIÃ“N DEL TIPO DE MESA Y ROL âœ¨
   const esOrganizadorValido = rolUsuario === 'dm' || rolUsuario === 'admin';
   const esMesaJuegoValida = (rolUsuario === 'jugador' || rolUsuario === 'aventurero') && etiqueta === 'Juegos de Mesa';
 
@@ -215,23 +215,23 @@ router.post('/:id/partidas', verificarToken, (req, res) => {
       return res.status(400).json({ error: 'La convocatoria ha cerrado. Solo se pueden publicar mesas hasta 24 horas antes del inicio del evento.' });
     }
 
-    // Bloqueamos si ya tiene otra mesa, si está inscrito en otra, o si está en un escape
+    // Bloqueamos si ya tiene otra mesa, si estÃ¡ inscrito en otra, o si estÃ¡ en un escape
     if (es_creador > 0 || es_jugador > 0 || es_escape > 0) {
       return res.status(400).json({ 
         error: 'No puedes organizar esta mesa porque ya tienes otro compromiso (como jugador, creador o en un Escape Room) en este evento.' 
       });
     }
 
-    // ✨ VALIDACIÓN DE CUPOS DEL EVENTO ✨
+    // âœ¨ VALIDACIÃ“N DE CUPOS DEL EVENTO âœ¨
     if (etiqueta === 'Juegos de Mesa' && cupo_juegos_mesa !== null && total_mesas_juegos >= cupo_juegos_mesa) {
-      return res.status(400).json({ error: 'El cupo de Juegos de Mesa para este evento está lleno.' });
+      return res.status(400).json({ error: 'El cupo de Juegos de Mesa para este evento estÃ¡ lleno.' });
     }
 
     if (etiqueta !== 'Juegos de Mesa' && cupo_rol !== null && total_mesas_rol >= cupo_rol) {
-      return res.status(400).json({ error: 'El cupo de Mesas de Rol para este evento está lleno.' });
+      return res.status(400).json({ error: 'El cupo de Mesas de Rol para este evento estÃ¡ lleno.' });
     }
 
-    // Añadimos el codigo_privado a la inserción
+    // AÃ±adimos el codigo_privado a la inserciÃ³n
     const sqlInsert = `
         INSERT INTO partidas 
         (evento_id, dungeon_master_id, titulo, descripcion, requisitos, sistema, sistema_id, cupo, turno, estado, etiqueta, apta_novatos, materiales_pedidos, codigo_privado) 
@@ -244,15 +244,15 @@ router.post('/:id/partidas', verificarToken, (req, res) => {
         return res.status(500).json({ error: 'Error al crear la mesa.' });
       }
       
-      // ✨ REGISTRO EN BITÁCORA
+      // âœ¨ REGISTRO EN BITÃCORA
       const tipoMesaLog = etiqueta === 'Juegos de Mesa' ? 'CONVOCAR_JUEGO' : 'CREAR_MESA';
       const descLog = etiqueta === 'Juegos de Mesa' 
-        ? `Convocó el juego de mesa "${titulo}" para la jornada "${nombre_evento}".`
-        : `Abrió la mesa de Rol "${titulo}" para la jornada "${nombre_evento}".`;
+        ? `ConvocÃ³ el juego de mesa "${titulo}" para la jornada "${nombre_evento}".`
+        : `AbriÃ³ la mesa de Rol "${titulo}" para la jornada "${nombre_evento}".`;
 
       registrarLog(req.usuario, tipoMesaLog, descLog);
 
-      // ✨ MAGIA DE NOTIFICACIÓN (Solo para DMs creando su PRIMERA mesa de Rol)
+      // âœ¨ MAGIA DE NOTIFICACIÃ“N (Solo para DMs creando su PRIMERA mesa de Rol)
       if (etiqueta !== 'Juegos de Mesa') {
         db.query("SELECT COUNT(*) AS total_mesas FROM partidas WHERE dungeon_master_id = ? AND etiqueta != 'Juegos de Mesa'", [usuarioId], (err, countResult) => {
           if (err) console.error("Error al contar las mesas del DM:", err);
@@ -261,7 +261,7 @@ router.post('/:id/partidas', verificarToken, (req, res) => {
             db.query("SELECT id FROM usuarios WHERE rol = 'admin'", (err, admins) => {
               if (err || admins.length === 0) return; 
               
-              const mensajeNotif = `¡El Escriba announces que el DM ${req.usuario.nombre} ha convocado su primera mesa de ROL ("${titulo}")! Recuerda forjar su Certificado del Gremio en el Censo.`;
+              const mensajeNotif = `Â¡El Escriba announces que el DM ${req.usuario.nombre} ha convocado su primera mesa de ROL ("${titulo}")! Recuerda forjar su Certificado del Gremio en el Censo.`;
               const notificacionesValues = admins.map(admin => [admin.id, mensajeNotif]);
               
               db.query("INSERT INTO notificaciones (usuario_id, mensaje) VALUES ?", [notificacionesValues], (err) => {
@@ -272,10 +272,10 @@ router.post('/:id/partidas', verificarToken, (req, res) => {
         });
       }
 
-      // ✨ ANUNCIO EN TELEGRAM (Canal)
+      // âœ¨ ANUNCIO EN TELEGRAM (Canal)
       const { enviarMensajeAlCanal } = require('../utils/telegram');
       
-      // Función auxiliar para obtener el nombre del sistema
+      // FunciÃ³n auxiliar para obtener el nombre del sistema
       const obtenerNombreSistema = () => {
         return new Promise((resolve) => {
           if (sistema) return resolve(sistema);
@@ -292,24 +292,24 @@ router.post('/:id/partidas', verificarToken, (req, res) => {
 
       obtenerNombreSistema().then(sistemaNombre => {
         const mensajeTelegram = etiqueta === 'Juegos de Mesa'
-          ? `🃏 <b>¡Nuevo Juego de Mesa Convocado!</b>\n\n` +
-            `📦 <b>${titulo}</b>\n` +
-            `🎲 <b>Juego:</b> ${sistemaNombre}\n` +
-            `📝 <i>"${descripcion}"</i>\n\n` +
-            `👤 <b>Organiza:</b> ${req.usuario.nombre}\n` +
-            `🔮 <b>Jornada:</b> ${nombre_evento}\n` +
-            `⏰ <b>Turno:</b> ${turno} | 👥 <b>Cupo:</b> ${cupo} jugadores\n` +
-            `🌱 <b>¿Enseña reglas?:</b> ${apta_novatos ? 'Sí, apto para novatos' : 'No'}\n\n` +
-            `⚔️ ¡Anótate en el portal para jugar!`
-          : `🎲 <b>¡Nueva Mesa de Rol Forjada!</b>\n\n` +
-            `⚔️ <b>${titulo}</b>\n` +
-            `📜 <b>Sistema:</b> ${sistemaNombre}\n` +
-            `📝 <i>"${descripcion}"</i>\n\n` +
-            `🧙‍♂️ <b>Master:</b> ${req.usuario.nombre}\n` +
-            `🔮 <b>Jornada:</b> ${nombre_evento}\n` +
-            `⏰ <b>Turno:</b> ${turno} | 👥 <b>Cupo:</b> ${cupo} aventureros\n` +
-            `🌱 <b>Apta novatos:</b> ${apta_novatos ? 'Sí' : 'No'}\n\n` +
-            `🛡️ ¡Prepara tus dados y regístrate!`;
+          ? `ðŸƒ <b>Â¡Nuevo Juego de Mesa Convocado!</b>\n\n` +
+            `ðŸ“¦ <b>${titulo}</b>\n` +
+            `ðŸŽ² <b>Juego:</b> ${sistemaNombre}\n` +
+            `ðŸ“ <i>"${descripcion}"</i>\n\n` +
+            `ðŸ‘¤ <b>Organiza:</b> ${req.usuario.nombre}\n` +
+            `ðŸ”® <b>Jornada:</b> ${nombre_evento}\n` +
+            `â° <b>Turno:</b> ${turno} | ðŸ‘¥ <b>Cupo:</b> ${cupo} jugadores\n` +
+            `ðŸŒ± <b>Â¿EnseÃ±a reglas?:</b> ${apta_novatos ? 'SÃ­, apto para novatos' : 'No'}\n\n` +
+            `âš”ï¸ Â¡AnÃ³tate en el portal para jugar!`
+          : `ðŸŽ² <b>Â¡Nueva Mesa de Rol Forjada!</b>\n\n` +
+            `âš”ï¸ <b>${titulo}</b>\n` +
+            `ðŸ“œ <b>Sistema:</b> ${sistemaNombre}\n` +
+            `ðŸ“ <i>"${descripcion}"</i>\n\n` +
+            `ðŸ§™â€â™‚ï¸ <b>Master:</b> ${req.usuario.nombre}\n` +
+            `ðŸ”® <b>Jornada:</b> ${nombre_evento}\n` +
+            `â° <b>Turno:</b> ${turno} | ðŸ‘¥ <b>Cupo:</b> ${cupo} aventureros\n` +
+            `ðŸŒ± <b>Apta novatos:</b> ${apta_novatos ? 'SÃ­' : 'No'}\n\n` +
+            `ðŸ›¡ï¸ Â¡Prepara tus dados y regÃ­strate!`;
 
         enviarMensajeAlCanal(mensajeTelegram);
       });
@@ -317,14 +317,14 @@ router.post('/:id/partidas', verificarToken, (req, res) => {
       const io = req.app.get('io');
       if (io) io.emit('actualizacion-mesas', { eventoId: parseInt(eventoId) });
       
-      res.status(201).json({ mensaje: `¡${etiqueta === 'Juegos de Mesa' ? 'Juego de mesa' : 'Mesa'} convocado con éxito!` });
+      res.status(201).json({ mensaje: `Â¡${etiqueta === 'Juegos de Mesa' ? 'Juego de mesa' : 'Mesa'} convocado con Ã©xito!` });
     });
   });
 });
 
 // 5. Modificar un Evento (Solo Admins)
 router.put('/:id', verificarToken, (req, res) => {
-  if (req.usuario.rol !== 'admin') return res.status(403).json({ error: 'Solo los líderes del gremio pueden alterar la historia.' });
+  if (req.usuario.rol !== 'admin') return res.status(403).json({ error: 'Solo los lÃ­deres del gremio pueden alterar la historia.' });
 
   const eventoId = req.params.id;
   let { nombre, descripcion, fecha, hora_inicio, hora_fin, estado, lugar, ciudad, cupo_rol, cupo_juegos_mesa, cupo_escape_room } = req.body;
@@ -343,18 +343,18 @@ router.put('/:id', verificarToken, (req, res) => {
       return res.status(500).json({ error: 'Error al modificar los registros del evento.' });
     }
     
-    registrarLog(req.usuario, 'MODIFICAR_EVENTO', `Alteró los registros de la jornada: "${nombre}".`);
+    registrarLog(req.usuario, 'MODIFICAR_EVENTO', `AlterÃ³ los registros de la jornada: "${nombre}".`);
 
     const io = req.app.get('io');
     if (io) io.emit('actualizacion-eventos');
     
-    res.status(200).json({ mensaje: '¡La jornada ha sido reescrita con éxito!' });
+    res.status(200).json({ mensaje: 'Â¡La jornada ha sido reescrita con Ã©xito!' });
   });
 });
 
 // 6. Eliminar un evento (Solo Admins)
 router.delete('/:id', verificarToken, (req, res) => {
-  if (req.usuario.rol !== 'admin') return res.status(403).json({ error: 'Sin autorización.' });
+  if (req.usuario.rol !== 'admin') return res.status(403).json({ error: 'Sin autorizaciÃ³n.' });
   
   db.query("SELECT nombre FROM eventos WHERE id = ?", [req.params.id], (err, result) => {
       const nombreEvento = result[0]?.nombre || 'Desconocido';
@@ -362,7 +362,7 @@ router.delete('/:id', verificarToken, (req, res) => {
       db.query("DELETE FROM eventos WHERE id = ?", [req.params.id], (err) => {
         if (err) return res.status(500).send('Error');
         
-        registrarLog(req.usuario, 'ELIMINAR_EVENTO', `Canceló y borró la jornada: "${nombreEvento}".`);
+        registrarLog(req.usuario, 'ELIMINAR_EVENTO', `CancelÃ³ y borrÃ³ la jornada: "${nombreEvento}".`);
 
         const io = req.app.get('io');
         if (io) io.emit('actualizacion-eventos');
@@ -374,7 +374,7 @@ router.delete('/:id', verificarToken, (req, res) => {
 
 // 7. Enviar convocatoria de DMs a Telegram (Solo Admins)
 router.post('/:id/convocatoria', verificarToken, (req, res) => {
-  if (req.usuario.rol !== 'admin') return res.status(403).json({ error: 'Sin autorización.' });
+  if (req.usuario.rol !== 'admin') return res.status(403).json({ error: 'Sin autorizaciÃ³n.' });
   
   db.query("SELECT * FROM eventos WHERE id = ?", [req.params.id], (err, result) => {
     if (err || result.length === 0) return res.status(404).json({ error: 'Evento no encontrado.' });
@@ -388,7 +388,7 @@ router.post('/:id/convocatoria', verificarToken, (req, res) => {
     const meses = ["Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio", "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"];
     const mes = meses[fechaObj.getUTCMonth()];
     
-    const diasSemana = ["Domingo", "Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado"];
+    const diasSemana = ["Domingo", "Lunes", "Martes", "MiÃ©rcoles", "Jueves", "Viernes", "SÃ¡bado"];
     const diaSemana = diasSemana[fechaObj.getUTCDay()];
     
     const horaInicio = evento.hora_inicio ? evento.hora_inicio.substring(0, 5) : '15:00';
@@ -396,23 +396,23 @@ router.post('/:id/convocatoria', verificarToken, (req, res) => {
     
     const { enviarMensajeAlCanal } = require('../utils/telegram');
     
-    const mensajeTelegram = `⚔️ <b>Convocatoria de Narradores</b> ⚔️ – ${evento.nombre}\n\n` +
-      `📍 ${evento.lugar}, ${evento.ciudad}\n` +
-      `📅 ${diaSemana}, ${dia} de ${mes}\n` +
-      `⏰ De ${horaInicio} a ${horaFin} hs\n\n` +
+    const mensajeTelegram = `âš”ï¸ <b>Convocatoria de Narradores</b> âš”ï¸ â€“ ${evento.nombre}\n\n` +
+      `ðŸ“ ${evento.lugar}, ${evento.ciudad}\n` +
+      `ðŸ“… ${diaSemana}, ${dia} de ${mes}\n` +
+      `â° De ${horaInicio} a ${horaFin} hs\n\n` +
       `Buscamos narradores y cronistas de cualquier sistema:\n` +
-      `🎲 Pampa Primigenia, Call of Cthulhu, Vampiro, Alien etc.\n` +
-      `🎭 Mesas para principiantes o avanzadas.\n` +
-      `⌛ Cada master decide a qué hora realiza su mesa. Siéntete libre de ponerte en contacto con tu grupo y llegar dentro del horario que disponemos.\n\n` +
-      `¡Gracias por hacer parte de esta hermosa comunidad!.\n\n` +
-      `👉 Puedes registrar tu aventura o crónica en:\n` +
+      `ðŸŽ² Pampa Primigenia, Call of Cthulhu, Vampiro, Alien etc.\n` +
+      `ðŸŽ­ Mesas para principiantes o avanzadas.\n` +
+      `âŒ› Cada master decide a quÃ© hora realiza su mesa. SiÃ©ntete libre de ponerte en contacto con tu grupo y llegar dentro del horario que disponemos.\n\n` +
+      `Â¡Gracias por hacer parte de esta hermosa comunidad!.\n\n` +
+      `ðŸ‘‰ Puedes registrar tu aventura o crÃ³nica en:\n` +
       `https://rollapampa.org/\n` +
-      `🔴 Puedes crear tu mesa hasta 24 horas antes del evento. Y puedes sumarte como aventurero hasta 1 hora antes del evento.\n\n` +
-      `Nos vemos en la mesa. ✨`;
+      `ðŸ”´ Puedes crear tu mesa hasta 24 horas antes del evento. Y puedes sumarte como aventurero hasta 1 hora antes del evento.\n\n` +
+      `Nos vemos en la mesa. âœ¨`;
 
     enviarMensajeAlCanal(mensajeTelegram);
     
-    registrarLog(req.usuario, 'CONVOCATORIA_DMS', `Envió llamado a DMs por Telegram para: "${evento.nombre}".`);
+    registrarLog(req.usuario, 'CONVOCATORIA_DMS', `EnviÃ³ llamado a DMs por Telegram para: "${evento.nombre}".`);
     
     res.json({ mensaje: 'Convocatoria enviada al canal de Telegram.' });
   });

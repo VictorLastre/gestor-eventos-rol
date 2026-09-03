@@ -1,37 +1,37 @@
-import { useState, useEffect } from 'react';
+﻿import { useState, useEffect } from 'react';
 import Swal from 'sweetalert2'; 
 import { fetchProtegido } from '../utils/api'; 
 import { io } from 'socket.io-client';
 import { obtenerRangoDM } from '../utils/rangoHonor';
 
 const CONFIG_TEMAS = {
-  "Fantasía Medieval": { color: "text-amber-400", bg: "bg-amber-500/10", border: "border-amber-500/30", hoverBorder: "hover:border-amber-500/30", hoverText: "group-hover:text-amber-400", icon: "🏰" },
-  "Fantasía Oscura": { color: "text-purple-400", bg: "bg-purple-500/10", border: "border-purple-500/30", hoverBorder: "hover:border-purple-500/30", hoverText: "group-hover:text-purple-400", icon: "🌑" },
-  "Fantasía Urbana": { color: "text-blue-400", bg: "bg-blue-500/10", border: "border-blue-500/30", hoverBorder: "hover:border-blue-500/30", hoverText: "group-hover:text-blue-400", icon: "🏙️" },
-  "Terror / Horror": { color: "text-red-500", bg: "bg-red-500/10", border: "border-red-500/30", hoverBorder: "hover:border-red-500/30", hoverText: "group-hover:text-red-500", icon: "🩸" },
-  "Horror Cósmico": { color: "text-emerald-400", bg: "bg-emerald-500/10", border: "border-emerald-500/30", hoverBorder: "hover:border-emerald-500/30", hoverText: "group-hover:text-emerald-400", icon: "🐙" },
-  "Terror Espacial": { color: "text-rose-500", bg: "bg-rose-500/10", border: "border-rose-500/30", hoverBorder: "hover:border-rose-500/30", hoverText: "group-hover:text-rose-500", icon: "🛰️" },
-  "Ciencia Ficción": { color: "text-cyan-400", bg: "bg-cyan-500/10", border: "border-cyan-500/30", hoverBorder: "hover:border-cyan-500/30", hoverText: "group-hover:text-cyan-400", icon: "🚀" },
-  "Cyberpunk": { color: "text-fuchsia-500", bg: "bg-fuchsia-500/10", border: "border-fuchsia-500/30", hoverBorder: "hover:border-fuchsia-500/30", hoverText: "group-hover:text-fuchsia-500", icon: "🦾" },
-  "Steampunk": { color: "text-orange-400", bg: "bg-orange-500/10", border: "border-orange-500/30", hoverBorder: "hover:border-orange-500/30", hoverText: "group-hover:text-orange-400", icon: "⚙️" },
-  "Post-Apocalíptico": { color: "text-orange-600", bg: "bg-orange-600/10", border: "border-orange-600/30", hoverBorder: "hover:border-orange-600/30", hoverText: "group-hover:text-orange-600", icon: "☢️" },
-  "Misterio / Investigación": { color: "text-zinc-300", bg: "bg-zinc-500/10", border: "border-zinc-500/30", hoverBorder: "hover:border-zinc-500/30", hoverText: "group-hover:text-zinc-300", icon: "🔎" },
-  "Mundo de Tinieblas": { color: "text-red-600", bg: "bg-red-600/10", border: "border-red-600/30", hoverBorder: "hover:border-red-600/30", hoverText: "group-hover:text-red-600", icon: "🦇" },
-  "Superhéroes": { color: "text-yellow-400", bg: "bg-yellow-500/10", border: "border-yellow-500/30", hoverBorder: "hover:border-yellow-500/30", hoverText: "group-hover:text-yellow-400", icon: "🦸" },
-  "Western / Weird West": { color: "text-amber-700", bg: "bg-amber-800/10", border: "border-amber-800/30", hoverBorder: "hover:border-amber-800/30", hoverText: "group-hover:text-amber-700", icon: "🤠" },
-  "Piratas / Naval": { color: "text-teal-400", bg: "bg-teal-500/10", border: "border-teal-500/30", hoverBorder: "hover:border-teal-500/30", hoverText: "group-hover:text-teal-400", icon: "🏴‍☠️" },
-  "Space Opera": { color: "text-indigo-400", bg: "bg-indigo-500/10", border: "border-indigo-500/30", hoverBorder: "hover:border-indigo-500/30", hoverText: "group-hover:text-indigo-400", icon: "🛸" },
-  "Histórico": { color: "text-stone-400", bg: "bg-stone-500/10", border: "border-stone-500/30", hoverBorder: "hover:border-stone-500/30", hoverText: "group-hover:text-stone-400", icon: "📜" },
-  "Anime / Manga": { color: "text-pink-400", bg: "bg-pink-500/10", border: "border-pink-500/30", hoverBorder: "hover:border-pink-500/30", hoverText: "group-hover:text-pink-400", icon: "🌸" },
-  "Espionaje / Acción": { color: "text-zinc-400", bg: "bg-zinc-500/10", border: "border-zinc-500/30", hoverBorder: "hover:border-zinc-500/30", hoverText: "group-hover:text-zinc-400", icon: "🕶️" },
-  "Rol Infantil / Familiar": { color: "text-sky-400", bg: "bg-sky-500/10", border: "border-sky-500/30", hoverBorder: "hover:border-sky-500/30", hoverText: "group-hover:text-sky-400", icon: "🧸" },
-  "Comedia": { color: "text-yellow-300", bg: "bg-yellow-500/10", border: "border-yellow-500/30", hoverBorder: "hover:border-yellow-500/30", hoverText: "group-hover:text-yellow-300", icon: "🎭" },
-  "Escape Room": { color: "text-lime-400", bg: "bg-lime-500/10", border: "border-lime-500/30", hoverBorder: "hover:border-lime-500/30", hoverText: "group-hover:text-lime-400", icon: "🗝️" },
-  "Juegos de Mesa": { color: "text-rose-500", bg: "bg-rose-500/10", border: "border-rose-500/30", hoverBorder: "hover:border-rose-500/30", hoverText: "group-hover:text-rose-500", icon: "🃏" } 
+  "FantasÃ­a Medieval": { color: "text-amber-400", bg: "bg-amber-500/10", border: "border-amber-500/30", hoverBorder: "hover:border-amber-500/30", hoverText: "group-hover:text-amber-400", icon: "ðŸ°" },
+  "FantasÃ­a Oscura": { color: "text-purple-400", bg: "bg-purple-500/10", border: "border-purple-500/30", hoverBorder: "hover:border-purple-500/30", hoverText: "group-hover:text-purple-400", icon: "ðŸŒ‘" },
+  "FantasÃ­a Urbana": { color: "text-blue-400", bg: "bg-blue-500/10", border: "border-blue-500/30", hoverBorder: "hover:border-blue-500/30", hoverText: "group-hover:text-blue-400", icon: "ðŸ™ï¸" },
+  "Terror / Horror": { color: "text-red-500", bg: "bg-red-500/10", border: "border-red-500/30", hoverBorder: "hover:border-red-500/30", hoverText: "group-hover:text-red-500", icon: "ðŸ©¸" },
+  "Horror CÃ³smico": { color: "text-emerald-400", bg: "bg-emerald-500/10", border: "border-emerald-500/30", hoverBorder: "hover:border-emerald-500/30", hoverText: "group-hover:text-emerald-400", icon: "ðŸ™" },
+  "Terror Espacial": { color: "text-rose-500", bg: "bg-rose-500/10", border: "border-rose-500/30", hoverBorder: "hover:border-rose-500/30", hoverText: "group-hover:text-rose-500", icon: "ðŸ›°ï¸" },
+  "Ciencia FicciÃ³n": { color: "text-cyan-400", bg: "bg-cyan-500/10", border: "border-cyan-500/30", hoverBorder: "hover:border-cyan-500/30", hoverText: "group-hover:text-cyan-400", icon: "ðŸš€" },
+  "Cyberpunk": { color: "text-fuchsia-500", bg: "bg-fuchsia-500/10", border: "border-fuchsia-500/30", hoverBorder: "hover:border-fuchsia-500/30", hoverText: "group-hover:text-fuchsia-500", icon: "ðŸ¦¾" },
+  "Steampunk": { color: "text-orange-400", bg: "bg-orange-500/10", border: "border-orange-500/30", hoverBorder: "hover:border-orange-500/30", hoverText: "group-hover:text-orange-400", icon: "âš™ï¸" },
+  "Post-ApocalÃ­ptico": { color: "text-orange-600", bg: "bg-orange-600/10", border: "border-orange-600/30", hoverBorder: "hover:border-orange-600/30", hoverText: "group-hover:text-orange-600", icon: "â˜¢ï¸" },
+  "Misterio / InvestigaciÃ³n": { color: "text-zinc-300", bg: "bg-zinc-500/10", border: "border-zinc-500/30", hoverBorder: "hover:border-zinc-500/30", hoverText: "group-hover:text-zinc-300", icon: "ðŸ”Ž" },
+  "Mundo de Tinieblas": { color: "text-red-600", bg: "bg-red-600/10", border: "border-red-600/30", hoverBorder: "hover:border-red-600/30", hoverText: "group-hover:text-red-600", icon: "ðŸ¦‡" },
+  "SuperhÃ©roes": { color: "text-yellow-400", bg: "bg-yellow-500/10", border: "border-yellow-500/30", hoverBorder: "hover:border-yellow-500/30", hoverText: "group-hover:text-yellow-400", icon: "ðŸ¦¸" },
+  "Western / Weird West": { color: "text-amber-700", bg: "bg-amber-800/10", border: "border-amber-800/30", hoverBorder: "hover:border-amber-800/30", hoverText: "group-hover:text-amber-700", icon: "ðŸ¤ " },
+  "Piratas / Naval": { color: "text-teal-400", bg: "bg-teal-500/10", border: "border-teal-500/30", hoverBorder: "hover:border-teal-500/30", hoverText: "group-hover:text-teal-400", icon: "ðŸ´â€â˜ ï¸" },
+  "Space Opera": { color: "text-indigo-400", bg: "bg-indigo-500/10", border: "border-indigo-500/30", hoverBorder: "hover:border-indigo-500/30", hoverText: "group-hover:text-indigo-400", icon: "ðŸ›¸" },
+  "HistÃ³rico": { color: "text-stone-400", bg: "bg-stone-500/10", border: "border-stone-500/30", hoverBorder: "hover:border-stone-500/30", hoverText: "group-hover:text-stone-400", icon: "ðŸ“œ" },
+  "Anime / Manga": { color: "text-pink-400", bg: "bg-pink-500/10", border: "border-pink-500/30", hoverBorder: "hover:border-pink-500/30", hoverText: "group-hover:text-pink-400", icon: "ðŸŒ¸" },
+  "Espionaje / AcciÃ³n": { color: "text-zinc-400", bg: "bg-zinc-500/10", border: "border-zinc-500/30", hoverBorder: "hover:border-zinc-500/30", hoverText: "group-hover:text-zinc-400", icon: "ðŸ•¶ï¸" },
+  "Rol Infantil / Familiar": { color: "text-sky-400", bg: "bg-sky-500/10", border: "border-sky-500/30", hoverBorder: "hover:border-sky-500/30", hoverText: "group-hover:text-sky-400", icon: "ðŸ§¸" },
+  "Comedia": { color: "text-yellow-300", bg: "bg-yellow-500/10", border: "border-yellow-500/30", hoverBorder: "hover:border-yellow-500/30", hoverText: "group-hover:text-yellow-300", icon: "ðŸŽ­" },
+  "Escape Room": { color: "text-lime-400", bg: "bg-lime-500/10", border: "border-lime-500/30", hoverBorder: "hover:border-lime-500/30", hoverText: "group-hover:text-lime-400", icon: "ðŸ—ï¸" },
+  "Juegos de Mesa": { color: "text-rose-500", bg: "bg-rose-500/10", border: "border-rose-500/30", hoverBorder: "hover:border-rose-500/30", hoverText: "group-hover:text-rose-500", icon: "ðŸƒ" } 
 };
 
 function Partida(props) {
-  const tema = CONFIG_TEMAS[props.etiqueta] || CONFIG_TEMAS['Fantasía Medieval'];
+  const tema = CONFIG_TEMAS[props.etiqueta] || CONFIG_TEMAS['FantasÃ­a Medieval'];
   const esJuegoMesa = props.etiqueta === 'Juegos de Mesa'; 
 
   const cantJugadores = props.jugadoresIniciales ?? props.anotados ?? props.jugadores_anotados ?? 0;
@@ -56,11 +56,11 @@ function Partida(props) {
     sistema_id: props.sistema_id || '', 
     cupo: props.cupo || 4,
     turno: props.turno || 'Tarde',
-    etiqueta: props.etiqueta || 'Fantasía Medieval',
+    etiqueta: props.etiqueta || 'FantasÃ­a Medieval',
     apta_novatos: Boolean(props.apta_novatos),
     materiales_pedidos: props.materiales_pedidos || '',
-    es_privada: Boolean(props.es_privada), // ✨ ESTADO PARA EDICIÓN
-    codigo_privado: props.codigo_privado || '' // ✨ ESTADO PARA EDICIÓN
+    es_privada: Boolean(props.es_privada), // âœ¨ ESTADO PARA EDICIÃ“N
+    codigo_privado: props.codigo_privado || '' // âœ¨ ESTADO PARA EDICIÃ“N
   });
 
   const Toast = Swal.mixin({
@@ -116,13 +116,13 @@ function Partida(props) {
     fetchProtegido(`/api/partidas/${props.id}/jugadores`)
       .then(res => res.json())
       .then(datos => { setListaJugadores(datos); setCargandoJugadores(false); })
-      .catch(err => { if (err !== 'Sesión expirada') console.error(err); setCargandoJugadores(false); });
+      .catch(err => { if (err !== 'SesiÃ³n expirada') console.error(err); setCargandoJugadores(false); });
   };
 
   const soyElMaster = props.esMiMesa; 
   const soyAdmin = props.esAdmin;
 
-  // ✨ INSCRIPCIÓN CON SOPORTE PARA MESAS PRIVADAS
+  // âœ¨ INSCRIPCIÃ“N CON SOPORTE PARA MESAS PRIVADAS
   const enviarAvisoTelegram = async () => {
     if (!mensajeTelegram.trim()) {
       return Swal.fire({ title: 'Aviso', text: 'Escribe un mensaje antes de enviar.', icon: 'warning', background: '#09090b', color: '#fff' });
@@ -166,9 +166,9 @@ function Partida(props) {
     if (metodo === 'POST' && props.es_privada) {
       const { value: claveIngresada } = await Swal.fire({
         title: 'Mesa Privada',
-        text: 'Ingresa la contraseña secreta dictada por el Organizador:',
+        text: 'Ingresa la contraseÃ±a secreta dictada por el Organizador:',
         input: 'password',
-        inputPlaceholder: 'Contraseña...',
+        inputPlaceholder: 'ContraseÃ±a...',
         background: '#09090b',
         color: '#fff',
         showCancelButton: true,
@@ -200,19 +200,19 @@ function Partida(props) {
         setAnotado(!anotado);
         setJugadoresAnotados(anotado ? jugadoresAnotados - 1 : jugadoresAnotados + 1);
         cargarListaJugadores();
-        Toast.fire({ icon: 'success', title: anotado ? 'Has abandonado la mesa' : '¡Te has unido a la aventura!' });
+        Toast.fire({ icon: 'success', title: anotado ? 'Has abandonado la mesa' : 'Â¡Te has unido a la aventura!' });
       } else {
         const mensaje = await res.text();
         Swal.fire({ title: 'Aviso del Gremio', text: mensaje, icon: 'warning', background: '#09090b', color: '#fff', confirmButtonColor: '#f59e0b' });
       }
-    } catch (err) { if (err !== 'Sesión expirada') console.error(err); }
+    } catch (err) { if (err !== 'SesiÃ³n expirada') console.error(err); }
   };
 
   const borrarMesa = async (e) => {
     if (e) e.stopPropagation(); 
     const result = await Swal.fire({
-      title: '¿Disolver la Mesa?', text: "Se cancelará la aventura y perderás a los aventureros. Es irreversible.", icon: 'warning', showCancelButton: true,
-      background: '#09090b', color: '#fff', confirmButtonColor: '#ef4444', cancelButtonColor: '#27272a', confirmButtonText: 'Sí, borrar mesa', cancelButtonText: 'Cancelar'
+      title: 'Â¿Disolver la Mesa?', text: "Se cancelarÃ¡ la aventura y perderÃ¡s a los aventureros. Es irreversible.", icon: 'warning', showCancelButton: true,
+      background: '#09090b', color: '#fff', confirmButtonColor: '#ef4444', cancelButtonColor: '#27272a', confirmButtonText: 'SÃ­, borrar mesa', cancelButtonText: 'Cancelar'
     });
 
     if (result.isConfirmed) {
@@ -222,9 +222,9 @@ function Partida(props) {
           Swal.fire({ title: 'Mesa Borrada', icon: 'success', background: '#09090b', color: '#fff', confirmButtonColor: '#10b981' });
           setModalAbierto(false); 
         } else {
-          Swal.fire({ title: 'Error Mágico', text: 'No se pudo disolver la mesa.', icon: 'error', background: '#09090b', color: '#fff', confirmButtonColor: '#ef4444' });
+          Swal.fire({ title: 'Error MÃ¡gico', text: 'No se pudo disolver la mesa.', icon: 'error', background: '#09090b', color: '#fff', confirmButtonColor: '#ef4444' });
         }
-      } catch (err) { if (err !== 'Sesión expirada') console.error(err); }
+      } catch (err) { if (err !== 'SesiÃ³n expirada') console.error(err); }
     }
   };
 
@@ -264,14 +264,14 @@ function Partida(props) {
       });
 
       if (res.ok) {
-        Swal.fire({ title: esJuegoMesa ? '¡Juego Actualizado!' : '¡Aventura Reescríta!', text: 'Los detalles de la mesa han sido actualizados.', icon: 'success', background: '#09090b', color: '#fff', confirmButtonColor: '#f59e0b' });
+        Swal.fire({ title: esJuegoMesa ? 'Â¡Juego Actualizado!' : 'Â¡Aventura ReescrÃ­ta!', text: 'Los detalles de la mesa han sido actualizados.', icon: 'success', background: '#09090b', color: '#fff', confirmButtonColor: '#f59e0b' });
         setModoEdicion(false); 
       } else {
         const data = await res.json();
         Swal.fire({ title: 'Aviso del Gremio', text: data.error, icon: 'warning', background: '#09090b', color: '#fff' });
       }
     } catch (err) {
-      if (err !== 'Sesión expirada') console.error(err);
+      if (err !== 'SesiÃ³n expirada') console.error(err);
     }
   };
 
@@ -290,7 +290,7 @@ function Partida(props) {
     setDatosEdicion({...datosEdicion, codigo_privado: clave});
   };
 
-  // Lógica de colores por disponibilidad
+  // LÃ³gica de colores por disponibilidad
   const estaLlena = jugadoresAnotados >= props.cupo;
   const tieneJugadores = jugadoresAnotados > 0 && !estaLlena;
   
@@ -318,16 +318,16 @@ function Partida(props) {
         <div className="flex justify-between items-start mb-6 relative z-10 gap-3">
           <div className="flex-1 min-w-0 space-y-3 pr-2">
             <div className="flex flex-wrap gap-2">
-              {/* ✨ ETIQUETA DE MESA PRIVADA (NUEVO) */}
+              {/* âœ¨ ETIQUETA DE MESA PRIVADA (NUEVO) */}
               {Boolean(props.es_privada) && (
                 <span className="text-[9px] font-black text-purple-900 bg-purple-400 uppercase tracking-widest px-3 py-1 rounded-full shadow-[0_0_12px_rgba(168,85,247,0.5)] flex items-center gap-1.5 whitespace-nowrap animate-pulse">
-                  🔒 Privada
+                  ðŸ”’ Privada
                 </span>
               )}
 
               {Boolean(props.apta_novatos) && (
                 <span className={`text-[9px] font-black ${esJuegoMesa ? 'text-emerald-900 bg-emerald-400' : 'text-emerald-950 bg-emerald-400'} uppercase tracking-widest px-3 py-1 rounded-full shadow-[0_0_12px_rgba(52,211,153,0.5)] flex items-center gap-1.5 whitespace-nowrap`}>
-                  🌱 {esJuegoMesa ? 'Enseña a jugar' : 'Novatos'}
+                  ðŸŒ± {esJuegoMesa ? 'EnseÃ±a a jugar' : 'Novatos'}
                 </span>
               )}
               {props.etiqueta && !esJuegoMesa && (
@@ -336,12 +336,12 @@ function Partida(props) {
                 </span>
               )}
               <span className="text-[9px] font-black text-zinc-300 uppercase tracking-widest bg-zinc-800 px-3 py-1 rounded-full border border-zinc-700 shadow-inner truncate max-w-[200px] sm:max-w-none sm:whitespace-nowrap">
-                {esJuegoMesa ? '🃏' : '🎲'} {props.sistema || 'Sistema Desconocido'}
+                {esJuegoMesa ? 'ðŸƒ' : 'ðŸŽ²'} {props.sistema || 'Sistema Desconocido'}
               </span>
               
               {soyElMaster && (
                 <span className="text-[9px] font-black uppercase tracking-widest px-3 py-1 rounded-full border shadow-lg text-amber-500 bg-amber-500/10 border-amber-500/50 whitespace-nowrap">
-                  ⭐ Tu Mesa
+                  â­ Tu Mesa
                 </span>
               )}
             </div>
@@ -377,7 +377,7 @@ function Partida(props) {
         >
           <div className="flex items-center gap-2 sm:gap-3 min-w-0 flex-1">
             <div className="shrink-0 w-8 h-8 sm:w-10 sm:h-10 bg-zinc-900 border border-zinc-700 rounded-full flex items-center justify-center text-sm shadow-inner relative">
-              {esJuegoMesa ? '👑' : '🛡️'}
+              {esJuegoMesa ? 'ðŸ‘‘' : 'ðŸ›¡ï¸'}
               <div className="absolute -bottom-2 -right-2 bg-gradient-to-br from-amber-400 to-amber-600 text-black text-[9px] font-black px-1.5 py-0.5 rounded-full border border-zinc-900 shadow-md">
                 Lv{obtenerRangoDM(props.dm_honor || 0).nivel}
               </div>
@@ -385,7 +385,7 @@ function Partida(props) {
             <div className="min-w-0 flex-1 pr-1 sm:pr-2">
               <p className="text-[8px] sm:text-[9px] font-black text-zinc-500 uppercase tracking-[0.2em] truncate">{esJuegoMesa ? 'Organizador' : 'Director de Juego'}</p>
               <div className="flex flex-wrap items-center gap-1 sm:gap-1.5 min-w-0">
-                <p className="text-xs sm:text-sm text-zinc-200 font-bold truncate group-hover:text-emerald-400 transition-colors">{props.dmNombre || props.dungeon_master_nombre || 'Desconocido'}</p>
+                <p className="text-xs sm:text-sm text-zinc-200 font-bold truncate group-hover:text-emerald-400 transition-colors flex items-center gap-1">{props.dmNombre || props.dungeon_master_nombre || 'Desconocido'} {props.dm_reputacion_neta !== undefined && props.dm_reputacion_neta !== 0 && (<span className={`ml-1 px-1 py-0.5 rounded-md text-[8px] border ${props.dm_reputacion_neta > 0 ? 'bg-emerald-500/20 text-emerald-400 border-emerald-500/50' : 'bg-red-500/20 text-red-400 border-red-500/50'}`}>{props.dm_reputacion_neta > 0 ? '+' : ''}{props.dm_reputacion_neta}</span>)}</p>
                 {!esJuegoMesa && props.dm_honor !== undefined && (
                   <span title={`Honor: ${props.dm_honor}`} className={`flex items-center gap-1.5 text-[10px] font-black uppercase tracking-widest ${obtenerRangoDM(props.dm_honor).colorClase}`}>
                     {obtenerRangoDM(props.dm_honor).icono} {obtenerRangoDM(props.dm_honor).nombre}
@@ -402,14 +402,14 @@ function Partida(props) {
                 className={`w-8 h-8 bg-zinc-800 ${tema.color} hover:text-black rounded-xl flex items-center justify-center transition-colors border border-transparent ${tema.hoverBorder} hover:bg-zinc-300 shadow-lg`}
                 title="Editar Mesa"
               >
-                ✏️
+                âœï¸
               </button>
               <button 
                 onClick={borrarMesa}
                 className="w-8 h-8 bg-zinc-800 hover:bg-red-500 text-zinc-400 hover:text-white rounded-xl flex items-center justify-center transition-colors border border-transparent hover:border-red-500/50 shadow-lg"
                 title="Borrar Mesa"
               >
-                🗑️
+                ðŸ—‘ï¸
               </button>
             </div>
           )}
@@ -430,11 +430,11 @@ function Partida(props) {
                     : 'bg-emerald-600 text-white border border-emerald-50 hover:bg-emerald-500 shadow-emerald-900/40 active:scale-95'
               }`}
             >
-              {anotado ? 'Abandonar' : props.inscripcionesCerradas ? 'Cerrado' : estaLlena ? 'Llena' : (props.es_privada ? '🔒 Alistarse' : 'Alistarse')}
+              {anotado ? 'Abandonar' : props.inscripcionesCerradas ? 'Cerrado' : estaLlena ? 'Llena' : (props.es_privada ? 'ðŸ”’ Alistarse' : 'Alistarse')}
             </button>
           )}
           <div className={`px-4 sm:px-6 shrink-0 flex items-center justify-center bg-zinc-950 text-zinc-500 rounded-xl sm:rounded-2xl border transition-all ${soyElMaster || props.eventoEsPasado ? 'w-full py-3 sm:py-4 text-[10px] sm:text-xs tracking-widest hover:text-white hover:bg-zinc-800 uppercase font-black border-zinc-800 cursor-pointer' : 'border-zinc-800/80 group-hover:border-zinc-700 group-hover:text-zinc-300'}`}>
-            {soyElMaster || props.eventoEsPasado ? '👁️ Ver Pergamino' : '👁️'}
+            {soyElMaster || props.eventoEsPasado ? 'ðŸ‘ï¸ Ver Pergamino' : 'ðŸ‘ï¸'}
           </div>
         </div>
       </div>
@@ -442,14 +442,14 @@ function Partida(props) {
       {modoEdicion && (
         <div className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-black/95 backdrop-blur-md animate-in fade-in zoom-in-95 duration-300">
           <div className={`bg-zinc-900 border ${CONFIG_TEMAS[datosEdicion.etiqueta]?.border || 'border-amber-500/30'} w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-[2.5rem] p-8 md:p-10 relative shadow-[0_0_80px_rgba(0,0,0,0.5)] scrollbar-hide`} style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
-            <button onClick={() => setModoEdicion(false)} className="absolute top-6 right-6 w-10 h-10 bg-zinc-950 flex items-center justify-center rounded-full text-zinc-500 hover:text-white hover:bg-zinc-800 transition-colors border border-zinc-800">✕</button>
+            <button onClick={() => setModoEdicion(false)} className="absolute top-6 right-6 w-10 h-10 bg-zinc-950 flex items-center justify-center rounded-full text-zinc-500 hover:text-white hover:bg-zinc-800 transition-colors border border-zinc-800">âœ•</button>
             <h3 className="text-3xl font-black text-white uppercase tracking-tighter mb-8 flex items-center gap-3 italic">
-              <span className={`${CONFIG_TEMAS[datosEdicion.etiqueta]?.color || 'text-amber-500'} drop-shadow-md`}>{esJuegoMesa ? '📐' : '📜'}</span> {esJuegoMesa ? 'Modificar Partida' : 'Reescribir Aventura'}
+              <span className={`${CONFIG_TEMAS[datosEdicion.etiqueta]?.color || 'text-amber-500'} drop-shadow-md`}>{esJuegoMesa ? 'ðŸ“' : 'ðŸ“œ'}</span> {esJuegoMesa ? 'Modificar Partida' : 'Reescribir Aventura'}
             </h3>
             
             <form onSubmit={guardarEdicion} className="flex flex-col gap-6">
               <div className="space-y-2">
-                <label className="text-[10px] font-black text-zinc-500 uppercase tracking-widest ml-1">Título de la Gesta</label>
+                <label className="text-[10px] font-black text-zinc-500 uppercase tracking-widest ml-1">TÃ­tulo de la Gesta</label>
                 <input type="text" value={datosEdicion.titulo} onChange={e => setDatosEdicion({...datosEdicion, titulo: e.target.value})} required className={`w-full bg-zinc-950 border border-zinc-800 rounded-2xl py-4 px-5 text-white focus:${tema.border} outline-none transition-all font-bold shadow-inner`} />
               </div>
 
@@ -461,7 +461,7 @@ function Partida(props) {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 {!esJuegoMesa && (
                   <div className="flex flex-col gap-2">
-                    <label className="text-[10px] font-black text-zinc-500 uppercase tracking-widest ml-1">Género</label>
+                    <label className="text-[10px] font-black text-zinc-500 uppercase tracking-widest ml-1">GÃ©nero</label>
                     <select value={datosEdicion.etiqueta} onChange={e => setDatosEdicion({...datosEdicion, etiqueta: e.target.value})} className={`bg-zinc-950 border border-zinc-800 rounded-2xl py-4 px-5 text-white outline-none font-bold appearance-none cursor-pointer ${CONFIG_TEMAS[datosEdicion.etiqueta]?.color || ''}`}>
                       {Object.keys(CONFIG_TEMAS).filter(op => op !== 'Juegos de Mesa').map(opcion => (
                          <option key={opcion} value={opcion}>{CONFIG_TEMAS[opcion].icon} {opcion}</option>
@@ -472,16 +472,16 @@ function Partida(props) {
                 
                 <div onClick={() => setDatosEdicion({...datosEdicion, apta_novatos: !datosEdicion.apta_novatos})} className={`cursor-pointer p-4 rounded-2xl border-2 transition-all flex items-center justify-between gap-4 select-none ${esJuegoMesa ? 'md:col-span-2 mt-0' : 'mt-6'} ${datosEdicion.apta_novatos ? 'bg-emerald-500/10 border-emerald-500/50 shadow-[0_0_20px_rgba(16,185,129,0.15)]' : 'bg-zinc-950 border-zinc-800 hover:border-zinc-700'}`}>
                   <div>
-                    <h4 className={`font-black uppercase tracking-widest text-[11px] ${datosEdicion.apta_novatos ? 'text-emerald-400' : 'text-zinc-500'}`}>🌱 {esJuegoMesa ? 'Enseño a Jugar' : 'Apta Novatos'}</h4>
+                    <h4 className={`font-black uppercase tracking-widest text-[11px] ${datosEdicion.apta_novatos ? 'text-emerald-400' : 'text-zinc-500'}`}>ðŸŒ± {esJuegoMesa ? 'EnseÃ±o a Jugar' : 'Apta Novatos'}</h4>
                   </div>
                   <div className={`w-6 h-6 rounded-md flex items-center justify-center border-2 transition-colors ${datosEdicion.apta_novatos ? 'bg-emerald-500 border-emerald-500 text-black' : 'border-zinc-700'}`}>
-                    {datosEdicion.apta_novatos && <span className="font-black text-sm">✓</span>}
+                    {datosEdicion.apta_novatos && <span className="font-black text-sm">âœ“</span>}
                   </div>
                 </div>
               </div>
 
               <div className="space-y-2">
-                <label className="text-[10px] font-black text-zinc-500 uppercase tracking-widest ml-1">Requisitos Específicos</label>
+                <label className="text-[10px] font-black text-zinc-500 uppercase tracking-widest ml-1">Requisitos EspecÃ­ficos</label>
                 <input type="text" value={datosEdicion.requisitos} onChange={e => setDatosEdicion({...datosEdicion, requisitos: e.target.value})} className={`w-full bg-zinc-950 border border-zinc-800 rounded-2xl py-4 px-5 text-white focus:${tema.border} outline-none font-medium shadow-inner`} />
               </div>
 
@@ -515,14 +515,14 @@ function Partida(props) {
                 )}
                 
                 <div className="flex flex-col gap-2">
-                  <label className="text-[10px] font-black text-zinc-500 uppercase tracking-widest ml-1">Cupo Máx.</label>
+                  <label className="text-[10px] font-black text-zinc-500 uppercase tracking-widest ml-1">Cupo MÃ¡x.</label>
                   <input type="number" value={datosEdicion.cupo} onChange={e => setDatosEdicion({...datosEdicion, cupo: e.target.value})} min="1" max={esJuegoMesa ? "20" : "10"} required className={`bg-zinc-950 border border-zinc-800 rounded-2xl py-4 px-5 text-white focus:${tema.border} outline-none font-black text-center`} />
                 </div>
                 
                 <div className="flex flex-col gap-2">
                   <label className="text-[10px] font-black text-zinc-500 uppercase tracking-widest ml-1">Turno</label>
                   <select value={datosEdicion.turno} onChange={e => setDatosEdicion({...datosEdicion, turno: e.target.value})} className={`bg-zinc-950 border border-zinc-800 rounded-2xl py-4 px-5 text-white focus:${tema.border} outline-none font-bold cursor-pointer`}>
-                    <option value="Mañana" className="bg-zinc-900">Mañana</option>
+                    <option value="MaÃ±ana" className="bg-zinc-900">MaÃ±ana</option>
                     <option value="Tarde" className="bg-zinc-900">Tarde</option>
                     <option value="Noche" className="bg-zinc-900">Noche</option>
                     <option value="Madrugada" className="bg-zinc-900">Madrugada</option>
@@ -530,7 +530,7 @@ function Partida(props) {
                 </div>
               </div>
 
-              {/* ✨ NUEVO: CONFIGURACIÓN DE MESA PRIVADA EN EDICIÓN ✨ */}
+              {/* âœ¨ NUEVO: CONFIGURACIÃ“N DE MESA PRIVADA EN EDICIÃ“N âœ¨ */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-2 border-t border-zinc-800/50">
                 <div 
                   onClick={() => setDatosEdicion({...datosEdicion, es_privada: !datosEdicion.es_privada})}
@@ -541,13 +541,13 @@ function Partida(props) {
                   }`}
                 >
                   <div className="flex items-center gap-3">
-                    <span className={`text-xl ${datosEdicion.es_privada ? 'opacity-100' : 'opacity-30'}`}>🔒</span>
+                    <span className={`text-xl ${datosEdicion.es_privada ? 'opacity-100' : 'opacity-30'}`}>ðŸ”’</span>
                     <div>
                       <h4 className={`font-black uppercase tracking-widest text-[11px] ${datosEdicion.es_privada ? 'text-purple-400' : 'text-zinc-500'}`}>Mesa Privada</h4>
                     </div>
                   </div>
                   <div className={`w-5 h-5 rounded-md flex items-center justify-center border-2 transition-colors ${datosEdicion.es_privada ? 'bg-purple-500 border-purple-500 text-black' : 'border-zinc-700'}`}>
-                    {datosEdicion.es_privada && <span className="font-black text-xs">✓</span>}
+                    {datosEdicion.es_privada && <span className="font-black text-xs">âœ“</span>}
                   </div>
                 </div>
 
@@ -555,7 +555,7 @@ function Partida(props) {
                   <div className="flex gap-2 animate-in fade-in zoom-in duration-300">
                     <input 
                       type="text" 
-                      placeholder="Contraseña Secreta" 
+                      placeholder="ContraseÃ±a Secreta" 
                       value={datosEdicion.codigo_privado} 
                       onChange={e => setDatosEdicion({...datosEdicion, codigo_privado: e.target.value})} 
                       className="w-full bg-purple-500/5 border border-purple-500/30 rounded-2xl py-4 px-6 text-white focus:border-purple-500 outline-none font-bold placeholder:text-purple-900/50 shadow-inner h-[60px]"
@@ -564,9 +564,9 @@ function Partida(props) {
                       type="button" 
                       onClick={generarClaveAleatoriaEdicion}
                       className="w-[60px] h-[60px] shrink-0 bg-purple-500/10 border border-purple-500/50 text-purple-400 rounded-2xl flex items-center justify-center hover:bg-purple-500 hover:text-white transition-all shadow-[0_0_15px_rgba(168,85,247,0.2)]"
-                      title="Generar Clave Mágica"
+                      title="Generar Clave MÃ¡gica"
                     >
-                      🪄
+                      ðŸª„
                     </button>
                   </div>
                 )}
@@ -575,7 +575,7 @@ function Partida(props) {
               <div className="space-y-2 mt-4">
                 <label className={`text-[10px] font-black uppercase tracking-[0.2em] ml-1 flex items-center gap-2 ${CONFIG_TEMAS[datosEdicion.etiqueta]?.color || 'text-amber-500'}`}>
                   <span className={`w-1.5 h-1.5 rounded-full animate-pulse ${CONFIG_TEMAS[datosEdicion.etiqueta]?.bg || 'bg-amber-500'}`}></span> 
-                  Petición Logística
+                  PeticiÃ³n LogÃ­stica
                 </label>
                 <input 
                   type="text" 
@@ -588,7 +588,7 @@ function Partida(props) {
 
               <button type="submit" className={`group relative overflow-hidden font-black py-5 rounded-2xl shadow-xl transition-all active:scale-95 text-xs uppercase tracking-[0.2em] mt-4 border ${CONFIG_TEMAS[datosEdicion.etiqueta]?.border || 'border-amber-400'} ${CONFIG_TEMAS[datosEdicion.etiqueta]?.bg || 'bg-amber-500'} ${CONFIG_TEMAS[datosEdicion.etiqueta]?.color || 'text-amber-500'}`}>
                 <div className="absolute inset-0 bg-white/5 opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
-                <span className="relative z-10">{esJuegoMesa ? '💾 Confirmar Cambios' : '💾 Consagrar Cambios'}</span>
+                <span className="relative z-10">{esJuegoMesa ? 'ðŸ’¾ Confirmar Cambios' : 'ðŸ’¾ Consagrar Cambios'}</span>
               </button>
             </form>
           </div>
@@ -608,13 +608,13 @@ function Partida(props) {
                     onClick={abrirEdicion}
                     className={`bg-zinc-900 text-zinc-400 hover:${tema.color} border border-zinc-800 ${tema.hoverBorder} font-black uppercase tracking-widest text-[9px] px-4 py-2 rounded-xl transition-colors shadow-lg`}
                   >
-                    ✏️ Editar
+                    âœï¸ Editar
                   </button>
                   <button 
                     onClick={borrarMesa}
                     className="bg-zinc-900 text-zinc-400 hover:text-red-500 border border-zinc-800 hover:border-red-500/50 font-black uppercase tracking-widest text-[9px] px-4 py-2 rounded-xl transition-colors shadow-lg"
                   >
-                    🗑️ Borrar
+                    ðŸ—‘ï¸ Borrar
                   </button>
                 </>
               )}
@@ -622,22 +622,22 @@ function Partida(props) {
                 onClick={() => setModalAbierto(false)}
                 className="w-10 h-10 flex items-center justify-center text-zinc-500 hover:text-white bg-zinc-950 border border-zinc-800 rounded-xl transition-colors hover:bg-zinc-800"
               >
-                ✕
+                âœ•
               </button>
             </div>
 
             <div className="relative z-10">
               <div className="flex flex-wrap gap-2 mb-6">
-                {/* ✨ ETIQUETA DE MESA PRIVADA EN EL MODAL (NUEVO) */}
+                {/* âœ¨ ETIQUETA DE MESA PRIVADA EN EL MODAL (NUEVO) */}
                 {Boolean(props.es_privada) && (
                   <span className="text-[10px] font-black text-purple-950 uppercase tracking-widest bg-purple-400 px-3 py-1.5 rounded-full shadow-[0_0_15px_rgba(168,85,247,0.4)] flex items-center gap-1.5 animate-pulse">
-                    🔒 Mesa Privada
+                    ðŸ”’ Mesa Privada
                   </span>
                 )}
 
                 {Boolean(props.apta_novatos) && (
                   <span className="text-[10px] font-black text-emerald-950 uppercase tracking-widest bg-emerald-400 px-3 py-1.5 rounded-full shadow-[0_0_15px_rgba(52,211,153,0.4)] flex items-center gap-1.5">
-                    🌱 {esJuegoMesa ? 'Enseña a jugar' : 'Apta Novatos'}
+                    ðŸŒ± {esJuegoMesa ? 'EnseÃ±a a jugar' : 'Apta Novatos'}
                   </span>
                 )}
                 {props.etiqueta && !esJuegoMesa && (
@@ -646,11 +646,11 @@ function Partida(props) {
                   </span>
                 )}
                 <span className="text-[10px] font-black text-zinc-300 uppercase tracking-widest bg-zinc-800 px-3 py-1.5 rounded-full border border-zinc-700">
-                  {esJuegoMesa ? '🃏' : '🎲'} {props.sistema || 'Sistema Desconocido'}
+                  {esJuegoMesa ? 'ðŸƒ' : 'ðŸŽ²'} {props.sistema || 'Sistema Desconocido'}
                 </span>
                 {soyElMaster && (
                   <span className="text-[10px] font-black uppercase tracking-widest px-3 py-1.5 rounded-full border text-amber-500 bg-amber-500/10 border-amber-500/50 shadow-[0_0_10px_rgba(255,255,255,0.1)]">
-                    ✨ Tu Mesa
+                    âœ¨ Tu Mesa
                   </span>
                 )}
               </div>
@@ -662,7 +662,7 @@ function Partida(props) {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-10">
                 <div className="bg-zinc-950/50 p-6 rounded-[2rem] border border-zinc-800/80 shadow-inner flex items-center gap-4 min-w-0">
                   <div className="shrink-0 w-14 h-14 bg-zinc-900 border border-zinc-700 rounded-full flex items-center justify-center text-2xl relative">
-                    {esJuegoMesa ? '👑' : '🛡️'}
+                    {esJuegoMesa ? 'ðŸ‘‘' : 'ðŸ›¡ï¸'}
                     <div className="absolute -bottom-2 -right-2 bg-gradient-to-br from-amber-400 to-amber-600 text-black text-[11px] font-black px-2 py-0.5 rounded-full border-2 border-zinc-900 shadow-md">
                       Lv{obtenerRangoDM(props.dm_honor || 0).nivel}
                     </div>
@@ -670,7 +670,7 @@ function Partida(props) {
                   <div className="min-w-0 flex-1">
                     <p className="text-[10px] font-black text-zinc-500 uppercase tracking-[0.2em] mb-1 truncate">{esJuegoMesa ? 'Organizador' : 'Director de Juego'}</p>
                     <div className="flex items-center gap-2 flex-wrap min-w-0">
-                        <p className="text-xl text-zinc-200 font-black truncate">{props.dmNombre || props.dungeon_master_nombre}</p>
+                        <p className="text-xl text-zinc-200 font-black truncate flex items-center gap-2">{props.dmNombre || props.dungeon_master_nombre} {props.dm_reputacion_neta !== undefined && props.dm_reputacion_neta !== 0 && (<span className={`px-2 py-0.5 rounded-lg text-[10px] border ${props.dm_reputacion_neta > 0 ? 'bg-emerald-500/20 text-emerald-400 border-emerald-500/50' : 'bg-red-500/20 text-red-400 border-red-500/50'}`}>{props.dm_reputacion_neta > 0 ? '+' : ''}{props.dm_reputacion_neta}</span>)}</p>
                         {!esJuegoMesa && props.dm_honor !== undefined && (
                           <span className={`flex items-center gap-1.5 text-[10px] font-black uppercase tracking-widest px-2 py-1 rounded-md bg-black/30 border border-zinc-800 shadow-inner ${obtenerRangoDM(props.dm_honor).colorClase}`}>
                             {obtenerRangoDM(props.dm_honor).icono} Rango {obtenerRangoDM(props.dm_honor).nombre} ({props.dm_honor})
@@ -695,7 +695,7 @@ function Partida(props) {
 
               <div className="mb-10">
                 <h4 className="text-[10px] font-black text-zinc-500 uppercase tracking-[0.3em] mb-4 flex items-center gap-2">
-                  <span className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse shadow-[0_0_8px_rgba(16,185,129,0.8)]"></span> Compañía Aventurera
+                  <span className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse shadow-[0_0_8px_rgba(16,185,129,0.8)]"></span> CompaÃ±Ã­a Aventurera
                 </h4>
                 <div className="bg-black/40 rounded-[2rem] p-6 md:p-8 border border-zinc-800/50 shadow-inner">
                   {cargandoJugadores ? (
@@ -707,14 +707,14 @@ function Partida(props) {
                     <div className="flex flex-wrap gap-3">
                       {listaJugadores.map((jugador, idx) => {
                         let estilosRol = 'bg-blue-500/10 text-blue-400 border-blue-500/30'; 
-                        let iconoRol = '👤';
+                        let iconoRol = 'ðŸ‘¤';
 
                         if (jugador.rol === 'admin') {
                           estilosRol = 'bg-amber-500/10 text-amber-500 border-amber-500/40 shadow-[0_0_15px_rgba(251,191,36,0.15)]'; 
-                          iconoRol = '👑';
+                          iconoRol = 'ðŸ‘‘';
                         } else if (jugador.rol === 'dm') {
                           estilosRol = 'bg-purple-500/10 text-purple-400 border-purple-500/40'; 
-                          iconoRol = '🛡️';
+                          iconoRol = 'ðŸ›¡ï¸';
                         }
 
                         return (
@@ -729,13 +729,13 @@ function Partida(props) {
                             className={`px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest border flex items-center gap-2 cursor-pointer hover:scale-105 transition-transform ${estilosRol}`}
                             title="Ver Perfil"
                           >
-                            <span className="text-base">{iconoRol}</span> {jugador.nombre}
+                            <span className="text-base">{iconoRol}</span> {jugador.nombre} {jugador.reputacion_neta !== undefined && jugador.reputacion_neta !== 0 && (<span className={`ml-1 px-1.5 py-0.5 rounded-md text-[8px] border ${jugador.reputacion_neta > 0 ? 'bg-emerald-500/20 text-emerald-400 border-emerald-500/50' : 'bg-red-500/20 text-red-400 border-red-500/50'}`}>{jugador.reputacion_neta > 0 ? '+' : ''}{jugador.reputacion_neta}</span>)}
                           </span>
                         );
                       })}
                     </div>
                   ) : (
-                    <p className="text-zinc-600 text-xs italic font-bold">La mesa está vacía aguardando héroes...</p>
+                    <p className="text-zinc-600 text-xs italic font-bold">La mesa estÃ¡ vacÃ­a aguardando hÃ©roes...</p>
                   )}
                 </div>
               </div>
@@ -748,12 +748,12 @@ function Partida(props) {
                   </h4>
                   <div className="bg-sky-950/10 rounded-[2rem] p-6 border border-sky-500/20 shadow-inner space-y-4">
                     <p className="text-zinc-500 text-xs font-bold leading-relaxed">
-                      Escribe un aviso para tus jugadores. Se enviará un mensaje privado a través del bot a todos los inscritos en la mesa que tengan su Telegram vinculado.
+                      Escribe un aviso para tus jugadores. Se enviarÃ¡ un mensaje privado a travÃ©s del bot a todos los inscritos en la mesa que tengan su Telegram vinculado.
                     </p>
                     <textarea 
                       value={mensajeTelegram} 
                       onChange={e => setMensajeTelegram(e.target.value)} 
-                      placeholder="Ej: Recuerden traer hojas de personaje nivel 3. ¡Nos vemos en el evento!"
+                      placeholder="Ej: Recuerden traer hojas de personaje nivel 3. Â¡Nos vemos en el evento!"
                       rows="3" 
                       className="w-full bg-zinc-950 border border-zinc-800 rounded-2xl py-4 px-5 text-white focus:border-sky-500 outline-none transition-all resize-none font-medium placeholder:text-zinc-700 shadow-inner"
                     />
@@ -770,7 +770,7 @@ function Partida(props) {
                             Enviando...
                           </>
                         ) : (
-                          '📣 Enviar Mensaje'
+                          'ðŸ“£ Enviar Mensaje'
                         )}
                       </button>
                     </div>
@@ -788,7 +788,7 @@ function Partida(props) {
               {props.requisitos && (
                 <div className={`mb-10 p-8 ${tema.bg} border ${tema.border} rounded-[2rem]`}>
                   <h4 className={`text-[10px] font-black uppercase tracking-[0.3em] mb-3 flex items-center gap-2 ${tema.color}`}>
-                    <span>⚠️</span> Condiciones del Gremio
+                    <span>âš ï¸</span> Condiciones del Gremio
                   </h4>
                   <p className="text-zinc-300 text-sm font-medium leading-relaxed">
                     {props.requisitos}
@@ -811,7 +811,7 @@ function Partida(props) {
                           : 'bg-emerald-600 text-white hover:bg-emerald-500 shadow-emerald-900/40 border border-emerald-50 active:scale-95'
                     }`}
                   >
-                    {anotado ? 'Abandonar Expedición' : props.inscripcionesCerradas ? 'Inscripciones Cerradas' : estaLlena ? 'Mesa Llena' : (props.es_privada ? '🔒 Desbloquear y Unirse' : 'Firmar el Contrato (Unirse)')}
+                    {anotado ? 'Abandonar ExpediciÃ³n' : props.inscripcionesCerradas ? 'Inscripciones Cerradas' : estaLlena ? 'Mesa Llena' : (props.es_privada ? 'ðŸ”’ Desbloquear y Unirse' : 'Firmar el Contrato (Unirse)')}
                   </button>
                 )}
                 <button 
@@ -830,3 +830,5 @@ function Partida(props) {
 }
 
 export default Partida;
+
+
