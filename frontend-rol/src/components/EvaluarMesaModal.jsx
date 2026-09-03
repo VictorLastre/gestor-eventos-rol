@@ -1,4 +1,4 @@
-﻿import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import Swal from 'sweetalert2';
 import { fetchProtegido } from '../utils/api';
 
@@ -93,8 +93,7 @@ function EvaluarMesaModal({ partida, cerrar, usuarioActualId }) {
 
     const { value: etiqueta } = await Swal.fire({
       title: voto === 1 ? `Otorgar Honor a ${participante.nombre}` : `Dar Deshonor a ${participante.nombre}`,
-      input: 'radio',
-      customClass: { radio: 'text-emerald-500' },
+      input: 'select',
       inputOptions: opciones,
       inputPlaceholder: 'Selecciona una etiqueta',
       showCancelButton: true,
@@ -165,4 +164,3 @@ function EvaluarMesaModal({ partida, cerrar, usuarioActualId }) {
 }
 
 export default EvaluarMesaModal;
-
