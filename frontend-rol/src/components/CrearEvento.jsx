@@ -250,6 +250,19 @@ function CrearEvento({ alCrearEvento }) {
                   <input type="number" min="1" placeholder="Ej: 2" value={cupoEscape} onChange={e => setCupoEscape(e.target.value)} className="w-full bg-zinc-900/80 border border-zinc-800 rounded-xl py-3 px-4 text-white text-sm focus:border-yellow-500 focus:ring-1 focus:ring-yellow-500/50 outline-none transition-all font-bold" />
                 </div>
               </div>
+
+              {/* AULAS DISPONIBLES */}
+              <div className="bg-zinc-950/60 p-5 md:p-6 rounded-3xl border border-zinc-800 space-y-4 shadow-inner mt-4">
+                <h3 className="text-[11px] font-black text-amber-500 uppercase tracking-widest flex items-center gap-2 mb-2">
+                  <span>🚪</span> Aulas (Centro El Molino)
+                </h3>
+                <div className="grid grid-cols-1 gap-4">
+                  <div className="space-y-2">
+                    <label className="text-[10px] font-black text-zinc-500 uppercase ml-1 tracking-widest flex items-center gap-1">Cantidad Máxima</label>
+                    <input type="number" min="0" placeholder="Ej: 2" value={aulasDisponibles} onChange={e => setAulasDisponibles(e.target.value)} className="w-full bg-zinc-900/80 border border-zinc-800 rounded-xl py-3 px-4 text-white text-sm focus:border-amber-500 focus:ring-1 focus:ring-amber-500/50 outline-none transition-all font-bold" />
+                  </div>
+                </div>
+              </div>
             </div>
 
             {/* BOTÓN DE ACCIÓN */}

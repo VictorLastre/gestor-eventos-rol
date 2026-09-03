@@ -421,4 +421,37 @@ router.get('/notificaciones', verificarToken, (req, res) => {
     });
   });
 
+
+// GET RANKING (SALON DE LA FAMA)
+router.get('/ranking/salon-fama', verificarToken, (req, res) => {
+    // Calculamos el honor_total para DMs y la reputacion_neta para jugadores
+    const sql = `
+      SELECT 
+        id, 
+        nombre, 
+        nombre_completo, 
+        rol, 
+        avatar, 
+        (SELECT COUNT(*) FROM honor_dm WHERE dm_id = usuarios.id) + 
+        (SELECT COUNT(p2.id) FROM partidas p2 JOIN eventos e2 ON p2.evento_id = e2.id WHERE p2.dungeon_master_id = usuarios.id AND e2.estado = 'Finalizado') as honor_total, 
+        IFNULL((SELECT SUM(voto) FROM reputacion WHERE evaluado_id = usuarios.id), 0) as reputacion_neta
+      FROM usuarios
+    `;
+    
+    db.query(sql, (err, resultados) => {
+        if (err) return res.status(500).json({ error: 'Error al consultar el ranking.' });
+        
+        // Separar y ordenar
+        const masters = resultados
+            .filter(u => u.rol === 'dm' || u.rol === 'admin')
+            .sort((a, b) => b.honor_total - a.honor_total);
+            
+        const jugadores = resultados
+            // Puedes mostrar a todos o solo a los que no son DM. Si un DM también juega, debería aparecer. Mostraremos a todos.
+            .sort((a, b) => b.reputacion_neta - a.reputacion_neta);
+
+        res.json({ masters, jugadores });
+    });
+});
+
 module.exports = router;

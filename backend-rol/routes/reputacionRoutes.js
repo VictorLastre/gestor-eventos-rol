@@ -51,6 +51,9 @@ router.post('/', verificarToken, async (req, res) => {
     `;
     await db.promise().query(sql, [evaluador_id, evaluado_id, partida_id, voto, etiqueta]);
 
+    const io = req.app.get('io');
+    if (io) io.emit('actualizacion-usuarios');
+
     res.json({ success: true, mensaje: 'Evaluación registrada con éxito.' });
   } catch (error) {
     console.error('Error al registrar reputación:', error);
