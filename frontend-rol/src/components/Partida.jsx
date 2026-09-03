@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+﻿import { useState, useEffect } from 'react';
 import Swal from 'sweetalert2'; 
 import { fetchProtegido } from '../utils/api'; 
 import { io } from 'socket.io-client';
@@ -43,6 +43,8 @@ function Partida(props) {
   const [listaJugadores, setListaJugadores] = useState([]);
   const [modalAbierto, setModalAbierto] = useState(false);
   const [mostrarEvaluar, setMostrarEvaluar] = useState(false);
+  const usuarioGuardado = JSON.parse(localStorage.getItem('usuario') || '{}');
+  const usuarioIdActual = usuarioGuardado.id;
   const [cargandoJugadores, setCargandoJugadores] = useState(false);
   const [mensajeTelegram, setMensajeTelegram] = useState('');
   const [enviandoMensaje, setEnviandoMensaje] = useState(false);
@@ -676,7 +678,7 @@ function Partida(props) {
                   <div className="min-w-0 flex-1">
                     <p className="text-[10px] font-black text-zinc-500 uppercase tracking-[0.2em] mb-1 truncate">{esJuegoMesa ? 'Organizador' : 'Director de Juego'}</p>
                     <div className="flex items-center gap-2 flex-wrap min-w-0">
-                        <p className="text-xl text-zinc-200 font-black truncate flex items-center gap-2 cursor-pointer hover:text-emerald-400 transition-colors" onClick={() => { if (props.estado === 'Finalizado' && (anotado || soyElMaster)) { setMostrarEvaluar(true); } else if (props.setVista) { props.setVista(`perfil:${props.dungeon_master_id}`); setModalAbierto(false); } }}>{props.dmNombre || props.dungeon_master_nombre} {props.dm_reputacion_neta !== undefined && props.dm_reputacion_neta !== 0 && (<span className={`px-2 py-0.5 rounded-lg text-[10px] border ${props.dm_reputacion_neta > 0 ? 'bg-emerald-500/20 text-emerald-400 border-emerald-500/50' : 'bg-red-500/20 text-red-400 border-red-500/50'}`}>{props.dm_reputacion_neta > 0 ? '+' : ''}{props.dm_reputacion_neta}</span>)}</p>
+                        <p className="text-xl text-zinc-200 font-black truncate flex items-center gap-2 cursor-pointer hover:text-emerald-400 transition-colors" onClick={() => { if (props.eventoEsPasado && (anotado || soyElMaster)) { setMostrarEvaluar(true); } else if (props.setVista) { props.setVista(`perfil:${props.dungeon_master_id}`); setModalAbierto(false); } }}>{props.dmNombre || props.dungeon_master_nombre} {props.dm_reputacion_neta !== undefined && props.dm_reputacion_neta !== 0 && (<span className={`px-2 py-0.5 rounded-lg text-[10px] border ${props.dm_reputacion_neta > 0 ? 'bg-emerald-500/20 text-emerald-400 border-emerald-500/50' : 'bg-red-500/20 text-red-400 border-red-500/50'}`}>{props.dm_reputacion_neta > 0 ? '+' : ''}{props.dm_reputacion_neta}</span>)}</p>
                         {!esJuegoMesa && props.dm_honor !== undefined && (
                           <span className={`flex items-center gap-1.5 text-[10px] font-black uppercase tracking-widest px-2 py-1 rounded-md bg-black/30 border border-zinc-800 shadow-inner ${obtenerRangoDM(props.dm_honor).colorClase}`}>
                             {obtenerRangoDM(props.dm_honor).icono} Rango {obtenerRangoDM(props.dm_honor).nombre} ({props.dm_honor})
@@ -727,10 +729,10 @@ function Partida(props) {
                           <span 
                             key={idx} 
                             onClick={() => {
-                              if (props.estado === 'Finalizado' && (anotado || soyElMaster)) {
+                              if (props.eventoEsPasado && (anotado || soyElMaster)) {
                                 setMostrarEvaluar(true);
-                              } else if (props.setVista && jugador.usuario_id) {
-                                props.setVista(`perfil:${jugador.usuario_id}`);
+                              } else if (props.setVista && jugador.id) {
+                                props.setVista(`perfil:${jugador.id}`);
                                 setModalAbierto(false);
                               }
                             }}
@@ -838,3 +840,4 @@ function Partida(props) {
 }
 
 export default Partida;
+
