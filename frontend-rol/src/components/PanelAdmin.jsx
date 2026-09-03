@@ -3,7 +3,7 @@ import CrearEvento from './CrearEvento';
 import GestionUsuarios from './GestionUsuarios'; 
 import Estadisticas from './Estadisticas';
 
-function PanelAdmin() {
+function PanelAdmin({ setVista }) {
   const [pestanaAdmin, setPestanaAdmin] = useState('eventos');
 
   return (
@@ -49,7 +49,7 @@ function PanelAdmin() {
         {/* overflow-x-hidden añadido por seguridad para evitar el scroll horizontal interno */}
         <div className="p-4 sm:p-6 md:p-12 w-full overflow-x-hidden">
           {pestanaAdmin === 'eventos' && <CrearEvento alCrearEvento={() => {}} />}
-          {pestanaAdmin === 'usuarios' && <GestionUsuarios />}
+          {pestanaAdmin === 'usuarios' && <GestionUsuarios setVista={setVista} />}
           {pestanaAdmin === 'stats' && <Estadisticas />}
         </div>
       </section>
