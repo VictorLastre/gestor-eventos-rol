@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import Avatar from 'boring-avatars';
 import { io } from 'socket.io-client';
+import { fetchProtegido } from '../utils/api';
 
 function SalonFama({ cambiarVista }) {
   const [ranking, setRanking] = useState({ masters: [], jugadores: [] });
@@ -9,14 +10,11 @@ function SalonFama({ cambiarVista }) {
 
   const fetchRanking = async () => {
     try {
-      const token = localStorage.getItem('token');
-      const res = await fetch('/api/usuarios/ranking/salon-fama', {
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
-      });
-      const data = await res.json();
-      setRanking(data);
+      const res = await fetchProtegido('/api/usuarios/ranking/salon-fama');
+      if (res.ok) {
+        const data = await res.json();
+        setRanking(data);
+      }
     } catch (error) {
       console.error('Error cargando el salón de la fama:', error);
     } finally {
