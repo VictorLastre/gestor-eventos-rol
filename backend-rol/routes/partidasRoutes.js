@@ -271,8 +271,22 @@ router.delete('/:id/inscripciones', verificarToken, (req, res) => {
 
 // âœ¨ JUGADORES: Obtener lista de inscritos en una mesa
 router.get('/:id/jugadores', verificarToken, (req, res) => {
-  const sql = "SELECT u.id, u.nombre, u.email, u.rol, IFNULL((SELECT SUM(voto) FROM reputacion WHERE evaluado_id = u.id), 0) as reputacion_neta FROM usuarios u JOIN inscripciones i ON u.id = i.usuario_id WHERE i.partida_id = ?";
-  db.query(sql, [req.params.id], (err, resultados) => {
+  const sql = `
+      SELECT u.id, u.nombre, u.email, u.rol, 
+        IFNULL((SELECT SUM(voto) FROM reputacion WHERE evaluado_id = u.id), 0) as reputacion_neta 
+      FROM usuarios u 
+      JOIN inscripciones i ON u.id = i.usuario_id 
+      WHERE i.partida_id = ?
+      
+      UNION
+      
+      SELECT u.id, u.nombre, u.email, u.rol, 
+        IFNULL((SELECT SUM(voto) FROM reputacion WHERE evaluado_id = u.id), 0) as reputacion_neta 
+      FROM usuarios u 
+      JOIN partidas p ON u.id = p.dungeon_master_id 
+      WHERE p.id = ?
+    `;
+    db.query(sql, [req.params.id, req.params.id], (err, resultados) => {
     if (err) return res.status(500).json({ error: 'Error al consultar aventureros.' });
     res.json(resultados);
   });

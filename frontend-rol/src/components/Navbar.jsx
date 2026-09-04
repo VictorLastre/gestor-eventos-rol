@@ -125,10 +125,12 @@ function Navbar({ usuario, alCerrarSesion, setVista }) {
   return (
     <nav className="bg-zinc-950/90 border-b border-zinc-800/80 px-4 md:px-6 py-3 md:py-4 mb-6 md:mb-8 sticky top-0 z-[100] backdrop-blur-xl shadow-2xl transition-all">
       {/* ✨ RESTRUCTURACIÓN RESPONSIVA MAGISTRAL ✨ */}
-      <div className="max-w-7xl mx-auto flex flex-wrap xl:flex-nowrap items-center justify-between gap-y-3 gap-x-2">
+      <div className="max-w-7xl mx-auto flex flex-col gap-4">
+        {/* ROW 1: Logo & Actions */}
+        <div className="flex items-center justify-between w-full">
         
         {/* LOGO (Orden 1 en todas las pantallas) */}
-        <div className="flex items-center gap-2 sm:gap-3 group cursor-pointer shrink-0 order-1" onClick={() => setVista('eventos')}>
+        <div className="flex items-center gap-2 sm:gap-3 group cursor-pointer shrink-0" onClick={() => setVista('eventos')}>
           <div className="relative w-10 h-10 md:w-12 md:h-12 flex items-center justify-center transition-transform duration-500 group-hover:scale-110 group-hover:rotate-6">
               <div className="absolute inset-0 bg-emerald-500/20 blur-xl rounded-full opacity-0 group-hover:opacity-100 transition-opacity"></div>
               <img src={LogoSVG} alt="Logo" className="w-8 h-8 md:w-10 md:h-10 object-contain drop-shadow-[0_0_8px_rgba(16,185,129,0.3)] relative z-10" />
@@ -140,7 +142,7 @@ function Navbar({ usuario, alCerrarSesion, setVista }) {
         </div>
         
         {/* ACCIONES DE USUARIO: Campana, Perfil, Salir (Orden 2 en móvil, Orden 3 en escritorio) */}
-        <div className="flex items-center gap-2 sm:gap-4 shrink-0 order-2 xl:order-3">
+        <div className="flex items-center gap-2 sm:gap-4 shrink-0">
           
           <div className="relative" ref={dropdownRef}>
             <button 
@@ -235,8 +237,12 @@ function Navbar({ usuario, alCerrarSesion, setVista }) {
           </button>
         </div>
 
+        </div>
+
+
+
         {/* NAVEGACIÓN PRINCIPAL (Orden 3 en móvil enviándolo abajo al 100%, Orden 2 en escritorio) */}
-        <div className="w-full xl:w-auto flex overflow-x-auto scrollbar-hide order-3 xl:order-2 justify-start sm:justify-center">
+        <div className="w-full flex overflow-x-auto scrollbar-hide justify-start sm:justify-center pb-1">
           <div className="flex flex-nowrap justify-center gap-1 sm:gap-2 bg-zinc-900/50 p-1 md:p-1.5 rounded-xl md:rounded-2xl border border-zinc-800/50 min-w-max">
             <button 
               onClick={() => setVista('eventos')}
@@ -254,7 +260,7 @@ function Navbar({ usuario, alCerrarSesion, setVista }) {
                 onClick={() => setVista('salon-fama')}
                 className="text-[10px] md:text-xs font-black uppercase tracking-widest text-amber-400 hover:text-white transition-all py-2.5 md:py-3 px-4 md:px-6 rounded-lg md:rounded-xl hover:bg-zinc-800 focus:outline-none flex items-center gap-1.5 md:gap-2 whitespace-nowrap"
               >
-                <span className="text-base md:text-lg">🏆</span> Ranking
+                <span className="text-base md:text-lg">🏆</span> Salón de la Fama
               </button>
             {esAdmin && (
               <>
