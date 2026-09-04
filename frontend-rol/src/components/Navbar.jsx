@@ -250,6 +250,12 @@ function Navbar({ usuario, alCerrarSesion, setVista }) {
             >
               <span className="text-base md:text-lg">📖</span> Mi Diario
             </button>
+              <button 
+                onClick={() => setVista('salon-fama')}
+                className="text-[10px] md:text-xs font-black uppercase tracking-widest text-amber-400 hover:text-white transition-all py-2.5 md:py-3 px-4 md:px-6 rounded-lg md:rounded-xl hover:bg-zinc-800 focus:outline-none flex items-center gap-1.5 md:gap-2 whitespace-nowrap"
+              >
+                <span className="text-base md:text-lg">🏆</span> Salón de la Fama
+              </button>
             {esAdmin && (
               <>
                 <button 
