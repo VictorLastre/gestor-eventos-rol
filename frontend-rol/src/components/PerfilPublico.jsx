@@ -41,7 +41,7 @@ function PerfilPublico({ usuarioId, volver }) {
     </div>
   );
 
-  const rango = (perfil.rol === 'dm' || perfil.rol === 'admin') ? obtenerRangoDM(perfil.honor_total) : null;
+  const rango = (perfil.rol === 'dm' || perfil.rol === 'admin') ? obtenerRangoDM(perfil.dirigiendo ? perfil.dirigiendo.length : 0) : null;
   const fundadores = ['mati', 'martín', 'martin', 'delo', 'keith', 'guille', 'diny', 'sterbern'];
   const esFundador = perfil.nombre ? fundadores.includes(perfil.nombre.toLowerCase()) : false;
 
