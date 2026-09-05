@@ -118,9 +118,9 @@ function SalonFama({ cambiarVista }) {
                     
                     <div className="text-right">
                       <div className="text-xs text-zinc-500 font-bold uppercase tracking-widest mb-1">Honor Total</div>
-                      <div className="text-xl md:text-2xl font-black text-amber-500 flex items-center gap-2 justify-end">
-                        {master.honor_total} <span>🔥</span>
-                      </div>
+                      <div className={`text-xl md:text-2xl font-black flex items-center gap-2 justify-end ${master.honor_total >= 0 ? 'text-amber-500' : 'text-red-500'}`}>
+                          {master.honor_total > 0 ? '+' : ''}{master.honor_total} <span>{master.honor_total >= 0 ? '🔥' : '💀'}</span>
+                        </div>
                     </div>
                   </div>
                 ))}

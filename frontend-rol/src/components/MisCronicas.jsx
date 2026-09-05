@@ -468,14 +468,10 @@ function MisCronicas({ alActualizarUsuario }) {
                     </div>
                     
                     {p.etiqueta !== 'Juegos de Mesa' && p.etiqueta !== 'Escape Room' && (
-                      honoresOtorgados.includes(p.id) ? (
-                        <span className="text-[10px] font-bold text-amber-500 bg-amber-500/10 px-2 py-1 rounded-md border border-amber-500/20">🏆 Honor Otorgado</span>
-                      ) : (
-                        <button onClick={() => darHonor(p.dungeon_master_id, p.id, p.dm_nombre)} className="text-[10px] font-bold text-zinc-400 hover:text-amber-400 bg-zinc-900 hover:bg-zinc-800 px-3 py-1.5 rounded-lg transition-all border border-zinc-700 hover:border-amber-500/50 flex items-center gap-1.5 shadow-lg">
-                          <span className="text-sm">🏆</span> <span className="hidden sm:inline">Dar Honor a</span> <span className="sm:hidden">Honor:</span> {p.dm_nombre}
+                        <button onClick={() => setPartidaEvaluar(p)} className="text-[10px] font-bold text-zinc-400 hover:text-emerald-400 bg-zinc-900 hover:bg-zinc-800 px-3 py-1.5 rounded-lg transition-all border border-zinc-700 hover:border-emerald-500/50 flex items-center gap-1.5 shadow-lg">
+                          <span className="text-sm">⭐</span> <span className="hidden sm:inline">Evaluar Mesa</span>
                         </button>
-                      )
-                    )}
+                      )}
                   </div>
                 </div>
               ))

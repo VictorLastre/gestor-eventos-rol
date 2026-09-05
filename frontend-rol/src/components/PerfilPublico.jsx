@@ -99,10 +99,21 @@ function PerfilPublico({ usuarioId, volver }) {
                 {/* ✨ REPUTACIÓN Y ETIQUETAS */}
                 <div className="mt-3 flex flex-wrap items-center gap-3">
                   <div className="flex flex-col items-center justify-center">
-                    <span className={`text-2xl font-black ${perfil.reputacion_neta > 0 ? 'text-emerald-500' : perfil.reputacion_neta < 0 ? 'text-red-500' : 'text-zinc-500'}`}>
-                      {perfil.reputacion_neta > 0 ? '+' : ''}{perfil.reputacion_neta || 0}
-                    </span>
-                    <span className="text-[8px] uppercase tracking-widest text-zinc-500 font-black">Reputación</span>
+                    {(perfil.rol === 'dm' || perfil.rol === 'admin') ? (
+                      <>
+                        <span className={`text-2xl font-black ${perfil.reputacion_neta >= 0 ? 'text-amber-500' : 'text-red-500'}`}>
+                          {perfil.reputacion_neta > 0 ? '+' : ''}{perfil.reputacion_neta || 0} {perfil.reputacion_neta >= 0 ? '🔥' : '💀'}
+                        </span>
+                        <span className="text-[8px] uppercase tracking-widest text-zinc-500 font-black">Honor Total</span>
+                      </>
+                    ) : (
+                      <>
+                        <span className={`text-2xl font-black ${perfil.reputacion_neta > 0 ? 'text-emerald-500' : perfil.reputacion_neta < 0 ? 'text-red-500' : 'text-zinc-500'}`}>
+                          {perfil.reputacion_neta > 0 ? '+' : ''}{perfil.reputacion_neta || 0}
+                        </span>
+                        <span className="text-[8px] uppercase tracking-widest text-zinc-500 font-black">Reputación</span>
+                      </>
+                    )}
                   </div>
 
                   {perfil.topTags && perfil.topTags.length > 0 && (
