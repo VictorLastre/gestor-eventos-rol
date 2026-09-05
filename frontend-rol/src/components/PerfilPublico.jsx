@@ -119,10 +119,10 @@ function PerfilPublico({ usuarioId, volver }) {
                   {perfil.topTags && perfil.topTags.length > 0 && (
                     <div className="flex gap-2 ml-2">
                       {perfil.topTags.map((tag, idx) => (
-                        <span key={idx} className="bg-zinc-900/80 border border-zinc-800 text-[9px] md:text-[10px] text-zinc-300 font-bold uppercase tracking-widest px-3 py-1 rounded-full shadow-inner flex items-center gap-1">
-                          {tag.etiqueta} <span className="opacity-50">({tag.cantidad})</span>
-                        </span>
-                      ))}
+                          <span key={idx} className={`bg-zinc-900/80 border text-[9px] md:text-[10px] text-zinc-300 font-bold uppercase tracking-widest px-3 py-1 rounded-full shadow-inner flex items-center gap-1 ${tag.es_dm ? 'border-amber-500/50' : 'border-emerald-500/50'}`}>
+                            {tag.etiqueta} <span className="opacity-50">({tag.cantidad})</span>
+                          </span>
+                        ))}
                     </div>
                   )}
                 </div>

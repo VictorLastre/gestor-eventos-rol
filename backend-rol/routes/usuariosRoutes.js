@@ -368,7 +368,7 @@ router.get('/notificaciones', verificarToken, (req, res) => {
         db.query(sqlJugando, [idObj], (err3, jugando) => {
           if (err3) return res.status(500).json({ error: 'Error cargando crónicas.' });
           
-          db.query(`SELECT etiqueta, COUNT(*) as cantidad FROM reputacion WHERE evaluado_id = ? GROUP BY etiqueta ORDER BY cantidad DESC LIMIT 3`, [idObj], (err4, topTags) => {
+          db.query(`SELECT r.etiqueta, COUNT(*) as cantidad, (p.dungeon_master_id = r.evaluado_id) as es_dm FROM reputacion r JOIN partidas p ON r.partida_id = p.id WHERE r.evaluado_id = ? GROUP BY r.etiqueta, es_dm ORDER BY cantidad DESC LIMIT 3`, [idObj], (err4, topTags) => {
             res.json({
               ...usuarioPublico,
               dirigiendo,
