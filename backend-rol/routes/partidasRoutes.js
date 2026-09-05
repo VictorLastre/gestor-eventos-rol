@@ -273,7 +273,7 @@ router.delete('/:id/inscripciones', verificarToken, (req, res) => {
 router.get('/:id/jugadores', verificarToken, (req, res) => {
   const sql = `
       SELECT u.id, u.nombre, u.email, u.rol, 
-        IFNULL((SELECT SUM(voto) FROM reputacion WHERE evaluado_id = u.id), 0) as reputacion_neta 
+        IFNULL((SELECT SUM(r.voto) FROM reputacion r JOIN partidas p2 ON r.partida_id = p2.id WHERE r.evaluado_id = u.id AND p2.dungeon_master_id != u.id), 0) as reputacion_neta 
       FROM usuarios u 
       JOIN inscripciones i ON u.id = i.usuario_id 
       WHERE i.partida_id = ?
@@ -281,7 +281,7 @@ router.get('/:id/jugadores', verificarToken, (req, res) => {
       UNION
       
       SELECT u.id, u.nombre, u.email, u.rol, 
-        IFNULL((SELECT SUM(voto) FROM reputacion WHERE evaluado_id = u.id), 0) as reputacion_neta 
+        IFNULL((SELECT SUM(r.voto) FROM reputacion r JOIN partidas p2 ON r.partida_id = p2.id WHERE r.evaluado_id = u.id AND p2.dungeon_master_id = u.id), 0) as reputacion_neta 
       FROM usuarios u 
       JOIN partidas p ON u.id = p.dungeon_master_id 
       WHERE p.id = ?
