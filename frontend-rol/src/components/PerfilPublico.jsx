@@ -97,27 +97,33 @@ function PerfilPublico({ usuarioId, volver }) {
                 )}
 
                 {/* ✨ REPUTACIÓN Y ETIQUETAS */}
-                <div className="mt-3 flex flex-wrap items-center gap-3">
-                  <div className="flex flex-col items-center justify-center">
+                <div className="mt-3 flex flex-wrap items-center gap-4">
                     {(perfil.rol === 'dm' || perfil.rol === 'admin') ? (
-                      <>
-                        <span className={`text-2xl font-black ${perfil.reputacion_neta >= 0 ? 'text-amber-500' : 'text-red-500'}`}>
-                          {perfil.reputacion_neta > 0 ? '+' : ''}{perfil.reputacion_neta || 0} {perfil.reputacion_neta >= 0 ? '🔥' : '💀'}
-                        </span>
-                        <span className="text-[8px] uppercase tracking-widest text-zinc-500 font-black">Honor Total</span>
-                      </>
+                      <div className="flex gap-4 border-r border-zinc-800 pr-4">
+                        <div className="flex flex-col items-center justify-center">
+                          <span className={`text-2xl font-black ${perfil.honor_total >= 0 ? 'text-amber-500' : 'text-red-500'}`}>
+                            {perfil.honor_total > 0 ? '+' : ''}{perfil.honor_total || 0} {perfil.honor_total >= 0 ? '🔥' : '💀'}
+                          </span>
+                          <span className="text-[8px] uppercase tracking-widest text-zinc-500 font-black">Honor DM</span>
+                        </div>
+                        <div className="flex flex-col items-center justify-center">
+                          <span className={`text-2xl font-black ${perfil.reputacion_neta > 0 ? 'text-emerald-500' : perfil.reputacion_neta < 0 ? 'text-red-500' : 'text-zinc-500'}`}>
+                            {perfil.reputacion_neta > 0 ? '+' : ''}{perfil.reputacion_neta || 0}
+                          </span>
+                          <span className="text-[8px] uppercase tracking-widest text-zinc-500 font-black">Reputación</span>
+                        </div>
+                      </div>
                     ) : (
-                      <>
+                      <div className="flex flex-col items-center justify-center border-r border-zinc-800 pr-4">
                         <span className={`text-2xl font-black ${perfil.reputacion_neta > 0 ? 'text-emerald-500' : perfil.reputacion_neta < 0 ? 'text-red-500' : 'text-zinc-500'}`}>
                           {perfil.reputacion_neta > 0 ? '+' : ''}{perfil.reputacion_neta || 0}
                         </span>
                         <span className="text-[8px] uppercase tracking-widest text-zinc-500 font-black">Reputación</span>
-                      </>
+                      </div>
                     )}
-                  </div>
-
-                  {perfil.topTags && perfil.topTags.length > 0 && (
-                    <div className="flex gap-2 ml-2">
+  
+                    {perfil.topTags && perfil.topTags.length > 0 && (
+                      <div className="flex gap-2">
                       {perfil.topTags.map((tag, idx) => (
                           <span key={idx} className={`bg-zinc-900/80 border text-[9px] md:text-[10px] text-zinc-300 font-bold uppercase tracking-widest px-3 py-1 rounded-full shadow-inner flex items-center gap-1 ${tag.es_dm ? 'border-amber-500/50' : 'border-emerald-500/50'}`}>
                             {tag.etiqueta} <span className="opacity-50">({tag.cantidad})</span>
