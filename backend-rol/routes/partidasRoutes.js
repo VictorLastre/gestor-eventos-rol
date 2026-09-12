@@ -13,6 +13,16 @@ const registrarLog = (usuario, accion, descripcion) => {
 };
 
 // ✨ ESTADÍSTICAS: Obtener el Top de Sistemas Más Jugados (Rol)
+
+// Historial de mesas del DM (para seleccionar continuación)
+router.get('/historial/mias', verificarToken, (req, res) => {
+  const sql = "SELECT p.id, p.titulo, e.nombre as evento_nombre FROM partidas p JOIN eventos e ON p.evento_id = e.id WHERE p.dungeon_master_id = ? AND e.estado != 'Proximo' ORDER BY p.id DESC";
+  db.query(sql, [req.usuario.id], (err, resultados) => {
+    if (err) return res.status(500).json({ error: 'Error al consultar historial.' });
+    res.json(resultados);
+  });
+});
+
 router.get('/estadisticas/sistemas', verificarToken, (req, res) => {
   const sql = `
     SELECT 
