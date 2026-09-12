@@ -129,7 +129,7 @@ router.get('/:id/partidas', verificarToken, (req, res) => {
     SELECT 
       p.id, p.evento_id, p.dungeon_master_id, p.titulo, p.descripcion, p.requisitos, 
       p.sistema, p.sistema_id, s.nombre AS sistema_db_nombre,
-      p.cupo, p.turno, p.estado, p.etiqueta, p.apta_novatos, p.materiales_pedidos,
+      p.cupo, p.turno, p.estado, p.etiqueta, p.apta_novatos, p.materiales_pedidos, p.continuacion_de_id,
       IF(p.codigo_privado IS NOT NULL AND p.codigo_privado != '', 1, 0) AS es_privada,
       IF(p.dungeon_master_id = ?, p.codigo_privado, NULL) AS codigo_privado,
       u.nombre AS dmNombre, 

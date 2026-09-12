@@ -346,6 +346,13 @@ function Partida(props) {
                 </span>
               )}
 
+              {/* 🔄 ETIQUETA DE CONTINUACIÓN */}
+              {props.continuacion_de_id && (
+                <span className="text-[9px] font-black text-blue-900 bg-blue-400 uppercase tracking-widest px-3 py-1 rounded-full shadow-[0_0_12px_rgba(96,165,250,0.5)] flex items-center gap-1.5 whitespace-nowrap">
+                  🔄 Continuación
+                </span>
+              )}
+
               {Boolean(props.apta_novatos) && (
                 <span className={`text-[9px] font-black ${esJuegoMesa ? 'text-emerald-900 bg-emerald-400' : 'text-emerald-950 bg-emerald-400'} uppercase tracking-widest px-3 py-1 rounded-full shadow-[0_0_12px_rgba(52,211,153,0.5)] flex items-center gap-1.5 whitespace-nowrap`}>
                   🌱 {esJuegoMesa ? 'Enseña a jugar' : 'Novatos'}
@@ -662,6 +669,13 @@ function Partida(props) {
                 {Boolean(props.es_privada) && (
                   <span className="text-[10px] font-black text-purple-950 uppercase tracking-widest bg-purple-400 px-3 py-1.5 rounded-full shadow-[0_0_15px_rgba(168,85,247,0.4)] flex items-center gap-1.5 animate-pulse">
                     🔒 Mesa Privada
+                  </span>
+                )}
+                
+                {/* 🔄 ETIQUETA DE CONTINUACIÓN EN EL MODAL */}
+                {props.continuacion_de_id && (
+                  <span className="text-[10px] font-black text-blue-950 uppercase tracking-widest bg-blue-400 px-3 py-1.5 rounded-full shadow-[0_0_15px_rgba(96,165,250,0.4)] flex items-center gap-1.5">
+                    🔄 Continuación
                   </span>
                 )}
 

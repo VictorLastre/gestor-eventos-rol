@@ -98,39 +98,36 @@ function Eventos({ setVista }) {
     };
   }, []);
 
-  // ✨ AUTO-PLAY PARA LOS CARRUSELES (EVITA QUE LA PÁGINA QUEDE ESTÁTICA)
+  // ✨ SCROLL HORIZONTAL CON RUEDA DEL RATÓN
   useEffect(() => {
-    let intervalo;
-    
-    const autoScroll = (ref) => {
-      if (ref.current) {
-        const container = ref.current;
-        const maxScrollLeft = container.scrollWidth - container.clientWidth;
-        
-        if (container.scrollLeft >= maxScrollLeft - 5) {
-          container.scrollTo({ left: 0, behavior: 'smooth' });
-        } else {
-          container.scrollBy({ left: 350, behavior: 'smooth' });
+    const attachWheelEvent = (ref) => {
+      const container = ref.current;
+      if (!container) return;
+      
+      const handleWheel = (e) => {
+        if (e.deltaY !== 0) {
+          e.preventDefault();
+          container.scrollBy({ left: e.deltaY > 0 ? 100 : -100, behavior: 'smooth' });
         }
-      }
+      };
+      
+      // Pasamos passive: false para poder hacer preventDefault y evitar que la página baje
+      container.addEventListener('wheel', handleWheel, { passive: false });
+      return () => container.removeEventListener('wheel', handleWheel);
     };
 
-    if (eventoSeleccionado) {
-      if (vistaActiva === 'rol') {
-        intervalo = setInterval(() => autoScroll(carruselPartidasRef), 4000);
-      } else if (vistaActiva === 'juegos') {
-        intervalo = setInterval(() => autoScroll(carruselJuegosRef), 4000);
-      } else if (vistaActiva === 'escape') {
-        intervalo = setInterval(() => autoScroll(carruselEscapesRef), 4000);
-      }
-    } else {
-      intervalo = setInterval(() => autoScroll(carruselEventosRef), 5000);
-    }
+    let cleanupEventos = attachWheelEvent(carruselEventosRef);
+    let cleanupPartidas = attachWheelEvent(carruselPartidasRef);
+    let cleanupJuegos = attachWheelEvent(carruselJuegosRef);
+    let cleanupEscapes = attachWheelEvent(carruselEscapesRef);
 
     return () => {
-      if (intervalo) clearInterval(intervalo);
+      if (cleanupEventos) cleanupEventos();
+      if (cleanupPartidas) cleanupPartidas();
+      if (cleanupJuegos) cleanupJuegos();
+      if (cleanupEscapes) cleanupEscapes();
     };
-  }, [eventoSeleccionado, vistaActiva, partidasDelEvento, escapesDelEvento, eventos]);
+  }, [eventoSeleccionado, vistaActiva]);
 
   const borrarEvento = async (id, e) => {
     e.stopPropagation();
