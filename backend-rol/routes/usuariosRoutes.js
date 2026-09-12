@@ -24,7 +24,7 @@ router.get('/mis-cronicas', verificarToken, (req, res) => {
   `;
   
   const sqlJugando = `
-    SELECT p.*, e.nombre as evento_nombre, DATE_FORMAT(e.fecha, '%Y-%m-%d') as evento_fecha, u.nombre as dm_nombre
+    SELECT p.*, e.nombre as evento_nombre, DATE_FORMAT(e.fecha, '%Y-%m-%d') as evento_fecha, u.nombre as dm_nombre, i.estado as mi_estado
     FROM inscripciones i 
     JOIN partidas p ON i.partida_id = p.id 
     JOIN eventos e ON p.evento_id = e.id 

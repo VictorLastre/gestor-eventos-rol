@@ -457,24 +457,32 @@ function MisCronicas({ alActualizarUsuario }) {
             {cronicas.jugando.length === 0 ? (
               <p className="text-zinc-600 italic text-sm py-4 border-2 border-dashed border-zinc-900 rounded-3xl text-center">Aún no has participado en ninguna mesa...</p>
             ) : (
-              cronicas.jugando.map(p => (
-                <div key={p.id} className="group bg-zinc-900/40 border border-zinc-800 p-6 rounded-3xl hover:border-emerald-500/30 transition-all hover:bg-zinc-900">
-                  <h4 className="font-black text-lg text-white group-hover:text-emerald-400 transition-colors uppercase italic leading-tight">{p.titulo}</h4>
-                  <div className="flex justify-between items-center mt-4">
-                    <div className="flex items-center gap-2">
-                      <span className="text-[10px] font-black text-zinc-500 uppercase tracking-widest">{p.evento_nombre}</span>
-                      <span className="w-1 h-1 bg-zinc-700 rounded-full"></span>
-                      <span className="text-[10px] font-black text-emerald-500/70 uppercase tracking-widest">{formatearFecha(p.evento_fecha)}</span>
+              cronicas.jugando.map(p => {
+                const esPendiente = p.mi_estado === 'pendiente';
+                return (
+                  <div key={p.id} className={`group ${esPendiente ? 'bg-blue-900/10 border-blue-900/30' : 'bg-zinc-900/40 border-zinc-800'} border p-6 rounded-3xl hover:border-emerald-500/30 transition-all hover:bg-zinc-900 relative`}>
+                    {esPendiente && (
+                      <span className="absolute -top-3 -right-2 bg-blue-500 text-black text-[9px] font-black uppercase tracking-widest px-3 py-1 rounded-full shadow-[0_0_10px_rgba(59,130,246,0.4)] animate-pulse">
+                        Pendiente
+                      </span>
+                    )}
+                    <h4 className="font-black text-lg text-white group-hover:text-emerald-400 transition-colors uppercase italic leading-tight">{p.titulo}</h4>
+                    <div className="flex justify-between items-center mt-4">
+                      <div className="flex items-center gap-2">
+                        <span className="text-[10px] font-black text-zinc-500 uppercase tracking-widest">{p.evento_nombre}</span>
+                        <span className="w-1 h-1 bg-zinc-700 rounded-full"></span>
+                        <span className="text-[10px] font-black text-emerald-500/70 uppercase tracking-widest">{formatearFecha(p.evento_fecha)}</span>
+                      </div>
+                      
+                      {p.etiqueta !== 'Juegos de Mesa' && p.etiqueta !== 'Escape Room' && !esPendiente && (
+                          <button onClick={() => setPartidaEvaluar(p)} className="text-[10px] font-bold text-zinc-400 hover:text-emerald-400 bg-zinc-900 hover:bg-zinc-800 px-3 py-1.5 rounded-lg transition-all border border-zinc-700 hover:border-emerald-500/50 flex items-center gap-1.5 shadow-lg">
+                            <span className="text-sm">🌟</span> <span className="hidden sm:inline">Evaluar Mesa</span>
+                          </button>
+                        )}
                     </div>
-                    
-                    {p.etiqueta !== 'Juegos de Mesa' && p.etiqueta !== 'Escape Room' && (
-                        <button onClick={() => setPartidaEvaluar(p)} className="text-[10px] font-bold text-zinc-400 hover:text-emerald-400 bg-zinc-900 hover:bg-zinc-800 px-3 py-1.5 rounded-lg transition-all border border-zinc-700 hover:border-emerald-500/50 flex items-center gap-1.5 shadow-lg">
-                          <span className="text-sm">⭐</span> <span className="hidden sm:inline">Evaluar Mesa</span>
-                        </button>
-                      )}
                   </div>
-                </div>
-              ))
+                )
+              })
             )}
           </div>
         </div>

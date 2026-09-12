@@ -35,6 +35,11 @@ function CrearMesa({ idEvento, alCrearMesa }) {
   const [esPrivada, setEsPrivada] = useState(false);
   const [codigoPrivado, setCodigoPrivado] = useState('');
   
+  // ✨ NUEVOS ESTADOS PARA CONTINUACIÓN DE MESA
+  const [esContinuacion, setEsContinuacion] = useState(false);
+  const [continuacionDeId, setContinuacionDeId] = useState('');
+  const [partidasAnteriores, setPartidasAnteriores] = useState([]);
+
   const [infoAula, setInfoAula] = useState({
     aulas_disponibles: 0,
     aulas_usadas: 0,
@@ -63,6 +68,12 @@ function CrearMesa({ idEvento, alCrearMesa }) {
         setSistemas(Array.isArray(data) ? data : []);
       })
       .catch(err => console.error("Error al cargar sistemas:", err));
+      
+    // ✨ CARGAR HISTORIAL DE MESAS DEL DM
+    fetchProtegido('/api/partidas/historial/mias')
+      .then(res => res.json())
+      .then(data => setPartidasAnteriores(Array.isArray(data) ? data : []))
+      .catch(err => console.error("Error al cargar historial:", err));
   }, []);
 
   // ✨ FUNCIÓN PARA GENERAR CLAVE ALEATORIA
@@ -101,6 +112,17 @@ function CrearMesa({ idEvento, alCrearMesa }) {
         });
     }
 
+    if (esContinuacion && !continuacionDeId) {
+        return Swal.fire({
+            title: 'Continuación Incompleta',
+            text: 'Has marcado que esta mesa es una continuación, debes elegir de qué mesa anterior continúa.',
+            icon: 'warning',
+            background: '#18181b',
+            color: '#fff',
+            confirmButtonColor: '#f59e0b'
+        });
+    }
+
     const nuevaMesa = { 
       titulo, 
       descripcion, 
@@ -111,7 +133,8 @@ function CrearMesa({ idEvento, alCrearMesa }) {
       etiqueta, 
       apta_novatos: aptaNovatos,
       materiales_pedidos: materialesPedidos,
-      codigo_privado: esPrivada ? codigoPrivado : null // ✨ AÑADIMOS LA CLAVE SI ES PRIVADA
+      codigo_privado: esPrivada ? codigoPrivado : null, // ✨ AÑADIMOS LA CLAVE SI ES PRIVADA
+      continuacion_de_id: esContinuacion ? continuacionDeId : null // ✨ AÑADIMOS EL LINK SI ES CONTINUACIÓN
     };
 
     try {
@@ -149,6 +172,7 @@ function CrearMesa({ idEvento, alCrearMesa }) {
         setSistemaId(''); setCupo(4); setEtiqueta('Fantasía Medieval'); 
         setAptaNovatos(false); setMaterialesPedidos('');
         setEsPrivada(false); setCodigoPrivado(''); // Limpiamos la clave
+        setEsContinuacion(false); setContinuacionDeId(''); // Limpiamos la continuación
         alCrearMesa(); 
 
       } else {
@@ -321,46 +345,86 @@ function CrearMesa({ idEvento, alCrearMesa }) {
               </div>
             </div>
 
-            {/* ✨ NUEVO: CONFIGURACIÓN DE MESA PRIVADA ✨ */}
+            {/* ✨ NUEVO: CONFIGURACIÓN DE MESA PRIVADA Y CONTINUACIÓN ✨ */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-2 border-t border-zinc-800/50">
-              <div 
-                onClick={() => setEsPrivada(!esPrivada)}
-                className={`cursor-pointer p-4 rounded-2xl border-2 transition-all flex items-center justify-between select-none h-[60px] ${
-                  esPrivada 
-                  ? 'bg-purple-500/10 border-purple-500/50 shadow-[0_0_20px_rgba(168,85,247,0.15)]' 
-                  : 'bg-zinc-950 border-zinc-800 hover:border-zinc-700'
-                }`}
-              >
-                <div className="flex items-center gap-3">
-                  <span className={`text-xl ${esPrivada ? 'opacity-100' : 'opacity-30'}`}>🔒</span>
-                  <div>
-                    <h4 className={`font-black uppercase tracking-widest text-[11px] ${esPrivada ? 'text-purple-400' : 'text-zinc-500'}`}>Mesa Privada</h4>
+              {/* PRIVADA */}
+              <div className="space-y-4">
+                <div 
+                  onClick={() => setEsPrivada(!esPrivada)}
+                  className={`cursor-pointer p-4 rounded-2xl border-2 transition-all flex items-center justify-between select-none h-[60px] ${
+                    esPrivada 
+                    ? 'bg-purple-500/10 border-purple-500/50 shadow-[0_0_20px_rgba(168,85,247,0.15)]' 
+                    : 'bg-zinc-950 border-zinc-800 hover:border-zinc-700'
+                  }`}
+                >
+                  <div className="flex items-center gap-3">
+                    <span className={`text-xl ${esPrivada ? 'opacity-100' : 'opacity-30'}`}>🔒</span>
+                    <div>
+                      <h4 className={`font-black uppercase tracking-widest text-[11px] ${esPrivada ? 'text-purple-400' : 'text-zinc-500'}`}>Mesa Privada</h4>
+                    </div>
+                  </div>
+                  <div className={`w-5 h-5 rounded-md flex items-center justify-center border-2 transition-colors ${esPrivada ? 'bg-purple-500 border-purple-500 text-black' : 'border-zinc-700'}`}>
+                    {esPrivada && <span className="font-black text-xs">✓</span>}
                   </div>
                 </div>
-                <div className={`w-5 h-5 rounded-md flex items-center justify-center border-2 transition-colors ${esPrivada ? 'bg-purple-500 border-purple-500 text-black' : 'border-zinc-700'}`}>
-                  {esPrivada && <span className="font-black text-xs">✓</span>}
-                </div>
+
+                {esPrivada && (
+                  <div className="flex gap-2 animate-in fade-in zoom-in duration-300">
+                    <input 
+                      type="text" 
+                      placeholder="Contraseña Secreta" 
+                      value={codigoPrivado} 
+                      onChange={e => setCodigoPrivado(e.target.value)} 
+                      className="w-full bg-purple-500/5 border border-purple-500/30 rounded-2xl py-4 px-6 text-white focus:border-purple-500 outline-none font-bold placeholder:text-purple-900/50 shadow-inner h-[60px]"
+                    />
+                    <button 
+                      type="button" 
+                      onClick={generarClaveAleatoria}
+                      className="w-[60px] h-[60px] shrink-0 bg-purple-500/10 border border-purple-500/50 text-purple-400 rounded-2xl flex items-center justify-center hover:bg-purple-500 hover:text-white transition-all shadow-[0_0_15px_rgba(168,85,247,0.2)]"
+                      title="Generar Clave Mágica"
+                    >
+                      🪄
+                    </button>
+                  </div>
+                )}
               </div>
 
-              {esPrivada && (
-                <div className="flex gap-2 animate-in fade-in zoom-in duration-300">
-                  <input 
-                    type="text" 
-                    placeholder="Contraseña Secreta" 
-                    value={codigoPrivado} 
-                    onChange={e => setCodigoPrivado(e.target.value)} 
-                    className="w-full bg-purple-500/5 border border-purple-500/30 rounded-2xl py-4 px-6 text-white focus:border-purple-500 outline-none font-bold placeholder:text-purple-900/50 shadow-inner h-[60px]"
-                  />
-                  <button 
-                    type="button" 
-                    onClick={generarClaveAleatoria}
-                    className="w-[60px] h-[60px] shrink-0 bg-purple-500/10 border border-purple-500/50 text-purple-400 rounded-2xl flex items-center justify-center hover:bg-purple-500 hover:text-white transition-all shadow-[0_0_15px_rgba(168,85,247,0.2)]"
-                    title="Generar Clave Mágica"
-                  >
-                    🪄
-                  </button>
+              {/* CONTINUACIÓN */}
+              <div className="space-y-4">
+                <div 
+                  onClick={() => setEsContinuacion(!esContinuacion)}
+                  className={`cursor-pointer p-4 rounded-2xl border-2 transition-all flex items-center justify-between select-none h-[60px] ${
+                    esContinuacion 
+                    ? 'bg-blue-500/10 border-blue-500/50 shadow-[0_0_20px_rgba(59,130,246,0.15)]' 
+                    : 'bg-zinc-950 border-zinc-800 hover:border-zinc-700'
+                  }`}
+                >
+                  <div className="flex items-center gap-3">
+                    <span className={`text-xl ${esContinuacion ? 'opacity-100' : 'opacity-30'}`}>🔄</span>
+                    <div>
+                      <h4 className={`font-black uppercase tracking-widest text-[11px] ${esContinuacion ? 'text-blue-400' : 'text-zinc-500'}`}>Continuación</h4>
+                    </div>
+                  </div>
+                  <div className={`w-5 h-5 rounded-md flex items-center justify-center border-2 transition-colors ${esContinuacion ? 'bg-blue-500 border-blue-500 text-black' : 'border-zinc-700'}`}>
+                    {esContinuacion && <span className="font-black text-xs">✓</span>}
+                  </div>
                 </div>
-              )}
+
+                {esContinuacion && (
+                  <div className="animate-in fade-in zoom-in duration-300">
+                    <select 
+                      value={continuacionDeId} 
+                      onChange={e => setContinuacionDeId(e.target.value)}
+                      className="w-full bg-blue-500/5 border border-blue-500/30 rounded-2xl py-4 px-6 text-white focus:border-blue-500 outline-none font-bold [color-scheme:dark] shadow-inner h-[60px] text-sm"
+                    >
+                      <option value="">Selecciona la mesa anterior...</option>
+                      {partidasAnteriores.map(p => (
+                        <option key={p.id} value={p.id}>{p.titulo} ({p.evento_nombre})</option>
+                      ))}
+                    </select>
+                  </div>
+                )}
+              </div>
             </div>
 
             <button 

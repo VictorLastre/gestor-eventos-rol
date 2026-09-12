@@ -1,4 +1,4 @@
-﻿import { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import Swal from 'sweetalert2'; 
 import { fetchProtegido } from '../utils/api'; 
 import { io } from 'socket.io-client';
@@ -40,6 +40,7 @@ function Partida(props) {
 
   const [jugadoresAnotados, setJugadoresAnotados] = useState(cantJugadores);
   const [anotado, setAnotado] = useState(yaEstaAnotado);
+  const [miEstado, setMiEstado] = useState(props.mi_estado || 'confirmada'); // ✨ ESTADO DE LA INSCRIPCIÓN
   const [listaJugadores, setListaJugadores] = useState([]);
   const [modalAbierto, setModalAbierto] = useState(false);
   const [mostrarEvaluar, setMostrarEvaluar] = useState(false);
@@ -208,6 +209,22 @@ function Partida(props) {
       } else {
         const mensaje = await res.text();
         Swal.fire({ title: 'Aviso del Gremio', text: mensaje, icon: 'warning', background: '#09090b', color: '#fff', confirmButtonColor: '#f59e0b' });
+      }
+    } catch (err) { if (err !== 'Sesión expirada') console.error(err); }
+  };
+
+  // ✨ NUEVO: CONFIRMAR LUGAR EN MESA DE CONTINUACIÓN
+  const confirmarLugar = async (e) => {
+    e.stopPropagation();
+    try {
+      const res = await fetchProtegido(`/api/partidas/${props.id}/inscripciones/confirmar`, { method: 'PUT' });
+      if (res.ok) {
+        setMiEstado('confirmada');
+        cargarListaJugadores();
+        Toast.fire({ icon: 'success', title: '¡Cupo confirmado para la continuación!' });
+      } else {
+        const data = await res.json();
+        Swal.fire({ title: 'Aviso', text: data.error, icon: 'warning', background: '#09090b', color: '#fff', confirmButtonColor: '#f59e0b' });
       }
     } catch (err) { if (err !== 'Sesión expirada') console.error(err); }
   };
@@ -735,6 +752,11 @@ function Partida(props) {
                           iconoRol = '🛡️';
                         }
 
+                        const esPendiente = jugador.estado === 'pendiente';
+                        if (esPendiente) {
+                          estilosRol = 'bg-blue-500/10 text-blue-400 border-blue-500/40 opacity-75 border-dashed';
+                        }
+
                         return (
                           <span 
                             key={idx} 
@@ -747,9 +769,11 @@ function Partida(props) {
                               }
                             }}
                             className={`px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest border flex items-center gap-2 cursor-pointer hover:scale-105 transition-transform ${estilosRol}`}
-                            title="Ver Perfil"
+                            title={esPendiente ? "Aventurero pendiente de confirmar su lugar" : "Ver Perfil"}
                           >
-                            <span className="text-base">{iconoRol}</span> {jugador.nombre} {jugador.reputacion_neta !== undefined && jugador.reputacion_neta !== 0 && (<span className={`ml-1 px-1.5 py-0.5 rounded-md text-[8px] border ${jugador.reputacion_neta > 0 ? 'bg-emerald-500/20 text-emerald-400 border-emerald-500/50' : 'bg-red-500/20 text-red-400 border-red-500/50'}`}>{jugador.reputacion_neta > 0 ? '+' : ''}{jugador.reputacion_neta}</span>)}
+                            <span className="text-base">{iconoRol}</span> 
+                            {jugador.nombre} {esPendiente && <span className="text-[8px] bg-blue-500/20 text-blue-400 px-1.5 py-0.5 rounded ml-1 animate-pulse">(Pendiente)</span>} 
+                            {jugador.reputacion_neta !== undefined && jugador.reputacion_neta !== 0 && !esPendiente && (<span className={`ml-1 px-1.5 py-0.5 rounded-md text-[8px] border ${jugador.reputacion_neta > 0 ? 'bg-emerald-500/20 text-emerald-400 border-emerald-500/50' : 'bg-red-500/20 text-red-400 border-red-500/50'}`}>{jugador.reputacion_neta > 0 ? '+' : ''}{jugador.reputacion_neta}</span>)}
                           </span>
                         );
                       })}
@@ -818,21 +842,42 @@ function Partida(props) {
 
               <div className="flex flex-col md:flex-row gap-4 pt-6 border-t border-zinc-800">
                 {!soyElMaster && !props.eventoEsPasado && (
-                  <button 
-                    onClick={alternarInscripcion}
-                    disabled={cargandoJugadores || (props.inscripcionesCerradas && !anotado) || (estaLlena && !anotado)}
-                    className={`flex-1 min-w-0 py-5 rounded-2xl font-black text-xs uppercase tracking-[0.2em] transition-all shadow-xl flex items-center justify-center gap-3 truncate px-4 ${
-                      anotado 
-                      ? 'bg-red-500/10 text-red-500 border-red-500/40 hover:bg-red-500 hover:text-white' 
-                      : props.inscripcionesCerradas
-                        ? 'bg-zinc-950 text-zinc-600 border border-zinc-800 cursor-not-allowed'
-                        : estaLlena
-                          ? 'bg-zinc-950 text-zinc-600 border border-zinc-800 cursor-not-allowed'
-                          : 'bg-emerald-600 text-white hover:bg-emerald-500 shadow-emerald-900/40 border border-emerald-50 active:scale-95'
-                    }`}
-                  >
-                    {anotado ? 'Abandonar Expedición' : props.inscripcionesCerradas ? 'Inscripciones Cerradas' : estaLlena ? 'Mesa Llena' : (props.es_privada ? '🔒 Desbloquear y Unirse' : 'Firmar el Contrato (Unirse)')}
-                  </button>
+                  <>
+                    {anotado && miEstado === 'pendiente' ? (
+                      <div className="flex flex-1 gap-2">
+                        <button 
+                          onClick={confirmarLugar}
+                          disabled={cargandoJugadores}
+                          className="flex-1 py-5 rounded-2xl font-black text-xs uppercase tracking-[0.2em] transition-all shadow-xl flex items-center justify-center gap-3 px-4 bg-blue-600 text-white hover:bg-blue-500 shadow-blue-900/40 border border-blue-50 active:scale-95"
+                        >
+                          ✅ Confirmar Mi Lugar
+                        </button>
+                        <button 
+                          onClick={alternarInscripcion}
+                          disabled={cargandoJugadores}
+                          className="flex-1 py-5 rounded-2xl font-black text-xs uppercase tracking-[0.2em] transition-all shadow-xl flex items-center justify-center gap-3 px-4 bg-red-500/10 text-red-500 border-red-500/40 hover:bg-red-500 hover:text-white"
+                        >
+                          ❌ Ceder Lugar
+                        </button>
+                      </div>
+                    ) : (
+                      <button 
+                        onClick={alternarInscripcion}
+                        disabled={cargandoJugadores || (props.inscripcionesCerradas && !anotado) || (estaLlena && !anotado)}
+                        className={`flex-1 min-w-0 py-5 rounded-2xl font-black text-xs uppercase tracking-[0.2em] transition-all shadow-xl flex items-center justify-center gap-3 truncate px-4 ${
+                          anotado 
+                          ? 'bg-red-500/10 text-red-500 border-red-500/40 hover:bg-red-500 hover:text-white' 
+                          : props.inscripcionesCerradas
+                            ? 'bg-zinc-950 text-zinc-600 border border-zinc-800 cursor-not-allowed'
+                            : estaLlena
+                              ? 'bg-zinc-950 text-zinc-600 border border-zinc-800 cursor-not-allowed'
+                              : 'bg-emerald-600 text-white hover:bg-emerald-500 shadow-emerald-900/40 border border-emerald-50 active:scale-95'
+                        }`}
+                      >
+                        {anotado ? 'Abandonar Expedición' : props.inscripcionesCerradas ? 'Inscripciones Cerradas' : estaLlena ? 'Mesa Llena' : (props.es_privada ? '🔒 Desbloquear y Unirse' : 'Firmar el Contrato (Unirse)')}
+                      </button>
+                    )}
+                  </>
                 )}
                 <button 
                   onClick={() => setModalAbierto(false)}
