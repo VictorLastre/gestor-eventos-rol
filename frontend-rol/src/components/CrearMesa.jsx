@@ -414,12 +414,30 @@ function CrearMesa({ idEvento, alCrearMesa }) {
                   <div className="animate-in fade-in zoom-in duration-300">
                     <select 
                       value={continuacionDeId} 
-                      onChange={e => setContinuacionDeId(e.target.value)}
+                      onChange={e => {
+                        const id = e.target.value;
+                        setContinuacionDeId(id);
+                        if (id) {
+                          const mesa = partidasAnteriores.find(p => p.id.toString() === id);
+                          if (mesa) {
+                            setTitulo(mesa.titulo);
+                            setDescripcion(mesa.descripcion);
+                            if (mesa.requisitos) setRequisitos(mesa.requisitos);
+                            if (mesa.sistema_id) setSistemaId(mesa.sistema_id.toString());
+                            setCupo(mesa.cupo || 4);
+                            if (mesa.etiqueta) setEtiqueta(mesa.etiqueta);
+                            setAptaNovatos(Boolean(mesa.apta_novatos));
+                            if (mesa.materiales_pedidos) setMaterialesPedidos(mesa.materiales_pedidos);
+                          }
+                        }
+                      }}
                       className="w-full bg-blue-500/5 border border-blue-500/30 rounded-2xl py-4 px-6 text-white focus:border-blue-500 outline-none font-bold [color-scheme:dark] shadow-inner h-[60px] text-sm"
                     >
-                      <option value="">Selecciona la mesa anterior...</option>
+                      <option value="" className="bg-zinc-900 text-zinc-300">Selecciona la mesa anterior...</option>
                       {partidasAnteriores.map(p => (
-                        <option key={p.id} value={p.id}>{p.titulo} ({p.evento_nombre})</option>
+                        <option key={p.id} value={p.id} className="bg-zinc-900 text-zinc-300">
+                          {p.titulo} ({p.evento_nombre})
+                        </option>
                       ))}
                     </select>
                   </div>
