@@ -149,7 +149,7 @@ router.get('/:id/partidas', verificarToken, (req, res) => {
     WHERE p.evento_id = ? 
   `;
   // Se agregó req.usuario.id por partida doble para la lógica de la contraseña y de si está anotado
-  db.query(sql, [req.usuario.id, req.usuario.id, req.params.id], (err, resultados) => {
+  db.query(sql, [req.usuario.id, req.usuario.id, req.usuario.id, req.params.id], (err, resultados) => {
     if (err) {
       console.error(err);
       return res.status(500).json({ error: 'Error al consultar las mesas.' });
