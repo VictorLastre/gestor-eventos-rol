@@ -60,21 +60,94 @@ function CrearMesa({ idEvento, alCrearMesa }) {
   }, [idEvento]);
 
 
-  useEffect(() => {
-    // ✨ CORRECCIÓN: Ruta relativa para cargar los sistemas
+  const usuarioGuardado = JSON.parse(localStorage.getItem('usuario'));
+  const esAdmin = usuarioGuardado && usuarioGuardado.rol === 'admin';
+
+  const cargarSistemas = () => {
     fetch('/api/sistemas')
       .then(res => res.json())
       .then(data => {
         setSistemas(Array.isArray(data) ? data : []);
       })
       .catch(err => console.error("Error al cargar sistemas:", err));
+  };
+
+  useEffect(() => {
+    cargarSistemas();
       
-    // ✨ CARGAR HISTORIAL DE MESAS DEL DM
     fetchProtegido('/api/partidas/historial/mias')
       .then(res => res.json())
       .then(data => setPartidasAnteriores(Array.isArray(data) ? data : []))
       .catch(err => console.error("Error al cargar historial:", err));
   }, []);
+
+  const agregarSistema = async () => {
+    const { value: nombre } = await Swal.fire({
+      title: 'Nuevo Sistema',
+      input: 'text',
+      inputPlaceholder: 'Nombre del sistema...',
+      showCancelButton: true,
+      background: '#18181b', color: '#fff', confirmButtonColor: '#f59e0b'
+    });
+    if (nombre) {
+      try {
+        const res = await fetchProtegido('/api/sistemas', { method: 'POST', body: JSON.stringify({ nombre }) });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || 'Error al agregar');
+        Swal.fire({ title: '¡Éxito!', text: 'Sistema agregado.', icon: 'success', background: '#18181b', color: '#fff', confirmButtonColor: '#f59e0b' });
+        cargarSistemas();
+      } catch (e) {
+        Swal.fire({ title: 'Error', text: e.message, icon: 'error', background: '#18181b', color: '#fff', confirmButtonColor: '#f59e0b' });
+      }
+    }
+  };
+
+  const editarSistema = async () => {
+    if (!sistemaId) return;
+    const sistemaActual = sistemas.find(s => s.id.toString() === sistemaId.toString());
+    const { value: nombre } = await Swal.fire({
+      title: 'Editar Sistema',
+      input: 'text',
+      inputValue: sistemaActual?.nombre,
+      showCancelButton: true,
+      background: '#18181b', color: '#fff', confirmButtonColor: '#f59e0b'
+    });
+    if (nombre && nombre !== sistemaActual.nombre) {
+      try {
+        const res = await fetchProtegido(`/api/sistemas/${sistemaId}`, { method: 'PUT', body: JSON.stringify({ nombre }) });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || 'Error al editar');
+        Swal.fire({ title: '¡Éxito!', text: 'Sistema editado.', icon: 'success', background: '#18181b', color: '#fff', confirmButtonColor: '#f59e0b' });
+        cargarSistemas();
+      } catch (e) {
+        Swal.fire({ title: 'Error', text: e.message, icon: 'error', background: '#18181b', color: '#fff', confirmButtonColor: '#f59e0b' });
+      }
+    }
+  };
+
+  const eliminarSistema = async () => {
+    if (!sistemaId) return;
+    const { isConfirmed } = await Swal.fire({
+      title: '¿Borrar sistema?',
+      text: "No podrás deshacerlo, y fallará si ya hay mesas usándolo.",
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonText: 'Sí, borrar',
+      background: '#18181b', color: '#fff', confirmButtonColor: '#ef4444'
+    });
+    if (isConfirmed) {
+      try {
+        const res = await fetchProtegido(`/api/sistemas/${sistemaId}`, { method: 'DELETE' });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || 'Error al eliminar');
+        Swal.fire({ title: '¡Borrado!', text: 'Sistema eliminado.', icon: 'success', background: '#18181b', color: '#fff', confirmButtonColor: '#f59e0b' });
+        setSistemaId('');
+        cargarSistemas();
+      } catch (e) {
+        Swal.fire({ title: 'Error', text: e.message, icon: 'error', background: '#18181b', color: '#fff', confirmButtonColor: '#f59e0b' });
+      }
+    }
+  };
 
   // ✨ FUNCIÓN PARA GENERAR CLAVE ALEATORIA
   const generarClaveAleatoria = () => {
@@ -279,7 +352,16 @@ function CrearMesa({ idEvento, alCrearMesa }) {
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               <div className="space-y-2">
-                <label className="text-[11px] font-black text-zinc-500 uppercase ml-1 tracking-widest">Sistema</label>
+                <div className="flex items-center justify-between ml-1">
+                  <label className="text-[11px] font-black text-zinc-500 uppercase tracking-widest">Sistema</label>
+                  {esAdmin && (
+                    <div className="flex gap-2">
+                      <button type="button" onClick={agregarSistema} className="text-[10px] bg-amber-500/20 text-amber-500 px-2 py-0.5 rounded hover:bg-amber-500/40">➕ Nuevo</button>
+                      {sistemaId && <button type="button" onClick={editarSistema} className="text-[10px] bg-zinc-800 text-zinc-300 px-2 py-0.5 rounded hover:bg-zinc-700">✏️ Editar</button>}
+                      {sistemaId && <button type="button" onClick={eliminarSistema} className="text-[10px] bg-red-500/20 text-red-500 px-2 py-0.5 rounded hover:bg-red-500/40">🗑️ Borrar</button>}
+                    </div>
+                  )}
+                </div>
                 <select 
                   value={sistemaId} 
                   onChange={e => setSistemaId(e.target.value)}
