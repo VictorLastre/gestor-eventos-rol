@@ -587,6 +587,15 @@ function Partida(props) {
                     {datosEdicion.apta_novatos && <span className="font-black text-sm">✓</span>}
                   </div>
                 </div>
+                
+                <div onClick={() => setDatosEdicion({...datosEdicion, para_infancias: !datosEdicion.para_infancias})} className={`cursor-pointer p-4 rounded-2xl border-2 transition-all flex items-center justify-between gap-4 select-none mt-4 ${datosEdicion.para_infancias ? 'bg-cyan-500/10 border-cyan-500/50 shadow-[0_0_20px_rgba(6,182,212,0.15)]' : 'bg-zinc-950 border-zinc-800 hover:border-zinc-700'}`}>
+                  <div>
+                    <h4 className={`font-black uppercase tracking-widest text-[11px] ${datosEdicion.para_infancias ? 'text-cyan-400' : 'text-zinc-500'}`}>🧸 Mesa Infancias</h4>
+                  </div>
+                  <div className={`w-6 h-6 rounded-md flex items-center justify-center border-2 transition-colors ${datosEdicion.para_infancias ? 'bg-cyan-500 border-cyan-500 text-black' : 'border-zinc-700'}`}>
+                    {datosEdicion.para_infancias && <span className="font-black text-sm">✓</span>}
+                  </div>
+                </div>
               </div>
 
               <div className="space-y-2">
@@ -608,7 +617,16 @@ function Partida(props) {
                   </div>
                 ) : (
                   <div className="flex flex-col gap-2">
-                    <label className="text-[10px] font-black text-zinc-500 uppercase tracking-widest ml-1">Sistema</label>
+                    <div className="flex items-center justify-between ml-1">
+                      <label className="text-[10px] font-black text-zinc-500 uppercase tracking-widest">Sistema</label>
+                      {soyAdmin && (
+                        <div className="flex gap-2">
+                          <button type="button" onClick={agregarSistema} className="text-[10px] bg-amber-500/20 text-amber-500 px-2 py-0.5 rounded hover:bg-amber-500/40">➕ Nuevo</button>
+                          {datosEdicion.sistema_id && <button type="button" onClick={editarSistema} className="text-[10px] bg-zinc-800 text-zinc-300 px-2 py-0.5 rounded hover:bg-zinc-700">✏️ Editar</button>}
+                          {datosEdicion.sistema_id && <button type="button" onClick={eliminarSistema} className="text-[10px] bg-red-500/20 text-red-500 px-2 py-0.5 rounded hover:bg-red-500/40">🗑️ Borrar</button>}
+                        </div>
+                      )}
+                    </div>
                     <select 
                       value={datosEdicion.sistema_id} 
                       onChange={e => setDatosEdicion({...datosEdicion, sistema_id: e.target.value})}
