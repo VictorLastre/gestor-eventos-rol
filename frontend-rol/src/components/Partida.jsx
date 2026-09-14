@@ -63,6 +63,7 @@ function Partida(props) {
     turno: props.turno || 'Tarde',
     etiqueta: props.etiqueta || 'Fantasía Medieval',
     apta_novatos: Boolean(props.apta_novatos),
+    para_infancias: Boolean(props.para_infancias),
     materiales_pedidos: props.materiales_pedidos || '',
     es_privada: Boolean(props.es_privada), // ✨ ESTADO PARA EDICIÓN
     codigo_privado: props.codigo_privado || '' // ✨ ESTADO PARA EDICIÓN
@@ -79,20 +80,7 @@ function Partida(props) {
       if (modalAbierto) cargarListaJugadores();
       
       if (modoEdicion && sistemas.length === 0 && !esJuegoMesa) {
-        fetch('/api/sistemas')
-          .then(res => res.json())
-          .then(data => {
-            const sistemasCargados = Array.isArray(data) ? data : [];
-            setSistemas(sistemasCargados);
-            
-            if (!datosEdicion.sistema_id && props.sistema) {
-              const sistemaActual = sistemasCargados.find(s => s.nombre === props.sistema);
-              if(sistemaActual) {
-                setDatosEdicion(prev => ({ ...prev, sistema_id: sistemaActual.id }));
-              }
-            }
-          })
-          .catch(err => console.error(err));
+        cargarSistemas();
       }
     } else {
       document.body.style.overflow = 'unset';
@@ -124,7 +112,84 @@ function Partida(props) {
       .catch(err => { if (err !== 'Sesión expirada') console.error(err); setCargandoJugadores(false); });
   };
 
-  const soyElMaster = props.esMiMesa; 
+
+  const cargarSistemas = () => {
+    fetch('/api/sistemas')
+      .then(res => res.json())
+      .then(data => {
+        const sistemasCargados = Array.isArray(data) ? data : [];
+        setSistemas(sistemasCargados);
+        
+        if (!datosEdicion.sistema_id && props.sistema) {
+          const sistemaActual = sistemasCargados.find(s => s.nombre === props.sistema);
+          if(sistemaActual) {
+            setDatosEdicion(prev => ({ ...prev, sistema_id: sistemaActual.id }));
+          }
+        }
+      })
+      .catch(err => console.error(err));
+  };
+
+  const agregarSistema = async () => {
+    const { value: nombre } = await Swal.fire({
+      title: 'Nuevo Sistema', input: 'text', inputPlaceholder: 'Nombre del sistema...',
+      showCancelButton: true, background: '#18181b', color: '#fff', confirmButtonColor: '#f59e0b'
+    });
+    if (nombre) {
+      try {
+        const res = await fetchProtegido('/api/sistemas', { method: 'POST', body: JSON.stringify({ nombre }) });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || 'Error al agregar');
+        Toast.fire({ title: 'Sistema agregado', icon: 'success' });
+        cargarSistemas();
+      } catch (e) {
+        Swal.fire({ title: 'Error', text: e.message, icon: 'error', background: '#18181b', color: '#fff' });
+      }
+    }
+  };
+
+  const editarSistema = async () => {
+    if (!datosEdicion.sistema_id) return;
+    const sistemaActual = sistemas.find(s => s.id.toString() === datosEdicion.sistema_id.toString());
+    const { value: nombre } = await Swal.fire({
+      title: 'Editar Sistema', input: 'text', inputValue: sistemaActual?.nombre,
+      showCancelButton: true, background: '#18181b', color: '#fff', confirmButtonColor: '#f59e0b'
+    });
+    if (nombre && nombre !== sistemaActual.nombre) {
+      try {
+        const res = await fetchProtegido(`/api/sistemas/${datosEdicion.sistema_id}`, { method: 'PUT', body: JSON.stringify({ nombre }) });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || 'Error al editar');
+        Toast.fire({ title: 'Sistema editado', icon: 'success' });
+        cargarSistemas();
+      } catch (e) {
+        Swal.fire({ title: 'Error', text: e.message, icon: 'error', background: '#18181b', color: '#fff' });
+      }
+    }
+  };
+
+  const eliminarSistema = async () => {
+    if (!datosEdicion.sistema_id) return;
+    const { isConfirmed } = await Swal.fire({
+      title: '¿Borrar sistema?', text: "No podrás deshacerlo.", icon: 'warning',
+      showCancelButton: true, confirmButtonText: 'Sí, borrar', background: '#18181b', color: '#fff', confirmButtonColor: '#ef4444'
+    });
+    if (isConfirmed) {
+      try {
+        const res = await fetchProtegido(`/api/sistemas/${datosEdicion.sistema_id}`, { method: 'DELETE' });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || 'Error al eliminar');
+        Toast.fire({ title: 'Sistema eliminado', icon: 'success' });
+        setDatosEdicion(prev => ({ ...prev, sistema_id: '' }));
+        cargarSistemas();
+      } catch (e) {
+        Swal.fire({ title: 'Error', text: e.message, icon: 'error', background: '#18181b', color: '#fff' });
+      }
+    }
+  };
+
+  const soyElMaster = props.esMiMesa;
+ 
   const soyAdmin = props.esAdmin;
 
   // ✨ INSCRIPCIÓN CON SOPORTE PARA MESAS PRIVADAS
@@ -331,6 +396,8 @@ function Partida(props) {
         className={`relative p-5 sm:p-8 rounded-[1.5rem] sm:rounded-[2rem] border-2 transition-all duration-500 flex flex-col min-h-[350px] sm:min-h-[450px] h-full cursor-pointer w-full min-w-0 group overflow-hidden ${
           soyElMaster 
           ? "bg-amber-900/10 border-amber-500/80 shadow-[0_0_20px_rgba(245,158,11,0.25)]" 
+          : props.para_infancias
+          ? "bg-cyan-900/10 border-cyan-500/80 shadow-[0_0_20px_rgba(6,182,212,0.3)] hover:bg-zinc-900 ring-2 ring-cyan-500/30"
           : `bg-zinc-900/60 hover:bg-zinc-900 hover:shadow-xl ${estiloBordeDisponibilidad}`
         }`}
       >
@@ -353,6 +420,11 @@ function Partida(props) {
                 </span>
               )}
 
+              {Boolean(props.para_infancias) && (
+                <span className={`text-[9px] font-black text-cyan-950 bg-cyan-400 uppercase tracking-widest px-3 py-1 rounded-full shadow-[0_0_12px_rgba(6,182,212,0.5)] flex items-center gap-1.5 whitespace-nowrap`}>
+                  🧸 Mesa Infancias
+                </span>
+              )}
               {Boolean(props.apta_novatos) && (
                 <span className={`text-[9px] font-black ${esJuegoMesa ? 'text-emerald-900 bg-emerald-400' : 'text-emerald-950 bg-emerald-400'} uppercase tracking-widest px-3 py-1 rounded-full shadow-[0_0_12px_rgba(52,211,153,0.5)] flex items-center gap-1.5 whitespace-nowrap`}>
                   🌱 {esJuegoMesa ? 'Enseña a jugar' : 'Novatos'}
@@ -679,7 +751,12 @@ function Partida(props) {
                   </span>
                 )}
 
-                {Boolean(props.apta_novatos) && (
+                {Boolean(props.para_infancias) && (
+                <span className={`text-[9px] font-black text-cyan-950 bg-cyan-400 uppercase tracking-widest px-3 py-1 rounded-full shadow-[0_0_12px_rgba(6,182,212,0.5)] flex items-center gap-1.5 whitespace-nowrap`}>
+                  🧸 Mesa Infancias
+                </span>
+              )}
+              {Boolean(props.apta_novatos) && (
                   <span className="text-[10px] font-black text-emerald-950 uppercase tracking-widest bg-emerald-400 px-3 py-1.5 rounded-full shadow-[0_0_15px_rgba(52,211,153,0.4)] flex items-center gap-1.5">
                     🌱 {esJuegoMesa ? 'Enseña a jugar' : 'Apta Novatos'}
                   </span>

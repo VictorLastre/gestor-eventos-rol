@@ -205,6 +205,7 @@ function CrearMesa({ idEvento, alCrearMesa }) {
       turno, 
       etiqueta, 
       apta_novatos: aptaNovatos,
+        para_infancias: paraInfancias,
       materiales_pedidos: materialesPedidos,
       codigo_privado: esPrivada ? codigoPrivado : null, // ✨ AÑADIMOS LA CLAVE SI ES PRIVADA
       continuacion_de_id: esContinuacion ? continuacionDeId : null // ✨ AÑADIMOS EL LINK SI ES CONTINUACIÓN
@@ -509,6 +510,7 @@ function CrearMesa({ idEvento, alCrearMesa }) {
                             setCupo(mesa.cupo || 4);
                             if (mesa.etiqueta) setEtiqueta(mesa.etiqueta);
                             setAptaNovatos(Boolean(mesa.apta_novatos));
+                            setParaInfancias(Boolean(mesa.para_infancias));
                             if (mesa.materiales_pedidos) setMaterialesPedidos(mesa.materiales_pedidos);
                           }
                         }
