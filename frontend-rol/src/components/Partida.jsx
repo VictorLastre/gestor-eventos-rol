@@ -394,10 +394,10 @@ function Partida(props) {
       <div 
         onClick={() => setModalAbierto(true)}
         className={`relative p-5 sm:p-8 rounded-[1.5rem] sm:rounded-[2rem] border-2 transition-all duration-500 flex flex-col min-h-[350px] sm:min-h-[450px] h-full cursor-pointer w-full min-w-0 group overflow-hidden ${
-          soyElMaster 
+          props.para_infancias
+          ? "bg-cyan-900/10 border-cyan-400 shadow-[0_0_25px_rgba(6,182,212,0.4)] hover:bg-zinc-900 ring-2 ring-cyan-500/50"
+          : soyElMaster 
           ? "bg-amber-900/10 border-amber-500/80 shadow-[0_0_20px_rgba(245,158,11,0.25)]" 
-          : props.para_infancias
-          ? "bg-cyan-900/10 border-cyan-500/80 shadow-[0_0_20px_rgba(6,182,212,0.3)] hover:bg-zinc-900 ring-2 ring-cyan-500/30"
           : `bg-zinc-900/60 hover:bg-zinc-900 hover:shadow-xl ${estiloBordeDisponibilidad}`
         }`}
       >

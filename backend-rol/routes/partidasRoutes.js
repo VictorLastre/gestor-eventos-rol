@@ -69,7 +69,7 @@ router.get('/estadisticas/juegos-mesa', verificarToken, (req, res) => {
 router.post('/', verificarToken, (req, res) => {
   const idUsuario = req.usuario.id;
   const rolUsuario = req.usuario.rol;
-  const { titulo, descripcion, requisitos, sistema, sistema_id, cupo, turno, etiqueta, apta_novatos, materiales_pedidos, evento_id, continuacion_de_id } = req.body;
+  const { titulo, descripcion, requisitos, sistema, sistema_id, cupo, turno, etiqueta, apta_novatos, para_infancias, materiales_pedidos, evento_id, continuacion_de_id } = req.body;
 
   const esOrganizadorValido = rolUsuario === 'dm' || rolUsuario === 'admin';
   const esMesaJuegoValida = (rolUsuario === 'jugador' || rolUsuario === 'aventurero') && etiqueta === 'Juegos de Mesa';
@@ -100,11 +100,11 @@ router.post('/', verificarToken, (req, res) => {
 
     const sqlInsert = `
       INSERT INTO partidas 
-      (titulo, descripcion, requisitos, sistema, sistema_id, cupo, turno, etiqueta, apta_novatos, materiales_pedidos, evento_id, dungeon_master_id, continuacion_de_id) 
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      (titulo, descripcion, requisitos, sistema, sistema_id, cupo, turno, etiqueta, apta_novatos, para_infancias, materiales_pedidos, evento_id, dungeon_master_id, continuacion_de_id) 
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `;
 
-    db.query(sqlInsert, [titulo, descripcion, requisitos, sistema, sistema_id, cupo, turno, etiqueta, apta_novatos, materiales_pedidos, evento_id, idUsuario, continuacion_de_id || null], (err, resultado) => {
+    db.query(sqlInsert, [titulo, descripcion, requisitos, sistema, sistema_id, cupo, turno, etiqueta, apta_novatos, para_infancias, materiales_pedidos, evento_id, idUsuario, continuacion_de_id || null], (err, resultado) => {
       if (err) {
         console.error(err);
         return res.status(500).json({ error: 'Error al forjar la mesa en la base de datos.' });
@@ -358,7 +358,7 @@ router.put('/:id', verificarToken, (req, res) => {
       return res.status(403).json({ error: 'Sin permisos.' });
     }
 
-    const { titulo, descripcion, requisitos, sistema, sistema_id, cupo, turno, etiqueta, apta_novatos, materiales_pedidos } = req.body;
+    const { titulo, descripcion, requisitos, sistema, sistema_id, cupo, turno, etiqueta, apta_novatos, para_infancias, materiales_pedidos } = req.body;
 
     const esOrganizadorValido = rolUsuario === 'dm' || rolUsuario === 'admin';
     const esJugador = rolUsuario === 'jugador' || rolUsuario === 'aventurero';
@@ -369,11 +369,11 @@ router.put('/:id', verificarToken, (req, res) => {
 
     const sqlUpdate = `
       UPDATE partidas 
-      SET titulo = ?, descripcion = ?, requisitos = ?, sistema = ?, sistema_id = ?, cupo = ?, turno = ?, etiqueta = ?, apta_novatos = ?, materiales_pedidos = ?
+      SET titulo = ?, descripcion = ?, requisitos = ?, sistema = ?, sistema_id = ?, cupo = ?, turno = ?, etiqueta = ?, apta_novatos = ?, para_infancias = ?, materiales_pedidos = ?
       WHERE id = ?
     `;
 
-    db.query(sqlUpdate, [titulo, descripcion, requisitos, sistema, sistema_id || null, cupo, turno, etiqueta, apta_novatos, materiales_pedidos, partidaId], (err) => {
+    db.query(sqlUpdate, [titulo, descripcion, requisitos, sistema, sistema_id || null, cupo, turno, etiqueta, apta_novatos, para_infancias, materiales_pedidos, partidaId], (err) => {
       if (err) {
         console.error(err);
         return res.status(500).json({ error: 'Error al actualizar registros.' });
