@@ -294,6 +294,33 @@ function Partida(props) {
     } catch (err) { if (err !== 'Sesión expirada') console.error(err); }
   };
 
+  const expulsarJugador = async (e, jugadorId, jugadorNombre) => {
+    e.stopPropagation();
+    const result = await Swal.fire({
+      title: '¿Expulsar Jugador?',
+      text: `Estás a punto de quitar a ${jugadorNombre} de tu mesa. El lugar quedará libre.`,
+      icon: 'warning',
+      showCancelButton: true,
+      background: '#09090b', color: '#fff', confirmButtonColor: '#ef4444', cancelButtonColor: '#27272a',
+      confirmButtonText: 'Sí, expulsar', cancelButtonText: 'Cancelar'
+    });
+
+    if (result.isConfirmed) {
+      try {
+        const res = await fetchProtegido(`/api/partidas/${props.id}/expulsar/${jugadorId}`, { method: 'DELETE' });
+        if (res.ok) {
+          Toast.fire({ icon: 'success', title: 'Jugador expulsado' });
+          cargarListaJugadores();
+        } else {
+          const data = await res.json();
+          Swal.fire({ title: 'Aviso', text: data.error || 'No se pudo expulsar al jugador.', icon: 'warning', background: '#09090b', color: '#fff' });
+        }
+      } catch (err) {
+        if (err !== 'Sesión expirada') console.error(err);
+      }
+    }
+  };
+
   const borrarMesa = async (e) => {
     if (e) e.stopPropagation(); 
     const result = await Swal.fire({
@@ -867,23 +894,34 @@ function Partida(props) {
                         }
 
                         return (
-                          <span 
-                            key={idx} 
-                            onClick={() => {
-                              if (props.eventoEsPasado && (anotado || soyElMaster)) {
-                                setMostrarEvaluar(true);
-                              } else if (props.setVista && jugador.id) {
-                                props.setVista(`perfil:${jugador.id}`);
-                                setModalAbierto(false);
-                              }
-                            }}
-                            className={`px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest border flex items-center gap-2 cursor-pointer hover:scale-105 transition-transform ${estilosRol}`}
-                            title={esPendiente ? "Aventurero pendiente de confirmar su lugar" : "Ver Perfil"}
-                          >
-                            <span className="text-base">{iconoRol}</span> 
-                            {jugador.nombre} {esPendiente && <span className="text-[8px] bg-blue-500/20 text-blue-400 px-1.5 py-0.5 rounded ml-1 animate-pulse">(Pendiente)</span>} 
-                            {jugador.reputacion_neta !== undefined && jugador.reputacion_neta !== 0 && !esPendiente && (<span className={`ml-1 px-1.5 py-0.5 rounded-md text-[8px] border ${jugador.reputacion_neta > 0 ? 'bg-emerald-500/20 text-emerald-400 border-emerald-500/50' : 'bg-red-500/20 text-red-400 border-red-500/50'}`}>{jugador.reputacion_neta > 0 ? '+' : ''}{jugador.reputacion_neta}</span>)}
-                          </span>
+                          <div key={idx} className="flex items-center gap-1 group/player">
+                            <span 
+                              onClick={() => {
+                                if (props.eventoEsPasado && (anotado || soyElMaster)) {
+                                  setMostrarEvaluar(true);
+                                } else if (props.setVista && jugador.id) {
+                                  props.setVista(`perfil:${jugador.id}`);
+                                  setModalAbierto(false);
+                                }
+                              }}
+                              className={`px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest border flex items-center gap-2 cursor-pointer hover:scale-105 transition-transform ${estilosRol}`}
+                              title={esPendiente ? "Aventurero pendiente de confirmar su lugar" : "Ver Perfil"}
+                            >
+                              <span className="text-base">{iconoRol}</span> 
+                              {jugador.nombre} {esPendiente && <span className="text-[8px] bg-blue-500/20 text-blue-400 px-1.5 py-0.5 rounded ml-1 animate-pulse">(Pendiente)</span>} 
+                              {jugador.reputacion_neta !== undefined && jugador.reputacion_neta !== 0 && !esPendiente && (<span className={`ml-1 px-1.5 py-0.5 rounded-md text-[8px] border ${jugador.reputacion_neta > 0 ? 'bg-emerald-500/20 text-emerald-400 border-emerald-500/50' : 'bg-red-500/20 text-red-400 border-red-500/50'}`}>{jugador.reputacion_neta > 0 ? '+' : ''}{jugador.reputacion_neta}</span>)}
+                            </span>
+                            
+                            {(soyElMaster || soyAdmin) && jugador.id !== usuarioIdActual && (
+                              <button
+                                onClick={(e) => expulsarJugador(e, jugador.id, jugador.nombre)}
+                                title="Expulsar de la mesa"
+                                className="w-7 h-7 flex items-center justify-center rounded-xl bg-red-500/10 text-red-500 border border-red-500/30 hover:bg-red-500 hover:text-white transition-all opacity-0 group-hover/player:opacity-100"
+                              >
+                                ✕
+                              </button>
+                            )}
+                          </div>
                         );
                       })}
                     </div>

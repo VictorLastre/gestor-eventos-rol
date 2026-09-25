@@ -478,7 +478,37 @@ router.get('/reporte-logistico/:eventoId', verificarToken, (req, res) => {
   });
 });
 
+
+// ✨ NUEVO: EXPULSAR JUGADOR (Solo DM o Admin)
+router.delete('/:id/expulsar/:usuario_id', verificarToken, (req, res) => {
+  const idPartida = req.params.id;
+  const usuarioAExpulsar = req.params.usuario_id;
+  const idSolicitante = req.usuario.id;
+  const rolSolicitante = req.usuario.rol;
+
+  db.query(`SELECT dungeon_master_id, titulo, evento_id FROM partidas WHERE id = ?`, [idPartida], (err, pResult) => {
+    if (err) return res.status(500).json({error: 'Error del servidor'});
+    if (pResult.length === 0) return res.status(404).json({error: 'Mesa no encontrada'});
+
+    const dmId = pResult[0].dungeon_master_id;
+    if (dmId !== idSolicitante && rolSolicitante !== 'admin') {
+      return res.status(403).json({error: 'No tienes permiso para expulsar jugadores de esta mesa.'});
+    }
+
+    db.query('DELETE FROM inscripciones WHERE partida_id = ? AND usuario_id = ?', [idPartida, usuarioAExpulsar], (err, resultado) => {
+      if (err) return res.status(500).json({error: 'Error al expulsar al jugador.'});
+      if (resultado.affectedRows === 0) return res.status(404).json({error: 'El jugador no estaba en la mesa.'});
+      
+      const io = req.app.get('io');
+      if (io) io.emit('actualizacion-mesas', { eventoId: pResult[0].evento_id });
+      
+      res.json({ mensaje: 'Jugador expulsado correctamente.' });
+    });
+  });
+});
+
 module.exports = router;
+
 
 // Confirmar cupo en una mesa continuada
 router.put('/:id/inscripciones/confirmar', verificarToken, (req, res) => {
