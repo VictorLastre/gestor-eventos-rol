@@ -916,7 +916,7 @@ function Partida(props) {
                               <button
                                 onClick={(e) => expulsarJugador(e, jugador.id, jugador.nombre)}
                                 title="Expulsar de la mesa"
-                                className="w-7 h-7 flex items-center justify-center rounded-xl bg-red-500/10 text-red-500 border border-red-500/30 hover:bg-red-500 hover:text-white transition-all opacity-0 group-hover/player:opacity-100"
+                                className="w-7 h-7 flex items-center justify-center rounded-xl bg-red-500/10 text-red-500 border border-red-500/30 hover:bg-red-500 hover:text-white transition-all md:opacity-0 md:group-hover/player:opacity-100 opacity-100"
                               >
                                 ✕
                               </button>
