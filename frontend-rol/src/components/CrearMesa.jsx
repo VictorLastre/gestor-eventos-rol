@@ -29,6 +29,7 @@ function CrearMesa({ idEvento, alCrearMesa }) {
   const [turno, setTurno] = useState('Tarde');
   const [etiqueta, setEtiqueta] = useState('Fantasía Medieval');
   const [aptaNovatos, setAptaNovatos] = useState(false);
+  const [paraInfancias, setParaInfancias] = useState(false);
   const [materialesPedidos, setMaterialesPedidos] = useState('');
 
   // ✨ NUEVOS ESTADOS PARA MESA PRIVADA
@@ -349,6 +350,25 @@ function CrearMesa({ idEvento, alCrearMesa }) {
                   {aptaNovatos && <span className="font-black text-xs">✓</span>}
                 </div>
               </div>
+
+              <div 
+                onClick={() => setParaInfancias(!paraInfancias)}
+                className={`cursor-pointer p-4 rounded-2xl border-2 transition-all flex items-center justify-between select-none mt-4 h-[60px] ${
+                  paraInfancias 
+                  ? 'bg-cyan-500/10 border-cyan-500/50 shadow-[0_0_20px_rgba(6,182,212,0.1)]' 
+                  : 'bg-zinc-950 border-zinc-800 hover:border-zinc-700'
+                }`}
+              >
+                <div className="flex items-center gap-3">
+                  <span className={`text-xl ${paraInfancias ? 'opacity-100' : 'opacity-30'}`}>🧸</span>
+                  <div>
+                    <h4 className={`font-black uppercase tracking-widest text-[11px] ${paraInfancias ? 'text-cyan-400' : 'text-zinc-500'}`}>Mesa Infancias</h4>
+                  </div>
+                </div>
+                <div className={`w-5 h-5 rounded-md flex items-center justify-center border-2 transition-colors ${paraInfancias ? 'bg-cyan-500 border-cyan-500 text-black' : 'border-zinc-700'}`}>
+                  {paraInfancias && <span className="font-black text-xs">✓</span>}
+                </div>
+              </div>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -510,6 +530,7 @@ function CrearMesa({ idEvento, alCrearMesa }) {
                             setCupo(mesa.cupo || 4);
                             if (mesa.etiqueta) setEtiqueta(mesa.etiqueta);
                             setAptaNovatos(Boolean(mesa.apta_novatos));
+                            setParaInfancias(Boolean(mesa.para_infancias));
                             setParaInfancias(Boolean(mesa.para_infancias));
                             if (mesa.materiales_pedidos) setMaterialesPedidos(mesa.materiales_pedidos);
                           }
