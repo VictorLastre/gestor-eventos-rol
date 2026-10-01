@@ -82,6 +82,19 @@ function PerfilPublico({ usuarioId, volver }) {
       {/* 📜 ENCABEZADO DE PERFIL */}
       <section className="bg-zinc-900/50 backdrop-blur-xl border border-zinc-800 p-6 md:p-10 rounded-[2.5rem] shadow-2xl mb-8 relative overflow-hidden">
         <div className={`absolute top-0 right-0 w-64 h-64 ${esFundador ? 'bg-amber-500/10' : 'bg-emerald-500/10'} blur-[100px] rounded-full pointer-events-none`}></div>
+
+        {soyDM && !esMiPropioPerfil && (
+          <button 
+            onClick={toggleBloqueo}
+            className={`absolute top-4 right-4 md:top-6 md:right-8 z-20 shrink-0 px-4 py-2 text-[9px] md:text-[10px] font-black uppercase tracking-widest rounded-xl transition-all border ${
+              perfil.esta_bloqueado 
+                ? 'bg-red-500/10 text-red-500 border-red-500/30 hover:bg-red-500/20' 
+                : 'bg-zinc-800/80 text-zinc-400 border-zinc-700/50 hover:bg-zinc-700 hover:text-white backdrop-blur-sm shadow-xl'
+            }`}
+          >
+            {perfil.esta_bloqueado ? '✕ Desbloquear Aventurero' : '⊘ Bloquear Aventurero'}
+          </button>
+        )}
         
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-8 relative z-10">
           <div className="flex flex-col md:flex-row items-center md:items-start text-center md:text-left gap-6 md:gap-8 w-full max-w-full overflow-hidden">
@@ -166,18 +179,7 @@ function PerfilPublico({ usuarioId, volver }) {
               </div>
           </div>
           
-          {soyDM && !esMiPropioPerfil && (
-            <button 
-              onClick={toggleBloqueo}
-              className={`mt-6 md:mt-0 md:absolute md:top-10 md:right-10 shrink-0 px-4 py-2 text-[10px] md:text-xs font-black uppercase tracking-widest rounded-xl transition-all border ${
-                perfil.esta_bloqueado 
-                  ? 'bg-red-500/10 text-red-500 border-red-500/30 hover:bg-red-500/20' 
-                  : 'bg-zinc-800 text-zinc-400 border-zinc-700 hover:bg-zinc-700 hover:text-white'
-              }`}
-            >
-              {perfil.esta_bloqueado ? '✕ Desbloquear Aventurero' : '⊘ Bloquear Aventurero'}
-            </button>
-          )}
+
 
         </div>
       </section>
