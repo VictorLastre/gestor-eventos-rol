@@ -165,6 +165,20 @@ function PerfilPublico({ usuarioId, volver }) {
                 )}
               </div>
           </div>
+          
+          {soyDM && !esMiPropioPerfil && (
+            <button 
+              onClick={toggleBloqueo}
+              className={`mt-6 md:mt-0 md:absolute md:top-10 md:right-10 shrink-0 px-4 py-2 text-[10px] md:text-xs font-black uppercase tracking-widest rounded-xl transition-all border ${
+                perfil.esta_bloqueado 
+                  ? 'bg-red-500/10 text-red-500 border-red-500/30 hover:bg-red-500/20' 
+                  : 'bg-zinc-800 text-zinc-400 border-zinc-700 hover:bg-zinc-700 hover:text-white'
+              }`}
+            >
+              {perfil.esta_bloqueado ? '✕ Desbloquear Aventurero' : '⊘ Bloquear Aventurero'}
+            </button>
+          )}
+
         </div>
       </section>
 
