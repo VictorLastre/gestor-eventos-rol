@@ -197,7 +197,7 @@ router.post('/:id/inscripciones', verificarToken, (req, res) => {
     if (err) return res.status(500).send('Error de servidor.');
     if (resultados.length === 0) return res.status(404).send('La mesa ya no existe.');
     
-    const { evento_id, cupo, anotados, titulo, etiqueta, dm_telegram_id } = resultados[0];
+    const { evento_id, cupo, anotados, titulo, etiqueta, dm_telegram_id, dungeon_master_id } = resultados[0];
 
     if (anotados >= cupo) return res.status(400).send('❌ ¡Mesa llena! No quedan lugares.');
 
@@ -205,14 +205,16 @@ router.post('/:id/inscripciones', verificarToken, (req, res) => {
       SELECT 
         (SELECT COUNT(*) FROM partidas WHERE evento_id = ? AND dungeon_master_id = ?) as es_dm_o_creador,
         (SELECT COUNT(*) FROM inscripciones i JOIN partidas p ON i.partida_id = p.id WHERE p.evento_id = ? AND i.usuario_id = ?) as es_jugador,
-        (SELECT COUNT(*) FROM escape_inscripciones ei JOIN escape_turnos et ON ei.escape_turno_id = et.id JOIN escape_rooms er ON et.escape_room_id = er.id WHERE er.evento_id = ? AND ei.usuario_id = ?) as es_escape
+        (SELECT COUNT(*) FROM escape_inscripciones ei JOIN escape_turnos et ON ei.escape_turno_id = et.id JOIN escape_rooms er ON et.escape_room_id = er.id WHERE er.evento_id = ? AND ei.usuario_id = ?) as es_escape,
+        (SELECT COUNT(*) FROM bloqueos_jugadores WHERE dm_id = ? AND jugador_id = ?) as esta_bloqueado
     `;
 
-    db.query(sqlValidarParticipacion, [evento_id, idUsuario, evento_id, idUsuario, evento_id, idUsuario], (err, participacion) => {
+    db.query(sqlValidarParticipacion, [evento_id, idUsuario, evento_id, idUsuario, evento_id, idUsuario, dungeon_master_id, idUsuario], (err, participacion) => {
       if (err) return res.status(500).send('Error al consultar los anales del gremio.');
 
-      const { es_dm_o_creador, es_jugador, es_escape } = participacion[0];
+      const { es_dm_o_creador, es_jugador, es_escape, esta_bloqueado } = participacion[0];
 
+      if (esta_bloqueado > 0) return res.status(403).send('Cupo no disponible.\nEl Director de Juego ha configurado restricciones de acceso para esta partida. Por favor, postulate en otra mesa.');
       if (es_dm_o_creador > 0) return res.status(400).send('⚠️ Ya eres Organizador/DM de una mesa en este evento.');
       if (es_jugador > 0) return res.status(400).send('⚠️ Ya estás inscrito en otra mesa de este evento.');
       if (es_escape > 0) return res.status(400).send('⚠️ Ya estás inscrito en un turno de Escape Room de este evento.');

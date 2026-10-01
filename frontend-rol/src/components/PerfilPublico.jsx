@@ -43,6 +43,30 @@ function PerfilPublico({ usuarioId, volver }) {
 
   const rango = (perfil.rol === 'dm' || perfil.rol === 'admin') ? obtenerRangoDM(perfil.dirigiendo ? perfil.dirigiendo.length : 0) : null;
   const fundadores = ['mati', 'martín', 'martin', 'delo', 'keith', 'guille', 'diny', 'sterbern'];
+
+  const parseJwt = (token) => { try { return JSON.parse(atob(token.split('.')[1])); } catch (e) { return null; } };
+  const token = localStorage.getItem('token');
+  const usuarioActual = token ? parseJwt(token) : null;
+  const soyDM = usuarioActual && (usuarioActual.rol === 'dm' || usuarioActual.rol === 'admin');
+  const esMiPropioPerfil = usuarioActual && usuarioActual.id === parseInt(usuarioId);
+
+  const toggleBloqueo = async () => {
+    try {
+      if (perfil.esta_bloqueado) {
+        const res = await fetchProtegido(`/api/usuarios/bloqueos/${perfil.id}`, { method: 'DELETE' });
+        if (res.ok) setPerfil({...perfil, esta_bloqueado: false});
+      } else {
+        const res = await fetchProtegido(`/api/usuarios/bloqueos`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ jugador_id: perfil.id })
+        });
+        if (res.ok) setPerfil({...perfil, esta_bloqueado: true});
+      }
+    } catch (err) {
+      console.error(err);
+    }
+  };
   const esFundador = perfil.nombre ? fundadores.includes(perfil.nombre.toLowerCase()) : false;
 
   return (

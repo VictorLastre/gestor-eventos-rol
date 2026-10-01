@@ -453,4 +453,50 @@ router.get('/ranking/salon-fama', verificarToken, (req, res) => {
     });
 });
 
+
+// ✨ NUEVO: VER LISTA DE BLOQUEADOS (Solo DM)
+router.get('/bloqueos', verificarToken, (req, res) => {
+  const dmId = req.usuario.id;
+
+  const sql = `
+    SELECT u.id, u.nombre, u.avatar 
+    FROM bloqueos_jugadores b
+    JOIN usuarios u ON b.jugador_id = u.id
+    WHERE b.dm_id = ?
+  `;
+
+  db.query(sql, [dmId], (err, resultados) => {
+    if (err) return res.status(500).json({ error: 'Error al cargar bloqueos.' });
+    res.json(resultados);
+  });
+});
+
+// ✨ NUEVO: BLOQUEAR JUGADOR (Solo DM)
+router.post('/bloqueos', verificarToken, (req, res) => {
+  const dmId = req.usuario.id;
+  const { jugador_id } = req.body;
+
+  if (req.usuario.rol !== 'dm' && req.usuario.rol !== 'admin') {
+    return res.status(403).json({ error: 'Solo los Directores de Juego pueden usar la lista de bloqueos.' });
+  }
+  
+  if (dmId === parseInt(jugador_id)) return res.status(400).json({ error: 'No puedes bloquearte a ti mismo.' });
+
+  db.query('INSERT IGNORE INTO bloqueos_jugadores (dm_id, jugador_id) VALUES (?, ?)', [dmId, jugador_id], (err) => {
+    if (err) return res.status(500).json({ error: 'Error al agregar a la lista de no deseados.' });
+    res.json({ mensaje: 'Jugador añadido a tu lista de no deseados.' });
+  });
+});
+
+// ✨ NUEVO: DESBLOQUEAR JUGADOR (Solo DM)
+router.delete('/bloqueos/:jugador_id', verificarToken, (req, res) => {
+  const dmId = req.usuario.id;
+  const jugadorId = req.params.jugador_id;
+
+  db.query('DELETE FROM bloqueos_jugadores WHERE dm_id = ? AND jugador_id = ?', [dmId, jugadorId], (err, resultado) => {
+    if (err) return res.status(500).json({ error: 'Error al quitar de la lista de no deseados.' });
+    res.json({ mensaje: 'Jugador removido de la lista.' });
+  });
+});
+
 module.exports = router;
