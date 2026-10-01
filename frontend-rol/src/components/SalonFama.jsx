@@ -7,6 +7,7 @@ function SalonFama({ cambiarVista }) {
   const [ranking, setRanking] = useState({ masters: [], jugadores: [] });
   const [cargando, setCargando] = useState(true);
   const [pestanaActiva, setPestanaActiva] = useState('masters');
+  const [busqueda, setBusqueda] = useState('');
 
   const fetchRanking = async () => {
     try {
@@ -26,7 +27,10 @@ function SalonFama({ cambiarVista }) {
     fetchRanking();
     const socket = io('/', { path: '/api/socket.io' });
     socket.on('actualizacion-usuarios', fetchRanking);
-    return () => socket.disconnect();
+    const mastersFiltrados = ranking.masters.filter(m => m.nombre.toLowerCase().includes(busqueda.toLowerCase()));
+  const jugadoresFiltrados = ranking.jugadores.filter(j => j.nombre.toLowerCase().includes(busqueda.toLowerCase()));
+
+  return () => socket.disconnect();
   }, []);
 
   const verPerfil = (id) => {
@@ -37,7 +41,10 @@ function SalonFama({ cambiarVista }) {
     if (u.avatar && u.avatar.startsWith('http')) {
       return <img src={u.avatar} alt="Avatar" className="w-full h-full object-cover" />;
     }
-    return (
+    const mastersFiltrados = ranking.masters.filter(m => m.nombre.toLowerCase().includes(busqueda.toLowerCase()));
+  const jugadoresFiltrados = ranking.jugadores.filter(j => j.nombre.toLowerCase().includes(busqueda.toLowerCase()));
+
+  return (
       <Avatar
         size="100%"
         name={u.nombre}
@@ -46,6 +53,9 @@ function SalonFama({ cambiarVista }) {
       />
     );
   };
+
+  const mastersFiltrados = ranking.masters.filter(m => m.nombre.toLowerCase().includes(busqueda.toLowerCase()));
+  const jugadoresFiltrados = ranking.jugadores.filter(j => j.nombre.toLowerCase().includes(busqueda.toLowerCase()));
 
   return (
     <div className="min-h-screen pt-24 md:pt-32 pb-20 px-4">
@@ -83,6 +93,28 @@ function SalonFama({ cambiarVista }) {
           </button>
         </div>
 
+        {/* BUSCADOR */}
+        <div className="flex justify-center mb-8 px-4">
+          <div className="relative w-full max-w-md">
+            <input
+              type="text"
+              placeholder={pestanaActiva === 'masters' ? "Buscar maestro..." : "Buscar aventurero..."}
+              value={busqueda}
+              onChange={(e) => setBusqueda(e.target.value)}
+              className="w-full bg-zinc-900/80 border border-zinc-800 text-white rounded-2xl px-5 py-4 focus:outline-none focus:border-amber-500/50 transition-colors pl-12 shadow-inner"
+            />
+            <span className="absolute left-4 top-1/2 -translate-y-1/2 text-xl opacity-50">🔍</span>
+            {busqueda && (
+              <button 
+                onClick={() => setBusqueda('')} 
+                className="absolute right-4 top-1/2 -translate-y-1/2 text-zinc-500 hover:text-white transition-colors"
+              >
+                ✕
+              </button>
+            )}
+          </div>
+        </div>
+
         {cargando ? (
           <div className="flex justify-center py-20">
             <div className="w-16 h-16 border-4 border-zinc-800 border-t-amber-500 rounded-full animate-spin"></div>
@@ -93,7 +125,7 @@ function SalonFama({ cambiarVista }) {
             {/* MASTERS */}
             {pestanaActiva === 'masters' && (
               <div className="flex flex-col gap-4">
-                {ranking.masters.map((master, index) => (
+                {mastersFiltrados.map((master, index) => (
                   <div
                     key={master.id}
                     onClick={() => verPerfil(master.id)}
@@ -133,7 +165,7 @@ function SalonFama({ cambiarVista }) {
             {/* JUGADORES */}
             {pestanaActiva === 'jugadores' && (
               <div className="flex flex-col gap-4">
-                {ranking.jugadores.map((jugador, index) => (
+                {jugadoresFiltrados.map((jugador, index) => (
                   <div
                     key={jugador.id}
                     onClick={() => verPerfil(jugador.id)}
