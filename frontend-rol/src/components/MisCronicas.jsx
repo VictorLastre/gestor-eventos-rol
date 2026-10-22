@@ -234,7 +234,7 @@ function MisCronicas({ alActualizarUsuario }) {
     </div>
   );
 
-  const rango = usuarioGuardado?.rol === 'dm' ? obtenerRangoDM(usuarioGuardado.honor_total) : null;
+  const rango = usuarioGuardado?.rol === 'dm' ? obtenerRangoDM(cronicas.dirigiendo.filter(p => p.evento_estado === 'Finalizado').length) : null;
 
   return (
     <div className="max-w-5xl mx-auto p-4 md:p-8 animate-in fade-in duration-700">

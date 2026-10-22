@@ -41,7 +41,7 @@ function PerfilPublico({ usuarioId, volver }) {
     </div>
   );
 
-  const rango = (perfil.rol === 'dm' || perfil.rol === 'admin') ? obtenerRangoDM(perfil.dirigiendo ? perfil.dirigiendo.length : 0) : null;
+  const rango = (perfil.rol === 'dm' || perfil.rol === 'admin') ? obtenerRangoDM(perfil.dirigiendo ? perfil.dirigiendo.filter(p => p.evento_estado === 'Finalizado').length : 0) : null;
   const fundadores = ['mati', 'martín', 'martin', 'delo', 'keith', 'guille', 'diny', 'sterbern'];
 
   const parseJwt = (token) => { try { return JSON.parse(atob(token.split('.')[1])); } catch (e) { return null; } };

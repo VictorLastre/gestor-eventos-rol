@@ -3,11 +3,24 @@ const router = express.Router();
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 const db = require('../config/db');
+const rateLimit = require('express-rate-limit');
 
 const JWT_SECRET = process.env.JWT_SECRET || 'secreto_temporal_de_emergencia';
+if (!process.env.JWT_SECRET) {
+  console.warn('⚠️ ADVERTENCIA: JWT_SECRET no está configurado en .env. Se recomienda configurarlo.');
+}
+
+// 🛡️ Limitador de peticiones para mitigar ataques de fuerza bruta
+const authLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutos
+  max: 20, // hasta 20 intentos por IP
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: 'Demasiados intentos desde esta conexión. Por favor aguarda unos minutos e intenta de nuevo.' }
+});
 
 // ✨ REGISTRO: Actualizado para usar el puente mágico de Promesas
-router.post('/registro', async (req, res) => {
+router.post('/registro', authLimiter, async (req, res) => {
   const { nombre, nombre_completo, email, password } = req.body;
 
   // Validación de contraseña segura para proteger el gremio
@@ -39,7 +52,7 @@ router.post('/registro', async (req, res) => {
 });
 
 // ✨ LOGIN: Actualizado para usar el puente mágico de Promesas
-router.post('/login', async (req, res) => {
+router.post('/login', authLimiter, async (req, res) => {
   const { email, password } = req.body;
   
   try {

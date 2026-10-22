@@ -17,14 +17,14 @@ router.get('/mis-cronicas', verificarToken, (req, res) => {
   const idUsuario = req.usuario.id;
 
   const sqlDirigiendo = `
-    SELECT p.*, e.nombre as evento_nombre, DATE_FORMAT(e.fecha, '%Y-%m-%d') as evento_fecha 
+    SELECT p.*, e.nombre as evento_nombre, DATE_FORMAT(e.fecha, '%Y-%m-%d') as evento_fecha, e.estado as evento_estado 
     FROM partidas p 
     JOIN eventos e ON p.evento_id = e.id 
     WHERE p.dungeon_master_id = ?
   `;
   
   const sqlJugando = `
-    SELECT p.*, e.nombre as evento_nombre, DATE_FORMAT(e.fecha, '%Y-%m-%d') as evento_fecha, u.nombre as dm_nombre, i.estado as mi_estado
+    SELECT p.*, e.nombre as evento_nombre, DATE_FORMAT(e.fecha, '%Y-%m-%d') as evento_fecha, e.estado as evento_estado, u.nombre as dm_nombre, i.estado as mi_estado
     FROM inscripciones i 
     JOIN partidas p ON i.partida_id = p.id 
     JOIN eventos e ON p.evento_id = e.id 
@@ -317,14 +317,20 @@ router.get('/notificaciones', verificarToken, (req, res) => {
   
   router.get('/', verificarToken, (req, res) => {
     if (req.usuario.rol !== 'admin') return res.status(403).json({ error: 'Denegado.' });
-    const page = parseInt(req.query.page) || 1;
-    const limit = parseInt(req.query.limit) || 10;
-    const offset = (page - 1) * limit;
+    const page = Math.max(1, parseInt(req.query.page, 10) || 1);
+    const limit = Math.max(1, Math.min(100, parseInt(req.query.limit, 10) || 10));
+    const offset = Math.max(0, (page - 1) * limit);
     db.query("SELECT COUNT(*) AS total FROM usuarios", (err, countResult) => {
-      if (err) return res.status(500).json({ error: 'Error.' });
-      const sql = `SELECT id, nombre, nombre_completo, email, rol, avatar, biografia, solicita_dm, es_dm_nuevo, telegram_chat_id, IFNULL((SELECT SUM(r.voto) FROM reputacion r JOIN partidas p ON r.partida_id = p.id WHERE r.evaluado_id = usuarios.id AND p.dungeon_master_id = usuarios.id), 0) as honor_total, IFNULL((SELECT SUM(r.voto) FROM reputacion r JOIN partidas p ON r.partida_id = p.id WHERE r.evaluado_id = usuarios.id AND p.dungeon_master_id != usuarios.id), 0) as reputacion_neta FROM usuarios ORDER BY nombre ASC LIMIT ${limit} OFFSET ${offset}`;
-      db.query(sql, (err, resultados) => {
-        if (err) return res.status(500).json({ error: 'Error.' });
+      if (err) {
+        console.error('Error al contar usuarios:', err);
+        return res.status(500).json({ error: 'Error al obtener usuarios.' });
+      }
+      const sql = "SELECT id, nombre, nombre_completo, email, rol, avatar, biografia, solicita_dm, es_dm_nuevo, telegram_chat_id, IFNULL((SELECT SUM(r.voto) FROM reputacion r JOIN partidas p ON r.partida_id = p.id WHERE r.evaluado_id = usuarios.id AND p.dungeon_master_id = usuarios.id), 0) as honor_total, IFNULL((SELECT SUM(r.voto) FROM reputacion r JOIN partidas p ON r.partida_id = p.id WHERE r.evaluado_id = usuarios.id AND p.dungeon_master_id != usuarios.id), 0) as reputacion_neta FROM usuarios ORDER BY nombre ASC LIMIT ? OFFSET ?";
+      db.query(sql, [limit, offset], (err, resultados) => {
+        if (err) {
+          console.error('Error al listar usuarios:', err);
+          return res.status(500).json({ error: 'Error al obtener usuarios.' });
+        }
         res.json({ datos: resultados, paginacion: { paginaActual: page, totalPaginas: Math.ceil(countResult[0].total / limit) } });
       });
     });
@@ -353,12 +359,12 @@ router.get('/notificaciones', verificarToken, (req, res) => {
       
       // Obtener mesas que dirigió
       const sqlDirigiendo = `
-        SELECT p.id, p.titulo, p.etiqueta, e.nombre as evento_nombre, DATE_FORMAT(e.fecha, '%Y-%m-%d') as evento_fecha 
+        SELECT p.id, p.titulo, p.etiqueta, e.nombre as evento_nombre, DATE_FORMAT(e.fecha, '%Y-%m-%d') as evento_fecha, e.estado as evento_estado 
         FROM partidas p JOIN eventos e ON p.evento_id = e.id WHERE p.dungeon_master_id = ? ORDER BY e.fecha DESC
       `;
       // Obtener mesas que jugó
       const sqlJugando = `
-        SELECT p.id, p.titulo, p.etiqueta, e.nombre as evento_nombre, DATE_FORMAT(e.fecha, '%Y-%m-%d') as evento_fecha 
+        SELECT p.id, p.titulo, p.etiqueta, e.nombre as evento_nombre, DATE_FORMAT(e.fecha, '%Y-%m-%d') as evento_fecha, e.estado as evento_estado 
         FROM inscripciones i JOIN partidas p ON i.partida_id = p.id JOIN eventos e ON p.evento_id = e.id WHERE i.usuario_id = ? ORDER BY e.fecha DESC
       `;
       

@@ -5,7 +5,18 @@ const http = require('http');
 const { Server } = require('socket.io'); 
 const path = require('path'); 
 
+const helmet = require('helmet');
+
 const app = express();
+// Confía en el proxy inverso (Clever Cloud, Nginx, etc.) para resolución de IP
+app.set('trust proxy', 1);
+
+// Protección con Helmet sin interferir con WebSockets ni imágenes externas
+app.use(helmet({
+  contentSecurityPolicy: false,
+  crossOriginEmbedderPolicy: false
+}));
+
 const server = http.createServer(app);
 
 // ✨ 1. LISTA DE DOMINIOS AUTORIZADOS
