@@ -199,10 +199,52 @@ function TarjetaEscape({ sala, usuarioGuardado, esAdmin, inscripcionesCerradas, 
 
                   {(esOrganizador || esAdmin) && (
                     <div className="mt-4 pt-4 border-t border-zinc-800/50">
-                      <p className="text-[10px] text-zinc-500 font-black uppercase tracking-widest mb-2">Aventureros Confirmados:</p>
-                      <p className="text-sm text-indigo-300 font-medium leading-relaxed bg-zinc-950 p-3 rounded-xl border border-zinc-800/50">
-                        {turno.nombres_jugadores ? turno.nombres_jugadores : <span className="text-zinc-600 italic">La sala aún está vacía...</span>}
-                      </p>
+                      <div className="flex items-center justify-between mb-2">
+                        <p className="text-[10px] text-zinc-500 font-black uppercase tracking-widest">
+                          Aventureros Confirmados ({turno.anotados || 0}):
+                        </p>
+                        {esAdmin && (
+                          <span className="text-[9px] text-zinc-500 font-medium italic">
+                            (Pasa el mouse para ver nombre real)
+                          </span>
+                        )}
+                      </div>
+                      {turno.jugadores_info ? (
+                        <div className="flex flex-wrap gap-2 bg-zinc-950 p-3 rounded-xl border border-zinc-800/50">
+                          {turno.jugadores_info.split('|||').map((item, idx) => {
+                            const [nombre, nombreCompleto] = item.split(':::');
+                            const nombreReal = nombreCompleto && nombreCompleto.trim() !== '' ? nombreCompleto : nombre;
+                            return (
+                              <div key={idx} className="relative group/player inline-block">
+                                <span 
+                                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-zinc-900 border border-zinc-800 text-indigo-300 text-xs font-bold hover:border-indigo-500/60 hover:bg-zinc-800 transition-all cursor-pointer shadow-sm"
+                                  title={esAdmin ? `Nombre real: ${nombreReal}` : undefined}
+                                >
+                                  <span className="text-zinc-500 text-[10px]">👤</span>
+                                  <span>{nombre}</span>
+                                </span>
+                                {esAdmin && (
+                                  <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 hidden group-hover/player:flex flex-col items-center z-50 pointer-events-none drop-shadow-2xl">
+                                    <div className="bg-zinc-950 border border-indigo-500/50 text-white text-xs py-2 px-3.5 rounded-xl shadow-[0_10px_25px_rgba(0,0,0,0.8)] whitespace-nowrap flex items-center gap-2">
+                                      <span className="text-zinc-400 font-normal">Nombre real:</span>
+                                      <span className="text-emerald-400 font-black tracking-wide">{nombreReal}</span>
+                                    </div>
+                                    <div className="w-2.5 h-2.5 bg-zinc-950 border-r border-b border-indigo-500/50 rotate-45 -mt-1.5"></div>
+                                  </div>
+                                )}
+                              </div>
+                            );
+                          })}
+                        </div>
+                      ) : turno.nombres_jugadores ? (
+                        <p className="text-sm text-indigo-300 font-medium leading-relaxed bg-zinc-950 p-3 rounded-xl border border-zinc-800/50">
+                          {turno.nombres_jugadores}
+                        </p>
+                      ) : (
+                        <p className="text-sm text-zinc-600 italic bg-zinc-950 p-3 rounded-xl border border-zinc-800/50">
+                          La sala aún está vacía...
+                        </p>
+                      )}
                     </div>
                   )}
                 </div>

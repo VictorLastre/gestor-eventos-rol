@@ -454,26 +454,56 @@ function Eventos({ setVista }) {
 
               <div className="flex items-center justify-between mb-8">
                 <h3 className="text-2xl font-black text-white uppercase tracking-tighter italic">Salas Disponibles</h3>
-                <div className="flex gap-2">
-                  <button onClick={() => carruselEscapesRef.current?.scrollBy({left: -350, behavior: 'smooth'})} className="w-10 h-10 bg-zinc-900 border border-zinc-800 rounded-full flex items-center justify-center hover:bg-zinc-800 text-zinc-500 transition-colors">‹</button>
-                  <button onClick={() => carruselEscapesRef.current?.scrollBy({left: 350, behavior: 'smooth'})} className="w-10 h-10 bg-zinc-900 border border-zinc-800 rounded-full flex items-center justify-center hover:bg-zinc-800 text-zinc-500 transition-colors">›</button>
-                </div>
+                {escapesDelEvento.length > 2 && (
+                  <div className="flex gap-2">
+                    <button onClick={() => carruselEscapesRef.current?.scrollBy({left: -350, behavior: 'smooth'})} className="w-10 h-10 bg-zinc-900 border border-zinc-800 rounded-full flex items-center justify-center hover:bg-zinc-800 text-zinc-500 transition-colors">‹</button>
+                    <button onClick={() => carruselEscapesRef.current?.scrollBy({left: 350, behavior: 'smooth'})} className="w-10 h-10 bg-zinc-900 border border-zinc-800 rounded-full flex items-center justify-center hover:bg-zinc-800 text-zinc-500 transition-colors">›</button>
+                  </div>
+                )}
               </div>
 
               {escapesDelEvento.length > 0 ? (
-                <div ref={carruselEscapesRef} className="flex flex-col sm:flex-row gap-4 sm:gap-6 sm:overflow-x-auto pb-6 sm:pb-12 scrollbar-hide sm:snap-x" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
-                  {escapesDelEvento.map(sala => (
-                    <div key={sala.id} className="w-full sm:w-[350px] lg:w-[calc(33.333%-1rem)] flex-none sm:snap-start min-w-0">
+                escapesDelEvento.length === 1 ? (
+                  <div className="max-w-4xl mx-auto w-full pb-6 sm:pb-12">
+                    {escapesDelEvento.map(sala => (
                       <TarjetaEscape 
+                        key={sala.id}
                         sala={sala} 
                         usuarioGuardado={usuarioGuardado} 
                         esAdmin={esAdmin} 
                         inscripcionesCerradas={inscripcionesCerradas}
                         setVista={setVista}
                       />
-                    </div>
-                  ))}
-                </div>
+                    ))}
+                  </div>
+                ) : escapesDelEvento.length === 2 ? (
+                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 max-w-6xl mx-auto w-full pb-6 sm:pb-12">
+                    {escapesDelEvento.map(sala => (
+                      <TarjetaEscape 
+                        key={sala.id}
+                        sala={sala} 
+                        usuarioGuardado={usuarioGuardado} 
+                        esAdmin={esAdmin} 
+                        inscripcionesCerradas={inscripcionesCerradas}
+                        setVista={setVista}
+                      />
+                    ))}
+                  </div>
+                ) : (
+                  <div ref={carruselEscapesRef} className="flex flex-col sm:flex-row gap-4 sm:gap-6 sm:overflow-x-auto pb-6 sm:pb-12 scrollbar-hide sm:snap-x" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
+                    {escapesDelEvento.map(sala => (
+                      <div key={sala.id} className="w-full sm:w-[350px] lg:w-[calc(33.333%-1rem)] flex-none sm:snap-start min-w-0">
+                        <TarjetaEscape 
+                          sala={sala} 
+                          usuarioGuardado={usuarioGuardado} 
+                          esAdmin={esAdmin} 
+                          inscripcionesCerradas={inscripcionesCerradas}
+                          setVista={setVista}
+                        />
+                      </div>
+                    ))}
+                  </div>
+                )
               ) : (
                 <div className="text-center py-24 bg-zinc-900/30 border-2 border-dashed border-zinc-800 rounded-[2.5rem]">
                   <p className="text-zinc-600 font-black uppercase tracking-widest text-xs">No hay salas de escape en construcción para esta jornada</p>

@@ -59,7 +59,13 @@ router.get('/:eventoId', verificarToken, (req, res) => {
             FROM escape_inscripciones ei
             JOIN usuarios u ON ei.usuario_id = u.id
             WHERE ei.escape_turno_id = et.id
-        ) as nombres_jugadores
+        ) as nombres_jugadores,
+        (
+            SELECT GROUP_CONCAT(CONCAT(u.nombre, ':::', IFNULL(NULLIF(u.nombre_completo, ''), u.nombre)) SEPARATOR '|||') 
+            FROM escape_inscripciones ei
+            JOIN usuarios u ON ei.usuario_id = u.id
+            WHERE ei.escape_turno_id = et.id
+        ) as jugadores_info
       FROM escape_turnos et 
       WHERE et.escape_room_id IN (?)
       ORDER BY et.hora_inicio ASC
