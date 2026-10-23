@@ -435,7 +435,6 @@ router.get('/ranking/salon-fama', verificarToken, (req, res) => {
       SELECT 
         id, 
         nombre, 
-        nombre_completo, 
         rol, 
         avatar, 
         IFNULL((SELECT SUM(r.voto) FROM reputacion r JOIN partidas p ON r.partida_id = p.id WHERE r.evaluado_id = usuarios.id AND p.dungeon_master_id = usuarios.id), 0) as honor_total, 

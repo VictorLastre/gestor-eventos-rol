@@ -293,7 +293,7 @@ router.delete('/:id/inscripciones', verificarToken, (req, res) => {
 
 // ✨ JUGADORES: Obtener lista de inscritos en una mesa
 router.get('/:id/jugadores', verificarToken, (req, res) => {
-  const sql = "SELECT u.id, u.nombre, u.email, u.rol, i.estado FROM usuarios u JOIN inscripciones i ON u.id = i.usuario_id WHERE i.partida_id = ?";
+  const sql = "SELECT u.id, u.nombre, u.nombre_completo, u.email, u.rol, i.estado FROM usuarios u JOIN inscripciones i ON u.id = i.usuario_id WHERE i.partida_id = ?";
   db.query(sql, [req.params.id], (err, resultados) => {
     if (err) return res.status(500).json({ error: 'Error al consultar aventureros.' });
     res.json(resultados);

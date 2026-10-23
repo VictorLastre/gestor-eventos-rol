@@ -132,7 +132,7 @@ router.get('/:id/partidas', verificarToken, (req, res) => {
       p.cupo, p.turno, p.estado, p.etiqueta, p.apta_novatos, p.para_infancias, p.materiales_pedidos, p.continuacion_de_id,
       IF(p.codigo_privado IS NOT NULL AND p.codigo_privado != '', 1, 0) AS es_privada,
       IF(p.dungeon_master_id = ?, p.codigo_privado, NULL) AS codigo_privado,
-      u.nombre AS dmNombre, 
+      u.nombre AS dmNombre, u.nombre_completo AS dm_nombre_completo, 
       (SELECT COUNT(*) FROM inscripciones WHERE partida_id = p.id) AS jugadoresIniciales,
       (SELECT COUNT(*) FROM inscripciones WHERE partida_id = p.id AND usuario_id = ?) AS anotadoInicialmente,
       (SELECT estado FROM inscripciones WHERE partida_id = p.id AND usuario_id = ?) AS mi_estado,

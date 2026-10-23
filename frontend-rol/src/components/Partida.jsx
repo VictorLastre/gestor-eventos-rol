@@ -841,7 +841,24 @@ function Partida(props) {
                   <div className="min-w-0 flex-1">
                     <p className="text-[10px] font-black text-zinc-500 uppercase tracking-[0.2em] mb-1 truncate">{esJuegoMesa ? 'Organizador' : 'Director de Juego'}</p>
                     <div className="flex items-center gap-2 flex-wrap min-w-0">
-                        <p className="text-xl text-zinc-200 font-black truncate flex items-center gap-2 cursor-pointer hover:text-emerald-400 transition-colors" onClick={() => { if (props.eventoEsPasado && (anotado || soyElMaster)) { setMostrarEvaluar(true); } else if (props.setVista) { props.setVista(`perfil:${props.dungeon_master_id}`); setModalAbierto(false); } }}>{props.dmNombre || props.dungeon_master_nombre} {props.dm_reputacion_neta !== undefined && props.dm_reputacion_neta !== 0 && (<span className={`px-2 py-0.5 rounded-lg text-[10px] border ${props.dm_reputacion_neta > 0 ? 'bg-emerald-500/20 text-emerald-400 border-emerald-500/50' : 'bg-red-500/20 text-red-400 border-red-500/50'}`}>{props.dm_reputacion_neta > 0 ? '+' : ''}{props.dm_reputacion_neta}</span>)}</p>
+                        <div className="relative group/dm inline-block">
+                          <p 
+                            className="text-xl text-zinc-200 font-black truncate flex items-center gap-2 cursor-pointer hover:text-emerald-400 transition-colors" 
+                            title={soyAdmin && props.dm_nombre_completo ? `Nombre real: ${props.dm_nombre_completo}` : undefined}
+                            onClick={() => { if (props.eventoEsPasado && (anotado || soyElMaster)) { setMostrarEvaluar(true); } else if (props.setVista) { props.setVista(`perfil:${props.dungeon_master_id}`); setModalAbierto(false); } }}
+                          >
+                            {props.dmNombre || props.dungeon_master_nombre} {props.dm_reputacion_neta !== undefined && props.dm_reputacion_neta !== 0 && (<span className={`px-2 py-0.5 rounded-lg text-[10px] border ${props.dm_reputacion_neta > 0 ? 'bg-emerald-500/20 text-emerald-400 border-emerald-500/50' : 'bg-red-500/20 text-red-400 border-red-500/50'}`}>{props.dm_reputacion_neta > 0 ? '+' : ''}{props.dm_reputacion_neta}</span>)}
+                          </p>
+                          {soyAdmin && props.dm_nombre_completo && (
+                            <div className="absolute bottom-full left-0 mb-2 hidden group-hover/dm:flex flex-col items-center z-50 pointer-events-none drop-shadow-2xl">
+                              <div className="bg-zinc-950 border border-purple-500/50 text-white text-xs py-2 px-3.5 rounded-xl shadow-[0_10px_25px_rgba(0,0,0,0.9)] whitespace-nowrap flex items-center gap-2">
+                                <span className="text-zinc-400 font-normal">Nombre real:</span>
+                                <span className="text-purple-400 font-black tracking-wide">{props.dm_nombre_completo}</span>
+                              </div>
+                              <div className="w-2.5 h-2.5 bg-zinc-950 border-r border-b border-purple-500/50 rotate-45 -mt-1.5"></div>
+                            </div>
+                          )}
+                        </div>
                         {!esJuegoMesa && props.dm_honor !== undefined && (
                           <span className={`flex items-center gap-1.5 text-[10px] font-black uppercase tracking-widest px-2 py-1 rounded-md bg-black/30 border border-zinc-800 shadow-inner ${obtenerRangoDM(props.dm_honor).colorClase}`}>
                             {obtenerRangoDM(props.dm_honor).icono} Rango {obtenerRangoDM(props.dm_honor).nombre} ({props.dm_honor})
@@ -893,8 +910,12 @@ function Partida(props) {
                           estilosRol = 'bg-blue-500/10 text-blue-400 border-blue-500/40 opacity-75 border-dashed';
                         }
 
+                        const nombreRealJugador = jugador.nombre_completo && jugador.nombre_completo.trim() !== '' 
+                          ? jugador.nombre_completo 
+                          : jugador.nombre;
+
                         return (
-                          <div key={idx} className="flex items-center gap-1 group/player">
+                          <div key={idx} className="relative flex items-center gap-1 group/player">
                             <span 
                               onClick={() => {
                                 if (props.eventoEsPasado && (anotado || soyElMaster)) {
@@ -905,12 +926,23 @@ function Partida(props) {
                                 }
                               }}
                               className={`px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest border flex items-center gap-2 cursor-pointer hover:scale-105 transition-transform ${estilosRol}`}
-                              title={esPendiente ? "Aventurero pendiente de confirmar su lugar" : "Ver Perfil"}
+                              title={esPendiente ? "Aventurero pendiente de confirmar su lugar" : (soyElMaster || soyAdmin ? `Nombre real: ${nombreRealJugador}` : "Ver Perfil")}
                             >
                               <span className="text-base">{iconoRol}</span> 
                               {jugador.nombre} {esPendiente && <span className="text-[8px] bg-blue-500/20 text-blue-400 px-1.5 py-0.5 rounded ml-1 animate-pulse">(Pendiente)</span>} 
                               {jugador.reputacion_neta !== undefined && jugador.reputacion_neta !== 0 && !esPendiente && (<span className={`ml-1 px-1.5 py-0.5 rounded-md text-[8px] border ${jugador.reputacion_neta > 0 ? 'bg-emerald-500/20 text-emerald-400 border-emerald-500/50' : 'bg-red-500/20 text-red-400 border-red-500/50'}`}>{jugador.reputacion_neta > 0 ? '+' : ''}{jugador.reputacion_neta}</span>)}
                             </span>
+
+                            {/* ✨ TOOLTIP POPUP FLOTANTE CON NOMBRE Y APELLIDO REAL */}
+                            {(soyElMaster || soyAdmin) && (
+                              <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 hidden group-hover/player:flex flex-col items-center z-50 pointer-events-none drop-shadow-2xl">
+                                <div className="bg-zinc-950 border border-emerald-500/50 text-white text-xs py-2 px-3.5 rounded-xl shadow-[0_10px_25px_rgba(0,0,0,0.9)] whitespace-nowrap flex items-center gap-2">
+                                  <span className="text-zinc-400 font-normal">Nombre real:</span>
+                                  <span className="text-emerald-400 font-black tracking-wide">{nombreRealJugador}</span>
+                                </div>
+                                <div className="w-2.5 h-2.5 bg-zinc-950 border-r border-b border-emerald-500/50 rotate-45 -mt-1.5"></div>
+                              </div>
+                            )}
                             
                             {(soyElMaster || soyAdmin) && jugador.id !== usuarioIdActual && (
                               <button

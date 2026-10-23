@@ -142,8 +142,8 @@ function SalonFama({ cambiarVista }) {
                         <h3 className="text-white font-black uppercase tracking-widest text-sm md:text-base group-hover:text-amber-400 transition-colors">
                           {master.nombre}
                         </h3>
-                        <p className="text-xs text-zinc-500 font-bold tracking-widest mt-1">
-                          {master.nombre_completo || 'Dungeon Master'}
+                        <p className="text-xs text-amber-500/80 font-bold tracking-widest mt-1">
+                          Dungeon Master
                         </p>
                       </div>
                     </div>
