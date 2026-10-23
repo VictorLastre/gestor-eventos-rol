@@ -480,7 +480,7 @@ router.get('/bloqueos', verificarToken, (req, res) => {
 // ✨ NUEVO: BLOQUEAR JUGADOR (Solo DM)
 router.post('/bloqueos', verificarToken, (req, res) => {
   const dmId = req.usuario.id;
-  const { jugador_id } = req.body;
+  const { jugador_id, motivo } = req.body;
 
   if (req.usuario.rol !== 'dm' && req.usuario.rol !== 'admin') {
     return res.status(403).json({ error: 'Solo los Directores de Juego pueden usar la lista de bloqueos.' });
@@ -488,8 +488,18 @@ router.post('/bloqueos', verificarToken, (req, res) => {
   
   if (dmId === parseInt(jugador_id)) return res.status(400).json({ error: 'No puedes bloquearte a ti mismo.' });
 
-  db.query('INSERT IGNORE INTO bloqueos_jugadores (dm_id, jugador_id) VALUES (?, ?)', [dmId, jugador_id], (err) => {
-    if (err) return res.status(500).json({ error: 'Error al agregar a la lista de no deseados.' });
+  const textoMotivo = (motivo && typeof motivo === 'string' && motivo.trim() !== '') ? motivo.trim() : null;
+
+  const sqlConMotivo = 'INSERT INTO bloqueos_jugadores (dm_id, jugador_id, motivo) VALUES (?, ?, ?) ON DUPLICATE KEY UPDATE motivo = VALUES(motivo)';
+  db.query(sqlConMotivo, [dmId, jugador_id, textoMotivo], (err) => {
+    if (err) {
+      // Fallback por si la columna motivo aún no fue creada en MySQL
+      db.query('INSERT IGNORE INTO bloqueos_jugadores (dm_id, jugador_id) VALUES (?, ?)', [dmId, jugador_id], (err2) => {
+        if (err2) return res.status(500).json({ error: 'Error al agregar a la lista de no deseados.' });
+        res.json({ mensaje: 'Jugador añadido a tu lista de no deseados.' });
+      });
+      return;
+    }
     res.json({ mensaje: 'Jugador añadido a tu lista de no deseados.' });
   });
 });

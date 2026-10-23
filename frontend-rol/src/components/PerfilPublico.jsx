@@ -1,3 +1,4 @@
+import Swal from 'sweetalert2';
 import { useState, useEffect } from 'react';
 import Avatar from 'boring-avatars';
 import { fetchProtegido } from '../utils/api';
@@ -53,15 +54,66 @@ function PerfilPublico({ usuarioId, volver }) {
   const toggleBloqueo = async () => {
     try {
       if (perfil.esta_bloqueado) {
+        const result = await Swal.fire({
+          title: '¿Desbloquear Aventurero?',
+          text: 'Podrá volver a postularse e inscribirse en tus mesas convocadas.',
+          icon: 'question',
+          showCancelButton: true,
+          confirmButtonText: 'Sí, desbloquear',
+          cancelButtonText: 'Cancelar',
+          background: '#09090b',
+          color: '#fff',
+          confirmButtonColor: '#10b981',
+          cancelButtonColor: '#27272a'
+        });
+        if (!result.isConfirmed) return;
+
         const res = await fetchProtegido(`/api/usuarios/bloqueos/${perfil.id}`, { method: 'DELETE' });
-        if (res.ok) setPerfil({...perfil, esta_bloqueado: false});
+        if (res.ok) {
+          setPerfil({...perfil, esta_bloqueado: false});
+          Swal.fire({
+            title: 'Desbloqueado',
+            text: 'El aventurero ahora puede postularse a tus mesas.',
+            icon: 'success',
+            background: '#09090b',
+            color: '#fff',
+            confirmButtonColor: '#10b981'
+          });
+        }
       } else {
+        const { value: nota, isConfirmed } = await Swal.fire({
+          title: 'Restringir a este Aventurero',
+          html: `<p class="text-zinc-400 text-sm mb-3">No podrá unirse a ninguna de tus mesas convocadas.</p>
+                 <p class="text-xs text-amber-400 font-bold mb-1">Nota o motivo para el jugador (opcional):</p>`,
+          input: 'textarea',
+          inputPlaceholder: 'Escribe aquí la nota o motivo que verá al intentar unirse. Si lo dejas vacío, verá el mensaje genérico de cupo no disponible...',
+          showCancelButton: true,
+          confirmButtonText: 'Confirmar Restricción',
+          cancelButtonText: 'Cancelar',
+          background: '#09090b',
+          color: '#fff',
+          confirmButtonColor: '#ef4444',
+          cancelButtonColor: '#27272a'
+        });
+
+        if (!isConfirmed) return;
+
         const res = await fetchProtegido(`/api/usuarios/bloqueos`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ jugador_id: perfil.id })
+          body: JSON.stringify({ jugador_id: perfil.id, motivo: nota })
         });
-        if (res.ok) setPerfil({...perfil, esta_bloqueado: true});
+        if (res.ok) {
+          setPerfil({...perfil, esta_bloqueado: true});
+          Swal.fire({
+            title: 'Aventurero Restringido',
+            text: 'Ha sido agregado a tu lista de no deseados.',
+            icon: 'success',
+            background: '#09090b',
+            color: '#fff',
+            confirmButtonColor: '#ef4444'
+          });
+        }
       }
     } catch (err) {
       console.error(err);
