@@ -218,6 +218,39 @@ function promoverHandler(req, res) {
   });
 }
 
+
+// ✨ CERTIFICADO DE DM: Marcar certificado como entregado y pasar a veterano (Solo Admin)
+router.put('/:id/certificado-entregado', verificarToken, (req, res) => {
+  if (req.usuario.rol !== 'admin') {
+    return res.status(403).json({ error: 'Acceso denegado. Solo administradores pueden gestionar certificados.' });
+  }
+
+  const idDM = req.params.id;
+
+  db.query("UPDATE usuarios SET es_dm_nuevo = 0 WHERE id = ?", [idDM], (err, resultado) => {
+    if (err) {
+      console.error('Error al actualizar estado del certificado DM:', err);
+      return res.status(500).json({ error: 'Error del servidor al registrar la entrega del certificado.' });
+    }
+
+    if (resultado.affectedRows === 0) {
+      return res.status(404).json({ error: 'Dungeon Master no encontrado.' });
+    }
+
+    db.query("SELECT nombre FROM usuarios WHERE id = ?", [idDM], (errInfo, dmInfo) => {
+      const nombreDM = dmInfo && dmInfo[0] ? dmInfo[0].nombre : 'DM';
+      registrarLog(req.usuario, 'ENTREGA_CERTIFICADO', `Entregó el Certificado oficial de DM a ${nombreDM}.`);
+    });
+
+    const io = req.app.get('io');
+    if (io) {
+      io.emit('actualizacion-usuarios');
+    }
+
+    res.json({ mensaje: 'Certificado marcado como entregado con éxito.' });
+  });
+});
+
 router.put('/:id/rechazar-dm', verificarToken, (req, res) => {
   if (req.usuario.rol !== 'admin') return res.status(403).json({ error: 'Denegado.' });
   

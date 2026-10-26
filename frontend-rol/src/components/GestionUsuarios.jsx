@@ -146,7 +146,13 @@ function GestionUsuarios({ setVista }) {
       document.body.removeChild(enlaceDescarga);
 
       try {
-        await fetchProtegido(`/api/usuarios/${idDM}/certificado-entregado`, { method: 'PUT' });
+        const res = await fetchProtegido(`/api/usuarios/${idDM}/certificado-entregado`, { method: 'PUT' });
+        if (!res.ok) {
+          const errData = await res.json().catch(() => ({}));
+          throw new Error(errData.error || 'Error al actualizar estado del certificado');
+        }
+        // Actualizamos de inmediato el estado local para que el botón desaparezca al instante
+        setTodosLosUsuarios(prev => prev.map(u => String(u.id) === String(idDM) ? { ...u, es_dm_nuevo: 0 } : u));
         cargarCenso(); 
       } catch (e) {
         console.error("No se pudo actualizar el estado del DM:", e);
@@ -442,7 +448,7 @@ function GestionUsuarios({ setVista }) {
                         <td className="p-4 md:p-6">
                           <div className="flex items-center justify-center gap-2 md:gap-3 flex-wrap">
                             <button onClick={() => setVista(`perfil:${user.id}`)} className="w-8 h-8 md:w-10 md:h-10 bg-zinc-950 border border-zinc-800 rounded-xl hover:border-emerald-500 hover:text-emerald-400 transition-all text-sm" title="Ver Perfil Público">👁️</button>
-                            {user.rol === 'dm' && user.es_dm_nuevo && (
+                            {user.rol === 'dm' && Boolean(user.es_dm_nuevo) && (
                               <button onClick={() => generarCertificado(user.id, user.nombre, user.nombre_completo)} className="w-8 h-8 md:w-10 md:h-10 bg-amber-500/10 border border-amber-500/50 text-amber-500 rounded-xl hover:bg-amber-500 hover:text-black transition-all text-sm shadow-[0_0_15px_rgba(245,158,11,0.3)] animate-pulse" title="Generar Certificado del Gremio">📜</button>
                             )}
 
