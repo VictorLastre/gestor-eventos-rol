@@ -3,7 +3,8 @@ const router = express.Router();
 const db = require('../config/db');
 const verificarToken = require('../middlewares/auth');
 const bcrypt = require('bcrypt');
-const { enviarMensajeTelegram } = require('../utils/telegram'); 
+const { enviarMensajeTelegram } = require('../utils/telegram');
+const { calcularLogrosUsuario } = require('../utils/calcularLogros'); 
 
 // ✨ FUNCIÓN DEL ESCRIBA: REGISTRO EN LA BITÁCORA
 const registrarLog = (usuario, accion, descripcion) => {
@@ -399,6 +400,26 @@ router.get('/notificaciones', verificarToken, (req, res) => {
     });
   });
 
+
+  // ✨ MEDALLAS Y LOGROS DEL AVENTURERO (100% RETROACTIVO)
+  router.get('/:id/logros', verificarToken, async (req, res) => {
+    const idUsuario = req.params.id === 'yo' ? req.usuario.id : parseInt(req.params.id, 10);
+    if (!idUsuario || isNaN(idUsuario)) {
+      return res.status(400).json({ error: 'ID de aventurero no válido.' });
+    }
+
+    try {
+      const dataLogros = await calcularLogrosUsuario(idUsuario, db);
+      if (!dataLogros) {
+        return res.status(404).json({ error: 'Aventurero no encontrado.' });
+      }
+      res.json(dataLogros);
+    } catch (err) {
+      console.error('Error al obtener logros:', err);
+      res.status(500).json({ error: 'Error del servidor al calcular logros.' });
+    }
+  });
+
   // ✨ PERFIL PÚBLICO DE CUALQUIER USUARIO
   router.get('/:id/perfil_publico', verificarToken, (req, res) => {
     const idObj = req.params.id;
@@ -430,12 +451,20 @@ router.get('/notificaciones', verificarToken, (req, res) => {
         db.query(sqlJugando, [idObj], (err3, jugando) => {
           if (err3) return res.status(500).json({ error: 'Error cargando crónicas.' });
           
-          db.query(`SELECT r.etiqueta, COUNT(*) as cantidad, (p.dungeon_master_id = r.evaluado_id) as es_dm FROM reputacion r JOIN partidas p ON r.partida_id = p.id WHERE r.evaluado_id = ? GROUP BY r.etiqueta, es_dm ORDER BY cantidad DESC LIMIT 3`, [idObj], (err4, topTags) => {
+          db.query(`SELECT r.etiqueta, COUNT(*) as cantidad, (p.dungeon_master_id = r.evaluado_id) as es_dm FROM reputacion r JOIN partidas p ON r.partida_id = p.id WHERE r.evaluado_id = ? GROUP BY r.etiqueta, es_dm ORDER BY cantidad DESC LIMIT 3`, [idObj], async (err4, topTags) => {
+            let dataLogros = null;
+            try {
+              dataLogros = await calcularLogrosUsuario(idObj, db);
+            } catch (errLogros) {
+              console.error('Error calculando logros para perfil público:', errLogros);
+            }
+
             res.json({
               ...usuarioPublico,
               dirigiendo,
               jugando,
-              topTags: err4 ? [] : topTags
+              topTags: err4 ? [] : topTags,
+              logros: dataLogros
             });
           });
         });

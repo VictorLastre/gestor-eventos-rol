@@ -3,6 +3,7 @@ import { useState, useEffect } from 'react';
 import Avatar from 'boring-avatars';
 import { fetchProtegido } from '../utils/api';
 import { obtenerRangoDM } from '../utils/rangoHonor';
+import VitrinaMedallas from './VitrinaMedallas';
 
 function PerfilPublico({ usuarioId, volver }) {
   const [perfil, setPerfil] = useState(null);
@@ -235,6 +236,9 @@ function PerfilPublico({ usuarioId, volver }) {
 
         </div>
       </section>
+
+      {/* 🏅 VITRINA DE MEDALLAS Y LOGROS */}
+      <VitrinaMedallas usuarioId={perfil.id} datosIniciales={perfil.logros} />
 
       {/* HISTORIAL */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 md:gap-8">

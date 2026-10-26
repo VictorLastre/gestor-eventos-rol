@@ -7,6 +7,7 @@ import { obtenerRangoDM } from '../utils/rangoHonor';
 // ✨ Importamos el componente de la solicitud de DM
 import SolicitudDM from './SolicitudDM';
 import EvaluarMesaModal from './EvaluarMesaModal';
+import VitrinaMedallas from './VitrinaMedallas';
 
 function MisCronicas({ alActualizarUsuario }) { 
   const [cronicas, setCronicas] = useState({ dirigiendo: [], jugando: [] });
@@ -473,6 +474,9 @@ function MisCronicas({ alActualizarUsuario }) {
           </div>
         )}
       </section>
+
+      {/* 🏅 VITRINA DE MEDALLAS Y LOGROS */}
+      <VitrinaMedallas usuarioId={usuarioGuardado?.id} />
 
       {/* ⚔️ LISTADO DE CRÓNICAS */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 md:gap-12">
