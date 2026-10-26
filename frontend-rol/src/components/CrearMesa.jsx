@@ -30,6 +30,7 @@ function CrearMesa({ idEvento, alCrearMesa }) {
   const [etiqueta, setEtiqueta] = useState('Fantasía Medieval');
   const [aptaNovatos, setAptaNovatos] = useState(false);
   const [paraInfancias, setParaInfancias] = useState(false);
+  const [clasificacionEdad, setClasificacionEdad] = useState('todas'); // 'todas', '+18', 'menores'
   const [materialesPedidos, setMaterialesPedidos] = useState('');
 
   // ✨ NUEVOS ESTADOS PARA MESA PRIVADA
@@ -206,10 +207,11 @@ function CrearMesa({ idEvento, alCrearMesa }) {
       turno, 
       etiqueta, 
       apta_novatos: aptaNovatos,
-        para_infancias: paraInfancias,
+      para_infancias: clasificacionEdad === 'menores',
+      clasificacion_edad: clasificacionEdad,
       materiales_pedidos: materialesPedidos,
-      codigo_privado: esPrivada ? codigoPrivado : null, // ✨ AÑADIMOS LA CLAVE SI ES PRIVADA
-      continuacion_de_id: esContinuacion ? continuacionDeId : null // ✨ AÑADIMOS EL LINK SI ES CONTINUACIÓN
+      codigo_privado: esPrivada ? codigoPrivado : null,
+      continuacion_de_id: esContinuacion ? continuacionDeId : null
     };
 
     try {
@@ -351,22 +353,59 @@ function CrearMesa({ idEvento, alCrearMesa }) {
                 </div>
               </div>
 
-              <div 
-                onClick={() => setParaInfancias(!paraInfancias)}
-                className={`cursor-pointer p-4 rounded-2xl border-2 transition-all flex items-center justify-between select-none mt-4 h-[60px] ${
-                  paraInfancias 
-                  ? 'bg-cyan-500/10 border-cyan-500/50 shadow-[0_0_20px_rgba(6,182,212,0.1)]' 
-                  : 'bg-zinc-950 border-zinc-800 hover:border-zinc-700'
-                }`}
-              >
-                <div className="flex items-center gap-3">
-                  <span className={`text-xl ${paraInfancias ? 'opacity-100' : 'opacity-30'}`}>🧸</span>
-                  <div>
-                    <h4 className={`font-black uppercase tracking-widest text-[11px] ${paraInfancias ? 'text-cyan-400' : 'text-zinc-500'}`}>Mesa Infancias</h4>
+              {/* ✨ CLASIFICACIÓN DE EDAD (+18 / Menores / Todas) */}
+              <div className="space-y-2 col-span-1 md:col-span-2 mt-2">
+                <label className="text-[11px] font-black text-zinc-400 uppercase ml-1 tracking-widest flex items-center gap-2">
+                  <span>🎯</span> Clasificación por Edad de la Mesa
+                </label>
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                  <div
+                    onClick={() => { setClasificacionEdad('todas'); setParaInfancias(false); }}
+                    className={`cursor-pointer p-3.5 rounded-2xl border-2 transition-all flex flex-col justify-between gap-1 select-none ${
+                      clasificacionEdad === 'todas'
+                        ? 'bg-emerald-500/15 border-emerald-500 shadow-[0_0_15px_rgba(16,185,129,0.2)]'
+                        : 'bg-zinc-950 border-zinc-800/80 hover:border-zinc-700'
+                    }`}
+                  >
+                    <div className="flex items-center justify-between">
+                      <span className="text-lg">🟢</span>
+                      <span className={`text-[10px] font-black uppercase ${clasificacionEdad === 'todas' ? 'text-emerald-400' : 'text-zinc-500'}`}>ATP</span>
+                    </div>
+                    <h5 className="font-bold text-xs text-white">Todas las Edades</h5>
+                    <p className="text-[10px] text-zinc-500 leading-tight">Sin restricción de edad</p>
                   </div>
-                </div>
-                <div className={`w-5 h-5 rounded-md flex items-center justify-center border-2 transition-colors ${paraInfancias ? 'bg-cyan-500 border-cyan-500 text-black' : 'border-zinc-700'}`}>
-                  {paraInfancias && <span className="font-black text-xs">✓</span>}
+
+                  <div
+                    onClick={() => { setClasificacionEdad('+18'); setParaInfancias(false); }}
+                    className={`cursor-pointer p-3.5 rounded-2xl border-2 transition-all flex flex-col justify-between gap-1 select-none ${
+                      clasificacionEdad === '+18'
+                        ? 'bg-purple-500/15 border-purple-500 shadow-[0_0_15px_rgba(168,85,247,0.25)]'
+                        : 'bg-zinc-950 border-zinc-800/80 hover:border-zinc-700'
+                    }`}
+                  >
+                    <div className="flex items-center justify-between">
+                      <span className="text-lg">🔞</span>
+                      <span className={`text-[10px] font-black uppercase ${clasificacionEdad === '+18' ? 'text-purple-400' : 'text-zinc-500'}`}>+18 Años</span>
+                    </div>
+                    <h5 className="font-bold text-xs text-white">Solo Mayores (+18)</h5>
+                    <p className="text-[10px] text-zinc-500 leading-tight">Temática madura / Adultos</p>
+                  </div>
+
+                  <div
+                    onClick={() => { setClasificacionEdad('menores'); setParaInfancias(true); }}
+                    className={`cursor-pointer p-3.5 rounded-2xl border-2 transition-all flex flex-col justify-between gap-1 select-none ${
+                      clasificacionEdad === 'menores'
+                        ? 'bg-cyan-500/15 border-cyan-500 shadow-[0_0_15px_rgba(6,182,212,0.25)]'
+                        : 'bg-zinc-950 border-zinc-800/80 hover:border-zinc-700'
+                    }`}
+                  >
+                    <div className="flex items-center justify-between">
+                      <span className="text-lg">🧒</span>
+                      <span className={`text-[10px] font-black uppercase ${clasificacionEdad === 'menores' ? 'text-cyan-400' : 'text-zinc-500'}`}>&lt; 18 Años</span>
+                    </div>
+                    <h5 className="font-bold text-xs text-white">Solo Menores (&lt;18)</h5>
+                    <p className="text-[10px] text-zinc-500 leading-tight">Adolescentes e Infancias</p>
+                  </div>
                 </div>
               </div>
             </div>

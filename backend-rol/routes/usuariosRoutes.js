@@ -88,9 +88,54 @@ router.get('/estadisticas', verificarToken, (req, res) => {
   });
 });
 
+// ✨ ACTUALIZAR FECHA DE NACIMIENTO DIRECTA
+router.put('/fecha-nacimiento', verificarToken, (req, res) => {
+  const { fecha_nacimiento } = req.body;
+  const idUsuario = req.usuario.id;
+
+  if (!fecha_nacimiento) {
+    return res.status(400).json({ error: 'La fecha de nacimiento es requerida.' });
+  }
+
+  const fechaNac = new Date(fecha_nacimiento);
+  if (isNaN(fechaNac.getTime())) {
+    return res.status(400).json({ error: 'La fecha ingresada no es válida.' });
+  }
+
+  const hoy = new Date();
+  let edad = hoy.getFullYear() - fechaNac.getFullYear();
+  const m = hoy.getMonth() - fechaNac.getMonth();
+  if (m < 0 || (m === 0 && hoy.getDate() < fechaNac.getDate())) {
+    edad--;
+  }
+
+  if (edad < 6 || edad > 110) {
+    return res.status(400).json({ error: 'Debes ingresar una fecha válida (edad entre 6 y 110 años).' });
+  }
+
+  const sql = "UPDATE usuarios SET fecha_nacimiento = ? WHERE id = ?";
+  db.query(sql, [fecha_nacimiento, idUsuario], (err) => {
+    if (err) {
+      console.error("Error al registrar fecha de nacimiento:", err);
+      return res.status(500).json({ error: 'Error al registrar tu fecha de nacimiento.' });
+    }
+
+    registrarLog(req.usuario, 'ACTUALIZAR_EDAD', `Registró fecha de nacimiento: ${fecha_nacimiento} (${edad} años).`);
+
+    const io = req.app.get('io');
+    if (io) io.emit('actualizacion-usuarios');
+
+    res.json({ 
+      mensaje: 'Fecha de nacimiento registrada correctamente.', 
+      fecha_nacimiento, 
+      edad 
+    });
+  });
+});
+
 // ✨ ACTUALIZAR PERFIL (Con registro en bitácora)
 router.put('/perfil', verificarToken, async (req, res) => {
-  const { nombre, nombre_completo, email, password, avatar, telegram_chat_id, biografia } = req.body;
+  const { nombre, nombre_completo, email, password, avatar, telegram_chat_id, biografia, fecha_nacimiento } = req.body;
   const idUsuario = req.usuario.id;
 
   try {
@@ -101,12 +146,22 @@ router.put('/perfil', verificarToken, async (req, res) => {
     if (password && password.trim() !== "") {
       const salt = await bcrypt.genSalt(10);
       const hash = await bcrypt.hash(password, salt);
-      sql = "UPDATE usuarios SET nombre = ?, nombre_completo = ?, email = ?, password = ?, avatar = ?, telegram_chat_id = ?, biografia = ? WHERE id = ?";
-      params = [nombre, nombre_completo, email, hash, avatar, telegram_chat_id || null, biografia || null, idUsuario];
+      if (fecha_nacimiento) {
+        sql = "UPDATE usuarios SET nombre = ?, nombre_completo = ?, email = ?, password = ?, avatar = ?, telegram_chat_id = ?, biografia = ?, fecha_nacimiento = ? WHERE id = ?";
+        params = [nombre, nombre_completo, email, hash, avatar, telegram_chat_id || null, biografia || null, fecha_nacimiento, idUsuario];
+      } else {
+        sql = "UPDATE usuarios SET nombre = ?, nombre_completo = ?, email = ?, password = ?, avatar = ?, telegram_chat_id = ?, biografia = ? WHERE id = ?";
+        params = [nombre, nombre_completo, email, hash, avatar, telegram_chat_id || null, biografia || null, idUsuario];
+      }
       cambioPass = true;
     } else {
-      sql = "UPDATE usuarios SET nombre = ?, nombre_completo = ?, email = ?, avatar = ?, telegram_chat_id = ?, biografia = ? WHERE id = ?";
-      params = [nombre, nombre_completo, email, avatar, telegram_chat_id || null, biografia || null, idUsuario];
+      if (fecha_nacimiento) {
+        sql = "UPDATE usuarios SET nombre = ?, nombre_completo = ?, email = ?, avatar = ?, telegram_chat_id = ?, biografia = ?, fecha_nacimiento = ? WHERE id = ?";
+        params = [nombre, nombre_completo, email, avatar, telegram_chat_id || null, biografia || null, fecha_nacimiento, idUsuario];
+      } else {
+        sql = "UPDATE usuarios SET nombre = ?, nombre_completo = ?, email = ?, avatar = ?, telegram_chat_id = ?, biografia = ? WHERE id = ?";
+        params = [nombre, nombre_completo, email, avatar, telegram_chat_id || null, biografia || null, idUsuario];
+      }
     }
 
     db.query(sql, params, (err) => {
@@ -325,7 +380,7 @@ router.get('/notificaciones', verificarToken, (req, res) => {
         console.error('Error al contar usuarios:', err);
         return res.status(500).json({ error: 'Error al obtener usuarios.' });
       }
-      const sql = "SELECT id, nombre, nombre_completo, email, rol, avatar, biografia, solicita_dm, es_dm_nuevo, telegram_chat_id, IFNULL((SELECT SUM(r.voto) FROM reputacion r JOIN partidas p ON r.partida_id = p.id WHERE r.evaluado_id = usuarios.id AND p.dungeon_master_id = usuarios.id), 0) as honor_total, IFNULL((SELECT SUM(r.voto) FROM reputacion r JOIN partidas p ON r.partida_id = p.id WHERE r.evaluado_id = usuarios.id AND p.dungeon_master_id != usuarios.id), 0) as reputacion_neta FROM usuarios ORDER BY nombre ASC LIMIT ? OFFSET ?";
+      const sql = "SELECT id, nombre, nombre_completo, email, rol, avatar, biografia, solicita_dm, es_dm_nuevo, telegram_chat_id, DATE_FORMAT(fecha_nacimiento, '%Y-%m-%d') as fecha_nacimiento, TIMESTAMPDIFF(YEAR, fecha_nacimiento, CURDATE()) as edad, IFNULL((SELECT SUM(r.voto) FROM reputacion r JOIN partidas p ON r.partida_id = p.id WHERE r.evaluado_id = usuarios.id AND p.dungeon_master_id = usuarios.id), 0) as honor_total, IFNULL((SELECT SUM(r.voto) FROM reputacion r JOIN partidas p ON r.partida_id = p.id WHERE r.evaluado_id = usuarios.id AND p.dungeon_master_id != usuarios.id), 0) as reputacion_neta FROM usuarios ORDER BY nombre ASC LIMIT ? OFFSET ?";
       db.query(sql, [limit, offset], (err, resultados) => {
         if (err) {
           console.error('Error al listar usuarios:', err);
@@ -337,7 +392,7 @@ router.get('/notificaciones', verificarToken, (req, res) => {
   });
   
   router.get('/yo', verificarToken, (req, res) => {
-    db.query("SELECT id, nombre, nombre_completo, email, rol, avatar, biografia, solicita_dm, es_dm_nuevo, telegram_chat_id, IFNULL((SELECT SUM(r.voto) FROM reputacion r JOIN partidas p ON r.partida_id = p.id WHERE r.evaluado_id = usuarios.id AND p.dungeon_master_id = usuarios.id), 0) as honor_total, IFNULL((SELECT SUM(r.voto) FROM reputacion r JOIN partidas p ON r.partida_id = p.id WHERE r.evaluado_id = usuarios.id AND p.dungeon_master_id != usuarios.id), 0) as reputacion_neta FROM usuarios WHERE id = ?", [req.usuario.id], (err, resultados) => {
+    db.query("SELECT id, nombre, nombre_completo, email, rol, avatar, biografia, solicita_dm, es_dm_nuevo, telegram_chat_id, DATE_FORMAT(fecha_nacimiento, '%Y-%m-%d') as fecha_nacimiento, TIMESTAMPDIFF(YEAR, fecha_nacimiento, CURDATE()) as edad, IFNULL((SELECT SUM(r.voto) FROM reputacion r JOIN partidas p ON r.partida_id = p.id WHERE r.evaluado_id = usuarios.id AND p.dungeon_master_id = usuarios.id), 0) as honor_total, IFNULL((SELECT SUM(r.voto) FROM reputacion r JOIN partidas p ON r.partida_id = p.id WHERE r.evaluado_id = usuarios.id AND p.dungeon_master_id != usuarios.id), 0) as reputacion_neta FROM usuarios WHERE id = ?", [req.usuario.id], (err, resultados) => {
       if (err || resultados.length === 0) return res.status(404).json({ error: 'No encontrado.' });
       res.json(resultados[0]);
     });

@@ -6,12 +6,52 @@ function Registro({ irALogin }) {
   const [nombre, setNombre] = useState('');
   const [nombreCompleto, setNombreCompleto] = useState(''); // ✨ NUEVO ESTADO
   const [email, setEmail] = useState('');
+  const [fechaNacimiento, setFechaNacimiento] = useState('');
   const [password, setPassword] = useState('');
-  const [mostrarPassword, setMostrarPassword] = useState(false); 
+  const [mostrarPassword, setMostrarPassword] = useState(false);
+
+  const calcularEdad = (fecha) => {
+    if (!fecha) return null;
+    const hoy = new Date();
+    const nac = new Date(fecha);
+    let e = hoy.getFullYear() - nac.getFullYear();
+    const m = hoy.getMonth() - nac.getMonth();
+    if (m < 0 || (m === 0 && hoy.getDate() < nac.getDate())) {
+      e--;
+    }
+    return isNaN(e) ? null : e;
+  };
+
+  const edadCalculada = calcularEdad(fechaNacimiento); 
 
   const manejarRegistro = async (e) => {
     e.preventDefault();
     
+    // ✨ VALIDACIÓN DE FECHA DE NACIMIENTO
+    if (!fechaNacimiento) {
+      Swal.fire({
+        title: 'Fecha de Nacimiento Requerida',
+        text: 'Debes ingresar tu fecha de nacimiento obligatoria para clasificar el acceso a mesas (+18 o menores).',
+        icon: 'warning',
+        background: '#09090b',
+        color: '#fff',
+        confirmButtonColor: '#f59e0b'
+      });
+      return;
+    }
+
+    if (edadCalculada === null || edadCalculada < 6 || edadCalculada > 110) {
+      Swal.fire({
+        title: 'Fecha No Válida',
+        text: 'Por favor ingresa una fecha de nacimiento válida (edad entre 6 y 110 años).',
+        icon: 'warning',
+        background: '#09090b',
+        color: '#fff',
+        confirmButtonColor: '#f59e0b'
+      });
+      return;
+    }
+
     // ✨ VALIDACIÓN DE CONTRASEÑA EN EL FRONTEND
     const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)[A-Za-z\d@$!%*?&._-]{8,}$/;
     if (!passwordRegex.test(password)) {
@@ -48,8 +88,8 @@ function Registro({ irALogin }) {
       const res = await fetch('/api/registro', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        // ✨ INCLUIMOS nombre_completo EN EL ENVÍO
-        body: JSON.stringify({ nombre, nombre_completo: nombreCompleto, email, password })
+        // ✨ INCLUIMOS nombre_completo Y fecha_nacimiento EN EL ENVÍO
+        body: JSON.stringify({ nombre, nombre_completo: nombreCompleto, email, password, fecha_nacimiento: fechaNacimiento })
       });
       
       const datos = await res.json();
@@ -165,6 +205,34 @@ function Registro({ irALogin }) {
               placeholder="Ej: Víctor Lastre"
               value={nombreCompleto}
               onChange={(e) => setNombreCompleto(e.target.value)}
+              required
+            />
+          </div>
+
+          {/* ✨ FECHA DE NACIMIENTO (REQUISITO OBLIGATORIO) */}
+          <div className="space-y-2">
+            <label className="block text-[10px] font-black text-emerald-500/70 uppercase tracking-widest ml-1 flex items-center justify-between">
+              <span className="flex items-center gap-2">
+                <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full"></span>
+                Fecha de Nacimiento
+              </span>
+              {edadCalculada !== null && (
+                <span className={`text-[11px] font-black px-2 py-0.5 rounded-md border ${
+                  edadCalculada >= 18 
+                    ? 'text-purple-400 bg-purple-500/10 border-purple-500/30' 
+                    : 'text-cyan-400 bg-cyan-500/10 border-cyan-500/30'
+                }`}>
+                  {edadCalculada} años {edadCalculada >= 18 ? '🔞 (+18)' : '🧒 (Menor)'}
+                </span>
+              )}
+            </label>
+            <input 
+              type="date" 
+              max={new Date().toISOString().split('T')[0]}
+              min="1920-01-01"
+              className="w-full bg-zinc-950/50 border border-zinc-800 rounded-xl md:rounded-2xl py-3.5 md:py-4 px-4 md:px-5 text-white placeholder-zinc-700 focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500/50 transition-all shadow-inner font-mono text-sm md:text-base [color-scheme:dark]"
+              value={fechaNacimiento}
+              onChange={(e) => setFechaNacimiento(e.target.value)}
               required
             />
           </div>

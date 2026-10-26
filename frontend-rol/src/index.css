@@ -4,3 +4,126 @@
 body {
   @apply bg-zinc-950 text-zinc-100 min-h-screen;
 }
+
+/* ========================================================
+   ✨ ESTILOS GLOBALES PARA POPUPS DE SWEETALERT2 (DARK THEME)
+   ======================================================== */
+.swal2-container {
+  z-index: 99999 !important;
+}
+
+.swal2-popup {
+  background-color: #09090b !important;
+  color: #f4f4f5 !important;
+  border: 1px solid #27272a !important;
+  border-radius: 1.5rem !important;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.8) !important;
+  padding: 1.75rem !important;
+  font-family: inherit !important;
+}
+
+.swal2-title {
+  color: #ffffff !important;
+  font-weight: 800 !important;
+  font-size: 1.25rem !important;
+  letter-spacing: -0.025em !important;
+}
+
+.swal2-html-container {
+  color: #a1a1aa !important;
+  font-size: 0.95rem !important;
+}
+
+/* Radio buttons (como el de Asistencia) */
+.swal2-radio {
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: stretch !important;
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  gap: 0.6rem !important;
+  margin: 1.25rem auto 0.5rem !important;
+  padding: 0 !important;
+  width: 100% !important;
+  max-width: 420px !important;
+}
+
+.swal2-radio label {
+  display: flex !important;
+  align-items: center !important;
+  gap: 0.75rem !important;
+  width: 100% !important;
+  padding: 0.75rem 1rem !important;
+  border-radius: 0.85rem !important;
+  background: #18181b !important;
+  border: 1px solid #27272a !important;
+  color: #f4f4f5 !important;
+  font-size: 0.9rem !important;
+  font-weight: 600 !important;
+  cursor: pointer !important;
+  transition: all 0.2s ease !important;
+  margin: 0 !important;
+  text-align: left !important;
+}
+
+.swal2-radio label:hover {
+  background: #27272a !important;
+  border-color: #3f3f46 !important;
+  color: #ffffff !important;
+}
+
+.swal2-radio input[type="radio"] {
+  appearance: auto !important;
+  margin: 0 !important;
+  accent-color: #10b981 !important;
+  width: 1.15rem !important;
+  height: 1.15rem !important;
+  cursor: pointer !important;
+  flex-shrink: 0 !important;
+}
+
+/* Inputs, Textareas, Selects */
+.swal2-input,
+.swal2-textarea,
+.swal2-select {
+  background-color: #18181b !important;
+  color: #ffffff !important;
+  border: 1px solid #27272a !important;
+  border-radius: 0.75rem !important;
+  font-size: 0.95rem !important;
+  box-shadow: inset 0 2px 4px 0 rgba(0, 0, 0, 0.2) !important;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease !important;
+  box-sizing: border-box !important;
+}
+
+.swal2-input:focus,
+.swal2-textarea:focus,
+.swal2-select:focus {
+  border-color: #10b981 !important;
+  box-shadow: 0 0 0 2px rgba(16, 185, 129, 0.25) !important;
+  outline: none !important;
+}
+
+.swal2-select option {
+  background-color: #18181b !important;
+  color: #ffffff !important;
+}
+
+/* Botones de acción */
+.swal2-actions {
+  gap: 0.75rem !important;
+  margin-top: 1.5rem !important;
+}
+
+.swal2-confirm,
+.swal2-cancel,
+.swal2-deny {
+  border-radius: 0.75rem !important;
+  font-weight: 700 !important;
+  font-size: 0.875rem !important;
+  letter-spacing: 0.05em !important;
+  text-transform: uppercase !important;
+  padding: 0.65rem 1.4rem !important;
+  transition: all 0.2s ease !important;
+}

@@ -64,6 +64,7 @@ function Partida(props) {
     etiqueta: props.etiqueta || 'Fantasía Medieval',
     apta_novatos: Boolean(props.apta_novatos),
     para_infancias: Boolean(props.para_infancias),
+    clasificacion_edad: props.clasificacion_edad || (props.para_infancias ? 'menores' : 'todas'),
     materiales_pedidos: props.materiales_pedidos || '',
     es_privada: Boolean(props.es_privada), // ✨ ESTADO PARA EDICIÓN
     codigo_privado: props.codigo_privado || '' // ✨ ESTADO PARA EDICIÓN
@@ -488,9 +489,14 @@ function Partida(props) {
                 </span>
               )}
 
-              {Boolean(props.para_infancias) && (
-                <span className={`text-[9px] font-black text-cyan-950 bg-cyan-400 uppercase tracking-widest px-3 py-1 rounded-full shadow-[0_0_12px_rgba(6,182,212,0.5)] flex items-center gap-1.5 whitespace-nowrap`}>
-                  🧸 Mesa Infancias
+              {(Boolean(props.para_infancias) || props.clasificacion_edad === 'menores') && (
+                <span className="text-[9px] font-black text-cyan-950 bg-cyan-400 uppercase tracking-widest px-3 py-1 rounded-full shadow-[0_0_12px_rgba(6,182,212,0.5)] flex items-center gap-1.5 whitespace-nowrap">
+                  🧒 Menores &lt;18
+                </span>
+              )}
+              {props.clasificacion_edad === '+18' && (
+                <span className="text-[9px] font-black text-purple-950 bg-purple-400 uppercase tracking-widest px-3 py-1 rounded-full shadow-[0_0_12px_rgba(168,85,247,0.5)] flex items-center gap-1.5 whitespace-nowrap">
+                  🔞 Solo +18
                 </span>
               )}
               {Boolean(props.apta_novatos) && (
@@ -656,12 +662,43 @@ function Partida(props) {
                   </div>
                 </div>
                 
-                <div onClick={() => setDatosEdicion({...datosEdicion, para_infancias: !datosEdicion.para_infancias})} className={`cursor-pointer p-4 rounded-2xl border-2 transition-all flex items-center justify-between gap-4 select-none mt-4 ${datosEdicion.para_infancias ? 'bg-cyan-500/10 border-cyan-500/50 shadow-[0_0_20px_rgba(6,182,212,0.15)]' : 'bg-zinc-950 border-zinc-800 hover:border-zinc-700'}`}>
-                  <div>
-                    <h4 className={`font-black uppercase tracking-widest text-[11px] ${datosEdicion.para_infancias ? 'text-cyan-400' : 'text-zinc-500'}`}>🧸 Mesa Infancias</h4>
-                  </div>
-                  <div className={`w-6 h-6 rounded-md flex items-center justify-center border-2 transition-colors ${datosEdicion.para_infancias ? 'bg-cyan-500 border-cyan-500 text-black' : 'border-zinc-700'}`}>
-                    {datosEdicion.para_infancias && <span className="font-black text-sm">✓</span>}
+                {/* ✨ CLASIFICACIÓN EDAD EN EDICIÓN */}
+                <div className="space-y-2 mt-4">
+                  <label className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">Clasificación por Edad</label>
+                  <div className="grid grid-cols-3 gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setDatosEdicion({...datosEdicion, clasificacion_edad: 'todas', para_infancias: false})}
+                      className={`p-2 rounded-xl border text-[10px] font-black uppercase transition-all ${
+                        datosEdicion.clasificacion_edad === 'todas'
+                          ? 'bg-emerald-500/20 border-emerald-500 text-emerald-400'
+                          : 'bg-zinc-900 border-zinc-800 text-zinc-400'
+                      }`}
+                    >
+                      🟢 ATP
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setDatosEdicion({...datosEdicion, clasificacion_edad: '+18', para_infancias: false})}
+                      className={`p-2 rounded-xl border text-[10px] font-black uppercase transition-all ${
+                        datosEdicion.clasificacion_edad === '+18'
+                          ? 'bg-purple-500/20 border-purple-500 text-purple-400'
+                          : 'bg-zinc-900 border-zinc-800 text-zinc-400'
+                      }`}
+                    >
+                      🔞 +18
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setDatosEdicion({...datosEdicion, clasificacion_edad: 'menores', para_infancias: true})}
+                      className={`p-2 rounded-xl border text-[10px] font-black uppercase transition-all ${
+                        datosEdicion.clasificacion_edad === 'menores'
+                          ? 'bg-cyan-500/20 border-cyan-500 text-cyan-400'
+                          : 'bg-zinc-900 border-zinc-800 text-zinc-400'
+                      }`}
+                    >
+                      🧒 &lt;18
+                    </button>
                   </div>
                 </div>
               </div>
@@ -837,9 +874,14 @@ function Partida(props) {
                   </span>
                 )}
 
-                {Boolean(props.para_infancias) && (
-                <span className={`text-[9px] font-black text-cyan-950 bg-cyan-400 uppercase tracking-widest px-3 py-1 rounded-full shadow-[0_0_12px_rgba(6,182,212,0.5)] flex items-center gap-1.5 whitespace-nowrap`}>
-                  🧸 Mesa Infancias
+                {(Boolean(props.para_infancias) || props.clasificacion_edad === 'menores') && (
+                <span className="text-[9px] font-black text-cyan-950 bg-cyan-400 uppercase tracking-widest px-3 py-1 rounded-full shadow-[0_0_12px_rgba(6,182,212,0.5)] flex items-center gap-1.5 whitespace-nowrap">
+                  🧒 Menores &lt;18
+                </span>
+              )}
+              {props.clasificacion_edad === '+18' && (
+                <span className="text-[9px] font-black text-purple-950 bg-purple-400 uppercase tracking-widest px-3 py-1 rounded-full shadow-[0_0_12px_rgba(168,85,247,0.5)] flex items-center gap-1.5 whitespace-nowrap">
+                  🔞 Solo +18
                 </span>
               )}
               {Boolean(props.apta_novatos) && (

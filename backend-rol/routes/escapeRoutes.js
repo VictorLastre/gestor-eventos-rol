@@ -164,7 +164,7 @@ router.post('/turnos/:turnoId/inscripciones', verificarToken, (req, res) => {
 
   // Paso 1: Obtener información del turno y la sala
   const sqlInfo = `
-    SELECT er.id as room_id, er.evento_id, er.cupo_por_turno, er.titulo, et.hora_inicio
+    SELECT er.id as room_id, er.evento_id, er.cupo_por_turno, er.titulo, er.edad_minima, et.hora_inicio
     FROM escape_turnos et
     JOIN escape_rooms er ON et.escape_room_id = er.id
     WHERE et.id = ?
@@ -173,7 +173,7 @@ router.post('/turnos/:turnoId/inscripciones', verificarToken, (req, res) => {
   db.query(sqlInfo, [turnoId], (err, resInfo) => {
     if (err || resInfo.length === 0) return res.status(404).json({ error: 'Horario no encontrado.' });
 
-    const { room_id, evento_id, cupo_por_turno, titulo, hora_inicio } = resInfo[0];
+    const { room_id, evento_id, cupo_por_turno, titulo, edad_minima, hora_inicio } = resInfo[0];
 
     // Paso 2: Ejecutar todas las validaciones del Gremio en una sola consulta
     const sqlValidar = `
@@ -181,15 +181,19 @@ router.post('/turnos/:turnoId/inscripciones', verificarToken, (req, res) => {
         (SELECT COUNT(*) FROM partidas WHERE evento_id = ? AND dungeon_master_id = ?) as es_dm_rol,
         (SELECT COUNT(*) FROM inscripciones i JOIN partidas p ON i.partida_id = p.id WHERE p.evento_id = ? AND i.usuario_id = ?) as es_jugador_rol,
         (SELECT COUNT(*) FROM escape_inscripciones ei JOIN escape_turnos et ON ei.escape_turno_id = et.id WHERE et.escape_room_id = ? AND ei.usuario_id = ?) as ya_en_este_escape,
-        (SELECT COUNT(*) FROM escape_inscripciones WHERE escape_turno_id = ?) as anotados_turno
+        (SELECT COUNT(*) FROM escape_inscripciones WHERE escape_turno_id = ?) as anotados_turno,
+        (SELECT TIMESTAMPDIFF(YEAR, fecha_nacimiento, CURDATE()) FROM usuarios WHERE id = ?) as edad_usuario
     `;
 
-    db.query(sqlValidar, [evento_id, usuarioId, evento_id, usuarioId, room_id, usuarioId, turnoId], (err, resValidar) => {
+    db.query(sqlValidar, [evento_id, usuarioId, evento_id, usuarioId, room_id, usuarioId, turnoId, usuarioId], (err, resValidar) => {
       if (err) return res.status(500).json({ error: 'Error al consultar las leyes del gremio.' });
 
-      const { es_dm_rol, es_jugador_rol, ya_en_este_escape, anotados_turno } = resValidar[0];
+      const { es_dm_rol, es_jugador_rol, ya_en_este_escape, anotados_turno, edad_usuario } = resValidar[0];
 
       // Aplicamos las Reglas:
+      if (edad_minima && edad_minima > 0 && edad_usuario !== null && edad_usuario < edad_minima) {
+        return res.status(400).json({ error: `Edad mínima requerida: Este Escape Room requiere un mínimo de ${edad_minima} años (tienes ${edad_usuario} años).` });
+      }
       if (anotados_turno >= cupo_por_turno) return res.status(400).json({ error: 'Ese horario ya está lleno.' });
       if (es_dm_rol > 0) return res.status(400).json({ error: '⚠️ No puedes jugar, ya estás dirigiendo una mesa de rol en este evento.' });
       if (es_jugador_rol > 0) return res.status(400).json({ error: '⚠️ Ya estás anotado en una mesa de rol en este evento.' });

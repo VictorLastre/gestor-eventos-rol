@@ -30,6 +30,7 @@ function MisCronicas({ alActualizarUsuario }) {
     avatar: usuarioGuardado?.avatar || 'guerrero',
     telegram_chat_id: usuarioGuardado?.telegram_chat_id || '',
     biografia: usuarioGuardado?.biografia || '',
+    fecha_nacimiento: usuarioGuardado?.fecha_nacimiento || '',
     password: '' // ✨ AGREGADO: Campo para la nueva contraseña
   });
 
@@ -272,6 +273,24 @@ function MisCronicas({ alActualizarUsuario }) {
               </div>
             </div>
 
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="space-y-2">
+                <label className="text-[10px] font-black text-zinc-500 uppercase tracking-widest ml-2 flex items-center gap-2">
+                  <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full"></span> 
+                  Fecha de Nacimiento (Clasificación de Mesas)
+                </label>
+                <input 
+                  type="date"
+                  name="fecha_nacimiento" 
+                  max={new Date().toISOString().split('T')[0]}
+                  min="1920-01-01"
+                  className="w-full bg-zinc-950 border border-zinc-800 rounded-2xl py-3 px-4 md:py-4 md:px-6 text-white focus:border-emerald-500 outline-none transition-all font-mono [color-scheme:dark]" 
+                  value={perfil.fecha_nacimiento} 
+                  onChange={manejarCambioPerfil} 
+                />
+              </div>
+            </div>
+
             <div className="space-y-2">
               <label className="text-[10px] font-black text-zinc-500 uppercase tracking-widest ml-2 flex items-center gap-2">
                 <span className="w-1.5 h-1.5 bg-amber-500 rounded-full animate-pulse"></span> 
@@ -410,6 +429,18 @@ function MisCronicas({ alActualizarUsuario }) {
                     <p className="text-emerald-500 font-black text-[10px] uppercase tracking-[0.4em] mb-2 w-full truncate">⚔️ Aventurero</p>
                   )}
                   <p className="text-zinc-500 font-mono text-xs sm:text-sm w-full truncate">{perfil.email}</p>
+                  {usuarioGuardado?.fecha_nacimiento && (
+                    <div className="text-zinc-400 font-bold text-xs mt-2 flex items-center flex-wrap gap-2">
+                      <span>🎂 {usuarioGuardado.fecha_nacimiento} {usuarioGuardado.edad !== undefined && usuarioGuardado.edad !== null ? `(${usuarioGuardado.edad} años)` : ''}</span>
+                      <span className={`text-[10px] font-black px-2 py-0.5 rounded-md border ${
+                        (usuarioGuardado.edad || 0) >= 18 
+                          ? 'text-purple-400 bg-purple-500/10 border-purple-500/30' 
+                          : 'text-cyan-400 bg-cyan-500/10 border-cyan-500/30'
+                      }`}>
+                        {(usuarioGuardado.edad || 0) >= 18 ? '🔞 (+18)' : '🧒 (Menor)'}
+                      </span>
+                    </div>
+                  )}
                   {usuarioGuardado?.telegram_chat_id ? (
                     <p className="text-emerald-500 font-bold text-xs mt-2 flex items-center gap-2 select-none">
                       🤖 Cuenta vinculada ✅

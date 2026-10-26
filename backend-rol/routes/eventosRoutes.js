@@ -129,7 +129,7 @@ router.get('/:id/partidas', verificarToken, (req, res) => {
     SELECT 
       p.id, p.evento_id, p.dungeon_master_id, p.titulo, p.descripcion, p.requisitos, 
       p.sistema, p.sistema_id, s.nombre AS sistema_db_nombre,
-      p.cupo, p.turno, p.estado, p.etiqueta, p.apta_novatos, p.para_infancias, p.materiales_pedidos, p.continuacion_de_id,
+      p.cupo, p.turno, p.estado, p.etiqueta, p.apta_novatos, p.para_infancias, p.clasificacion_edad, p.materiales_pedidos, p.continuacion_de_id,
       IF(p.codigo_privado IS NOT NULL AND p.codigo_privado != '', 1, 0) AS es_privada,
       IF(p.dungeon_master_id = ?, p.codigo_privado, NULL) AS codigo_privado,
       u.nombre AS dmNombre, u.nombre_completo AS dm_nombre_completo, 
@@ -171,8 +171,9 @@ router.post('/:id/partidas', verificarToken, (req, res) => {
   const usuarioId = req.usuario.id;
   const rolUsuario = req.usuario.rol;
   
-  // Extraemos también el codigo_privado del cuerpo de la petición
-  const { titulo, descripcion, requisitos, sistema, sistema_id, cupo, turno, etiqueta, apta_novatos, materiales_pedidos, codigo_privado, continuacion_de_id } = req.body;
+  // Extraemos también el codigo_privado y clasificacion_edad del cuerpo de la petición
+  const { titulo, descripcion, requisitos, sistema, sistema_id, cupo, turno, etiqueta, apta_novatos, para_infancias, clasificacion_edad, materiales_pedidos, codigo_privado, continuacion_de_id } = req.body;
+  const edadClasif = clasificacion_edad || (para_infancias ? 'menores' : 'todas');
 
   // ✨ VALIDACIÓN DEL TIPO DE MESA Y ROL ✨
   const esOrganizadorValido = rolUsuario === 'dm' || rolUsuario === 'admin';
@@ -232,14 +233,14 @@ router.post('/:id/partidas', verificarToken, (req, res) => {
       return res.status(400).json({ error: 'El cupo de Mesas de Rol para este evento está lleno.' });
     }
 
-    // Añadimos el codigo_privado a la inserción
+    // Añadimos el codigo_privado y clasificacion_edad a la inserción
     const sqlInsert = `
         INSERT INTO partidas 
-        (evento_id, dungeon_master_id, titulo, descripcion, requisitos, sistema, sistema_id, cupo, turno, estado, etiqueta, apta_novatos, materiales_pedidos, codigo_privado, continuacion_de_id) 
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'abierta', ?, ?, ?, ?, ?)
+        (evento_id, dungeon_master_id, titulo, descripcion, requisitos, sistema, sistema_id, cupo, turno, estado, etiqueta, apta_novatos, para_infancias, clasificacion_edad, materiales_pedidos, codigo_privado, continuacion_de_id) 
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'abierta', ?, ?, ?, ?, ?, ?, ?)
     `;
     
-    db.query(sqlInsert, [eventoId, usuarioId, titulo, descripcion, requisitos, sistema, sistema_id, cupo, turno, etiqueta, apta_novatos, materiales_pedidos, codigo_privado || null, continuacion_de_id || null], (err, resultadoPartida) => {
+    db.query(sqlInsert, [eventoId, usuarioId, titulo, descripcion, requisitos, sistema, sistema_id, cupo, turno, etiqueta, apta_novatos, edadClasif === 'menores' ? 1 : 0, edadClasif, materiales_pedidos, codigo_privado || null, continuacion_de_id || null], (err, resultadoPartida) => {
       if (err) {
         console.error(err);
         return res.status(500).json({ error: 'Error al crear la mesa.' });

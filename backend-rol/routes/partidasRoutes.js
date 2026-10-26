@@ -187,6 +187,7 @@ router.post('/:id/inscripciones', verificarToken, (req, res) => {
   const sqlInfoMesa = `
     SELECT 
       p.evento_id, p.cupo, p.titulo, p.etiqueta, p.dungeon_master_id,
+      p.clasificacion_edad, p.para_infancias,
       u.telegram_chat_id AS dm_telegram_id, u.nombre AS dm_nombre,
       (SELECT COUNT(*) FROM inscripciones WHERE partida_id = p.id) as anotados 
     FROM partidas p
@@ -197,9 +198,34 @@ router.post('/:id/inscripciones', verificarToken, (req, res) => {
     if (err) return res.status(500).send('Error de servidor.');
     if (resultados.length === 0) return res.status(404).send('La mesa ya no existe.');
     
-    const { evento_id, cupo, anotados, titulo, etiqueta, dm_telegram_id, dungeon_master_id } = resultados[0];
+    const { evento_id, cupo, anotados, titulo, etiqueta, dm_telegram_id, dungeon_master_id, clasificacion_edad, para_infancias } = resultados[0];
 
     if (anotados >= cupo) return res.status(400).send('❌ ¡Mesa llena! No quedan lugares.');
+
+    // ✨ 0. Verificamos la fecha de nacimiento y edad del aventurero
+    const sqlUsuarioEdad = `
+      SELECT fecha_nacimiento, TIMESTAMPDIFF(YEAR, fecha_nacimiento, CURDATE()) as edad 
+      FROM usuarios 
+      WHERE id = ?
+    `;
+    db.query(sqlUsuarioEdad, [idUsuario], (errU, resU) => {
+      if (errU || resU.length === 0) return res.status(500).send('Error al verificar tu perfil.');
+      
+      const { fecha_nacimiento, edad } = resU[0];
+
+      if (!fecha_nacimiento) {
+        return res.status(400).send('Requisito obligatorio:\nDebes registrar tu fecha de nacimiento en tu perfil antes de inscribirte a una mesa de rol.');
+      }
+
+      const clasifMesa = clasificacion_edad || (para_infancias ? 'menores' : 'todas');
+
+      if (clasifMesa === '+18' && edad < 18) {
+        return res.status(400).send(`🔞 Mesa Exclusiva para Mayores de 18 años:\nEsta partida contiene temáticas maduras para adultos. No puedes unirte siendo menor de edad (${edad} años).`);
+      }
+
+      if (clasifMesa === 'menores' && edad >= 18) {
+        return res.status(400).send(`🧒 Mesa Exclusiva para Menores de 18 años:\nEsta partida está reservada para el espacio de adolescentes e infancias.`);
+      }
 
     // ✨ 1. Verificamos si el DM ha configurado restricciones para este aventurero
     db.query("SELECT * FROM bloqueos_jugadores WHERE dm_id = ? AND jugador_id = ?", [dungeon_master_id, idUsuario], (errB, resBloqueo) => {
@@ -265,6 +291,7 @@ router.post('/:id/inscripciones', verificarToken, (req, res) => {
         
         res.status(201).send('¡Te has unido a la partida!');
       });
+    });
     });
     });
     });
@@ -453,7 +480,8 @@ router.put('/:id', verificarToken, (req, res) => {
       return res.status(403).json({ error: 'Sin permisos.' });
     }
 
-    const { titulo, descripcion, requisitos, sistema, sistema_id, cupo, turno, etiqueta, apta_novatos, para_infancias, materiales_pedidos } = req.body;
+    const { titulo, descripcion, requisitos, sistema, sistema_id, cupo, turno, etiqueta, apta_novatos, para_infancias, clasificacion_edad, materiales_pedidos } = req.body;
+    const edadClasif = clasificacion_edad || (para_infancias ? 'menores' : 'todas');
 
     const esOrganizadorValido = rolUsuario === 'dm' || rolUsuario === 'admin';
     const esJugador = rolUsuario === 'jugador' || rolUsuario === 'aventurero';
@@ -464,11 +492,11 @@ router.put('/:id', verificarToken, (req, res) => {
 
     const sqlUpdate = `
       UPDATE partidas 
-      SET titulo = ?, descripcion = ?, requisitos = ?, sistema = ?, sistema_id = ?, cupo = ?, turno = ?, etiqueta = ?, apta_novatos = ?, para_infancias = ?, materiales_pedidos = ?
+      SET titulo = ?, descripcion = ?, requisitos = ?, sistema = ?, sistema_id = ?, cupo = ?, turno = ?, etiqueta = ?, apta_novatos = ?, para_infancias = ?, clasificacion_edad = ?, materiales_pedidos = ?
       WHERE id = ?
     `;
 
-    db.query(sqlUpdate, [titulo, descripcion, requisitos, sistema, sistema_id || null, cupo, turno, etiqueta, apta_novatos, para_infancias, materiales_pedidos, partidaId], (err) => {
+    db.query(sqlUpdate, [titulo, descripcion, requisitos, sistema, sistema_id || null, cupo, turno, etiqueta, apta_novatos, edadClasif === 'menores' ? 1 : 0, edadClasif, materiales_pedidos, partidaId], (err) => {
       if (err) {
         console.error(err);
         return res.status(500).json({ error: 'Error al actualizar registros.' });

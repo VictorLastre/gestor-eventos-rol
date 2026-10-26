@@ -21,7 +21,30 @@ const authLimiter = rateLimit({
 
 // ✨ REGISTRO: Actualizado para usar el puente mágico de Promesas
 router.post('/registro', authLimiter, async (req, res) => {
-  const { nombre, nombre_completo, email, password } = req.body;
+  const { nombre, nombre_completo, email, password, fecha_nacimiento } = req.body;
+
+  // Validación de fecha de nacimiento obligatoria para clasificar edad (+18 o menores)
+  if (!fecha_nacimiento) {
+    return res.status(400).json({ 
+      error: 'La fecha de nacimiento es obligatoria para clasificar tu acceso a las mesas (+18 o menores).' 
+    });
+  }
+
+  const fechaNac = new Date(fecha_nacimiento);
+  if (isNaN(fechaNac.getTime())) {
+    return res.status(400).json({ error: 'La fecha de nacimiento no es válida.' });
+  }
+
+  const hoy = new Date();
+  let edad = hoy.getFullYear() - fechaNac.getFullYear();
+  const m = hoy.getMonth() - fechaNac.getMonth();
+  if (m < 0 || (m === 0 && hoy.getDate() < fechaNac.getDate())) {
+    edad--;
+  }
+
+  if (edad < 6 || edad > 110) {
+    return res.status(400).json({ error: 'Debes ingresar una fecha de nacimiento válida (edad entre 6 y 110 años).' });
+  }
 
   // Validación de contraseña segura para proteger el gremio
   const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)[A-Za-z\d@$!%*?&._-]{8,}$/;
@@ -34,11 +57,11 @@ router.post('/registro', authLimiter, async (req, res) => {
   try {
     const hash = await bcrypt.hash(password, 10);
     
-    // Añadimos nombre_completo a la consulta SQL
-    const sql = 'INSERT INTO usuarios (nombre, nombre_completo, email, password, rol) VALUES (?, ?, ?, ?, ?)';
+    // Añadimos nombre_completo y fecha_nacimiento a la consulta SQL
+    const sql = 'INSERT INTO usuarios (nombre, nombre_completo, email, password, rol, fecha_nacimiento) VALUES (?, ?, ?, ?, ?, ?)';
     
     // ✨ EL PUENTE MÁGICO APLICADO AQUÍ: db.promise().query
-    await db.promise().query(sql, [nombre, nombre_completo, email, hash, 'jugador']);
+    await db.promise().query(sql, [nombre, nombre_completo, email, hash, 'jugador', fecha_nacimiento]);
     
     res.status(201).json({ mensaje: '¡Aventurero registrado en el gremio!' });
   } catch (e) { 
@@ -56,8 +79,15 @@ router.post('/login', authLimiter, async (req, res) => {
   const { email, password } = req.body;
   
   try {
-    // ✨ EL PUENTE MÁGICO APLICADO AQUÍ: db.promise().query
-    const [resultados] = await db.promise().query('SELECT * FROM usuarios WHERE email = ?', [email]);
+    // ✨ EL PUENTE MÁGICO APLICADO AQUÍ: db.promise().query con cálculo de edad
+    const sqlLogin = `
+      SELECT u.*, 
+        DATE_FORMAT(u.fecha_nacimiento, '%Y-%m-%d') as fecha_nacimiento_formateada,
+        TIMESTAMPDIFF(YEAR, u.fecha_nacimiento, CURDATE()) as edad_calculada
+      FROM usuarios u 
+      WHERE u.email = ?
+    `;
+    const [resultados] = await db.promise().query(sqlLogin, [email]);
     
     // Si no hay resultados, devolvemos error (y detenemos la ejecución)
     if (resultados.length === 0) {
@@ -73,7 +103,7 @@ router.post('/login', authLimiter, async (req, res) => {
 
     const token = jwt.sign({ id: usuario.id, rol: usuario.rol, nombre: usuario.nombre }, JWT_SECRET, { expiresIn: '2h' });
     
-        // ✨ LOGIN EXITOSO: Enviamos los datos al Frontend
+    // ✨ LOGIN EXITOSO: Enviamos los datos al Frontend
     res.json({ 
       token, 
       usuario: { 
@@ -83,7 +113,9 @@ router.post('/login', authLimiter, async (req, res) => {
         rol: usuario.rol, 
         email: usuario.email,
         avatar: usuario.avatar || 'guerrero',
-        telegram_chat_id: usuario.telegram_chat_id // ✨ AGREGADO: Enviar estado de Telegram al loguear
+        telegram_chat_id: usuario.telegram_chat_id,
+        fecha_nacimiento: usuario.fecha_nacimiento_formateada || null,
+        edad: usuario.edad_calculada !== null && usuario.edad_calculada !== undefined ? usuario.edad_calculada : null
       } 
     });
   } catch (error) {
