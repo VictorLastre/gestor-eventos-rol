@@ -12,7 +12,7 @@ function EvaluarMesaModal({ partida, cerrar, usuarioActualId }) {
   const tagsDM_deshonor = ['🚂 Railroading', '📖 Reglas estrictas', '🥱 Aburrido', '⏳ Impuntual'];
 
   const tagsJugador_honor = ['🛡️ Buen compañero', '⏳ Respeta el turno', '🧙‍♂️ Buen roleador', '🧠 Táctico', '📖 Conoce su clase', '🍕 Trae comida'];
-  const tagsJugador_deshonor = ['📱 Distraído', '🗣️ Interrumpe mucho', '🥇 Síndrome de Protagonista', '🤬 Mal perdedor', '⏳ Impuntual'];
+  const tagsJugador_deshonor = ['📱 Distraído', '🗣️ Interrumpe mucho', '🥇 Síndrome de Protagonista', '🤬 Mal perdedor', '⏳ Impuntual', '🚫 Falta sin aviso'];
 
   useEffect(() => {
     const fetchData = async () => {

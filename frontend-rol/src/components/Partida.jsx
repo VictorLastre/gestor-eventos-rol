@@ -294,6 +294,47 @@ function Partida(props) {
     } catch (err) { if (err !== 'Sesión expirada') console.error(err); }
   };
 
+    const cambiarAsistencia = async (e, jugadorId, jugadorNombre, estadoActual) => {
+    e.stopPropagation();
+    const { value: nuevoEstado } = await Swal.fire({
+      title: `Asistencia: ${jugadorNombre}`,
+      text: 'Registra la presencia del jugador en esta mesa:',
+      input: 'radio',
+      inputOptions: {
+        'presente': '✅ Presente (Asistió a jugar)',
+        'ausente': '❌ Ausente sin aviso (-1 Deshonor y falta)',
+        'justificado': '⚠️ Ausencia justificada (Avisó con tiempo)',
+        'pendiente': '⏳ Sin evaluar / Pendiente'
+      },
+      inputValue: estadoActual || 'pendiente',
+      showCancelButton: true,
+      cancelButtonText: 'Cancelar',
+      confirmButtonText: 'Guardar',
+      background: '#09090b',
+      color: '#fff',
+      confirmButtonColor: '#10b981',
+      cancelButtonColor: '#27272a'
+    });
+
+    if (nuevoEstado && nuevoEstado !== estadoActual) {
+      try {
+        const res = await fetchProtegido(`/api/partidas/${props.id}/asistencia`, {
+          method: 'PUT',
+          body: JSON.stringify({ usuario_id: jugadorId, asistencia: nuevoEstado })
+        });
+        if (res.ok) {
+          Toast.fire({ icon: 'success', title: `Asistencia: ${nuevoEstado}` });
+          cargarListaJugadores();
+        } else {
+          const data = await res.json();
+          Swal.fire({ title: 'Aviso', text: data.error || 'Error al guardar.', icon: 'warning', background: '#09090b', color: '#fff' });
+        }
+      } catch (err) {
+        if (err !== 'Sesión expirada') console.error(err);
+      }
+    }
+  };
+
   const expulsarJugador = async (e, jugadorId, jugadorNombre) => {
     e.stopPropagation();
     const result = await Swal.fire({
@@ -944,6 +985,27 @@ function Partida(props) {
                               </div>
                             )}
                             
+                            {(soyElMaster || soyAdmin) && (
+                              <button
+                                onClick={(e) => cambiarAsistencia(e, jugador.id, jugador.nombre, jugador.asistencia)}
+                                title="Tomar Asistencia"
+                                className={`px-2 py-1 rounded-lg text-[9px] font-black uppercase tracking-wider border transition-all flex items-center gap-1 ${
+                                  jugador.asistencia === 'presente'
+                                    ? 'bg-emerald-500/15 text-emerald-400 border-emerald-500/40 hover:bg-emerald-500/25'
+                                    : jugador.asistencia === 'ausente'
+                                    ? 'bg-red-500/20 text-red-400 border-red-500/40 hover:bg-red-500/30 shadow-[0_0_8px_rgba(239,68,68,0.25)]'
+                                    : jugador.asistencia === 'justificado'
+                                    ? 'bg-amber-500/15 text-amber-400 border-amber-500/40 hover:bg-amber-500/25'
+                                    : 'bg-zinc-900 text-zinc-400 border-zinc-700/60 hover:text-white hover:border-zinc-500'
+                                }`}
+                              >
+                                {jugador.asistencia === 'presente' && '✅ Presente'}
+                                {jugador.asistencia === 'ausente' && '❌ Ausente (-1)'}
+                                {jugador.asistencia === 'justificado' && '⚠️ Justificado'}
+                                {(!jugador.asistencia || jugador.asistencia === 'pendiente') && '📋 Asistencia'}
+                              </button>
+                            )}
+
                             {(soyElMaster || soyAdmin) && jugador.id !== usuarioIdActual && (
                               <button
                                 onClick={(e) => expulsarJugador(e, jugador.id, jugador.nombre)}

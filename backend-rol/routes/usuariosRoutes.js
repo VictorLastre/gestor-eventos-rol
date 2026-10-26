@@ -318,7 +318,7 @@ router.get('/notificaciones', verificarToken, (req, res) => {
   router.get('/', verificarToken, (req, res) => {
     if (req.usuario.rol !== 'admin') return res.status(403).json({ error: 'Denegado.' });
     const page = Math.max(1, parseInt(req.query.page, 10) || 1);
-    const limit = Math.max(1, Math.min(100, parseInt(req.query.limit, 10) || 10));
+    const limit = Math.max(1, Math.min(2000, parseInt(req.query.limit, 10) || 10));
     const offset = Math.max(0, (page - 1) * limit);
     db.query("SELECT COUNT(*) AS total FROM usuarios", (err, countResult) => {
       if (err) {

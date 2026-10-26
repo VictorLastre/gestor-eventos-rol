@@ -212,6 +212,24 @@ router.post('/:id/inscripciones', verificarToken, (req, res) => {
         return res.status(400).send(mensajeBloqueo);
       }
 
+      // ✨ 2. Verificamos si el aventurero tiene sanción por 2 ausencias consecutivas
+      const sqlHistorialAusencias = `
+        SELECT i.asistencia, e.id as evento_id, e.fecha
+        FROM inscripciones i
+        JOIN partidas p ON i.partida_id = p.id
+        JOIN eventos e ON p.evento_id = e.id
+        WHERE i.usuario_id = ? 
+          AND e.estado = 'Finalizado' 
+          AND i.asistencia IN ('presente', 'ausente')
+        ORDER BY e.fecha DESC, p.id DESC
+        LIMIT 2
+      `;
+
+      db.query(sqlHistorialAusencias, [idUsuario], (errAus, resAus) => {
+        if (!errAus && resAus && resAus.length >= 2 && resAus[0].asistencia === 'ausente' && resAus[1].asistencia === 'ausente') {
+          return res.status(400).send('Cupo restringido por inasistencia:\nHas acumulado 2 ausencias consecutivas sin aviso previo en jornadas anteriores. De acuerdo al reglamento del Gremio, se suspende tu inscripción para este evento.');
+        }
+
       const sqlValidarParticipacion = `
         SELECT 
           (SELECT COUNT(*) FROM partidas WHERE evento_id = ? AND dungeon_master_id = ?) as es_dm_o_creador,
@@ -247,6 +265,7 @@ router.post('/:id/inscripciones', verificarToken, (req, res) => {
         
         res.status(201).send('¡Te has unido a la partida!');
       });
+    });
     });
     });
   });
@@ -291,9 +310,73 @@ router.delete('/:id/inscripciones', verificarToken, (req, res) => {
   });
 });
 
+// ✨ ASISTENCIA: Tomar asistencia a un jugador (Solo DM de la mesa o Admin)
+router.put('/:id/asistencia', verificarToken, async (req, res) => {
+  const partidaId = req.params.id;
+  const { usuario_id, asistencia } = req.body;
+  const solicitanteId = req.usuario.id;
+  const solicitanteRol = req.usuario.rol;
+
+  if (!['presente', 'ausente', 'justificado', 'pendiente'].includes(asistencia)) {
+    return res.status(400).json({ error: 'Estado de asistencia no válido.' });
+  }
+
+  try {
+    const [partidas] = await db.promise().query(
+      "SELECT p.dungeon_master_id, p.evento_id, p.titulo FROM partidas p WHERE p.id = ?",
+      [partidaId]
+    );
+
+    if (partidas.length === 0) {
+      return res.status(404).json({ error: 'Mesa no encontrada.' });
+    }
+
+    const { dungeon_master_id, evento_id } = partidas[0];
+    if (dungeon_master_id !== solicitanteId && solicitanteRol !== 'admin') {
+      return res.status(403).json({ error: 'Solo el Director de Juego de esta mesa o un Administrador pueden tomar asistencia.' });
+    }
+
+    const [updateResult] = await db.promise().query(
+      "UPDATE inscripciones SET asistencia = ? WHERE partida_id = ? AND usuario_id = ?",
+      [asistencia, partidaId, usuario_id]
+    );
+
+    if (updateResult.affectedRows === 0) {
+      return res.status(404).json({ error: 'El aventurero no está inscrito en esta mesa.' });
+    }
+
+    // Si es ausente sin aviso, aplicar deshonor automático (-1)
+    if (asistencia === 'ausente') {
+      const sqlDeshonor = `
+        INSERT INTO reputacion (evaluador_id, evaluado_id, partida_id, voto, etiqueta)
+        VALUES (?, ?, ?, -1, 'Falta sin aviso')
+        ON DUPLICATE KEY UPDATE voto = -1, etiqueta = 'Falta sin aviso'
+      `;
+      await db.promise().query(sqlDeshonor, [dungeon_master_id, usuario_id, partidaId]);
+    } else {
+      // Si se cambia a presente o justificado, retirar el deshonor por falta si existía
+      await db.promise().query(
+        "DELETE FROM reputacion WHERE evaluador_id = ? AND evaluado_id = ? AND partida_id = ? AND etiqueta = 'Falta sin aviso'",
+        [dungeon_master_id, usuario_id, partidaId]
+      );
+    }
+
+    const io = req.app.get('io');
+    if (io) {
+      io.emit('actualizacion-mesas', { eventoId: parseInt(evento_id) });
+      io.emit('actualizacion-usuarios');
+    }
+
+    res.json({ mensaje: `Asistencia actualizada a ${asistencia}.` });
+  } catch (error) {
+    console.error('Error al registrar asistencia:', error);
+    res.status(500).json({ error: 'Error del servidor al registrar asistencia.' });
+  }
+});
+
 // ✨ JUGADORES: Obtener lista de inscritos en una mesa
 router.get('/:id/jugadores', verificarToken, (req, res) => {
-  const sql = "SELECT u.id, u.nombre, u.nombre_completo, u.email, u.rol, i.estado FROM usuarios u JOIN inscripciones i ON u.id = i.usuario_id WHERE i.partida_id = ?";
+  const sql = "SELECT u.id, u.nombre, u.nombre_completo, u.email, u.rol, i.estado, i.asistencia FROM usuarios u JOIN inscripciones i ON u.id = i.usuario_id WHERE i.partida_id = ?";
   db.query(sql, [req.params.id], (err, resultados) => {
     if (err) return res.status(500).json({ error: 'Error al consultar aventureros.' });
     res.json(resultados);
