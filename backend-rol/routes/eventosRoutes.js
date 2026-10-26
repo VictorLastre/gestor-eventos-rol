@@ -133,8 +133,10 @@ router.get('/:id/partidas', verificarToken, (req, res) => {
       IF(p.codigo_privado IS NOT NULL AND p.codigo_privado != '', 1, 0) AS es_privada,
       IF(p.dungeon_master_id = ?, p.codigo_privado, NULL) AS codigo_privado,
       u.nombre AS dmNombre, u.nombre_completo AS dm_nombre_completo, 
-      (SELECT COUNT(*) FROM inscripciones WHERE partida_id = p.id) AS jugadoresIniciales,
-      (SELECT COUNT(*) FROM inscripciones WHERE partida_id = p.id AND usuario_id = ?) AS anotadoInicialmente,
+      (SELECT COUNT(*) FROM inscripciones WHERE partida_id = p.id AND (estado != 'espera' OR estado IS NULL)) AS jugadoresIniciales,
+      (SELECT COUNT(*) FROM inscripciones WHERE partida_id = p.id AND estado = 'espera') AS suplentesIniciales,
+      (SELECT COUNT(*) FROM inscripciones WHERE partida_id = p.id AND usuario_id = ? AND (estado != 'espera' OR estado IS NULL)) AS anotadoInicialmente,
+      (SELECT COUNT(*) FROM inscripciones WHERE partida_id = p.id AND usuario_id = ? AND estado = 'espera') AS enEsperaInicialmente,
       (SELECT estado FROM inscripciones WHERE partida_id = p.id AND usuario_id = ?) AS mi_estado,
       (1 + (
         SELECT COUNT(*) 
@@ -148,8 +150,7 @@ router.get('/:id/partidas', verificarToken, (req, res) => {
     LEFT JOIN sistemas s ON p.sistema_id = s.id 
     WHERE p.evento_id = ? 
   `;
-  // Se agregó req.usuario.id por partida doble para la lógica de la contraseña y de si está anotado
-  db.query(sql, [req.usuario.id, req.usuario.id, req.usuario.id, req.params.id], (err, resultados) => {
+  db.query(sql, [req.usuario.id, req.usuario.id, req.usuario.id, req.usuario.id, req.params.id], (err, resultados) => {
     if (err) {
       console.error(err);
       return res.status(500).json({ error: 'Error al consultar las mesas.' });

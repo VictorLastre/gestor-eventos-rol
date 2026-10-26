@@ -36,11 +36,15 @@ function Partida(props) {
   const esJuegoMesa = props.etiqueta === 'Juegos de Mesa'; 
 
   const cantJugadores = props.jugadoresIniciales ?? props.anotados ?? props.jugadores_anotados ?? 0;
+  const cantSuplentesIniciales = props.suplentesIniciales ?? 0;
   const yaEstaAnotado = Boolean(props.anotadoInicialmente || props.estoy_anotado || false);
+  const yaEstaEnEspera = Boolean(props.enEsperaInicialmente || props.mi_estado === 'espera');
 
   const [jugadoresAnotados, setJugadoresAnotados] = useState(cantJugadores);
+  const [suplentesAnotados, setSuplentesAnotados] = useState(cantSuplentesIniciales);
   const [anotado, setAnotado] = useState(yaEstaAnotado);
-  const [miEstado, setMiEstado] = useState(props.mi_estado || 'confirmada'); // ✨ ESTADO DE LA INSCRIPCIÓN
+  const [enEspera, setEnEspera] = useState(yaEstaEnEspera);
+  const [miEstado, setMiEstado] = useState(props.mi_estado || 'confirmada');
   const [listaJugadores, setListaJugadores] = useState([]);
   const [modalAbierto, setModalAbierto] = useState(false);
   const [mostrarEvaluar, setMostrarEvaluar] = useState(false);
@@ -91,8 +95,10 @@ function Partida(props) {
 
   useEffect(() => {
     setJugadoresAnotados(cantJugadores);
+    setSuplentesAnotados(cantSuplentesIniciales);
     setAnotado(yaEstaAnotado);
-  }, [cantJugadores, yaEstaAnotado]);
+    setEnEspera(yaEstaEnEspera);
+  }, [cantJugadores, cantSuplentesIniciales, yaEstaAnotado, yaEstaEnEspera]);
 
   useEffect(() => {
     if (!modalAbierto) return; 
@@ -109,7 +115,25 @@ function Partida(props) {
     setCargandoJugadores(true);
     fetchProtegido(`/api/partidas/${props.id}/jugadores`)
       .then(res => res.json())
-      .then(datos => { setListaJugadores(datos); setCargandoJugadores(false); })
+      .then(datos => { 
+        if (Array.isArray(datos)) {
+          setListaJugadores(datos);
+          const tits = datos.filter(j => j.estado !== 'espera');
+          const supls = datos.filter(j => j.estado === 'espera');
+          setJugadoresAnotados(tits.length);
+          setSuplentesAnotados(supls.length);
+          const reg = datos.find(j => j.id === usuarioIdActual);
+          if (reg) {
+            setAnotado(reg.estado !== 'espera');
+            setEnEspera(reg.estado === 'espera');
+            setMiEstado(reg.estado);
+          } else {
+            setAnotado(false);
+            setEnEspera(false);
+          }
+        }
+        setCargandoJugadores(false); 
+      })
       .catch(err => { if (err !== 'Sesión expirada') console.error(err); setCargandoJugadores(false); });
   };
 
@@ -230,36 +254,76 @@ function Partida(props) {
 
   const alternarInscripcion = async (e) => {
     e.stopPropagation(); 
-    const metodo = anotado ? 'DELETE' : 'POST';
+    const metodo = (estoyTitular || estoyEnEspera) ? 'DELETE' : 'POST';
     let payload = null;
 
-    // Si intenta unirse y la mesa es privada, pedimos la clave
-    if (metodo === 'POST' && props.es_privada) {
-      const { value: claveIngresada } = await Swal.fire({
-        title: 'Mesa Privada',
-        text: 'Ingresa la contraseña secreta dictada por el Organizador:',
-        input: 'password',
-        inputPlaceholder: 'Contraseña...',
-        background: '#09090b',
-        color: '#fff',
-        showCancelButton: true,
-        confirmButtonColor: '#a855f7', // Color purpura
-        cancelButtonColor: '#3f3f46',
-        confirmButtonText: 'Desbloquear y Unirse',
-        cancelButtonText: 'Cancelar',
-        customClass: { popup: 'border border-purple-500/30 rounded-[2rem]' }
-      });
+    if (metodo === 'DELETE') {
+      if (estoyTitular) {
+        const { isConfirmed } = await Swal.fire({
+          title: '¿Abandonar mesa?',
+          text: 'Liberarás tu cupo titular en esta aventura. Si hay suplentes en lista de espera, el primero ascenderá automáticamente.',
+          icon: 'warning',
+          showCancelButton: true,
+          confirmButtonText: 'Sí, abandonar',
+          cancelButtonText: 'Cancelar',
+          confirmButtonColor: '#ef4444',
+          cancelButtonColor: '#27272a'
+        });
+        if (!isConfirmed) return;
+      } else if (estoyEnEspera) {
+        const { isConfirmed } = await Swal.fire({
+          title: '¿Salir de la Lista de Espera?',
+          text: `Perderás tu posición de suplente (${posicionEspera ? `#${posicionEspera}` : ''}) en esta mesa.`,
+          icon: 'question',
+          showCancelButton: true,
+          confirmButtonText: 'Sí, salir de espera',
+          cancelButtonText: 'Cancelar',
+          confirmButtonColor: '#ef4444',
+          cancelButtonColor: '#27272a'
+        });
+        if (!isConfirmed) return;
+      }
+    } else {
+      // POST: Si la mesa está llena, avisar que entrará como suplente
+      if (estaLlena) {
+        const { isConfirmed } = await Swal.fire({
+          title: '⏳ Lista de Espera',
+          html: `<p class="text-zinc-300 text-sm mb-2">La mesa está completa (<b>${totalTitulares}/${props.cupo}</b> cupos ocupados).</p>
+                 <p class="text-zinc-400 text-xs">¿Deseas anotarte como <b>Suplente #${totalSuplentes + 1}</b>? Si un jugador cancela o se da de baja, el sistema te ascenderá a titular automáticamente y te avisará por Telegram.</p>`,
+          icon: 'info',
+          showCancelButton: true,
+          confirmButtonText: 'Sí, anotarme en espera',
+          cancelButtonText: 'Cancelar',
+          confirmButtonColor: '#f59e0b',
+          cancelButtonColor: '#27272a'
+        });
+        if (!isConfirmed) return;
+      }
 
-      // Si el usuario cancela o no pone nada, abortamos
-      if (!claveIngresada) return;
-      
-      payload = { codigo_privado: claveIngresada };
+      // Si intenta unirse y la mesa es privada, pedimos la clave
+      if (props.es_privada) {
+        const { value: claveIngresada } = await Swal.fire({
+          title: 'Mesa Privada',
+          text: 'Ingresa la contraseña secreta dictada por el Organizador:',
+          input: 'password',
+          inputPlaceholder: 'Contraseña...',
+          background: '#09090b',
+          color: '#fff',
+          showCancelButton: true,
+          confirmButtonColor: '#a855f7',
+          cancelButtonColor: '#3f3f46',
+          confirmButtonText: 'Desbloquear y Unirse',
+          cancelButtonText: 'Cancelar',
+          customClass: { popup: 'border border-purple-500/30 rounded-[2rem]' }
+        });
+
+        if (!claveIngresada) return;
+        payload = { codigo_privado: claveIngresada };
+      }
     }
 
     try {
       const opcionesFetch = { method: metodo };
-
-      // Si tenemos un payload (la clave), la mandamos en el body
       if (payload) {
         opcionesFetch.headers = { 'Content-Type': 'application/json' };
         opcionesFetch.body = JSON.stringify(payload);
@@ -268,10 +332,9 @@ function Partida(props) {
       const res = await fetchProtegido(`/api/partidas/${props.id}/inscripciones`, opcionesFetch);
       
       if (res.ok) {
-        setAnotado(!anotado);
-        setJugadoresAnotados(anotado ? jugadoresAnotados - 1 : jugadoresAnotados + 1);
+        const respText = await res.text();
         cargarListaJugadores();
-        Toast.fire({ icon: 'success', title: anotado ? 'Has abandonado la mesa' : '¡Te has unido a la aventura!' });
+        Toast.fire({ icon: 'success', title: respText || (metodo === 'DELETE' ? 'Has salido de la mesa' : '¡Te has unido a la aventura!') });
       } else {
         const mensaje = await res.text();
         Swal.fire({ title: 'Aviso del Gremio', text: mensaje, icon: 'warning', background: '#09090b', color: '#fff', confirmButtonColor: '#f59e0b' });
@@ -445,9 +508,20 @@ function Partida(props) {
     setDatosEdicion({...datosEdicion, codigo_privado: clave});
   };
 
+  const titulares = listaJugadores.filter(j => j.estado !== 'espera');
+  const suplentes = listaJugadores.filter(j => j.estado === 'espera');
+
+  const miRegistro = listaJugadores.find(j => j.id === usuarioIdActual);
+  const estoyTitular = miRegistro ? (miRegistro.estado !== 'espera') : anotado;
+  const estoyEnEspera = miRegistro ? (miRegistro.estado === 'espera') : enEspera;
+  const posicionEspera = estoyEnEspera && suplentes.length > 0 ? (suplentes.findIndex(j => j.id === usuarioIdActual) + 1) : null;
+
+  const totalTitulares = listaJugadores.length > 0 ? titulares.length : jugadoresAnotados;
+  const totalSuplentes = listaJugadores.length > 0 ? suplentes.length : suplentesAnotados;
+
   // Lógica de colores por disponibilidad
-  const estaLlena = jugadoresAnotados >= props.cupo;
-  const tieneJugadores = jugadoresAnotados > 0 && !estaLlena;
+  const estaLlena = totalTitulares >= props.cupo;
+  const tieneJugadores = totalTitulares > 0 && !estaLlena;
   
   let estiloBordeDisponibilidad = "";
   if (estaLlena) {
@@ -532,11 +606,16 @@ function Partida(props) {
           
           <div className="shrink-0 text-right flex flex-col items-end">
             <p className={`text-3xl sm:text-4xl font-mono font-black leading-none drop-shadow-lg ${estaLlena ? 'text-red-500' : tieneJugadores ? 'text-orange-500' : 'text-emerald-500'}`}>
-              {jugadoresAnotados}
+              {totalTitulares}
             </p>
             <p className="text-[10px] text-zinc-500 font-bold uppercase tracking-widest mt-1 border-t border-zinc-800 pt-1 w-full text-center whitespace-nowrap">
               de {props.cupo}
             </p>
+            {totalSuplentes > 0 && (
+              <span className="text-[9px] font-black text-amber-400 bg-amber-500/10 border border-amber-500/30 px-1.5 py-0.5 rounded mt-1 whitespace-nowrap">
+                +{totalSuplentes} en espera
+              </span>
+            )}
           </div>
         </div>
 
@@ -598,18 +677,28 @@ function Partida(props) {
           {!soyElMaster && !props.eventoEsPasado && (
             <button 
               onClick={alternarInscripcion}
-              disabled={cargandoJugadores || (props.inscripcionesCerradas && !anotado) || (estaLlena && !anotado)}
+              disabled={cargandoJugadores || (props.inscripcionesCerradas && !estoyTitular && !estoyEnEspera)}
               className={`flex-1 min-w-0 py-3 sm:py-4 rounded-xl sm:rounded-2xl font-black text-[9px] sm:text-[10px] uppercase tracking-[0.2em] transition-all shadow-xl truncate px-2 ${
-                anotado 
-                ? 'bg-red-500/10 text-red-500 border border-red-500/40 hover:bg-red-600 hover:text-white' 
+                estoyTitular
+                ? 'bg-red-500/10 text-red-500 border border-red-500/40 hover:bg-red-600 hover:text-white'
+                : estoyEnEspera
+                ? 'bg-amber-500/15 text-amber-400 border border-amber-500/40 hover:bg-amber-600 hover:text-white'
                 : props.inscripcionesCerradas
                   ? 'bg-zinc-950 text-zinc-600 border border-zinc-800 cursor-not-allowed'
                   : estaLlena
-                    ? 'bg-zinc-950 text-zinc-600 border border-zinc-800 cursor-not-allowed'
+                    ? 'bg-amber-500/10 text-amber-400 border border-amber-500/40 hover:bg-amber-500 hover:text-black active:scale-95'
                     : 'bg-emerald-600 text-white border border-emerald-50 hover:bg-emerald-500 shadow-emerald-900/40 active:scale-95'
               }`}
             >
-              {anotado ? 'Abandonar' : props.inscripcionesCerradas ? 'Cerrado' : estaLlena ? 'Llena' : (props.es_privada ? '🔒 Alistarse' : 'Alistarse')}
+              {estoyTitular 
+                ? 'Abandonar' 
+                : estoyEnEspera 
+                ? `⏳ Suplente #${posicionEspera || 1} (Salir)` 
+                : props.inscripcionesCerradas 
+                ? 'Cerrado' 
+                : estaLlena 
+                ? (props.es_privada ? '🔒 Ser Suplente' : '⏳ Ser Suplente') 
+                : (props.es_privada ? '🔒 Alistarse' : 'Alistarse')}
             </button>
           )}
           <div className={`px-4 sm:px-6 shrink-0 flex items-center justify-center bg-zinc-950 text-zinc-500 rounded-xl sm:rounded-2xl border transition-all ${soyElMaster || props.eventoEsPasado ? 'w-full py-3 sm:py-4 text-[10px] sm:text-xs tracking-widest hover:text-white hover:bg-zinc-800 uppercase font-black border-zinc-800 cursor-pointer' : 'border-zinc-800/80 group-hover:border-zinc-700 group-hover:text-zinc-300'}`}>
@@ -955,8 +1044,13 @@ function Partida(props) {
                   <div>
                     <p className="text-[10px] font-black text-zinc-500 uppercase tracking-[0.2em] mb-1">Disponibilidad</p>
                     <p className={`text-xl font-black ${estaLlena ? 'text-red-500' : 'text-emerald-500'}`}>
-                      {jugadoresAnotados} de {props.cupo}
+                      {totalTitulares} de {props.cupo} Titulares
                     </p>
+                    {totalSuplentes > 0 && (
+                      <p className="text-xs text-amber-400 font-bold mt-1">
+                        ⏳ {totalSuplentes} suplente(s) en lista de espera
+                      </p>
+                    )}
                   </div>
                   <div className={`text-4xl font-mono font-black opacity-20 ${estaLlena ? 'text-red-500' : 'text-emerald-500'}`}>
                      {estaLlena ? 'FULL' : 'OPEN'}
@@ -966,7 +1060,7 @@ function Partida(props) {
 
               <div className="mb-10">
                 <h4 className="text-[10px] font-black text-zinc-500 uppercase tracking-[0.3em] mb-4 flex items-center gap-2">
-                  <span className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse shadow-[0_0_8px_rgba(16,185,129,0.8)]"></span> Compañía Aventurera
+                  <span className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse shadow-[0_0_8px_rgba(16,185,129,0.8)]"></span> Compañía Aventurera ({titulares.length}/{props.cupo})
                 </h4>
                 <div className="bg-black/40 rounded-[2rem] p-6 md:p-8 border border-zinc-800/50 shadow-inner">
                   {cargandoJugadores ? (
@@ -974,9 +1068,9 @@ function Partida(props) {
                       <div className="w-4 h-4 border-2 border-emerald-500/20 border-t-emerald-500 rounded-full animate-spin"></div>
                       <p className="text-emerald-500 text-xs font-black uppercase tracking-widest animate-pulse">Consultando Registros...</p>
                     </div>
-                  ) : listaJugadores.length > 0 ? (
+                  ) : titulares.length > 0 ? (
                     <div className="flex flex-wrap gap-3">
-                      {listaJugadores.map((jugador, idx) => {
+                      {titulares.map((jugador, idx) => {
                         let estilosRol = 'bg-blue-500/10 text-blue-400 border-blue-500/30'; 
                         let iconoRol = '👤';
 
@@ -1064,6 +1158,65 @@ function Partida(props) {
                   ) : (
                     <p className="text-zinc-600 text-xs italic font-bold">La mesa está vacía aguardando héroes...</p>
                   )}
+
+                  {/* ⏳ SECCIÓN DE LISTA DE ESPERA / SUPLENTES */}
+                  {suplentes.length > 0 && (
+                    <div className="mt-6 pt-6 border-t border-zinc-800/60">
+                      <h4 className="text-[10px] font-black text-amber-500/80 uppercase tracking-[0.3em] mb-4 flex items-center gap-2">
+                        <span className="w-2 h-2 bg-amber-500 rounded-full animate-pulse shadow-[0_0_8px_rgba(245,158,11,0.8)]"></span> 
+                        Lista de Espera / Suplentes ({suplentes.length})
+                      </h4>
+                      <div className="flex flex-wrap gap-3">
+                        {suplentes.map((suplente, sIdx) => {
+                          const nombreRealSuplente = suplente.nombre_completo && suplente.nombre_completo.trim() !== '' 
+                            ? suplente.nombre_completo 
+                            : suplente.nombre;
+                          const esYo = suplente.id === usuarioIdActual;
+
+                          return (
+                            <div key={sIdx} className="relative flex items-center gap-1 group/suplente">
+                              <span 
+                                onClick={() => {
+                                  if (props.setVista && suplente.id) {
+                                    props.setVista(`perfil:${suplente.id}`);
+                                    setModalAbierto(false);
+                                  }
+                                }}
+                                className="px-3.5 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-wider border flex items-center gap-2 bg-amber-500/10 text-amber-300 border-amber-500/30 hover:scale-105 transition-all cursor-pointer"
+                                title={soyElMaster || soyAdmin ? `Nombre real: ${nombreRealSuplente}` : "Ver Perfil"}
+                              >
+                                <span className="w-5 h-5 rounded-full bg-amber-500/20 text-amber-400 flex items-center justify-center text-[9px] font-black">
+                                  #{sIdx + 1}
+                                </span>
+                                <span>{suplente.nombre}</span>
+                                {esYo && <span className="text-[8px] bg-amber-500/30 text-amber-200 px-1.5 py-0.5 rounded font-black">(Tú)</span>}
+                              </span>
+
+                              {(soyElMaster || soyAdmin) && (
+                                <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 hidden group-hover/suplente:flex flex-col items-center z-50 pointer-events-none drop-shadow-2xl">
+                                  <div className="bg-zinc-950 border border-amber-500/50 text-white text-xs py-2 px-3.5 rounded-xl shadow-[0_10px_25px_rgba(0,0,0,0.9)] whitespace-nowrap flex items-center gap-2">
+                                    <span className="text-zinc-400 font-normal">Nombre real:</span>
+                                    <span className="text-amber-400 font-black tracking-wide">{nombreRealSuplente}</span>
+                                  </div>
+                                  <div className="w-2.5 h-2.5 bg-zinc-950 border-r border-b border-amber-500/50 rotate-45 -mt-1.5"></div>
+                                </div>
+                              )}
+
+                              {(soyElMaster || soyAdmin || esYo) && (
+                                <button
+                                  onClick={(e) => expulsarJugador(e, suplente.id, suplente.nombre)}
+                                  title={esYo ? "Salir de la lista de espera" : "Quitar de la lista de espera"}
+                                  className="w-7 h-7 flex items-center justify-center rounded-xl bg-red-500/10 text-red-400 border border-red-500/30 hover:bg-red-500 hover:text-white transition-all text-xs"
+                                >
+                                  ✕
+                                </button>
+                              )}
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
                 </div>
               </div>
 
@@ -1146,18 +1299,28 @@ function Partida(props) {
                     ) : (
                       <button 
                         onClick={alternarInscripcion}
-                        disabled={cargandoJugadores || (props.inscripcionesCerradas && !anotado) || (estaLlena && !anotado)}
+                        disabled={cargandoJugadores || (props.inscripcionesCerradas && !estoyTitular && !estoyEnEspera)}
                         className={`flex-1 min-w-0 py-5 rounded-2xl font-black text-xs uppercase tracking-[0.2em] transition-all shadow-xl flex items-center justify-center gap-3 truncate px-4 ${
-                          anotado 
+                          estoyTitular 
                           ? 'bg-red-500/10 text-red-500 border-red-500/40 hover:bg-red-500 hover:text-white' 
-                          : props.inscripcionesCerradas
-                            ? 'bg-zinc-950 text-zinc-600 border border-zinc-800 cursor-not-allowed'
-                            : estaLlena
+                          : estoyEnEspera
+                            ? 'bg-amber-500/15 text-amber-400 border border-amber-500/40 hover:bg-amber-500 hover:text-black'
+                            : props.inscripcionesCerradas
                               ? 'bg-zinc-950 text-zinc-600 border border-zinc-800 cursor-not-allowed'
-                              : 'bg-emerald-600 text-white hover:bg-emerald-500 shadow-emerald-900/40 border border-emerald-50 active:scale-95'
+                              : estaLlena
+                                ? 'bg-amber-500/15 text-amber-400 border border-amber-500/40 hover:bg-amber-500 hover:text-black shadow-[0_0_20px_rgba(245,158,11,0.2)]'
+                                : 'bg-emerald-600 text-white hover:bg-emerald-500 shadow-emerald-900/40 border border-emerald-50 active:scale-95'
                         }`}
                       >
-                        {anotado ? 'Abandonar Expedición' : props.inscripcionesCerradas ? 'Inscripciones Cerradas' : estaLlena ? 'Mesa Llena' : (props.es_privada ? '🔒 Desbloquear y Unirse' : 'Firmar el Contrato (Unirse)')}
+                        {estoyTitular 
+                          ? 'Abandonar Expedición' 
+                          : estoyEnEspera 
+                          ? `⏳ En Lista de Espera (#${posicionEspera || 1}) - Cancelar Espera` 
+                          : props.inscripcionesCerradas 
+                          ? 'Inscripciones Cerradas' 
+                          : estaLlena 
+                          ? (props.es_privada ? '🔒 Ser Suplente' : '⏳ Anotarse como Suplente (Lista de Espera)') 
+                          : (props.es_privada ? '🔒 Desbloquear y Unirse' : 'Firmar el Contrato (Unirse)')}
                       </button>
                     )}
                   </>
