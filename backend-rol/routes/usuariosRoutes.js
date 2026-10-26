@@ -2,7 +2,8 @@ const express = require('express');
 const router = express.Router();
 const db = require('../config/db');
 const verificarToken = require('../middlewares/auth');
-const bcrypt = require('bcrypt'); 
+const bcrypt = require('bcrypt');
+const { enviarMensajeTelegram } = require('../utils/telegram'); 
 
 // ✨ FUNCIÓN DEL ESCRIBA: REGISTRO EN LA BITÁCORA
 const registrarLog = (usuario, accion, descripcion) => {
@@ -567,6 +568,337 @@ router.delete('/bloqueos/:jugador_id', verificarToken, (req, res) => {
     if (err) return res.status(500).json({ error: 'Error al quitar de la lista de no deseados.' });
     res.json({ mensaje: 'Jugador removido de la lista.' });
   });
+});
+
+
+// =========================================================================
+// ⚠️ GESTIÓN DE SANCIONES, ASISTENCIAS E INDULTOS (Solo Administradores)
+// =========================================================================
+
+// 1. Listar aventureros con métricas de asistencia y estado de sanción
+router.get('/sanciones/listado', verificarToken, async (req, res) => {
+  if (req.usuario.rol !== 'admin') {
+    return res.status(403).json({ error: 'Acceso denegado. Solo el Alto Mando puede gestionar sanciones.' });
+  }
+
+  try {
+    const sqlUsuarios = `
+      SELECT 
+        u.id, 
+        u.nombre, 
+        u.nombre_completo, 
+        u.email, 
+        u.rol, 
+        u.avatar, 
+        u.telegram_chat_id,
+        COUNT(CASE WHEN i.asistencia = 'ausente' THEN 1 END) as total_ausencias,
+        COUNT(CASE WHEN i.asistencia = 'presente' THEN 1 END) as total_presentes,
+        COUNT(CASE WHEN i.asistencia = 'justificado' THEN 1 END) as total_justificadas,
+        COUNT(i.id) as total_inscripciones
+      FROM usuarios u
+      LEFT JOIN inscripciones i ON u.id = i.usuario_id
+      LEFT JOIN partidas p ON i.partida_id = p.id
+      GROUP BY u.id
+    `;
+    const [usuarios] = await db.promise().query(sqlUsuarios);
+
+    const sqlHistorial = `
+      SELECT i.usuario_id, i.asistencia, e.id as evento_id, e.fecha, e.nombre as evento_nombre
+      FROM inscripciones i
+      JOIN partidas p ON i.partida_id = p.id
+      JOIN eventos e ON p.evento_id = e.id
+      WHERE e.estado = 'Finalizado' AND i.asistencia IN ('presente', 'ausente')
+      ORDER BY e.fecha DESC, p.id DESC
+    `;
+    const [historial] = await db.promise().query(sqlHistorial);
+
+    const historialPorUsuario = {};
+    for (const h of historial) {
+      if (!historialPorUsuario[h.usuario_id]) {
+        historialPorUsuario[h.usuario_id] = [];
+      }
+      historialPorUsuario[h.usuario_id].push(h);
+    }
+
+    const resultado = usuarios.map(u => {
+      const asistenciasRecientes = historialPorUsuario[u.id] || [];
+      let ausenciasConsecutivas = 0;
+      for (const reg of asistenciasRecientes) {
+        if (reg.asistencia === 'ausente') {
+          ausenciasConsecutivas++;
+        } else {
+          break;
+        }
+      }
+
+      const estaSancionado = ausenciasConsecutivas >= 2;
+
+      return {
+        id: u.id,
+        nombre: u.nombre,
+        nombre_completo: u.nombre_completo,
+        email: u.email,
+        rol: u.rol,
+        avatar: u.avatar,
+        telegram_chat_id: u.telegram_chat_id,
+        total_ausencias: Number(u.total_ausencias) || 0,
+        total_presentes: Number(u.total_presentes) || 0,
+        total_justificadas: Number(u.total_justificadas) || 0,
+        total_inscripciones: Number(u.total_inscripciones) || 0,
+        ausencias_consecutivas: ausenciasConsecutivas,
+        esta_sancionado: estaSancionado
+      };
+    });
+
+    resultado.sort((a, b) => {
+      if (a.esta_sancionado !== b.esta_sancionado) return b.esta_sancionado ? -1 : 1;
+      if (a.ausencias_consecutivas !== b.ausencias_consecutivas) return b.ausencias_consecutivas - a.ausencias_consecutivas;
+      if (a.total_ausencias !== b.total_ausencias) return b.total_ausencias - a.total_ausencias;
+      return a.nombre.localeCompare(b.nombre);
+    });
+
+    res.json(resultado);
+  } catch (error) {
+    console.error('Error al listar sanciones:', error);
+    res.status(500).json({ error: 'Error del servidor al obtener listado de sanciones.' });
+  }
+});
+
+// 2. Historial de asistencia detallado de un usuario
+router.get('/:id/historial-asistencia', verificarToken, async (req, res) => {
+  const usuarioId = parseInt(req.params.id, 10);
+  if (req.usuario.rol !== 'admin' && req.usuario.id !== usuarioId) {
+    return res.status(403).json({ error: 'Acceso denegado.' });
+  }
+
+  try {
+    const [usuarios] = await db.promise().query(
+      "SELECT id, nombre, nombre_completo, email, rol, avatar, telegram_chat_id FROM usuarios WHERE id = ?",
+      [usuarioId]
+    );
+
+    if (usuarios.length === 0) {
+      return res.status(404).json({ error: 'Aventurero no encontrado.' });
+    }
+
+    const sqlHistorial = `
+      SELECT 
+        i.id as inscripcion_id,
+        i.usuario_id,
+        i.partida_id,
+        i.asistencia,
+        i.estado as estado_inscripcion,
+        p.titulo as partida_titulo,
+        p.sistema as partida_sistema,
+        dm.id as dm_id,
+        dm.nombre as dm_nombre,
+        e.id as evento_id,
+        e.nombre as evento_nombre,
+        e.estado as evento_estado,
+        DATE_FORMAT(e.fecha, '%Y-%m-%d') as evento_fecha,
+        r.id as reputacion_id,
+        r.voto as deshonor_voto,
+        r.etiqueta as deshonor_etiqueta
+      FROM inscripciones i
+      JOIN partidas p ON i.partida_id = p.id
+      JOIN eventos e ON p.evento_id = e.id
+      LEFT JOIN usuarios dm ON p.dungeon_master_id = dm.id
+      LEFT JOIN reputacion r ON (r.evaluado_id = i.usuario_id AND r.partida_id = p.id AND r.etiqueta = 'Falta sin aviso')
+      WHERE i.usuario_id = ?
+      ORDER BY e.fecha DESC, p.id DESC
+    `;
+
+    const [historial] = await db.promise().query(sqlHistorial, [usuarioId]);
+
+    res.json({
+      usuario: usuarios[0],
+      historial: historial || []
+    });
+  } catch (error) {
+    console.error('Error al obtener historial de asistencia:', error);
+    res.status(500).json({ error: 'Error del servidor al obtener historial de asistencia.' });
+  }
+});
+
+// 3. Justificar / Indultar una inasistencia específica
+router.put('/sanciones/justificar', verificarToken, async (req, res) => {
+  if (req.usuario.rol !== 'admin') {
+    return res.status(403).json({ error: 'Solo los administradores pueden otorgar indultos o justificar faltas.' });
+  }
+
+  const { inscripcion_id, usuario_id, partida_id, motivo } = req.body;
+
+  try {
+    let sqlBusqueda = `
+      SELECT i.id, i.usuario_id, i.partida_id, i.asistencia, 
+             u.nombre as usuario_nombre, u.telegram_chat_id, 
+             p.titulo as partida_titulo, e.nombre as evento_nombre
+      FROM inscripciones i
+      JOIN usuarios u ON i.usuario_id = u.id
+      JOIN partidas p ON i.partida_id = p.id
+      JOIN eventos e ON p.evento_id = e.id
+    `;
+    let params = [];
+
+    if (inscripcion_id) {
+      sqlBusqueda += " WHERE i.id = ?";
+      params = [inscripcion_id];
+    } else if (usuario_id && partida_id) {
+      sqlBusqueda += " WHERE i.usuario_id = ? AND i.partida_id = ?";
+      params = [usuario_id, partida_id];
+    } else {
+      return res.status(400).json({ error: 'Se requiere inscripcion_id o usuario_id y partida_id.' });
+    }
+
+    const [inscripciones] = await db.promise().query(sqlBusqueda, params);
+    if (inscripciones.length === 0) {
+      return res.status(404).json({ error: 'Inscripción no encontrada.' });
+    }
+
+    const inscripcion = inscripciones[0];
+
+    // Actualizar estado de asistencia a 'justificado'
+    await db.promise().query(
+      "UPDATE inscripciones SET asistencia = 'justificado' WHERE id = ?",
+      [inscripcion.id]
+    );
+
+    // Retirar deshonor automático por falta sin aviso
+    await db.promise().query(
+      "DELETE FROM reputacion WHERE evaluado_id = ? AND partida_id = ? AND etiqueta = 'Falta sin aviso'",
+      [inscripcion.usuario_id, inscripcion.partida_id]
+    );
+
+    // Registrar en la Bitácora
+    const motivoTexto = (motivo && motivo.trim()) ? motivo.trim() : 'Justificación administrativa del Consejo';
+    registrarLog(
+      req.usuario,
+      'JUSTIFICAR_FALTA',
+      `Indulto concedido a ${inscripcion.usuario_nombre} en la mesa "${inscripcion.partida_titulo}" (${inscripcion.evento_nombre}). Motivo: ${motivoTexto}`
+    );
+
+    // Notificación in-app
+    const mensajeNotif = `⚖️ El Alto Mando del Gremio ha justificado tu inasistencia en la mesa "${inscripcion.partida_titulo}". Se ha retirado la penalización de deshonor y tu derecho a inscripción ha sido restituido.${motivo ? ` Motivo: "${motivo}".` : ''}`;
+    await db.promise().query(
+      "INSERT INTO notificaciones (usuario_id, mensaje) VALUES (?, ?)",
+      [inscripcion.usuario_id, mensajeNotif]
+    );
+
+    // Notificación vía Telegram
+    if (inscripcion.telegram_chat_id) {
+      const msgTelegram = `⚖️ <b>Resolución del Gremio - Indulto Concedido</b>
+
+` +
+        `Estimado/a aventurero/a <b>${inscripcion.usuario_nombre}</b>:
+` +
+        `Tu inasistencia en la mesa <b>"${inscripcion.partida_titulo}"</b> (${inscripcion.evento_nombre}) ha sido justificada por la Administración.
+
+` +
+        `✨ <i>Motivo:</i> ${motivoTexto}
+
+` +
+        `Se ha removido el deshonor de tu hoja de aventurero y se restableció tu inscripción para próximas jornadas.`;
+      enviarMensajeTelegram(inscripcion.telegram_chat_id, msgTelegram).catch(err => console.error('Error enviando Telegram de indulto:', err));
+    }
+
+    // Emisión de Sockets
+    const io = req.app.get('io');
+    if (io) {
+      io.emit('actualizacion-sanciones');
+      io.emit('actualizacion-usuarios');
+      io.emit('actualizacion-notificaciones');
+      io.emit('actualizacion-mesas');
+    }
+
+    res.json({ 
+      mensaje: `Inasistencia en "${inscripcion.partida_titulo}" justificada con éxito para ${inscripcion.usuario_nombre}. Se ha retirado el deshonor.` 
+    });
+  } catch (error) {
+    console.error('Error al justificar inasistencia:', error);
+    res.status(500).json({ error: 'Error del servidor al justificar inasistencia.' });
+  }
+});
+
+// 4. Indulto Total (perdonar todas las ausencias pendientes de un aventurero)
+router.put('/sanciones/indulto-total', verificarToken, async (req, res) => {
+  if (req.usuario.rol !== 'admin') {
+    return res.status(403).json({ error: 'Solo los administradores pueden otorgar un indulto total.' });
+  }
+
+  const { usuario_id, motivo } = req.body;
+  if (!usuario_id) return res.status(400).json({ error: 'usuario_id es requerido.' });
+
+  try {
+    const [usuarios] = await db.promise().query(
+      "SELECT id, nombre, telegram_chat_id FROM usuarios WHERE id = ?",
+      [usuario_id]
+    );
+
+    if (usuarios.length === 0) {
+      return res.status(404).json({ error: 'Aventurero no encontrado.' });
+    }
+
+    const usuario = usuarios[0];
+    const motivoTexto = (motivo && motivo.trim()) ? motivo.trim() : 'Indulto general otorgado por el Alto Mando';
+
+    // Cambiar todas las inasistencias 'ausente' a 'justificado'
+    const [resUpdate] = await db.promise().query(
+      "UPDATE inscripciones SET asistencia = 'justificado' WHERE usuario_id = ? AND asistencia = 'ausente'",
+      [usuario_id]
+    );
+
+    // Eliminar todas las sanciones de deshonor por falta
+    await db.promise().query(
+      "DELETE FROM reputacion WHERE evaluado_id = ? AND etiqueta = 'Falta sin aviso'",
+      [usuario_id]
+    );
+
+    // Bitácora
+    registrarLog(
+      req.usuario,
+      'INDULTO_TOTAL',
+      `Indulto total concedido a ${usuario.nombre} (${resUpdate.affectedRows} faltas justificadas). Motivo: ${motivoTexto}`
+    );
+
+    // Notificación in-app
+    const msgNotif = `⚖️ ¡El Alto Mando del Gremio ha concedido un Indulto Total a tu favor! Todas tus inasistencias previas han sido justificadas, tu honor ha sido limpiado y quedas plenamente habilitado para unirte a nuevas aventuras.${motivo ? ` Motivo: "${motivo}".` : ''}`;
+    await db.promise().query(
+      "INSERT INTO notificaciones (usuario_id, mensaje) VALUES (?, ?)",
+      [usuario_id, msgNotif]
+    );
+
+    // Telegram
+    if (usuario.telegram_chat_id) {
+      const msgTelegram = `⚖️ <b>Resolución Extraordinaria del Gremio - ¡Indulto Total!</b>
+
+` +
+        `Estimado/a aventurero/a <b>${usuario.nombre}</b>:
+` +
+        `El Alto Mando ha otorgado un <b>Indulto Total</b> a tu favor.
+` +
+        `✨ Todas tus inasistencias pasadas han sido justificadas y cualquier restricción para participar de nuevas jornadas ha sido levantada.
+
+` +
+        `<i>Motivo:</i> ${motivoTexto}`;
+      enviarMensajeTelegram(usuario.telegram_chat_id, msgTelegram).catch(err => console.error('Error enviando Telegram indulto total:', err));
+    }
+
+    // Sockets
+    const io = req.app.get('io');
+    if (io) {
+      io.emit('actualizacion-sanciones');
+      io.emit('actualizacion-usuarios');
+      io.emit('actualizacion-notificaciones');
+      io.emit('actualizacion-mesas');
+    }
+
+    res.json({
+      mensaje: `Indulto total concedido a ${usuario.nombre}. Se justificaron ${resUpdate.affectedRows} inasistencias.`
+    });
+  } catch (error) {
+    console.error('Error al aplicar indulto total:', error);
+    res.status(500).json({ error: 'Error del servidor al aplicar indulto total.' });
+  }
 });
 
 module.exports = router;

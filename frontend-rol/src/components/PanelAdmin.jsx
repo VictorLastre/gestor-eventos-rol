@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import CrearEvento from './CrearEvento'; 
 import GestionUsuarios from './GestionUsuarios'; 
+import GestionSanciones from './GestionSanciones';
 import Estadisticas from './Estadisticas';
 
 function PanelAdmin({ setVista }) {
@@ -30,7 +31,7 @@ function PanelAdmin({ setVista }) {
         
         {/* Ajuste de padding y gap en el nav para móviles */}
         <nav className="flex flex-col sm:flex-row bg-zinc-950/80 p-2 sm:p-3 gap-2 border-b border-zinc-800 w-full">
-          {['eventos', 'usuarios', 'stats'].map(tab => (
+          {['eventos', 'usuarios', 'sanciones', 'stats'].map(tab => (
             <button 
               key={tab} 
               onClick={() => setPestanaAdmin(tab)} 
@@ -39,9 +40,9 @@ function PanelAdmin({ setVista }) {
                 ? 'bg-purple-600 text-white shadow-lg shadow-purple-900/40' 
                 : 'text-zinc-500 hover:text-zinc-300 hover:bg-zinc-800/50'
               }`}
-              title={tab === 'eventos' ? 'Gestor de Jornadas' : tab === 'usuarios' ? 'Alistamiento' : 'Oráculo de Datos'}
+              title={tab === 'eventos' ? 'Gestor de Jornadas' : tab === 'usuarios' ? 'Alistamiento' : tab === 'sanciones' ? 'Tribunal de Sanciones y Asistencias' : 'Oráculo de Datos'}
             >
-              {tab === 'eventos' ? '⚔️ Gestor de Jornadas' : tab === 'usuarios' ? '🛡️ Alistamiento' : '📊 Oráculo de Datos'}
+              {tab === 'eventos' ? '⚔️ Gestor de Jornadas' : tab === 'usuarios' ? '🛡️ Alistamiento' : tab === 'sanciones' ? '⚠️ Asistencias y Sanciones' : '📊 Oráculo de Datos'}
             </button>
           ))}
         </nav>
@@ -50,6 +51,7 @@ function PanelAdmin({ setVista }) {
         <div className="p-4 sm:p-6 md:p-12 w-full overflow-x-hidden">
           {pestanaAdmin === 'eventos' && <CrearEvento alCrearEvento={() => {}} />}
           {pestanaAdmin === 'usuarios' && <GestionUsuarios setVista={setVista} />}
+          {pestanaAdmin === 'sanciones' && <GestionSanciones setVista={setVista} />}
           {pestanaAdmin === 'stats' && <Estadisticas />}
         </div>
       </section>
