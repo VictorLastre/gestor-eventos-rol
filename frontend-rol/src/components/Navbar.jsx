@@ -212,7 +212,7 @@ function Navbar({ usuario, alCerrarSesion, setVista }) {
             >
               {esFundador && <div className="absolute inset-0 bg-amber-500/20 animate-pulse z-0"></div>}
               <div className="relative z-10 flex items-center justify-center w-full h-full">
-                <AvatarUsuario nombre={usuario?.nombre} tamaño={40} variante="beam" />
+                <AvatarUsuario nombre={usuario?.nombre} avatar={usuario?.avatar} tamaño={40} variante="beam" />
               </div>
             </div>
             
@@ -264,6 +264,12 @@ function Navbar({ usuario, alCerrarSesion, setVista }) {
               </button>
             {esAdmin && (
               <>
+                <button 
+                  onClick={() => setVista('cripta')}
+                  className="text-[10px] md:text-xs font-black uppercase tracking-widest text-emerald-400 hover:text-white transition-all py-2.5 md:py-3 px-4 md:px-6 rounded-lg md:rounded-xl bg-emerald-500/10 border border-emerald-500/20 hover:bg-emerald-600 focus:outline-none flex items-center gap-1.5 md:gap-2 whitespace-nowrap"
+                >
+                  <span className="text-base md:text-lg">💀</span> Cripta (Beta)
+                </button>
                 <button 
                   onClick={() => setVista('admin')}
                   className="text-[10px] md:text-xs font-black uppercase tracking-widest text-purple-400 hover:text-white transition-all py-2.5 md:py-3 px-4 md:px-6 rounded-lg md:rounded-xl bg-purple-500/10 border border-purple-500/20 hover:bg-purple-600 focus:outline-none flex items-center gap-1.5 md:gap-2 whitespace-nowrap"

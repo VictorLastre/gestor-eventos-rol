@@ -12,6 +12,7 @@ import PerfilPublico from './components/PerfilPublico';
 import BuzonAdmin from './components/BuzonAdmin';
 import BuzonFlotante from './components/BuzonFlotante';
 import SalonFama from './components/SalonFama';
+import CriptaJuego from './components/DungeonCrawler/CriptaJuego';
 import './App.css';
 
 function App() {
@@ -219,6 +220,13 @@ function App() {
         )}
         {vistaActual === 'buzon' && <BuzonAdmin usuarioLogueado={usuarioLogueado} />}
         {vistaActual === 'salon-fama' && <SalonFama cambiarVista={(v, params) => { if(v === 'perfilPublico') setVistaActual(`perfil:${params.id}`) }} />}
+        {vistaActual === 'cripta' && (
+          <CriptaJuego 
+            usuarioLogueado={usuarioLogueado} 
+            alActualizarUsuario={setUsuarioLogueado}
+            volver={() => setVistaActual('eventos')} 
+          />
+        )}
       </main>
       <BuzonFlotante />
     </div>
