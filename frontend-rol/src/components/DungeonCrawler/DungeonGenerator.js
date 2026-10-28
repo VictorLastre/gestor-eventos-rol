@@ -1,5 +1,5 @@
-// Generador Procedural de Mazmorras de la Cripta
-// Crea niveles crecientes con biomas diferenciados, zona segura (Hoguera y Forja) y sala del Jefe.
+// Generador Procedural de Mazmorras de la Cripta v2.1
+// Crea niveles crecientes con biomas diferenciados, zona segura, sala del Jefe y sellado de arena anti-exploit.
 
 export const TILE_VOID = 0;
 export const TILE_FLOOR = 1;
@@ -7,6 +7,7 @@ export const TILE_WALL = 2;
 export const TILE_SANCTUARY = 3;
 export const TILE_WATER_MOSS = 4;
 export const TILE_STAIRS = 5;
+export const TILE_BOSS_GATE = 6; // Barrera mágica que sella la arena del jefe
 
 export const BIOMAS = {
   1: {
@@ -21,8 +22,8 @@ export const BIOMAS = {
     mobTipos: ['skelet'],
     bossNombre: 'Esqueleto Campeón',
     bossTipo: 'chort',
-    bossHP: 320,
-    bossDano: 20
+    bossHP: 340,
+    bossDano: 22
   },
   2: {
     nombre: 'Cripta de la Espora',
@@ -36,8 +37,8 @@ export const BIOMAS = {
     mobTipos: ['mushroom', 'skelet'],
     bossNombre: 'Espora Ancestral Primigenia',
     bossTipo: 'big_mushroom',
-    bossHP: 480,
-    bossDano: 26
+    bossHP: 500,
+    bossDano: 28
   },
   3: {
     nombre: 'Bóvedas Inundadas',
@@ -51,16 +52,14 @@ export const BIOMAS = {
     mobTipos: ['zombie', 'skelet'],
     bossNombre: 'El Custodio Nigromante',
     bossTipo: 'necromancer',
-    bossHP: 650,
-    bossDano: 32
+    bossHP: 680,
+    bossDano: 34
   }
 };
 
 export class DungeonGenerator {
   constructor(piso = 1) {
     this.piso = piso;
-    // Escala del mapa: cada piso es más grande que el anterior
-    // Piso 1: 36x36 | Piso 2: 46x46 | Piso 3: 56x56
     this.tamano = 36 + (piso - 1) * 10;
     this.grid = [];
     this.habitaciones = [];
@@ -69,6 +68,8 @@ export class DungeonGenerator {
     this.forjaPoint = { x: 0, y: 0 };
     this.bossPoint = { x: 0, y: 0 };
     this.stairsPoint = { x: 0, y: 0 };
+    this.entradasJefe = [];
+    this.habJefe = null;
     this.spawnsEnemigos = [];
     this.cofres = [];
     this.bioma = BIOMAS[piso] || BIOMAS[1];
@@ -131,21 +132,19 @@ export class DungeonGenerator {
     }
 
     // 3. Asignar roles especiales
-    // Habitación 0: Entrada
     this.habitaciones[0].tipo = 'spawn';
     this.habitaciones[0].descubierta = true;
     this.spawnPoint = { x: this.habitaciones[0].centroX, y: this.habitaciones[0].centroY };
 
-    // Habitación 1: Santuario Seguro (Hoguera y Forja)
     this.habitaciones[1].tipo = 'santuario';
     this.habitaciones[1].descubierta = false;
     this.hogueraPoint = { x: this.habitaciones[1].centroX - 1, y: this.habitaciones[1].centroY };
     this.forjaPoint = { x: this.habitaciones[1].centroX + 2, y: this.habitaciones[1].centroY };
 
-    // Última habitación: Jefe y Escaleras
     const habJefe = this.habitaciones[this.habitaciones.length - 1];
     habJefe.tipo = 'jefe';
     habJefe.descubierta = false;
+    this.habJefe = habJefe;
     this.bossPoint = { x: habJefe.centroX, y: habJefe.centroY };
     this.stairsPoint = { x: habJefe.x + 2, y: habJefe.y + 2 };
 
@@ -184,7 +183,20 @@ export class DungeonGenerator {
     // 7. Muros perimetrales
     this.construirMuros();
 
-    // 8. Distribuir enemigos y cofres
+    // 8. Identificar accesos a la sala del jefe para sellado de arena
+    this.entradasJefe = [];
+    for (let cy = habJefe.y - 1; cy <= habJefe.y + habJefe.alto; cy++) {
+      for (let cx = habJefe.x - 1; cx <= habJefe.x + habJefe.ancho; cx++) {
+        const esBordeExterior = (cx === habJefe.x - 1 || cx === habJefe.x + habJefe.ancho || cy === habJefe.y - 1 || cy === habJefe.y + habJefe.alto);
+        if (esBordeExterior && cy >= 0 && cy < this.tamano && cx >= 0 && cx < this.tamano) {
+          if (this.grid[cy][cx] === TILE_FLOOR) {
+            this.entradasJefe.push({ x: cx, y: cy });
+          }
+        }
+      }
+    }
+
+    // 9. Distribuir enemigos y cofres
     this.distribuirContenido();
 
     return {
@@ -196,6 +208,8 @@ export class DungeonGenerator {
       forjaPoint: this.forjaPoint,
       bossPoint: this.bossPoint,
       stairsPoint: this.stairsPoint,
+      habJefe: this.habJefe,
+      entradasJefe: this.entradasJefe,
       spawnsEnemigos: this.spawnsEnemigos,
       cofres: this.cofres,
       bioma: this.bioma
@@ -283,7 +297,7 @@ export class DungeonGenerator {
             maxHp: 35 + (this.piso - 1) * 20,
             dano: 8 + (this.piso - 1) * 5,
             oro: Math.floor(Math.random() * 8) + 4,
-            materiales: Math.floor(Math.random() * 3) + 1 // Materiales para forja
+            materiales: Math.floor(Math.random() * 3) + 1
           });
         }
 

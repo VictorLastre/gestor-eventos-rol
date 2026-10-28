@@ -1,7 +1,8 @@
-// Motor Central de la Cripta del Nigromante v2.0
-// Combate pulido, sin atravesar muros, deslizamiento de IA, Forja de armas, recuperación gradual y santuario descubierto.
+// Motor Central de la Cripta del Nigromante v2.2
+// Combate pulido, sin atravesar muros, deslizamiento de IA, Forja de armas, recuperación gradual,
+// Santuario descubierto y Sellado de Arena de Jefes (Anti-Exploit / Niebla de Jefe).
 
-import { TILE_VOID, TILE_FLOOR, TILE_WALL, TILE_SANCTUARY, TILE_WATER_MOSS, TILE_STAIRS, DungeonGenerator } from './DungeonGenerator';
+import { TILE_VOID, TILE_FLOOR, TILE_WALL, TILE_SANCTUARY, TILE_WATER_MOSS, TILE_STAIRS, TILE_BOSS_GATE, DungeonGenerator } from './DungeonGenerator';
 import { sound } from './SoundEngine';
 import { assets } from './AssetManager';
 
@@ -64,7 +65,6 @@ export class GameEngine {
     this.ctx = canvas.getContext('2d');
     this.config = config;
 
-    // Estado general
     this.piso = config.pisoInicial || 1;
     this.oro = config.oroInicial || 0;
     this.materiales = config.materialesInicial || 8;
@@ -73,10 +73,9 @@ export class GameEngine {
     this.genero = config.genero || 'm';
     this.datosClase = CLASES[this.claseId] || CLASES.guerrero;
 
-    // Descubrimiento de santuario del piso actual
     this.santuarioDescubierto = false;
+    this.combateJefeActivo = false;
 
-    // Jugador
     this.player = {
       x: 0,
       y: 0,
@@ -105,7 +104,6 @@ export class GameEngine {
       cercaForja: false
     };
 
-    // Entidades
     this.dungeon = null;
     this.enemigos = [];
     this.proyectiles = [];
@@ -115,20 +113,16 @@ export class GameEngine {
     this.jefeActual = null;
     this.escaleraDesbloqueada = false;
 
-    // Cámara
     this.camera = { x: 0, y: 0 };
     this.tileSize = 32;
 
-    // Entrada
     this.teclas = {};
     this.mouse = { x: 0, y: 0, worldX: 0, worldY: 0, presionado: false };
 
-    // Loop
     this.ultimoTiempo = performance.now();
     this.animId = null;
     this.pausado = false;
 
-    // Callbacks
     this.onNotificacion = config.onNotificacion || (() => {});
     this.onActualizarStats = config.onActualizarStats || (() => {});
     this.onMuerte = config.onMuerte || (() => {});
@@ -155,21 +149,19 @@ export class GameEngine {
   iniciarPiso(numPiso) {
     this.piso = numPiso;
     this.santuarioDescubierto = false;
+    this.combateJefeActivo = false;
     this.escaleraDesbloqueada = false;
     this.jefeActual = null;
     this.proyectiles = [];
     this.textosFlotantes = [];
     this.particulas = [];
 
-    // Generar mazmorra
     const gen = new DungeonGenerator(this.piso);
     this.dungeon = gen.generar();
 
-    // Posicionar jugador en el spawn
     this.player.x = (this.dungeon.spawnPoint.x + 0.5) * this.tileSize;
     this.player.y = (this.dungeon.spawnPoint.y + 0.5) * this.tileSize;
 
-    // Cargar enemigos
     this.enemigos = this.dungeon.spawnsEnemigos.map((sp, idx) => ({
       id: idx,
       x: (sp.x + 0.5) * this.tileSize,
@@ -185,6 +177,7 @@ export class GameEngine {
       velocidad: sp.esJefe ? 60 : (sp.tipo === 'mushroom' ? 50 : 80),
       radio: sp.esJefe ? 22 : 12,
       cooldownAtaque: 0,
+      cooldownEspecial: 3.5,
       animFrame: 0,
       animTimer: 0,
       direccionX: 1,
@@ -193,7 +186,6 @@ export class GameEngine {
 
     this.jefeActual = this.enemigos.find(e => e.esJefe) || null;
 
-    // Cargar cofres
     this.cofres = this.dungeon.cofres.map((c, idx) => ({
       id: idx,
       x: (c.x + 0.5) * this.tileSize,
@@ -207,10 +199,18 @@ export class GameEngine {
     this.onNotificacion({
       tipo: 'piso',
       titulo: `¡Has descendido al Piso ${this.piso}!`,
-      mensaje: `${this.dungeon.bioma.nombre} - Encuentra el Santuario Sagrado para proteger tu avance.`
+      mensaje: `${this.dungeon.bioma.nombre} - Encuentra el Santuario Sagrado para asegurar tu reaparición.`
     });
 
     this.notificarStats();
+  }
+
+  // ✨ SISTEMA DE SELLADO DE ARENA: Bloquea las entradas con barrera rúnica
+  sellarEntradasJefe(sellar) {
+    if (!this.dungeon || !this.dungeon.entradasJefe) return;
+    for (const ent of this.dungeon.entradasJefe) {
+      this.dungeon.grid[ent.y][ent.x] = sellar ? TILE_BOSS_GATE : TILE_FLOOR;
+    }
   }
 
   bindEvents() {
@@ -269,7 +269,6 @@ export class GameEngine {
     window.removeEventListener('mouseup', this.handleMouseUp);
   }
 
-  // Comprobar línea de visión entre dos puntos (no golpear ni ver a través de muros)
   hayLineaDeVision(x1, y1, x2, y2) {
     const dist = Math.hypot(x2 - x1, y2 - y1);
     const steps = Math.ceil(dist / 10);
@@ -280,16 +279,14 @@ export class GameEngine {
       const tx = Math.floor(sx / this.tileSize);
       const ty = Math.floor(sy / this.tileSize);
       const tile = this.getTile(tx, ty);
-      if (tile === TILE_WALL || tile === TILE_VOID) {
+      if (tile === TILE_WALL || tile === TILE_VOID || tile === TILE_BOSS_GATE) {
         return false;
       }
     }
     return true;
   }
 
-  // Interacción contextual tecla [E]: Escalera, Cofres o descanso
   interactuar() {
-    // 1. Escalera al Siguiente Piso
     const distEscalera = Math.hypot(
       this.player.x - (this.dungeon.stairsPoint.x + 0.5) * this.tileSize,
       this.player.y - (this.dungeon.stairsPoint.y + 0.5) * this.tileSize
@@ -307,7 +304,6 @@ export class GameEngine {
       return;
     }
 
-    // 2. Abrir cofres
     for (const c of this.cofres) {
       if (!c.abierto && Math.hypot(this.player.x - c.x, this.player.y - c.y) < 40) {
         c.abierto = true;
@@ -324,27 +320,23 @@ export class GameEngine {
       }
     }
 
-    // 3. Hoguera: Confirmación de descanso rápido
     const distHoguera = Math.hypot(
       this.player.x - (this.dungeon.hogueraPoint.x + 0.5) * this.tileSize,
       this.player.y - (this.dungeon.hogueraPoint.y + 0.5) * this.tileSize
     );
     if (distHoguera < 50) {
-      this.crearTextoFlotante(this.player.x, this.player.y - 20, 'Permanecer junto al fuego restaura tu salud paulatinamente...', '#10b981');
-      this.notificarStats(true); // Guarda partida
+      this.crearTextoFlotante(this.player.x, this.player.y - 20, 'Descansando junto al fuego...', '#10b981');
+      this.notificarStats(true);
     }
   }
 
-  // Forja de Armas tecla [F]: Reparación usando materiales y oro
   usarForja() {
     const distForja = Math.hypot(
       this.player.x - (this.dungeon.forjaPoint.x + 0.5) * this.tileSize,
       this.player.y - (this.dungeon.forjaPoint.y + 0.5) * this.tileSize
     );
 
-    if (distForja > 55) {
-      return;
-    }
+    if (distForja > 55) return;
 
     if (this.player.durabilidad >= this.player.maxDurabilidad) {
       this.crearTextoFlotante(this.player.x, this.player.y - 25, '¡Tu arma ya está en perfecto estado!', '#34d399');
@@ -358,19 +350,17 @@ export class GameEngine {
       sound.playHit();
       this.crearTextoFlotante(
         this.player.x, this.player.y - 30,
-        `Necesitas ${costoMateriales} Materiales y ${costoOro} Oro para forjar.`,
+        `Requieres ${costoMateriales} Materiales y ${costoOro} Oro para forjar.`,
         '#ef4444'
       );
       return;
     }
 
-    // Consumir y reparar
     this.materiales -= costoMateriales;
     this.oro -= costoOro;
     this.player.durabilidad = Math.min(this.player.maxDurabilidad, this.player.durabilidad + 35);
     sound.playHit();
 
-    // Chispas de forja
     for (let i = 0; i < 15; i++) {
       this.particulas.push({
         x: this.player.x + (Math.random() - 0.5) * 20,
@@ -425,7 +415,6 @@ export class GameEngine {
 
     const danoMult = this.player.durabilidad <= 0 ? 0.35 : (this.player.durabilidad < this.player.maxDurabilidad * 0.3 ? 0.75 : 1.0);
     const danoFinal = Math.round(this.datosClase.danoBase * danoMult);
-
     const angulo = Math.atan2(this.mouse.worldY - this.player.y, this.mouse.worldX - this.player.x);
 
     if (this.claseId === 'mago') {
@@ -479,7 +468,6 @@ export class GameEngine {
       if (e.hp <= 0) continue;
       const dist = Math.hypot(e.x - this.player.x, e.y - this.player.y);
       if (dist <= alcance + e.radio) {
-        // ✨ VALIDACIÓN VITAL: Si hay un muro entre el jugador y el monstruo, el corte NO pasa
         if (!this.hayLineaDeVision(this.player.x, this.player.y, e.x, e.y)) {
           continue;
         }
@@ -497,11 +485,17 @@ export class GameEngine {
   }
 
   infligirDanoEnemigo(e, dano, esCrit = false) {
+    // ✨ ANTI-EXPLOIT: El Jefe es inmune a ataques si el jugador intenta dispararle desde afuera
+    if (e.esJefe && !this.combateJefeActivo) {
+      sound.playHit();
+      this.crearTextoFlotante(e.x, e.y - 25, '🛡️ ¡ESCUDO RÚNICO! Entra a la arena.', '#c084fc', 13);
+      return;
+    }
+
     e.hp -= dano;
     e.tiempoHerido = 0.2;
     sound.playHit();
 
-    // Empuje ligero con colisión de muro
     const angulo = Math.atan2(e.y - this.player.y, e.x - this.player.x);
     const pushDist = e.esJefe ? 4 : 14;
     const px = e.x + Math.cos(angulo) * pushDist;
@@ -549,7 +543,10 @@ export class GameEngine {
       this.subirNivel();
     }
 
+    // ✨ AL MORIR EL JEFE: Desbloquea la barrera y las escaleras
     if (e.esJefe) {
+      this.combateJefeActivo = false;
+      this.sellarEntradasJefe(false);
       this.escaleraDesbloqueada = true;
       this.llaves += 1;
       sound.playBossRoar();
@@ -572,17 +569,22 @@ export class GameEngine {
     this.crearTextoFlotante(this.player.x, this.player.y - 50, `¡NIVEL ${this.player.nivel}!`, '#34d399', 18);
   }
 
-  // Muerte del Jugador: Si no descubrió la sala segura, renace en el piso anterior
   aplicarMuerteJugador() {
     sound.playDeath();
     this.player.hp = 0;
-    this.player.durabilidad = 0; // Se rompe el arma
+    this.player.durabilidad = 0;
+
+    // ✨ LIBERAR ARENA Y REINICIAR JEFE
+    this.combateJefeActivo = false;
+    this.sellarEntradasJefe(false);
+    if (this.jefeActual && this.jefeActual.hp > 0) {
+      this.jefeActual.hp = this.jefeActual.maxHp; // Se cura al 100% para reiniciar el duelo limpio
+    }
 
     const oroPerdido = Math.floor(this.oro * 0.25);
     this.oro -= oroPerdido;
 
     if (this.santuarioDescubierto) {
-      // Reaparece en el santuario de este piso
       this.player.x = (this.dungeon.hogueraPoint.x + 0.5) * this.tileSize;
       this.player.y = (this.dungeon.hogueraPoint.y + 0.5) * this.tileSize;
       this.player.hp = Math.round(this.player.maxHp * 0.5);
@@ -593,9 +595,7 @@ export class GameEngine {
         mensaje: `Penalización: Tu arma se ha partido y perdiste ${oroPerdido} monedas de oro.`
       });
     } else {
-      // ¡No descubrió la sala segura!
       if (this.piso > 1) {
-        // Expulsado al santuario del piso anterior
         this.onNotificacion({
           tipo: 'muerte',
           titulo: '¡Expulsado de la Cripta!',
@@ -606,7 +606,6 @@ export class GameEngine {
         this.iniciarPiso(this.piso - 1);
         return;
       } else {
-        // En piso 1, renace en el spawn
         this.player.x = (this.dungeon.spawnPoint.x + 0.5) * this.tileSize;
         this.player.y = (this.dungeon.spawnPoint.y + 0.5) * this.tileSize;
         this.player.hp = Math.round(this.player.maxHp * 0.5);
@@ -632,9 +631,7 @@ export class GameEngine {
   }
 
   notificarStats(guardarEnDB = false) {
-    // Solo mostrar barra del jefe si el jugador está a menos de 380px o el jefe está herido
-    const distJefe = this.jefeActual ? Math.hypot(this.player.x - this.jefeActual.x, this.player.y - this.jefeActual.y) : 9999;
-    const mostrarBarraJefe = this.jefeActual && this.jefeActual.hp > 0 && (distJefe < 380 || this.jefeActual.hp < this.jefeActual.maxHp);
+    const mostrarBarraJefe = this.combateJefeActivo || (this.jefeActual && this.jefeActual.hp < this.jefeActual.maxHp && this.jefeActual.hp > 0);
 
     this.onActualizarStats({
       piso: this.piso,
@@ -732,7 +729,6 @@ export class GameEngine {
     const tileTipo = this.getTile(curTileX, curTileY);
     this.player.enSantuario = (tileTipo === TILE_SANCTUARY);
 
-    // Si entra por primera vez al santuario
     if (this.player.enSantuario && !this.santuarioDescubierto) {
       this.santuarioDescubierto = true;
       sound.playCampfire();
@@ -744,27 +740,47 @@ export class GameEngine {
       });
     }
 
-    // Proximidad a la Hoguera
     const distHoguera = Math.hypot(
       this.player.x - (this.dungeon.hogueraPoint.x + 0.5) * this.tileSize,
       this.player.y - (this.dungeon.hogueraPoint.y + 0.5) * this.tileSize
     );
     this.player.cercaHoguera = distHoguera < 48;
 
-    // Proximidad a la Forja
     const distForja = Math.hypot(
       this.player.x - (this.dungeon.forjaPoint.x + 0.5) * this.tileSize,
       this.player.y - (this.dungeon.forjaPoint.y + 0.5) * this.tileSize
     );
     this.player.cercaForja = distForja < 48;
 
-    // ✨ RECUPERACIÓN PROGRESIVA: Si está cerca de la hoguera, recupera vida paulatinamente
     if (this.player.cercaHoguera) {
       if (this.player.hp < this.player.maxHp) {
-        this.player.hp = Math.min(this.player.maxHp, this.player.hp + dt * 25); // +25 HP por segundo
+        this.player.hp = Math.min(this.player.maxHp, this.player.hp + dt * 25);
       }
       if (this.player.recurso < this.player.maxRecurso) {
         this.player.recurso = Math.min(this.player.maxRecurso, this.player.recurso + dt * 30);
+      }
+    }
+
+    // ✨ ACTIVACIÓN DE ARENA: Si el jugador entra a la sala del jefe, sellar puertas
+    const hj = this.dungeon.habJefe;
+    if (hj && this.jefeActual && this.jefeActual.hp > 0) {
+      const pxTile = this.player.x / this.tileSize;
+      const pyTile = this.player.y / this.tileSize;
+      const jugadorEnSalaJefe = (
+        pxTile >= hj.x + 0.5 && pxTile <= hj.x + hj.ancho - 0.5 &&
+        pyTile >= hj.y + 0.5 && pyTile <= hj.y + hj.alto - 0.5
+      );
+
+      if (jugadorEnSalaJefe && !this.combateJefeActivo) {
+        this.combateJefeActivo = true;
+        this.sellarEntradasJefe(true);
+        sound.playBossRoar();
+        this.crearTextoFlotante(this.player.x, this.player.y - 40, '⚔️ ¡ARENA SELLADA! VENCE AL JEFE O MUERE', '#ef4444', 16);
+        this.onNotificacion({
+          tipo: 'jefe',
+          titulo: `⚔️ Duelo de Custodio: ${this.jefeActual.nombre}`,
+          mensaje: '¡Las salidas han sido selladas por magia ancestral! No hay escape hasta que uno caiga.'
+        });
       }
     }
 
@@ -772,13 +788,14 @@ export class GameEngine {
       this.atacar();
     }
 
-    // 3. Actualizar IA de Enemigos (con deslizamiento en muros y sin trabarse)
+    // 3. Actualizar IA de Enemigos
     for (let i = 0; i < this.enemigos.length; i++) {
       const e = this.enemigos[i];
       if (e.hp <= 0) continue;
 
       if (e.tiempoHerido > 0) e.tiempoHerido -= dt;
       if (e.cooldownAtaque > 0) e.cooldownAtaque -= dt;
+      if (e.cooldownEspecial > 0) e.cooldownEspecial -= dt;
 
       e.animTimer += dt;
       if (e.animTimer >= 0.16) {
@@ -787,10 +804,12 @@ export class GameEngine {
       }
 
       const distAlJugador = Math.hypot(this.player.x - e.x, this.player.y - e.y);
-      const radioVision = e.esJefe ? 400 : 230;
+      const radioVision = e.esJefe ? 450 : 230;
 
-      // Persecución si hay visión o está dentro del radio y jugador no está en zona segura
-      if (distAlJugador < radioVision && !this.player.enSantuario) {
+      // El jefe solo persigue dentro de su combate activo o si está dentro de su radio
+      const puedePerseguir = e.esJefe ? (this.combateJefeActivo || distAlJugador < 200) : (distAlJugador < radioVision && !this.player.enSantuario);
+
+      if (puedePerseguir) {
         e.direccionX = this.player.x >= e.x ? 1 : -1;
         const angulo = Math.atan2(this.player.y - e.y, this.player.x - e.x);
 
@@ -798,7 +817,6 @@ export class GameEngine {
           const moveX = Math.cos(angulo) * e.velocidad * dt;
           const moveY = Math.sin(angulo) * e.velocidad * dt;
 
-          // ✨ DESLIZAMIENTO DE IA: Se prueba cada eje por separado para no trabarse en esquinas
           const nextX = e.x + moveX;
           const nextY = e.y + moveY;
 
@@ -812,7 +830,7 @@ export class GameEngine {
             e.y = nextY;
           }
 
-          // Separación entre monstruos cercanos
+          // Separación entre monstruos
           for (let j = 0; j < this.enemigos.length; j++) {
             if (i === j) continue;
             const otro = this.enemigos[j];
@@ -826,12 +844,18 @@ export class GameEngine {
           }
         }
 
-        // Ataque si está a rango y tiene línea de visión
+        // Ataque cuerpo a cuerpo
         if (distAlJugador <= e.radio + this.player.radio + 10 && e.cooldownAtaque <= 0) {
           if (this.hayLineaDeVision(e.x, e.y, this.player.x, this.player.y)) {
-            e.cooldownAtaque = e.esJefe ? 1.2 : 0.95;
+            e.cooldownAtaque = e.esJefe ? 1.1 : 0.95;
             this.infligirDanoJugador(e.dano, e.nombre);
           }
+        }
+
+        // ✨ HABILIDADES ESPECIALES DE LOS JEFES
+        if (e.esJefe && this.combateJefeActivo && e.cooldownEspecial <= 0) {
+          e.cooldownEspecial = 4.0;
+          this.ejecutarAtaqueEspecialJefe(e);
         }
       }
     }
@@ -844,7 +868,7 @@ export class GameEngine {
       p.vida -= dt;
 
       const pTile = this.getTile(Math.floor(p.x / this.tileSize), Math.floor(p.y / this.tileSize));
-      if (pTile === TILE_WALL || pTile === TILE_VOID || p.vida <= 0) {
+      if (pTile === TILE_WALL || pTile === TILE_VOID || pTile === TILE_BOSS_GATE || p.vida <= 0) {
         for (let k = 0; k < 6; k++) {
           this.particulas.push({
             x: p.x, y: p.y,
@@ -857,6 +881,7 @@ export class GameEngine {
         continue;
       }
 
+      // Proyectil del jugador impacta a enemigos
       if (p.esJugador) {
         let impacto = false;
         for (const e of this.enemigos) {
@@ -867,7 +892,11 @@ export class GameEngine {
             break;
           }
         }
-        if (impacto) {
+        if (impacto) this.proyectiles.splice(i, 1);
+      } else {
+        // Proyectil del enemigo impacta al jugador
+        if (Math.hypot(this.player.x - p.x, this.player.y - p.y) < this.player.radio + p.radio) {
+          this.infligirDanoJugador(p.dano, 'Hechizo Oscuro');
           this.proyectiles.splice(i, 1);
         }
       }
@@ -900,6 +929,56 @@ export class GameEngine {
     this.mouse.worldY = this.mouse.y + this.camera.y;
 
     this.notificarStats();
+  }
+
+  ejecutarAtaqueEspecialJefe(jefe) {
+    if (this.piso === 1) {
+      // Salto de impacto y onda expansiva hacia el jugador
+      sound.playHit();
+      const angulo = Math.atan2(this.player.y - jefe.y, this.player.x - jefe.x);
+      jefe.x += Math.cos(angulo) * 45;
+      jefe.y += Math.sin(angulo) * 45;
+
+      for (let k = 0; k < 12; k++) {
+        const a = (k / 12) * Math.PI * 2;
+        this.particulas.push({
+          x: jefe.x, y: jefe.y,
+          vx: Math.cos(a) * 90, vy: Math.sin(a) * 90,
+          vida: 0.4, maxVida: 0.4, color: '#f59e0b', radio: 4
+        });
+      }
+      this.crearTextoFlotante(jefe.x, jefe.y - 30, '¡PISOTÓN SÍSMICO!', '#f59e0b', 14);
+
+      if (Math.hypot(this.player.x - jefe.x, this.player.y - jefe.y) < 65) {
+        this.infligirDanoJugador(18, jefe.nombre);
+      }
+
+    } else if (this.piso === 2) {
+      // Espora gigante: ráfaga de 6 esporas en círculo
+      sound.playMagic();
+      this.crearTextoFlotante(jefe.x, jefe.y - 30, '¡ESTALLIDO DE ESPORAS!', '#34d399', 14);
+      for (let k = 0; k < 6; k++) {
+        const a = (k / 6) * Math.PI * 2;
+        this.proyectiles.push({
+          x: jefe.x, y: jefe.y,
+          vx: Math.cos(a) * 160, vy: Math.sin(a) * 160,
+          radio: 5, dano: 16, esJugador: false, vida: 2.2, color: '#34d399'
+        });
+      }
+
+    } else {
+      // Nigromante: 2 orbes oscuros teledirigidos hacia el jugador
+      sound.playMagic();
+      this.crearTextoFlotante(jefe.x, jefe.y - 30, '¡DESCARGA PROFANA!', '#c084fc', 14);
+      const ang = Math.atan2(this.player.y - jefe.y, this.player.x - jefe.x);
+      [-0.2, 0.2].forEach(offset => {
+        this.proyectiles.push({
+          x: jefe.x, y: jefe.y,
+          vx: Math.cos(ang + offset) * 190, vy: Math.sin(ang + offset) * 190,
+          radio: 6, dano: 20, esJugador: false, vida: 2.5, color: '#a855f7'
+        });
+      });
+    }
   }
 
   infligirDanoJugador(dano, atacante) {
@@ -940,7 +1019,7 @@ export class GameEngine {
     for (let ty = minTileY; ty <= maxTileY; ty++) {
       for (let tx = minTileX; tx <= maxTileX; tx++) {
         const t = this.getTile(tx, ty);
-        if (t === TILE_WALL || t === TILE_VOID) {
+        if (t === TILE_WALL || t === TILE_VOID || t === TILE_BOSS_GATE) {
           return true;
         }
       }
@@ -1031,11 +1110,22 @@ export class GameEngine {
             ctx.arc(px + ts / 2, py + ts / 2, ts * 0.75, 0, Math.PI * 2);
             ctx.fill();
           }
+        } else if (t === TILE_BOSS_GATE) {
+          // ✨ BARRERA RÚNICA SELLADA
+          ctx.fillStyle = 'rgba(147, 51, 234, 0.85)';
+          ctx.fillRect(px, py, ts, ts);
+          ctx.strokeStyle = '#c084fc';
+          ctx.lineWidth = 2;
+          ctx.strokeRect(px + 2, py + 2, ts - 4, ts - 4);
+          ctx.fillStyle = '#ffffff';
+          ctx.font = 'bold 12px monospace';
+          ctx.textAlign = 'center';
+          ctx.fillText('⚡', px + ts / 2, py + ts / 2 + 4);
         }
       }
     }
 
-    // 1. DIBUJAR LA HOGUERA
+    // Hoguera
     const hx = (this.dungeon.hogueraPoint.x + 0.5) * ts;
     const hy = (this.dungeon.hogueraPoint.y + 0.5) * ts;
 
@@ -1060,21 +1150,18 @@ export class GameEngine {
     ctx.fill();
     ctx.restore();
 
-    // 2. DIBUJAR LA FORJA (Yunque de herrería)
+    // Forja
     const fx = (this.dungeon.forjaPoint.x + 0.5) * ts;
     const fy = (this.dungeon.forjaPoint.y + 0.5) * ts;
 
     ctx.save();
-    // Base de piedra de la forja
     ctx.fillStyle = '#3f3f46';
     ctx.fillRect(fx - 10, fy - 4, 20, 14);
-    // Yunque metálico
     ctx.fillStyle = '#94a3b8';
     ctx.fillRect(fx - 8, fy - 10, 16, 7);
     ctx.fillStyle = '#64748b';
-    ctx.fillRect(fx - 12, fy - 11, 6, 4); // Punta del yunque
+    ctx.fillRect(fx - 12, fy - 11, 6, 4);
 
-    // Martillo de forja
     const imgMartillo = assets.get('weapon_hammer');
     if (imgMartillo) {
       ctx.drawImage(imgMartillo, fx - 8, fy - 18, 16, 16);
@@ -1143,6 +1230,15 @@ export class GameEngine {
         ctx.fill();
       }
 
+      // ✨ ESCUDO RÚNICO VISUAL SI EL JEFE AÚN NO HA SIDO DESAFIADO
+      if (e.esJefe && !this.combateJefeActivo) {
+        ctx.strokeStyle = '#c084fc';
+        ctx.lineWidth = 3;
+        ctx.beginPath();
+        ctx.arc(0, 0, e.radio + 10, 0, Math.PI * 2);
+        ctx.stroke();
+      }
+
       ctx.restore();
 
       if (!e.esJefe && e.hp < e.maxHp) {
@@ -1191,7 +1287,7 @@ export class GameEngine {
       ctx.arc(p.x, p.y, p.radio, 0, Math.PI * 2);
       ctx.fill();
 
-      ctx.fillStyle = 'rgba(251, 146, 60, 0.4)';
+      ctx.fillStyle = p.esJugador ? 'rgba(251, 146, 60, 0.4)' : 'rgba(168, 85, 247, 0.4)';
       ctx.beginPath();
       ctx.arc(p.x, p.y, p.radio * 1.8, 0, Math.PI * 2);
       ctx.fill();
@@ -1239,19 +1335,16 @@ export class GameEngine {
   }
 
   renderHUDContextual(ctx) {
-    // 1. Cerca de la Hoguera
     if (this.player.cercaHoguera) {
-      this.dibujarBurbujaAccion(ctx, 'Hoguera Sagrada', 'Restaurando Salud y Maná con el calor del fuego...');
+      this.dibujarBurbujaAccion(ctx, 'Hoguera Sagrada', 'Restaurando Salud y Maná con el fuego...');
       return;
     }
 
-    // 2. Cerca de la Forja
     if (this.player.cercaForja) {
       this.dibujarBurbujaAccion(ctx, 'Forja del Gremio', '[F] Reparar Arma (Costo: 5 Materiales, 10 Oro)');
       return;
     }
 
-    // 3. Cerca de la Escalera
     const distEscalera = Math.hypot(
       this.player.x - (this.dungeon.stairsPoint.x + 0.5) * this.tileSize,
       this.player.y - (this.dungeon.stairsPoint.y + 0.5) * this.tileSize
