@@ -7,6 +7,7 @@ import { fetchProtegido } from '../../utils/api';
 
 export default function CriptaJuego({ usuarioLogueado, alActualizarUsuario, volver }) {
   const canvasRef = useRef(null);
+  const contenedorRef = useRef(null);
   const engineRef = useRef(null);
 
   // Estados de carga e interfaz
@@ -14,8 +15,10 @@ export default function CriptaJuego({ usuarioLogueado, alActualizarUsuario, volv
   const [progresoCarga, setProgresoCarga] = useState(0);
   const [modalPersonaje, setModalPersonaje] = useState(false);
   const [sonidoSilenciado, setSonidoSilenciado] = useState(false);
+  const [esFullscreen, setEsFullscreen] = useState(false);
+  const [esDispositivoTactil, setEsDispositivoTactil] = useState(false);
 
-  // Clase y Avatar actual
+  // Clase y Avatar
   const [claseSeleccionada, setClaseSeleccionada] = useState(
     localStorage.getItem('crawler_clase') || 'guerrero'
   );
@@ -23,7 +26,7 @@ export default function CriptaJuego({ usuarioLogueado, alActualizarUsuario, volv
     localStorage.getItem('crawler_genero') || 'm'
   );
 
-  // Stats en tiempo real transmitidas desde el GameEngine
+  // Stats en tiempo real
   const [stats, setStats] = useState({
     piso: 1,
     clase: 'guerrero',
@@ -38,18 +41,33 @@ export default function CriptaJuego({ usuarioLogueado, alActualizarUsuario, volv
     maxDurabilidad: 70,
     armaRota: false,
     oro: 0,
+    materiales: 8,
     llaves: 0,
     enSantuario: false,
+    santuarioDescubierto: false,
+    cercaHoguera: false,
+    cercaForja: false,
     escaleraAbierta: false,
     jefeHP: 0,
     jefeMaxHP: 1,
     jefeNombre: ''
   });
 
-  // Notificación flotante de juego
   const [mensajeAlerta, setMensajeAlerta] = useState(null);
 
-  // 1. Precargar Assets de sprites al montar
+  // 1. Detectar si es pantalla táctil/móvil
+  useEffect(() => {
+    const esTactil = ('ontouchstart' in window || navigator.maxTouchPoints > 0) || window.innerWidth < 850;
+    setEsDispositivoTactil(esTactil);
+
+    const onFullscreenChange = () => {
+      setEsFullscreen(!!document.fullscreenElement);
+    };
+    document.addEventListener('fullscreenchange', onFullscreenChange);
+    return () => document.removeEventListener('fullscreenchange', onFullscreenChange);
+  }, []);
+
+  // 2. Precargar Assets
   useEffect(() => {
     let montado = true;
     assets.precargarTodo((progreso) => {
@@ -57,7 +75,6 @@ export default function CriptaJuego({ usuarioLogueado, alActualizarUsuario, volv
     }).then(() => {
       if (montado) {
         setCargandoAssets(false);
-        // Si no ha elegido personaje antes, abrir modal
         if (!localStorage.getItem('crawler_clase')) {
           setModalPersonaje(true);
         }
@@ -69,22 +86,25 @@ export default function CriptaJuego({ usuarioLogueado, alActualizarUsuario, volv
     };
   }, []);
 
-  // 2. Inicializar el GameEngine una vez que los assets están listos
+  // 3. Inicializar el GameEngine
   useEffect(() => {
     if (cargandoAssets || !canvasRef.current) return;
 
     const canvas = canvasRef.current;
     
-    // Ajustar dimensiones del canvas
     const ajustarTamano = () => {
       if (!canvas) return;
-      canvas.width = canvas.parentElement.clientWidth;
-      canvas.height = Math.max(500, window.innerHeight - 140);
+      if (document.fullscreenElement) {
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight - 130;
+      } else {
+        canvas.width = canvas.parentElement.clientWidth;
+        canvas.height = Math.max(480, window.innerHeight - 160);
+      }
     };
     ajustarTamano();
     window.addEventListener('resize', ajustarTamano);
 
-    // Guardar / Cargar progreso desde LocalStorage o inicial
     const pisoGuardado = parseInt(localStorage.getItem('crawler_piso')) || 1;
     const oroGuardado = parseInt(localStorage.getItem('crawler_oro')) || 0;
 
@@ -104,23 +124,25 @@ export default function CriptaJuego({ usuarioLogueado, alActualizarUsuario, volv
       },
       onMuerte: (data) => {
         Swal.fire({
-          title: '💀 ¡Caído en la Cripta!',
-          text: `Has sido derrotado. Tu arma se ha partido y has perdido ${data.oroPerdido} monedas al ser rescatado hacia la hoguera.`,
-          icon: 'error',
+          title: data.expulsado ? '⚠️ ¡Expulsado de la Cripta!' : '💀 ¡Caído en Combate!',
+          text: data.expulsado 
+            ? `Caíste sin haber descubierto el Santuario de este piso. Has sido devuelto al Santuario del Piso ${data.piso - 1}. Tu arma se ha quebrado.`
+            : `Has sido rescatado por la Hoguera Sagrada. Tu arma se ha partido y perdiste ${data.oroPerdido} monedas.`,
+          icon: 'warning',
           background: '#09090b',
           color: '#ffffff',
-          confirmButtonText: 'Levantarse en el Santuario',
+          confirmButtonText: 'Continuar Aventura',
           confirmButtonColor: '#ef4444'
         });
       },
       onJefeDerrotado: (data) => {
         Swal.fire({
           title: '👑 ¡JEFE DERROTADO!',
-          text: `Has vencido a ${data.nombre}. El Sello Mágico ha desaparecido y la escalera hacia el piso siguiente está abierta.`,
+          text: `Has vencido a ${data.nombre}. El Sello Mágico se ha disipado y la escalera está libre.`,
           icon: 'success',
           background: '#09090b',
           color: '#ffffff',
-          confirmButtonText: '¡Avanzar!',
+          confirmButtonText: '¡Descender!',
           confirmButtonColor: '#10b981'
         });
       },
@@ -144,7 +166,6 @@ export default function CriptaJuego({ usuarioLogueado, alActualizarUsuario, volv
     localStorage.setItem('crawler_clase', claseSeleccionada);
     localStorage.setItem('crawler_genero', generoSeleccionado);
 
-    // Sincronización en la base de datos MySQL del Gremio
     try {
       await fetchProtegido('/api/crawler/guardar', {
         method: 'POST',
@@ -161,8 +182,7 @@ export default function CriptaJuego({ usuarioLogueado, alActualizarUsuario, volv
         })
       });
     } catch (e) {
-      // Si la red falla, el progreso local persiste
-      console.warn('Progreso respaldado en almacenamiento local.', e);
+      console.warn('Progreso guardado localmente.', e);
     }
   };
 
@@ -184,7 +204,6 @@ export default function CriptaJuego({ usuarioLogueado, alActualizarUsuario, volv
     }
   };
 
-  // 3. Vincular Avatar del Héroe al Perfil del Gremio (Base de Datos MySQL)
   const vincularAvatarAlGremio = async () => {
     const avatarKey = `crawler:${claseSeleccionada}_${generoSeleccionado}`;
     try {
@@ -205,24 +224,28 @@ export default function CriptaJuego({ usuarioLogueado, alActualizarUsuario, volv
 
         Swal.fire({
           title: '¡Avatar de la Cripta Forjado!',
-          text: `Ahora tu ${CLASES[claseSeleccionada].nombre} será tu foto de perfil visible en todo el sistema del Gremio.`,
+          text: `Ahora tu héroe pixel art es tu imagen de perfil en todo el Gremio.`,
           icon: 'success',
           background: '#09090b',
           color: '#ffffff',
           confirmButtonColor: '#10b981'
         });
         setModalPersonaje(false);
-      } else {
-        Swal.fire({
-          title: 'Error',
-          text: 'No se pudo vincular el avatar a tu cuenta.',
-          icon: 'error',
-          background: '#09090b',
-          color: '#ffffff'
-        });
       }
     } catch (e) {
       console.error(e);
+    }
+  };
+
+  const toggleFullscreen = () => {
+    if (!document.fullscreenElement) {
+      if (contenedorRef.current?.requestFullscreen) {
+        contenedorRef.current.requestFullscreen();
+      }
+    } else {
+      if (document.exitFullscreen) {
+        document.exitFullscreen();
+      }
     }
   };
 
@@ -231,14 +254,25 @@ export default function CriptaJuego({ usuarioLogueado, alActualizarUsuario, volv
     setSonidoSilenciado(m);
   };
 
-  // Porcentajes de barras
+  // Acciones táctiles para móvil
+  const simularTecla = (tecla, estado) => {
+    if (engineRef.current) {
+      engineRef.current.teclas[tecla.toLowerCase()] = estado;
+    }
+  };
+
   const hpPorcentaje = Math.max(0, Math.min(100, (stats.hp / stats.maxHp) * 100));
   const recursoPorcentaje = Math.max(0, Math.min(100, (stats.recurso / stats.maxRecurso) * 100));
   const durabilidadPorcentaje = Math.max(0, Math.min(100, (stats.durabilidad / stats.maxDurabilidad) * 100));
   const datosClaseActual = CLASES[claseSeleccionada] || CLASES.guerrero;
 
   return (
-    <div className="w-full flex flex-col items-center select-none pt-2 pb-6 px-2 sm:px-4">
+    <div 
+      ref={contenedorRef}
+      className={`w-full flex flex-col items-center select-none bg-zinc-950 ${
+        esFullscreen ? 'fixed inset-0 z-50 p-0' : 'pt-2 pb-6 px-2 sm:px-4'
+      }`}
+    >
       {/* PANTALLA DE CARGA */}
       {cargandoAssets && (
         <div className="fixed inset-0 bg-zinc-950/95 flex flex-col items-center justify-center z-50 p-6">
@@ -259,42 +293,42 @@ export default function CriptaJuego({ usuarioLogueado, alActualizarUsuario, volv
       )}
 
       {/* CONTENEDOR PRINCIPAL */}
-      <div className="w-full max-w-6xl flex flex-col bg-zinc-950 border border-zinc-800/80 rounded-3xl shadow-2xl overflow-hidden relative">
+      <div className={`w-full ${esFullscreen ? 'h-full flex flex-col' : 'max-w-6xl'} bg-zinc-950 border border-zinc-800/80 rounded-3xl shadow-2xl overflow-hidden relative`}>
         
-        {/* BARRA SUPERIOR: PISO, BIOMA, JEFE Y SALIDA */}
-        <div className="bg-zinc-900/90 backdrop-blur-md px-4 py-3 border-b border-zinc-800/80 flex flex-wrap items-center justify-between gap-3 z-10">
-          <div className="flex items-center gap-3">
-            <span className="text-2xl">💀</span>
+        {/* BARRA SUPERIOR: PISO, BIOMA, JEFE, PANTALLA COMPLETA Y SALIDA */}
+        <div className="bg-zinc-900/95 backdrop-blur-md px-3 sm:px-4 py-2.5 border-b border-zinc-800/80 flex flex-wrap items-center justify-between gap-2.5 z-10">
+          <div className="flex items-center gap-2.5">
+            <span className="text-xl sm:text-2xl">💀</span>
             <div>
-              <div className="flex items-center gap-2">
-                <span className="text-xs font-black uppercase tracking-[0.2em] bg-purple-500/10 text-purple-400 px-2.5 py-0.5 rounded-full border border-purple-500/20">
+              <div className="flex items-center gap-1.5 sm:gap-2">
+                <span className="text-[10px] sm:text-xs font-black uppercase tracking-[0.2em] bg-purple-500/10 text-purple-400 px-2.5 py-0.5 rounded-full border border-purple-500/20">
                   Piso {stats.piso} / 100
                 </span>
                 {stats.enSantuario && (
-                  <span className="text-[10px] font-black uppercase tracking-widest bg-emerald-500/10 text-emerald-400 px-2 py-0.5 rounded-full border border-emerald-500/30 flex items-center gap-1 animate-pulse">
+                  <span className="text-[9px] sm:text-[10px] font-black uppercase tracking-widest bg-emerald-500/10 text-emerald-400 px-2 py-0.5 rounded-full border border-emerald-500/30 flex items-center gap-1 animate-pulse">
                     🔥 Zona Segura
                   </span>
                 )}
                 {stats.escaleraAbierta && (
-                  <span className="text-[10px] font-black uppercase tracking-widest bg-amber-500/10 text-amber-400 px-2 py-0.5 rounded-full border border-amber-500/30 animate-pulse">
-                    🗝️ Escalera Desbloqueada
+                  <span className="text-[9px] sm:text-[10px] font-black uppercase tracking-widest bg-amber-500/10 text-amber-400 px-2 py-0.5 rounded-full border border-amber-500/30 animate-pulse">
+                    🗝️ Escalera Abierta
                   </span>
                 )}
               </div>
-              <p className="text-xs text-zinc-400 font-bold mt-0.5">
+              <p className="text-[10px] sm:text-xs text-zinc-400 font-bold mt-0.5">
                 {stats.piso === 1 ? 'Catacumbas de Piedra' : stats.piso === 2 ? 'Cripta de la Espora & Hongos' : 'Bóvedas Sumergidas'}
               </p>
             </div>
           </div>
 
-          {/* BARRA DEL JEFE (Si está vivo) */}
+          {/* BARRA DEL JEFE (Solo si está vivo y a rango del jugador) */}
           {stats.jefeHP > 0 && (
-            <div className="flex-1 max-w-md mx-auto px-4 hidden md:flex flex-col items-center">
-              <div className="flex justify-between w-full text-[10px] font-black uppercase tracking-widest text-red-400 mb-1">
+            <div className="flex-1 max-w-xs sm:max-w-md mx-auto px-2 flex flex-col items-center animate-in fade-in duration-200">
+              <div className="flex justify-between w-full text-[9px] sm:text-[10px] font-black uppercase tracking-widest text-red-400 mb-0.5">
                 <span>👑 {stats.jefeNombre}</span>
                 <span>{stats.jefeHP} / {stats.jefeMaxHP} HP</span>
               </div>
-              <div className="w-full h-3 bg-zinc-950 border border-red-500/30 rounded-full overflow-hidden shadow-[0_0_15px_rgba(239,68,68,0.3)]">
+              <div className="w-full h-2.5 bg-zinc-950 border border-red-500/30 rounded-full overflow-hidden shadow-[0_0_15px_rgba(239,68,68,0.3)]">
                 <div
                   className="h-full bg-gradient-to-r from-red-600 to-amber-500 transition-all duration-150"
                   style={{ width: `${(stats.jefeHP / stats.jefeMaxHP) * 100}%` }}
@@ -303,14 +337,23 @@ export default function CriptaJuego({ usuarioLogueado, alActualizarUsuario, volv
             </div>
           )}
 
-          {/* ACCIONES Y BOTÓN SALIR */}
-          <div className="flex items-center gap-2">
+          {/* ACCIONES SUPERIORES */}
+          <div className="flex items-center gap-1.5 sm:gap-2">
+            <button
+              onClick={toggleFullscreen}
+              className="text-xs font-bold text-zinc-300 hover:text-white bg-zinc-800 hover:bg-zinc-700 px-2.5 py-1.5 rounded-xl border border-zinc-700 transition-all flex items-center gap-1"
+              title="Alternar Pantalla Completa"
+            >
+              <span>{esFullscreen ? '🗗' : '⛶'}</span>
+              <span className="hidden sm:inline">{esFullscreen ? 'Ventana' : 'Pantalla Completa'}</span>
+            </button>
             <button
               onClick={() => setModalPersonaje(true)}
-              className="text-xs font-bold text-zinc-300 hover:text-white bg-zinc-800 hover:bg-zinc-700 px-3 py-1.5 rounded-xl border border-zinc-700 transition-all flex items-center gap-1.5"
-              title="Cambiar Clase y Avatar"
+              className="text-xs font-bold text-zinc-300 hover:text-white bg-zinc-800 hover:bg-zinc-700 px-2.5 py-1.5 rounded-xl border border-zinc-700 transition-all flex items-center gap-1"
+              title="Cambiar Héroe & Avatar"
             >
-              <span>🧙‍♂️</span> Clase & Avatar
+              <span>🧙‍♂️</span>
+              <span className="hidden sm:inline">Avatar</span>
             </button>
             <button
               onClick={toggleMute}
@@ -321,81 +364,174 @@ export default function CriptaJuego({ usuarioLogueado, alActualizarUsuario, volv
             </button>
             <button
               onClick={volver}
-              className="text-xs font-black uppercase tracking-wider text-red-400 hover:text-red-300 bg-red-500/10 hover:bg-red-500/20 px-3.5 py-1.5 rounded-xl border border-red-500/20 transition-all flex items-center gap-1"
+              className="text-xs font-black uppercase tracking-wider text-red-400 hover:text-red-300 bg-red-500/10 hover:bg-red-500/20 px-3 py-1.5 rounded-xl border border-red-500/20 transition-all flex items-center gap-1"
             >
-              <span>🚪</span> Salir
+              <span>🚪</span>
+              <span className="hidden sm:inline">Salir</span>
             </button>
           </div>
         </div>
 
         {/* LIENZO DEL JUEGO (CANVAS) */}
-        <div className="relative w-full overflow-hidden bg-black flex items-center justify-center min-h-[500px]">
+        <div className={`relative w-full overflow-hidden bg-black flex items-center justify-center ${esFullscreen ? 'flex-1' : 'min-h-[480px]'}`}>
           <canvas
             ref={canvasRef}
             className="w-full h-full block cursor-crosshair"
             style={{ imageRendering: 'pixelated' }}
           />
 
-          {/* NOTIFICACIÓN TOAST FLOTANTE DENTRO DEL JUEGO */}
+          {/* NOTIFICACIÓN TOAST FLOTANTE */}
           {mensajeAlerta && (
-            <div className="absolute top-4 left-1/2 -translate-x-1/2 bg-zinc-900/90 border border-emerald-500/50 backdrop-blur-md px-5 py-2.5 rounded-2xl shadow-[0_10px_30px_rgba(0,0,0,0.8)] text-center animate-in slide-in-from-top-4 fade-in duration-300 pointer-events-none z-20">
+            <div className="absolute top-4 left-1/2 -translate-x-1/2 bg-zinc-900/90 border border-emerald-500/50 backdrop-blur-md px-4 py-2 rounded-2xl shadow-[0_10px_30px_rgba(0,0,0,0.8)] text-center animate-in slide-in-from-top-4 fade-in duration-300 pointer-events-none z-20 max-w-sm">
               <h4 className="text-xs font-black text-emerald-400 uppercase tracking-widest leading-tight">
                 {mensajeAlerta.titulo}
               </h4>
-              <p className="text-[11px] text-zinc-300 font-bold mt-0.5">
+              <p className="text-[11px] text-zinc-300 font-bold mt-0.5 leading-tight">
                 {mensajeAlerta.mensaje}
               </p>
             </div>
           )}
 
-          {/* CONTROLES / AYUDA FLOTANTE EN ESQUINA */}
-          <div className="absolute bottom-4 left-4 bg-zinc-950/80 backdrop-blur-md border border-zinc-800 px-3 py-2 rounded-xl text-[10px] text-zinc-400 font-bold uppercase tracking-wider pointer-events-none hidden sm:flex items-center gap-3 z-10">
-            <span>⌨️ [WASD] Mover</span>
-            <span>🖱️ [Clic] Atacar</span>
-            <span>⚡ [Espacio] Dash</span>
-            <span>🔥 [E] Hoguera / Bajar</span>
-          </div>
+          {/* ACCIÓN CONTEXTUAL DE FORJA / HOGUERA EN MÓVIL O PC */}
+          {stats.cercaForja && (
+            <div className="absolute top-16 left-1/2 -translate-x-1/2 bg-zinc-900/95 border border-amber-500 p-3 rounded-2xl shadow-2xl flex flex-col sm:flex-row items-center gap-3 z-20">
+              <div className="text-left">
+                <span className="text-[10px] font-black uppercase text-amber-400 tracking-wider">🔨 Forja del Gremio</span>
+                <p className="text-xs text-white font-bold">Reparar {datosClaseActual.nombreArma}</p>
+                <span className="text-[10px] text-zinc-400">Costo: 5 Materiales + 10 Oro (+35 Durabilidad)</span>
+              </div>
+              <button
+                onClick={() => engineRef.current?.usarForja()}
+                className="bg-amber-500 hover:bg-amber-400 text-black font-black text-xs uppercase px-4 py-2 rounded-xl transition-all shadow-md cursor-pointer shrink-0"
+              >
+                Forjar [F]
+              </button>
+            </div>
+          )}
+
+          {/* CONTROLES TÁCTILES PARA MÓVIL (VIRTUAL D-PAD & ACTION BUTTONS) */}
+          {esDispositivoTactil && (
+            <div className="absolute inset-0 pointer-events-none flex justify-between items-end p-4 z-20">
+              {/* D-PAD TÁCTIL (IZQUIERDA) */}
+              <div className="grid grid-cols-3 gap-1 pointer-events-auto bg-zinc-950/60 p-2 rounded-2xl backdrop-blur-sm border border-zinc-800">
+                <div></div>
+                <button
+                  onTouchStart={() => simularTecla('w', true)}
+                  onTouchEnd={() => simularTecla('w', false)}
+                  className="w-12 h-12 bg-zinc-800/80 active:bg-emerald-500 text-white rounded-xl font-black text-lg flex items-center justify-center border border-zinc-700"
+                >
+                  ▲
+                </button>
+                <div></div>
+
+                <button
+                  onTouchStart={() => simularTecla('a', true)}
+                  onTouchEnd={() => simularTecla('a', false)}
+                  className="w-12 h-12 bg-zinc-800/80 active:bg-emerald-500 text-white rounded-xl font-black text-lg flex items-center justify-center border border-zinc-700"
+                >
+                  ◀
+                </button>
+                <div className="w-12 h-12 flex items-center justify-center text-zinc-600 font-black text-xs">
+                  🕹️
+                </div>
+                <button
+                  onTouchStart={() => simularTecla('d', true)}
+                  onTouchEnd={() => simularTecla('d', false)}
+                  className="w-12 h-12 bg-zinc-800/80 active:bg-emerald-500 text-white rounded-xl font-black text-lg flex items-center justify-center border border-zinc-700"
+                >
+                  ▶
+                </button>
+
+                <div></div>
+                <button
+                  onTouchStart={() => simularTecla('s', true)}
+                  onTouchEnd={() => simularTecla('s', false)}
+                  className="w-12 h-12 bg-zinc-800/80 active:bg-emerald-500 text-white rounded-xl font-black text-lg flex items-center justify-center border border-zinc-700"
+                >
+                  ▼
+                </button>
+                <div></div>
+              </div>
+
+              {/* BOTONES DE ACCIÓN TÁCTIL (DERECHA) */}
+              <div className="flex flex-col gap-2 pointer-events-auto items-end">
+                <div className="flex gap-2">
+                  <button
+                    onTouchStart={() => engineRef.current?.ejecutarDash()}
+                    className="w-13 h-13 bg-indigo-600 active:bg-indigo-500 text-white rounded-2xl font-black text-xs flex flex-col items-center justify-center shadow-lg border border-indigo-400"
+                  >
+                    <span>⚡</span>
+                    <span className="text-[8px] uppercase">Dash</span>
+                  </button>
+                  <button
+                    onTouchStart={() => engineRef.current?.interactuar()}
+                    className="w-13 h-13 bg-amber-600 active:bg-amber-500 text-white rounded-2xl font-black text-xs flex flex-col items-center justify-center shadow-lg border border-amber-400"
+                  >
+                    <span>🔥</span>
+                    <span className="text-[8px] uppercase">Usar</span>
+                  </button>
+                </div>
+                <button
+                  onTouchStart={() => engineRef.current?.atacar()}
+                  className="w-20 h-20 bg-red-600 active:bg-red-500 text-white rounded-3xl font-black text-base flex flex-col items-center justify-center shadow-2xl border-2 border-red-400"
+                >
+                  <span className="text-2xl">⚔️</span>
+                  <span className="text-[9px] uppercase tracking-wider">Atacar</span>
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* CONTROLES / AYUDA TECLADO (PC) */}
+          {!esDispositivoTactil && (
+            <div className="absolute bottom-3 left-3 bg-zinc-950/85 backdrop-blur-md border border-zinc-800 px-3 py-1.5 rounded-xl text-[10px] text-zinc-400 font-bold uppercase tracking-wider pointer-events-none hidden sm:flex items-center gap-3 z-10">
+              <span>⌨️ [WASD] Mover</span>
+              <span>🖱️ [Clic] Atacar</span>
+              <span>⚡ [Espacio] Dash</span>
+              <span>🔥 [E] Hoguera/Bajar</span>
+              <span>🔨 [F] Forja</span>
+            </div>
+          )}
         </div>
 
-        {/* HUD INFERIOR: ESTADÍSTICAS DEL HÉROE Y ARMA */}
-        <div className="bg-zinc-900/95 backdrop-blur-md px-4 py-3 border-t border-zinc-800/80 flex flex-wrap items-center justify-between gap-4 z-10">
+        {/* HUD INFERIOR: ESTADÍSTICAS DEL HÉROE, ARMA Y MATERIALES */}
+        <div className="bg-zinc-900/95 backdrop-blur-md px-3 sm:px-4 py-2.5 border-t border-zinc-800/80 flex flex-wrap items-center justify-between gap-3 z-10">
           
           {/* IDENTIDAD DEL HÉROE */}
-          <div className="flex items-center gap-3">
-            <div className="w-12 h-12 bg-zinc-950 rounded-2xl border-2 border-emerald-500/50 flex items-center justify-center overflow-hidden shadow-inner relative">
+          <div className="flex items-center gap-2.5">
+            <div className="w-10 h-10 sm:w-11 sm:h-11 bg-zinc-950 rounded-2xl border-2 border-emerald-500/50 flex items-center justify-center overflow-hidden shadow-inner relative shrink-0">
               <img
                 src={`/assets/crawler/heroes/${
                   claseSeleccionada === 'guerrero' ? 'knight' : claseSeleccionada === 'mago' ? 'wizzard' : 'elf'
                 }_${generoSeleccionado}_idle_anim_f0.png`}
                 alt="Avatar"
-                className="w-10 h-10 object-contain"
+                className="w-8 h-8 sm:w-9 sm:h-9 object-contain"
                 style={{ imageRendering: 'pixelated' }}
               />
             </div>
             <div>
-              <div className="flex items-center gap-2">
-                <span className="text-sm font-black text-white uppercase italic">
+              <div className="flex items-center gap-1.5">
+                <span className="text-xs sm:text-sm font-black text-white uppercase italic">
                   {usuarioLogueado?.nombre}
                 </span>
-                <span className="text-[10px] font-black uppercase tracking-widest text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded-full border border-emerald-500/20">
+                <span className="text-[9px] sm:text-[10px] font-black uppercase tracking-widest text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded-full border border-emerald-500/20">
                   Nvl {stats.nivel}
                 </span>
               </div>
-              <p className="text-[10px] text-zinc-400 font-bold uppercase tracking-wider">
-                {datosClaseActual.nombre} • {datosClaseActual.rolDnd}
+              <p className="text-[9px] sm:text-[10px] text-zinc-400 font-bold uppercase tracking-wider">
+                {datosClaseActual.nombre}
               </p>
             </div>
           </div>
 
           {/* BARRAS DE VIDA Y RECURSO */}
-          <div className="flex-1 max-w-sm flex flex-col gap-1.5">
-            {/* SALUD */}
+          <div className="flex-1 max-w-xs sm:max-w-sm flex flex-col gap-1">
             <div className="flex flex-col">
-              <div className="flex justify-between text-[10px] font-black uppercase tracking-wider text-red-400 mb-0.5">
+              <div className="flex justify-between text-[9px] sm:text-[10px] font-black uppercase tracking-wider text-red-400 mb-0.5">
                 <span>❤️ Salud</span>
                 <span>{Math.round(stats.hp)} / {stats.maxHp}</span>
               </div>
-              <div className="w-full h-3 bg-zinc-950 border border-zinc-800 rounded-full overflow-hidden">
+              <div className="w-full h-2.5 sm:h-3 bg-zinc-950 border border-zinc-800 rounded-full overflow-hidden">
                 <div
                   className="h-full bg-red-500 transition-all duration-150"
                   style={{ width: `${hpPorcentaje}%` }}
@@ -403,13 +539,12 @@ export default function CriptaJuego({ usuarioLogueado, alActualizarUsuario, volv
               </div>
             </div>
 
-            {/* RECURSO (Maná / Estamina) */}
             <div className="flex flex-col">
-              <div className="flex justify-between text-[10px] font-black uppercase tracking-wider text-indigo-400 mb-0.5">
+              <div className="flex justify-between text-[9px] sm:text-[10px] font-black uppercase tracking-wider text-indigo-400 mb-0.5">
                 <span>{claseSeleccionada === 'mago' ? '🔮 Maná' : '⚡ Estamina'}</span>
                 <span>{stats.recurso} / {stats.maxRecurso}</span>
               </div>
-              <div className="w-full h-2.5 bg-zinc-950 border border-zinc-800 rounded-full overflow-hidden">
+              <div className="w-full h-2 bg-zinc-950 border border-zinc-800 rounded-full overflow-hidden">
                 <div
                   className={`h-full ${claseSeleccionada === 'mago' ? 'bg-indigo-500' : 'bg-amber-500'} transition-all duration-150`}
                   style={{ width: `${recursoPorcentaje}%` }}
@@ -418,17 +553,20 @@ export default function CriptaJuego({ usuarioLogueado, alActualizarUsuario, volv
             </div>
           </div>
 
-          {/* DURABILIDAD DEL ARMA */}
-          <div className="flex items-center gap-3 bg-zinc-950 px-3.5 py-2 rounded-2xl border border-zinc-800">
-            <div className="w-8 h-8 rounded-xl bg-zinc-900 border border-zinc-800 flex items-center justify-center">
+          {/* DURABILIDAD DEL ARMA (CON ÍCONO CORRECTO RESUELTO) */}
+          <div className="flex items-center gap-2.5 bg-zinc-950 px-3 py-1.5 rounded-2xl border border-zinc-800">
+            <div className="w-8 h-8 rounded-xl bg-zinc-900 border border-zinc-800 flex items-center justify-center shrink-0">
               <img
                 src={`/assets/crawler/items/${datosClaseActual.iconoArma}.png`}
                 alt="Arma"
-                className="w-6 h-6 object-contain"
+                className="w-5 h-5 object-contain"
                 style={{ imageRendering: 'pixelated' }}
+                onError={(e) => {
+                  e.target.style.display = 'none';
+                }}
               />
             </div>
-            <div className="flex flex-col min-w-[110px]">
+            <div className="flex flex-col min-w-[95px]">
               <div className="flex justify-between text-[9px] font-black uppercase tracking-wider text-zinc-400 mb-0.5">
                 <span>Durabilidad</span>
                 <span className={stats.armaRota ? 'text-red-500 font-black animate-pulse' : 'text-zinc-300'}>
@@ -450,9 +588,13 @@ export default function CriptaJuego({ usuarioLogueado, alActualizarUsuario, volv
             </div>
           </div>
 
-          {/* BOTÍN Y ORO */}
-          <div className="flex items-center gap-3 text-amber-400 font-black text-sm">
-            <div className="flex items-center gap-1.5 bg-amber-500/10 px-3 py-1.5 rounded-xl border border-amber-500/20">
+          {/* BOTÍN, MATERIALES Y ORO */}
+          <div className="flex items-center gap-2 text-xs font-black">
+            <div className="flex items-center gap-1.5 bg-zinc-950 px-2.5 py-1.5 rounded-xl border border-zinc-800 text-zinc-300" title={datosClaseActual.nombreMaterial}>
+              <span>🧱</span>
+              <span>{stats.materiales}</span>
+            </div>
+            <div className="flex items-center gap-1.5 bg-amber-500/10 px-2.5 py-1.5 rounded-xl border border-amber-500/20 text-amber-400" title="Oro">
               <span>🪙</span>
               <span>{stats.oro}</span>
             </div>
@@ -482,7 +624,6 @@ export default function CriptaJuego({ usuarioLogueado, alActualizarUsuario, volv
               </button>
             </div>
 
-            {/* SELECTOR DE GÉNERO */}
             <div className="flex items-center gap-4 mb-6 justify-center">
               <span className="text-xs font-bold text-zinc-400 uppercase tracking-widest">Variante:</span>
               <button
@@ -507,7 +648,6 @@ export default function CriptaJuego({ usuarioLogueado, alActualizarUsuario, volv
               </button>
             </div>
 
-            {/* TARJETAS DE LAS 3 CLASES */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
               {Object.entries(CLASES).map(([id, info]) => {
                 const esActivo = claseSeleccionada === id;
@@ -546,14 +686,13 @@ export default function CriptaJuego({ usuarioLogueado, alActualizarUsuario, volv
                     <div className="w-full text-[10px] font-bold text-zinc-500 bg-zinc-900/80 p-2 rounded-xl border border-zinc-800 flex flex-col gap-0.5 text-left">
                       <span className="text-zinc-300">❤️ Vida: {info.maxHp}</span>
                       <span className="text-zinc-300">🗡️ {info.nombreArma}</span>
-                      <span className="text-zinc-300">🛡️ Durabilidad: {info.durabilidadMax}</span>
+                      <span className="text-zinc-300">🧱 Material: {info.nombreMaterial}</span>
                     </div>
                   </div>
                 );
               })}
             </div>
 
-            {/* BOTONES DE CONFIRMACIÓN */}
             <div className="flex flex-col sm:flex-row gap-3 justify-end pt-2 border-t border-zinc-800">
               <button
                 onClick={vincularAvatarAlGremio}

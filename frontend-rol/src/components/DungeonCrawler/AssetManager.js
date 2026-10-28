@@ -118,6 +118,10 @@ class AssetManager {
       { k: 'chest_open', u: '/assets/crawler/tiles/chest_full_open_anim_f2.png' },
 
       // Armas e Íconos
+      { k: 'weapon_regular_sword', u: '/assets/crawler/items/weapon_regular_sword.png' },
+      { k: 'weapon_red_magic_staff', u: '/assets/crawler/items/weapon_red_magic_staff.png' },
+      { k: 'weapon_knife', u: '/assets/crawler/items/weapon_knife.png' },
+      { k: 'weapon_hammer', u: '/assets/crawler/items/weapon_hammer.png' },
       { k: 'item_sword', u: '/assets/crawler/items/weapon_regular_sword.png' },
       { k: 'item_staff', u: '/assets/crawler/items/weapon_red_magic_staff.png' },
       { k: 'item_knife', u: '/assets/crawler/items/weapon_knife.png' },
