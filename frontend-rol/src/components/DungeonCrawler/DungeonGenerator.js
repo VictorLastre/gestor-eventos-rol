@@ -22,8 +22,8 @@ export const BIOMAS = {
     mobTipos: ['skelet'],
     bossNombre: 'Esqueleto Campeón',
     bossTipo: 'chort',
-    bossHP: 340,
-    bossDano: 22
+    bossHP: 520, // Calibrado para Desafío de Party (4 héroes)
+    bossDano: 24
   },
   2: {
     nombre: 'Cripta de la Espora',
@@ -37,8 +37,8 @@ export const BIOMAS = {
     mobTipos: ['mushroom', 'skelet'],
     bossNombre: 'Espora Ancestral Primigenia',
     bossTipo: 'big_mushroom',
-    bossHP: 500,
-    bossDano: 28
+    bossHP: 780, // Calibrado para Desafío de Party (4 héroes)
+    bossDano: 32
   },
   3: {
     nombre: 'Bóvedas Inundadas',
@@ -52,7 +52,7 @@ export const BIOMAS = {
     mobTipos: ['zombie', 'skelet'],
     bossNombre: 'El Custodio Nigromante',
     bossTipo: 'necromancer',
-    bossHP: 680,
+    bossHP: 1150, // Calibrado para Desafío de Party (4 héroes)
     bossDano: 34
   }
 };
@@ -66,6 +66,8 @@ export class DungeonGenerator {
     this.spawnPoint = { x: 0, y: 0 };
     this.hogueraPoint = { x: 0, y: 0 };
     this.forjaPoint = { x: 0, y: 0 };
+    this.dinyPoint = { x: 0, y: 0 };
+    this.deloPoint = { x: 0, y: 0 };
     this.bossPoint = { x: 0, y: 0 };
     this.stairsPoint = { x: 0, y: 0 };
     this.entradasJefe = [];
@@ -138,8 +140,10 @@ export class DungeonGenerator {
 
     this.habitaciones[1].tipo = 'santuario';
     this.habitaciones[1].descubierta = false;
-    this.hogueraPoint = { x: this.habitaciones[1].centroX - 1, y: this.habitaciones[1].centroY };
+    this.hogueraPoint = { x: this.habitaciones[1].centroX, y: this.habitaciones[1].centroY };
     this.forjaPoint = { x: this.habitaciones[1].centroX + 2, y: this.habitaciones[1].centroY };
+    this.dinyPoint = { x: this.habitaciones[1].centroX - 2, y: this.habitaciones[1].centroY };
+    this.deloPoint = { x: this.habitaciones[1].centroX, y: this.habitaciones[1].centroY - 2 };
 
     const habJefe = this.habitaciones[this.habitaciones.length - 1];
     habJefe.tipo = 'jefe';
@@ -206,6 +210,8 @@ export class DungeonGenerator {
       spawnPoint: this.spawnPoint,
       hogueraPoint: this.hogueraPoint,
       forjaPoint: this.forjaPoint,
+      dinyPoint: this.dinyPoint,
+      deloPoint: this.deloPoint,
       bossPoint: this.bossPoint,
       stairsPoint: this.stairsPoint,
       habJefe: this.habJefe,

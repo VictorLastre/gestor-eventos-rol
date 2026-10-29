@@ -127,7 +127,33 @@ class AssetManager {
       { k: 'item_knife', u: '/assets/crawler/items/weapon_knife.png' },
       { k: 'flask_red', u: '/assets/crawler/items/flask_red.png' },
       { k: 'flask_blue', u: '/assets/crawler/items/flask_blue.png' },
-      { k: 'coin', u: '/assets/crawler/items/coin_anim_f0.png' }
+      { k: 'coin', u: '/assets/crawler/items/coin_anim_f0.png' },
+
+      // NPCs de la Asociación de Rol La Pampa
+      { k: 'npc_diny_0', u: '/assets/crawler/npcs/dwarf_f_idle_anim_f0.png' },
+      { k: 'npc_diny_1', u: '/assets/crawler/npcs/dwarf_f_idle_anim_f1.png' },
+      { k: 'npc_diny_2', u: '/assets/crawler/npcs/dwarf_f_idle_anim_f2.png' },
+      { k: 'npc_diny_3', u: '/assets/crawler/npcs/dwarf_f_idle_anim_f3.png' },
+
+      { k: 'npc_delo_0', u: '/assets/crawler/npcs/elf_f_idle_anim_f0.png' },
+      { k: 'npc_delo_1', u: '/assets/crawler/npcs/elf_f_idle_anim_f1.png' },
+      { k: 'npc_delo_2', u: '/assets/crawler/npcs/elf_f_idle_anim_f2.png' },
+      { k: 'npc_delo_3', u: '/assets/crawler/npcs/elf_f_idle_anim_f3.png' },
+
+      { k: 'npc_angel_0', u: '/assets/crawler/npcs/angel_idle_anim_f0.png' },
+      { k: 'npc_angel_1', u: '/assets/crawler/npcs/angel_idle_anim_f1.png' },
+      { k: 'npc_angel_2', u: '/assets/crawler/npcs/angel_idle_anim_f2.png' },
+      { k: 'npc_angel_3', u: '/assets/crawler/npcs/angel_idle_anim_f3.png' },
+
+      { k: 'npc_chiquito_0', u: '/assets/crawler/npcs/doc_idle_anim_f0.png' },
+      { k: 'npc_chiquito_1', u: '/assets/crawler/npcs/doc_idle_anim_f1.png' },
+      { k: 'npc_chiquito_2', u: '/assets/crawler/npcs/doc_idle_anim_f2.png' },
+      { k: 'npc_chiquito_3', u: '/assets/crawler/npcs/doc_idle_anim_f3.png' },
+
+      { k: 'npc_ayrton_0', u: '/assets/crawler/npcs/orc_warrior_idle_anim_f0.png' },
+      { k: 'npc_ayrton_1', u: '/assets/crawler/npcs/orc_warrior_idle_anim_f1.png' },
+      { k: 'npc_ayrton_2', u: '/assets/crawler/npcs/orc_warrior_idle_anim_f2.png' },
+      { k: 'npc_ayrton_3', u: '/assets/crawler/npcs/orc_warrior_idle_anim_f3.png' }
     ];
 
     this.total = lista.length;

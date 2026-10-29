@@ -116,6 +116,50 @@ class SoundEngine {
     osc.stop(t + 0.25);
   }
 
+  playDialogueBlip(pitch = 440) {
+    if (this.muted) return;
+    this.init();
+    if (!this.ctx) return;
+
+    const t = this.ctx.currentTime;
+    const osc = this.ctx.createOscillator();
+    const gain = this.ctx.createGain();
+
+    osc.type = 'triangle';
+    // Leve variación aleatoria para que suene como voz retro orgánica
+    const freq = pitch + (Math.random() * 50 - 25);
+    osc.frequency.setValueAtTime(freq, t);
+
+    gain.gain.setValueAtTime(0.06, t);
+    gain.gain.exponentialRampToValueAtTime(0.001, t + 0.05);
+
+    osc.connect(gain);
+    gain.connect(this.ctx.destination);
+
+    osc.start(t);
+    osc.stop(t + 0.05);
+  }
+
+  playShopBuy() {
+    if (this.muted) return;
+    this.init();
+    if (!this.ctx) return;
+
+    const t = this.ctx.currentTime;
+    [523.25, 659.25, 783.99, 1046.5].forEach((f, i) => {
+      const osc = this.ctx.createOscillator();
+      const gain = this.ctx.createGain();
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(f, t + i * 0.05);
+      gain.gain.setValueAtTime(0.12, t + i * 0.05);
+      gain.gain.exponentialRampToValueAtTime(0.01, t + i * 0.05 + 0.2);
+      osc.connect(gain);
+      gain.connect(this.ctx.destination);
+      osc.start(t + i * 0.05);
+      osc.stop(t + i * 0.05 + 0.2);
+    });
+  }
+
   playHeal() {
     if (this.muted) return;
     this.init();

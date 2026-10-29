@@ -128,6 +128,11 @@ export class GameEngine {
     this.onMuerte = config.onMuerte || (() => {});
     this.onJefeDerrotado = config.onJefeDerrotado || (() => {});
     this.onCambioPiso = config.onCambioPiso || (() => {});
+    this.onInteractuarNPC = config.onInteractuarNPC || (() => {});
+
+    this.npcs = [];
+    this.npcCercano = null;
+    this.buffMorfi = 0;
 
     this.bindEvents();
     this.iniciarPiso(this.piso);
@@ -195,6 +200,39 @@ export class GameEngine {
       materiales: c.materiales,
       pocion: c.pocion
     }));
+
+    // NPCs presentes en la mazmorra (Santuario / Salas de apoyo)
+    this.npcs = [];
+    if (this.dungeon.dinyPoint) {
+      this.npcs.push({
+        id: 'diny',
+        tipo: 'diny',
+        x: (this.dungeon.dinyPoint.x + 0.5) * this.tileSize,
+        y: (this.dungeon.dinyPoint.y + 0.5) * this.tileSize,
+        radio: 14,
+        nombre: 'Diana "Diny"',
+        cargo: 'Cartógrafa',
+        spriteKey: 'npc_diny',
+        colorTema: '#38bdf8',
+        animFrame: 0,
+        animTimer: 0
+      });
+    }
+    if (this.dungeon.deloPoint) {
+      this.npcs.push({
+        id: 'delo',
+        tipo: 'delo',
+        x: (this.dungeon.deloPoint.x + 0.5) * this.tileSize,
+        y: (this.dungeon.deloPoint.y + 0.5) * this.tileSize,
+        radio: 14,
+        nombre: 'Agustina "Delo"',
+        cargo: 'Alquimista',
+        spriteKey: 'npc_delo',
+        colorTema: '#c084fc',
+        animFrame: 0,
+        animTimer: 0
+      });
+    }
 
     this.onNotificacion({
       tipo: 'piso',
@@ -287,6 +325,14 @@ export class GameEngine {
   }
 
   interactuar() {
+    // 1. Interacción con NPCs (Diny, Delo, etc.)
+    if (this.npcCercano) {
+      if (this.onInteractuarNPC) {
+        this.onInteractuarNPC(this.npcCercano);
+      }
+      return;
+    }
+
     const distEscalera = Math.hypot(
       this.player.x - (this.dungeon.stairsPoint.x + 0.5) * this.tileSize,
       this.player.y - (this.dungeon.stairsPoint.y + 0.5) * this.tileSize
@@ -601,7 +647,7 @@ export class GameEngine {
           titulo: '¡Expulsado de la Cripta!',
           mensaje: `Caíste sin descubrir el Santuario del Piso ${this.piso}. Has sido devuelto al Santuario del Piso ${this.piso - 1}.`
         });
-        this.onMuerte({ piso: this.piso, oroPerdido, expulsado: true });
+        this.onMuerte({ piso: this.piso, oroPerdido, expulsado: true, armaQuebrada: true });
         this.onCambioPiso(this.piso - 1);
         this.iniciarPiso(this.piso - 1);
         return;
@@ -618,7 +664,7 @@ export class GameEngine {
       }
     }
 
-    this.onMuerte({ piso: this.piso, oroPerdido, expulsado: false });
+    this.onMuerte({ piso: this.piso, oroPerdido, expulsado: false, armaQuebrada: true });
     this.notificarStats(true);
   }
 
@@ -758,6 +804,30 @@ export class GameEngine {
       }
       if (this.player.recurso < this.player.maxRecurso) {
         this.player.recurso = Math.min(this.player.maxRecurso, this.player.recurso + dt * 30);
+      }
+    }
+
+    // Actualizar animación de NPCs y detectar cercanía
+    this.npcCercano = null;
+    let menorDistNPC = 46;
+    for (const npc of this.npcs) {
+      npc.animTimer = (npc.animTimer || 0) + dt;
+      if (npc.animTimer > 0.18) {
+        npc.animTimer = 0;
+        npc.animFrame = ((npc.animFrame || 0) + 1) % 4;
+      }
+      const dist = Math.hypot(this.player.x - npc.x, this.player.y - npc.y);
+      if (dist < menorDistNPC) {
+        menorDistNPC = dist;
+        this.npcCercano = npc;
+      }
+    }
+
+    // Buff de regeneración pasiva por Morfi de Delo
+    if (this.buffMorfi > 0) {
+      this.buffMorfi -= dt;
+      if (this.player.hp < this.player.maxHp) {
+        this.player.hp = Math.min(this.player.maxHp, this.player.hp + dt * 4);
       }
     }
 
@@ -1047,6 +1117,7 @@ export class GameEngine {
     this.renderTilemap(ctx);
     this.renderCofres(ctx);
     this.renderEnemigos(ctx);
+    this.renderNPCs(ctx);
     this.renderJugador(ctx);
     this.renderProyectiles(ctx);
     this.renderParticulas(ctx);
@@ -1250,6 +1321,105 @@ export class GameEngine {
         ctx.fillRect(e.x - barraW / 2, e.y - e.radio - 8, barraW * (e.hp / e.maxHp), barraH);
       }
     }
+  }
+
+  renderNPCs(ctx) {
+    if (!this.npcs) return;
+
+    for (const npc of this.npcs) {
+      const frame = npc.animFrame || 0;
+      const img = assets.get(`${npc.spriteKey}_${frame}`);
+      const tam = 28;
+
+      ctx.save();
+      ctx.translate(npc.x, npc.y);
+
+      // Sombra bajo el personaje
+      ctx.fillStyle = 'rgba(0, 0, 0, 0.45)';
+      ctx.beginPath();
+      ctx.ellipse(0, 10, 10, 4, 0, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Aura distintiva
+      ctx.fillStyle = npc.colorTema || '#38bdf8';
+      ctx.globalAlpha = 0.22;
+      ctx.beginPath();
+      ctx.arc(0, 0, 18, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.globalAlpha = 1.0;
+
+      // Sprite animado
+      if (img) {
+        ctx.drawImage(img, -tam / 2, -tam / 2 - 2, tam, tam);
+      } else {
+        ctx.fillStyle = npc.colorTema || '#38bdf8';
+        ctx.beginPath();
+        ctx.arc(0, 0, npc.radio, 0, Math.PI * 2);
+        ctx.fill();
+      }
+
+      // Nombre y Rol
+      ctx.font = 'bold 9px sans-serif';
+      ctx.textAlign = 'center';
+      ctx.fillStyle = npc.colorTema || '#ffffff';
+      ctx.fillText(npc.nombre, 0, -npc.radio - 6);
+
+      ctx.font = '8px sans-serif';
+      ctx.fillStyle = '#cbd5e1';
+      ctx.fillText(npc.cargo, 0, -npc.radio + 3);
+
+      // Indicador [E] Hablar si el jugador está cerca
+      const dist = Math.hypot(this.player.x - npc.x, this.player.y - npc.y);
+      if (dist < 46) {
+        ctx.fillStyle = '#facc15';
+        ctx.font = 'bold 10px monospace';
+        ctx.fillText('💬 [E] Hablar', 0, -npc.radio - 16);
+      }
+
+      ctx.restore();
+    }
+  }
+
+  // ✨ SERVICIOS DE LOS NPCS DE LA ASOCIACIÓN
+  revelarMinimapa(tipo) {
+    if (!this.dungeon) return;
+    if (tipo === 'completo') {
+      for (const h of this.dungeon.habitaciones) {
+        h.descubierta = true;
+      }
+      this.santuarioDescubierto = true;
+      this.crearTextoFlotante(this.player.x, this.player.y - 25, '🗺️ ¡Plano completo revelado por Diny!', '#38bdf8', 14);
+      this.notificarStats();
+    } else if (tipo === 'seguridad') {
+      const habSantuario = this.dungeon.habitaciones.find(h => h.tipo === 'santuario');
+      if (habSantuario) habSantuario.descubierta = true;
+      const habJefe = this.dungeon.habitaciones.find(h => h.tipo === 'jefe');
+      if (habJefe) habJefe.descubierta = true;
+      this.santuarioDescubierto = true;
+      this.crearTextoFlotante(this.player.x, this.player.y - 25, '📍 ¡Santuario y Escalera trazados!', '#38bdf8', 14);
+      this.notificarStats();
+    }
+  }
+
+  curarJugador(cantidad) {
+    this.player.hp = Math.min(this.player.maxHp, this.player.hp + cantidad);
+    sound.playHeal();
+    this.crearTextoFlotante(this.player.x, this.player.y - 25, `+${cantidad} Vida (Delo)`, '#10b981', 14);
+    this.notificarStats();
+  }
+
+  repararArma(cantidad) {
+    this.player.durabilidad = Math.min(this.player.maxDurabilidad, this.player.durabilidad + cantidad);
+    sound.playShopBuy();
+    this.crearTextoFlotante(this.player.x, this.player.y - 25, `+${cantidad} Filo de Arma`, '#38bdf8', 14);
+    this.notificarStats();
+  }
+
+  aplicarBuffMorfi() {
+    this.buffMorfi = 30; // 30 segundos
+    sound.playHeal();
+    this.crearTextoFlotante(this.player.x, this.player.y - 25, '🥟 ¡Morfi de Delo activado! (+HP continuo)', '#a855f7', 14);
+    this.notificarStats();
   }
 
   renderJugador(ctx) {

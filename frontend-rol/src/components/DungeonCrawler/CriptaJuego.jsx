@@ -4,6 +4,8 @@ import { GameEngine, CLASES } from './GameEngine';
 import { assets } from './AssetManager';
 import { sound } from './SoundEngine';
 import { fetchProtegido } from '../../utils/api';
+import CuadroDialogo from './CuadroDialogo';
+import { PERSONALIDADES_NPC } from './PersonalidadesNPC';
 
 export default function CriptaJuego({ usuarioLogueado, alActualizarUsuario, volver }) {
   const canvasRef = useRef(null);
@@ -17,6 +19,7 @@ export default function CriptaJuego({ usuarioLogueado, alActualizarUsuario, volv
   const [sonidoSilenciado, setSonidoSilenciado] = useState(false);
   const [esFullscreen, setEsFullscreen] = useState(false);
   const [esDispositivoTactil, setEsDispositivoTactil] = useState(false);
+  const [npcDialogoActivo, setNpcDialogoActivo] = useState(null);
 
   // Clase y Avatar
   const [claseSeleccionada, setClaseSeleccionada] = useState(
@@ -122,17 +125,25 @@ export default function CriptaJuego({ usuarioLogueado, alActualizarUsuario, volv
       onNotificacion: (notif) => {
         mostrarNotificacionToast(notif);
       },
+      onInteractuarNPC: (npcBasico) => {
+        const ficha = PERSONALIDADES_NPC[npcBasico.tipo];
+        if (ficha) {
+          setNpcDialogoActivo(ficha);
+        }
+      },
       onMuerte: (data) => {
+        const juicio = PERSONALIDADES_NPC.martin.generarJuicioMuerte(data.armaQuebrada, data.oroPerdido, data.expulsado, data.piso);
         Swal.fire({
-          title: data.expulsado ? '⚠️ ¡Expulsado de la Cripta!' : '💀 ¡Caído en Combate!',
-          text: data.expulsado 
-            ? `Caíste sin haber descubierto el Santuario de este piso. Has sido devuelto al Santuario del Piso ${data.piso - 1}. Tu arma se ha quebrado.`
-            : `Has sido rescatado por la Hoguera Sagrada. Tu arma se ha partido y perdiste ${data.oroPerdido} monedas.`,
-          icon: 'warning',
+          title: juicio.titulo,
+          text: juicio.mensaje,
+          imageUrl: '/assets/crawler/npcs/angel_idle_anim_f0.png',
+          imageWidth: 64,
+          imageHeight: 64,
+          imageAlt: 'Martín el Ángel Fiscal',
           background: '#09090b',
           color: '#ffffff',
-          confirmButtonText: 'Continuar Aventura',
-          confirmButtonColor: '#ef4444'
+          confirmButtonText: 'Firmar Acta y Continuar',
+          confirmButtonColor: '#fbbf24'
         });
       },
       onJefeDerrotado: (data) => {
@@ -184,6 +195,41 @@ export default function CriptaJuego({ usuarioLogueado, alActualizarUsuario, volv
     } catch (e) {
       console.warn('Progreso guardado localmente.', e);
     }
+  };
+
+  const handleAccionDialogo = (accion, costoOro) => {
+    if (!engineRef.current) return null;
+
+    if (costoOro > 0) {
+      if (engineRef.current.oro < costoOro) {
+        return { error: true, mensaje: 'No tienes suficiente oro' };
+      }
+      engineRef.current.oro -= costoOro;
+      setStats(prev => ({ ...prev, oro: engineRef.current.oro }));
+    }
+
+    if (accion === 'revelar_seguridad') {
+      engineRef.current.revelarMinimapa('seguridad');
+      return { mensaje: 'Santuario y Escalera trazados con éxito en el mapa.' };
+    }
+    if (accion === 'revelar_completo') {
+      engineRef.current.revelarMinimapa('completo');
+      return { mensaje: 'Todo el plano del piso ha sido revelado.' };
+    }
+    if (accion === 'pocion_vida') {
+      engineRef.current.curarJugador(80);
+      return { mensaje: '¡Recuperaste +80 puntos de vida con la poción de Delo!' };
+    }
+    if (accion === 'buff_morfi') {
+      engineRef.current.aplicarBuffMorfi();
+      return { mensaje: '¡Empanada halfling consumida! Regeneración continua activa (30s).' };
+    }
+    if (accion === 'reparar_arma') {
+      engineRef.current.repararArma(35);
+      return { mensaje: '¡Piedra de afilar aplicada! +35 durabilidad de arma.' };
+    }
+
+    return null;
   };
 
   const mostrarNotificacionToast = (notif) => {
@@ -709,6 +755,15 @@ export default function CriptaJuego({ usuarioLogueado, alActualizarUsuario, volv
             </div>
           </div>
         </div>
+      )}
+      {/* Cuadro de Diálogo Interactivo con NPCs de la Asociación */}
+      {npcDialogoActivo && (
+        <CuadroDialogo
+          npc={npcDialogoActivo}
+          jugadorOro={stats.oro}
+          onEjecutarAccion={handleAccionDialogo}
+          onCerrar={() => setNpcDialogoActivo(null)}
+        />
       )}
     </div>
   );

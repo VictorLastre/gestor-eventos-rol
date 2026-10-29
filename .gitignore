@@ -1,0 +1,12 @@
+# Documentos y libros pesados
+*.pdf
+*.zip
+*.rar
+
+# Variables de entorno y credenciales
+.env
+credenciales-drive.json
+*.log
+
+# Dependencias
+node_modules/
