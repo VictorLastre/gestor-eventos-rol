@@ -54,6 +54,21 @@ export const BIOMAS = {
     bossTipo: 'necromancer',
     bossHP: 1150, // Calibrado para Desafío de Party (4 héroes)
     bossDano: 34
+  },
+  100: {
+    nombre: 'El Trono del Presidente Supremo',
+    subtitulo: 'Asociación de Rol La Pampa - Desafío Definitivo',
+    tipo: 'trono',
+    colorAmbiente: 'rgba(25, 10, 35, 0.90)',
+    luzAntorcha: '#a855f7',
+    murosColor: '#581c87',
+    sueloColor: '#1e102d',
+    sueloDetalle: '#3b0764',
+    mobTipos: ['zombie', 'mushroom', 'skelet'],
+    bossNombre: 'Matías - Presidente Supremo',
+    bossTipo: 'mati',
+    bossHP: 4500, // Desafío supremo para party completa
+    bossDano: 45
   }
 };
 
@@ -68,6 +83,12 @@ export class DungeonGenerator {
     this.forjaPoint = { x: 0, y: 0 };
     this.dinyPoint = { x: 0, y: 0 };
     this.deloPoint = { x: 0, y: 0 };
+    this.guillePoint = { x: 0, y: 0 };
+    this.ayrtonPoint = { x: 0, y: 0 };
+    this.keithPoint = { x: 0, y: 0 };
+    this.javiPoint = { x: 0, y: 0 };
+    this.matiPoint = { x: 0, y: 0 };
+    this.strerbernPoint = { x: 0, y: 0 };
     this.bossPoint = { x: 0, y: 0 };
     this.stairsPoint = { x: 0, y: 0 };
     this.entradasJefe = [];
@@ -138,12 +159,35 @@ export class DungeonGenerator {
     this.habitaciones[0].descubierta = true;
     this.spawnPoint = { x: this.habitaciones[0].centroX, y: this.habitaciones[0].centroY };
 
-    this.habitaciones[1].tipo = 'santuario';
-    this.habitaciones[1].descubierta = false;
-    this.hogueraPoint = { x: this.habitaciones[1].centroX, y: this.habitaciones[1].centroY };
-    this.forjaPoint = { x: this.habitaciones[1].centroX + 2, y: this.habitaciones[1].centroY };
-    this.dinyPoint = { x: this.habitaciones[1].centroX - 2, y: this.habitaciones[1].centroY };
-    this.deloPoint = { x: this.habitaciones[1].centroX, y: this.habitaciones[1].centroY - 2 };
+    const santuario = this.habitaciones[1];
+    santuario.tipo = 'santuario';
+    santuario.descubierta = false;
+
+    // Asegurar tamaño cómodo de santuario (mínimo 9x9) para toda la Asociación
+    if (santuario.ancho < 9) santuario.ancho = 9;
+    if (santuario.alto < 9) santuario.alto = 9;
+    if (santuario.x + santuario.ancho >= this.tamano - 2) {
+      santuario.x = Math.max(2, this.tamano - santuario.ancho - 2);
+    }
+    if (santuario.y + santuario.alto >= this.tamano - 2) {
+      santuario.y = Math.max(2, this.tamano - santuario.alto - 2);
+    }
+    santuario.centroX = Math.floor(santuario.x + santuario.ancho / 2);
+    santuario.centroY = Math.floor(santuario.y + santuario.alto / 2);
+
+    const scx = santuario.centroX;
+    const scy = santuario.centroY;
+
+    this.hogueraPoint = { x: scx, y: scy };
+    this.forjaPoint = { x: scx + 3, y: scy };
+    this.matiPoint = { x: scx, y: scy - 3 };
+    this.dinyPoint = { x: scx - 3, y: scy };
+    this.deloPoint = { x: scx - 2, y: scy - 2 };
+    this.guillePoint = { x: scx + 2, y: scy - 2 };
+    this.ayrtonPoint = { x: scx, y: scy + 3 };
+    this.keithPoint = { x: scx - 2, y: scy + 2 };
+    this.javiPoint = { x: scx + 2, y: scy + 2 };
+    this.strerbernPoint = { x: scx + 3, y: scy + 2 };
 
     const habJefe = this.habitaciones[this.habitaciones.length - 1];
     habJefe.tipo = 'jefe';
@@ -212,6 +256,12 @@ export class DungeonGenerator {
       forjaPoint: this.forjaPoint,
       dinyPoint: this.dinyPoint,
       deloPoint: this.deloPoint,
+      guillePoint: this.guillePoint,
+      ayrtonPoint: this.ayrtonPoint,
+      keithPoint: this.keithPoint,
+      javiPoint: this.javiPoint,
+      matiPoint: this.matiPoint,
+      strerbernPoint: this.strerbernPoint,
       bossPoint: this.bossPoint,
       stairsPoint: this.stairsPoint,
       habJefe: this.habJefe,

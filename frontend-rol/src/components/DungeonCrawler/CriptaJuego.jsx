@@ -136,14 +136,17 @@ export default function CriptaJuego({ usuarioLogueado, alActualizarUsuario, volv
         Swal.fire({
           title: juicio.titulo,
           text: juicio.mensaje,
-          imageUrl: '/assets/crawler/npcs/angel_idle_anim_f0.png',
-          imageWidth: 64,
-          imageHeight: 64,
+          imageUrl: '/assets/crawler/portraits/npc_angel_portrait.png',
+          imageWidth: 96,
+          imageHeight: 96,
           imageAlt: 'Martín el Ángel Fiscal',
           background: '#09090b',
           color: '#ffffff',
           confirmButtonText: 'Firmar Acta y Continuar',
-          confirmButtonColor: '#fbbf24'
+          confirmButtonColor: '#fbbf24',
+          customClass: {
+            image: 'rounded-xl border-2 border-amber-400 shadow-lg'
+          }
         });
       },
       onJefeDerrotado: (data) => {
@@ -227,6 +230,20 @@ export default function CriptaJuego({ usuarioLogueado, alActualizarUsuario, volv
     if (accion === 'reparar_arma') {
       engineRef.current.repararArma(35);
       return { mensaje: '¡Piedra de afilar aplicada! +35 durabilidad de arma.' };
+    }
+    if (accion === 'buff_fuerza') {
+      engineRef.current.aplicarBuffFuerza(60);
+      return { mensaje: '¡Furia de Ayrton activada (+50% daño por 60s)!' };
+    }
+    if (accion === 'buff_velocidad') {
+      engineRef.current.aplicarBuffVelocidad(60);
+      return { mensaje: '¡Táctica de Javier activada (+30% velocidad por 60s)!' };
+    }
+    if (accion === 'tirar_dados_keith') {
+      return engineRef.current.tirarDadosKeith();
+    }
+    if (accion === 'aportar_gremio') {
+      return { mensaje: '¡Oro transferido al fondo de reserva de la Asociación!' };
     }
 
     return null;

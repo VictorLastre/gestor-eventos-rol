@@ -129,31 +129,70 @@ class AssetManager {
       { k: 'flask_blue', u: '/assets/crawler/items/flask_blue.png' },
       { k: 'coin', u: '/assets/crawler/items/coin_anim_f0.png' },
 
-      // NPCs de la Asociación de Rol La Pampa
-      { k: 'npc_diny_0', u: '/assets/crawler/npcs/dwarf_f_idle_anim_f0.png' },
-      { k: 'npc_diny_1', u: '/assets/crawler/npcs/dwarf_f_idle_anim_f1.png' },
-      { k: 'npc_diny_2', u: '/assets/crawler/npcs/dwarf_f_idle_anim_f2.png' },
-      { k: 'npc_diny_3', u: '/assets/crawler/npcs/dwarf_f_idle_anim_f3.png' },
+      // Retratos HD de la Asociación de Rol La Pampa
+      { k: 'portrait_npc_diny', u: '/assets/crawler/portraits/npc_diny_portrait.png' },
+      { k: 'portrait_npc_delo', u: '/assets/crawler/portraits/npc_delo_portrait.png' },
+      { k: 'portrait_npc_angel', u: '/assets/crawler/portraits/npc_angel_portrait.png' },
+      { k: 'portrait_npc_chiquito', u: '/assets/crawler/portraits/npc_chiquito_portrait.png' },
+      { k: 'portrait_npc_ayrton', u: '/assets/crawler/portraits/npc_ayrton_portrait.png' },
+      { k: 'portrait_npc_mati', u: '/assets/crawler/portraits/npc_mati_portrait.png' },
+      { k: 'portrait_npc_keith', u: '/assets/crawler/portraits/npc_keith_portrait.png' },
+      { k: 'portrait_npc_javi', u: '/assets/crawler/portraits/npc_javi_portrait.png' },
+      { k: 'portrait_npc_strerbern', u: '/assets/crawler/portraits/npc_strerbern_portrait.png' },
 
-      { k: 'npc_delo_0', u: '/assets/crawler/npcs/elf_f_idle_anim_f0.png' },
-      { k: 'npc_delo_1', u: '/assets/crawler/npcs/elf_f_idle_anim_f1.png' },
-      { k: 'npc_delo_2', u: '/assets/crawler/npcs/elf_f_idle_anim_f2.png' },
-      { k: 'npc_delo_3', u: '/assets/crawler/npcs/elf_f_idle_anim_f3.png' },
+      // Sprites de los Miembros de la Asociación de Rol La Pampa
+      { k: 'npc_diny_0', u: '/assets/crawler/npcs/npc_diny_idle_anim_f0.png' },
+      { k: 'npc_diny_1', u: '/assets/crawler/npcs/npc_diny_idle_anim_f1.png' },
+      { k: 'npc_diny_2', u: '/assets/crawler/npcs/npc_diny_idle_anim_f2.png' },
+      { k: 'npc_diny_3', u: '/assets/crawler/npcs/npc_diny_idle_anim_f3.png' },
 
-      { k: 'npc_angel_0', u: '/assets/crawler/npcs/angel_idle_anim_f0.png' },
-      { k: 'npc_angel_1', u: '/assets/crawler/npcs/angel_idle_anim_f1.png' },
-      { k: 'npc_angel_2', u: '/assets/crawler/npcs/angel_idle_anim_f2.png' },
-      { k: 'npc_angel_3', u: '/assets/crawler/npcs/angel_idle_anim_f3.png' },
+      { k: 'npc_delo_0', u: '/assets/crawler/npcs/npc_delo_idle_anim_f0.png' },
+      { k: 'npc_delo_1', u: '/assets/crawler/npcs/npc_delo_idle_anim_f1.png' },
+      { k: 'npc_delo_2', u: '/assets/crawler/npcs/npc_delo_idle_anim_f2.png' },
+      { k: 'npc_delo_3', u: '/assets/crawler/npcs/npc_delo_idle_anim_f3.png' },
+      { k: 'npc_delo_4', u: '/assets/crawler/npcs/npc_delo_idle_anim_f4.png' },
 
-      { k: 'npc_chiquito_0', u: '/assets/crawler/npcs/doc_idle_anim_f0.png' },
-      { k: 'npc_chiquito_1', u: '/assets/crawler/npcs/doc_idle_anim_f1.png' },
-      { k: 'npc_chiquito_2', u: '/assets/crawler/npcs/doc_idle_anim_f2.png' },
-      { k: 'npc_chiquito_3', u: '/assets/crawler/npcs/doc_idle_anim_f3.png' },
+      { k: 'npc_angel_0', u: '/assets/crawler/npcs/npc_angel_idle_anim_f0.png' },
+      { k: 'npc_angel_1', u: '/assets/crawler/npcs/npc_angel_idle_anim_f1.png' },
+      { k: 'npc_angel_2', u: '/assets/crawler/npcs/npc_angel_idle_anim_f2.png' },
+      { k: 'npc_angel_3', u: '/assets/crawler/npcs/npc_angel_idle_anim_f3.png' },
+      { k: 'npc_angel_4', u: '/assets/crawler/npcs/npc_angel_idle_anim_f4.png' },
 
-      { k: 'npc_ayrton_0', u: '/assets/crawler/npcs/orc_warrior_idle_anim_f0.png' },
-      { k: 'npc_ayrton_1', u: '/assets/crawler/npcs/orc_warrior_idle_anim_f1.png' },
-      { k: 'npc_ayrton_2', u: '/assets/crawler/npcs/orc_warrior_idle_anim_f2.png' },
-      { k: 'npc_ayrton_3', u: '/assets/crawler/npcs/orc_warrior_idle_anim_f3.png' }
+      { k: 'npc_chiquito_0', u: '/assets/crawler/npcs/npc_chiquito_idle_anim_f0.png' },
+      { k: 'npc_chiquito_1', u: '/assets/crawler/npcs/npc_chiquito_idle_anim_f1.png' },
+      { k: 'npc_chiquito_2', u: '/assets/crawler/npcs/npc_chiquito_idle_anim_f2.png' },
+      { k: 'npc_chiquito_3', u: '/assets/crawler/npcs/npc_chiquito_idle_anim_f3.png' },
+      { k: 'npc_chiquito_4', u: '/assets/crawler/npcs/npc_chiquito_idle_anim_f4.png' },
+
+      { k: 'npc_ayrton_0', u: '/assets/crawler/npcs/npc_ayrton_idle_anim_f0.png' },
+      { k: 'npc_ayrton_1', u: '/assets/crawler/npcs/npc_ayrton_idle_anim_f1.png' },
+      { k: 'npc_ayrton_2', u: '/assets/crawler/npcs/npc_ayrton_idle_anim_f2.png' },
+      { k: 'npc_ayrton_3', u: '/assets/crawler/npcs/npc_ayrton_idle_anim_f3.png' },
+      { k: 'npc_ayrton_4', u: '/assets/crawler/npcs/npc_ayrton_idle_anim_f4.png' },
+
+      { k: 'npc_mati_0', u: '/assets/crawler/npcs/npc_mati_idle_anim_f0.png' },
+      { k: 'npc_mati_1', u: '/assets/crawler/npcs/npc_mati_idle_anim_f1.png' },
+      { k: 'npc_mati_2', u: '/assets/crawler/npcs/npc_mati_idle_anim_f2.png' },
+      { k: 'npc_mati_3', u: '/assets/crawler/npcs/npc_mati_idle_anim_f3.png' },
+      { k: 'npc_mati_4', u: '/assets/crawler/npcs/npc_mati_idle_anim_f4.png' },
+
+      { k: 'npc_keith_0', u: '/assets/crawler/npcs/npc_keith_idle_anim_f0.png' },
+      { k: 'npc_keith_1', u: '/assets/crawler/npcs/npc_keith_idle_anim_f1.png' },
+      { k: 'npc_keith_2', u: '/assets/crawler/npcs/npc_keith_idle_anim_f2.png' },
+      { k: 'npc_keith_3', u: '/assets/crawler/npcs/npc_keith_idle_anim_f3.png' },
+      { k: 'npc_keith_4', u: '/assets/crawler/npcs/npc_keith_idle_anim_f4.png' },
+
+      { k: 'npc_javi_0', u: '/assets/crawler/npcs/npc_javi_idle_anim_f0.png' },
+      { k: 'npc_javi_1', u: '/assets/crawler/npcs/npc_javi_idle_anim_f1.png' },
+      { k: 'npc_javi_2', u: '/assets/crawler/npcs/npc_javi_idle_anim_f2.png' },
+      { k: 'npc_javi_3', u: '/assets/crawler/npcs/npc_javi_idle_anim_f3.png' },
+      { k: 'npc_javi_4', u: '/assets/crawler/npcs/npc_javi_idle_anim_f4.png' },
+
+      { k: 'npc_strerbern_0', u: '/assets/crawler/npcs/npc_strerbern_idle_anim_f0.png' },
+      { k: 'npc_strerbern_1', u: '/assets/crawler/npcs/npc_strerbern_idle_anim_f1.png' },
+      { k: 'npc_strerbern_2', u: '/assets/crawler/npcs/npc_strerbern_idle_anim_f2.png' },
+      { k: 'npc_strerbern_3', u: '/assets/crawler/npcs/npc_strerbern_idle_anim_f3.png' },
+      { k: 'npc_strerbern_4', u: '/assets/crawler/npcs/npc_strerbern_idle_anim_f4.png' }
     ];
 
     this.total = lista.length;

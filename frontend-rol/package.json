@@ -6,6 +6,7 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build",
+    "sprites": "python ../scripts/procesar_sprites.py",
     "lint": "eslint .",
     "preview": "vite preview"
   },

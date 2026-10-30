@@ -107,10 +107,11 @@ export default function CuadroDialogo({
 
   if (!npc) return null;
 
-  // Obtener imagen del sprite actual
+  // Obtener imagen del sprite animado y retrato HD
   const claveImg = `${npc.spritePrefijo}_${frameAnim}`;
   const imgElement = assets.get(claveImg);
   const imgSrc = imgElement?.src || null;
+  const portraitUrl = `/assets/crawler/portraits/${npc.spritePrefijo}_portrait.png`;
 
   return (
     <div className="absolute inset-0 z-50 flex items-end justify-center p-4 sm:p-8 bg-black/50 backdrop-blur-xs animate-fade-in pointer-events-auto">
@@ -121,23 +122,31 @@ export default function CuadroDialogo({
         {/* Retrato del NPC */}
         <div className="w-full md:w-56 bg-zinc-900/90 p-4 flex flex-col items-center justify-center border-b md:border-b-0 md:border-r border-zinc-800 relative">
           <div 
-            className="w-24 h-24 sm:w-28 sm:h-28 rounded-xl border-2 flex items-center justify-center bg-zinc-950 shadow-inner overflow-hidden mb-3 relative"
+            className="w-24 h-24 sm:w-28 sm:h-28 rounded-xl border-2 flex items-center justify-center bg-zinc-950 shadow-inner overflow-hidden mb-3 relative group"
             style={{ borderColor: npc.colorTema }}
           >
-            {imgSrc ? (
-              <img 
-                src={imgSrc} 
-                alt={npc.nombre} 
-                className="w-20 h-20 sm:w-24 sm:h-24 object-contain pixelated transform scale-150" 
-              />
-            ) : (
-              <span className="text-4xl">🎭</span>
-            )}
+            <img 
+              src={portraitUrl} 
+              alt={npc.nombre} 
+              className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
+              onError={(e) => {
+                if (imgSrc) {
+                  e.target.src = imgSrc;
+                  e.target.className = "w-20 h-20 sm:w-24 sm:h-24 object-contain pixelated transform scale-150";
+                }
+              }}
+            />
             {/* Halo / Destello de aura */}
             <div 
-              className="absolute inset-0 opacity-20 pointer-events-none"
+              className="absolute inset-0 opacity-15 pointer-events-none"
               style={{ backgroundColor: npc.colorTema }}
             />
+            {/* Mini badge con el sprite animado en la esquina */}
+            {imgSrc && (
+              <div className="absolute bottom-1 right-1 w-7 h-7 rounded-md bg-black/75 border border-zinc-700/80 p-0.5 flex items-center justify-center pointer-events-none shadow-md backdrop-blur-xs">
+                <img src={imgSrc} alt="" className="w-6 h-6 object-contain pixelated" />
+              </div>
+            )}
           </div>
 
           <h3 className="font-bold text-base sm:text-lg text-center leading-tight" style={{ color: npc.colorTema }}>

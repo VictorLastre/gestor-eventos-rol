@@ -133,6 +133,8 @@ export class GameEngine {
     this.npcs = [];
     this.npcCercano = null;
     this.buffMorfi = 0;
+    this.buffFuerza = 0;
+    this.buffVelocidad = 0;
 
     this.bindEvents();
     this.iniciarPiso(this.piso);
@@ -201,7 +203,7 @@ export class GameEngine {
       pocion: c.pocion
     }));
 
-    // NPCs presentes en la mazmorra (Santuario / Salas de apoyo)
+    // NPCs presentes en la mazmorra (Santuario de la Asociación de Rol La Pampa)
     this.npcs = [];
     if (this.dungeon.dinyPoint) {
       this.npcs.push({
@@ -215,7 +217,8 @@ export class GameEngine {
         spriteKey: 'npc_diny',
         colorTema: '#38bdf8',
         animFrame: 0,
-        animTimer: 0
+        animTimer: 0,
+        totalFrames: 4
       });
     }
     if (this.dungeon.deloPoint) {
@@ -226,11 +229,108 @@ export class GameEngine {
         y: (this.dungeon.deloPoint.y + 0.5) * this.tileSize,
         radio: 14,
         nombre: 'Agustina "Delo"',
-        cargo: 'Alquimista',
+        cargo: 'Alquimista Halfling',
         spriteKey: 'npc_delo',
         colorTema: '#c084fc',
         animFrame: 0,
-        animTimer: 0
+        animTimer: 0,
+        totalFrames: 5
+      });
+    }
+    if (this.dungeon.guillePoint) {
+      this.npcs.push({
+        id: 'guille',
+        tipo: 'guille',
+        x: (this.dungeon.guillePoint.x + 0.5) * this.tileSize,
+        y: (this.dungeon.guillePoint.y + 0.5) * this.tileSize,
+        radio: 14,
+        nombre: 'Guille "Chiquito"',
+        cargo: 'Tesorero',
+        spriteKey: 'npc_chiquito',
+        colorTema: '#f59e0b',
+        animFrame: 0,
+        animTimer: 0,
+        totalFrames: 5
+      });
+    }
+    if (this.dungeon.ayrtonPoint) {
+      this.npcs.push({
+        id: 'ayrton',
+        tipo: 'ayrton',
+        x: (this.dungeon.ayrtonPoint.x + 0.5) * this.tileSize,
+        y: (this.dungeon.ayrtonPoint.y + 0.5) * this.tileSize,
+        radio: 14,
+        nombre: 'Ayrton',
+        cargo: 'Bárbaro Mercenario',
+        spriteKey: 'npc_ayrton',
+        colorTema: '#ef4444',
+        animFrame: 0,
+        animTimer: 0,
+        totalFrames: 5
+      });
+    }
+    if (this.dungeon.keithPoint) {
+      this.npcs.push({
+        id: 'keith',
+        tipo: 'keith',
+        x: (this.dungeon.keithPoint.x + 0.5) * this.tileSize,
+        y: (this.dungeon.keithPoint.y + 0.5) * this.tileSize,
+        radio: 14,
+        nombre: 'Keith',
+        cargo: 'Jueza de Dados',
+        spriteKey: 'npc_keith',
+        colorTema: '#ec4899',
+        animFrame: 0,
+        animTimer: 0,
+        totalFrames: 5
+      });
+    }
+    if (this.dungeon.javiPoint) {
+      this.npcs.push({
+        id: 'javier',
+        tipo: 'javier',
+        x: (this.dungeon.javiPoint.x + 0.5) * this.tileSize,
+        y: (this.dungeon.javiPoint.y + 0.5) * this.tileSize,
+        radio: 14,
+        nombre: 'Javier',
+        cargo: 'Táctico de Escape',
+        spriteKey: 'npc_javi',
+        colorTema: '#10b981',
+        animFrame: 0,
+        animTimer: 0,
+        totalFrames: 5
+      });
+    }
+    if (this.dungeon.matiPoint) {
+      this.npcs.push({
+        id: 'mati',
+        tipo: 'mati',
+        x: (this.dungeon.matiPoint.x + 0.5) * this.tileSize,
+        y: (this.dungeon.matiPoint.y + 0.5) * this.tileSize,
+        radio: 14,
+        nombre: 'Matías',
+        cargo: 'Presidente',
+        spriteKey: 'npc_mati',
+        colorTema: '#8b5cf6',
+        animFrame: 0,
+        animTimer: 0,
+        totalFrames: 5
+      });
+    }
+    if (this.dungeon.strerbernPoint) {
+      this.npcs.push({
+        id: 'strerbern',
+        tipo: 'strerbern',
+        x: (this.dungeon.strerbernPoint.x + 0.5) * this.tileSize,
+        y: (this.dungeon.strerbernPoint.y + 0.5) * this.tileSize,
+        radio: 14,
+        nombre: 'Víctor "DM"',
+        cargo: 'Archmago',
+        spriteKey: 'npc_strerbern',
+        colorTema: '#6366f1',
+        animFrame: 0,
+        animTimer: 0,
+        totalFrames: 5
       });
     }
 
@@ -460,7 +560,8 @@ export class GameEngine {
     }
 
     const danoMult = this.player.durabilidad <= 0 ? 0.35 : (this.player.durabilidad < this.player.maxDurabilidad * 0.3 ? 0.75 : 1.0);
-    const danoFinal = Math.round(this.datosClase.danoBase * danoMult);
+    let danoFinal = Math.round(this.datosClase.danoBase * danoMult);
+    if (this.buffFuerza > 0) danoFinal = Math.round(danoFinal * 1.5);
     const angulo = Math.atan2(this.mouse.worldY - this.player.y, this.mouse.worldX - this.player.x);
 
     if (this.claseId === 'mago') {
@@ -733,7 +834,8 @@ export class GameEngine {
     if (this.teclas['a'] || this.teclas['arrowleft']) dx -= 1;
     if (this.teclas['d'] || this.teclas['arrowright']) dx += 1;
 
-    const vel = this.datosClase.velocidad;
+    let vel = this.datosClase.velocidad;
+    if (this.buffVelocidad > 0) vel *= 1.3;
     if (dx !== 0 && dy !== 0) {
       dx *= 0.7071;
       dy *= 0.7071;
@@ -814,7 +916,8 @@ export class GameEngine {
       npc.animTimer = (npc.animTimer || 0) + dt;
       if (npc.animTimer > 0.18) {
         npc.animTimer = 0;
-        npc.animFrame = ((npc.animFrame || 0) + 1) % 4;
+        const total = npc.totalFrames || 5;
+        npc.animFrame = ((npc.animFrame || 0) + 1) % total;
       }
       const dist = Math.hypot(this.player.x - npc.x, this.player.y - npc.y);
       if (dist < menorDistNPC) {
@@ -830,6 +933,9 @@ export class GameEngine {
         this.player.hp = Math.min(this.player.maxHp, this.player.hp + dt * 4);
       }
     }
+
+    if (this.buffFuerza > 0) this.buffFuerza -= dt;
+    if (this.buffVelocidad > 0) this.buffVelocidad -= dt;
 
     // ✨ ACTIVACIÓN DE ARENA: Si el jugador entra a la sala del jefe, sellar puertas
     const hj = this.dungeon.habJefe;
@@ -1287,6 +1393,8 @@ export class GameEngine {
         spriteClave = `chort_idle_${e.animFrame % 2}`;
       } else if (e.tipo === 'zombie' || e.tipo === 'big_zombie') {
         spriteClave = `big_zombie_idle_${e.animFrame % 2}`;
+      } else if (e.tipo === 'mati') {
+        spriteClave = `npc_mati_${e.animFrame % 5}`;
       }
 
       const img = spriteClave ? assets.get(spriteClave) : null;
@@ -1420,6 +1528,36 @@ export class GameEngine {
     sound.playHeal();
     this.crearTextoFlotante(this.player.x, this.player.y - 25, '🥟 ¡Morfi de Delo activado! (+HP continuo)', '#a855f7', 14);
     this.notificarStats();
+  }
+
+  aplicarBuffFuerza(segundos = 60) {
+    this.buffFuerza = segundos;
+    this.crearTextoFlotante(this.player.x, this.player.y - 25, '🪓 ¡FURIA DE AYRTON! (+50% Daño)', '#ef4444', 15);
+    sound.playLevelUp();
+  }
+
+  aplicarBuffVelocidad(segundos = 60) {
+    this.buffVelocidad = segundos;
+    this.crearTextoFlotante(this.player.x, this.player.y - 25, '👟 ¡TÁCTICA DE JAVIER! (+30% Velocidad)', '#10b981', 15);
+    sound.playLevelUp();
+  }
+
+  tirarDadosKeith() {
+    const d20 = Math.floor(Math.random() * 20) + 1;
+    if (d20 === 20) {
+      this.player.hp = this.player.maxHp;
+      this.player.durabilidad = this.player.maxDurabilidad;
+      this.crearTextoFlotante(this.player.x, this.player.y - 25, '🎲 ¡NATURAL 20! Bendición Divina Total', '#ec4899', 16);
+      sound.playLevelUp();
+      return { mensaje: `¡CRÍTICO! Sacaste un 20 natural: Vida y arma restauradas al 100%.` };
+    } else if (d20 >= 10) {
+      this.curarJugador(50);
+      return { mensaje: `Sacaste un ${d20}: Los dados te favorecen (+50 Vida).` };
+    } else {
+      this.crearTextoFlotante(this.player.x, this.player.y - 25, `🎲 Sacaste un ${d20}... "¡Ay! qué pena"`, '#ef4444', 13);
+      sound.playHit();
+      return { mensaje: `Sacaste un ${d20}. Keith: "¡Ay! qué pena... a rolear mejor la próxima".` };
+    }
   }
 
   renderJugador(ctx) {
