@@ -10,7 +10,35 @@ function AvatarUsuario({ nombre, avatar, tamaño = 40, variante = "beam" }) {
     "#27272a"  // Zinc 800 (Oscuridad/Fondo)
   ];
 
-  // Si el usuario eligió un avatar de la Cripta del Nigromante
+  const dimensionEstilo = {
+    width: typeof tamaño === 'number' ? `${tamaño}px` : tamaño,
+    height: typeof tamaño === 'number' ? `${tamaño}px` : tamaño
+  };
+
+  // 1. Si el usuario eligió un Retrato Oficial de la Asociación (PNJ / Mesa Directiva)
+  if (avatar && avatar.startsWith('portrait:')) {
+    const prefijo = avatar.replace('portrait:', '');
+    const rutaRetrato = `/assets/crawler/portraits/${prefijo}_portrait.png`;
+
+    return (
+      <div
+        className="rounded-full bg-zinc-950 flex items-center justify-center overflow-hidden border-2 border-amber-500/50 shadow-md shrink-0 select-none group"
+        style={dimensionEstilo}
+        title={`${nombre} (Retrato de la Asociación)`}
+      >
+        <img
+          src={rutaRetrato}
+          alt={nombre}
+          className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-110"
+          onError={(e) => {
+            e.target.style.display = 'none';
+          }}
+        />
+      </div>
+    );
+  }
+
+  // 2. Si el usuario eligió un avatar Pixel Art de la Cripta
   if (avatar && avatar.startsWith('crawler:')) {
     const partes = avatar.replace('crawler:', '').split('_');
     const clase = partes[0] || 'guerrero';
@@ -21,8 +49,8 @@ function AvatarUsuario({ nombre, avatar, tamaño = 40, variante = "beam" }) {
 
     return (
       <div
-        className="rounded-full bg-zinc-950 flex items-center justify-center overflow-hidden border border-emerald-500/40 shrink-0"
-        style={{ width: `${tamaño}px`, height: `${tamaño}px` }}
+        className="rounded-full bg-zinc-950 flex items-center justify-center overflow-hidden border border-emerald-500/50 shadow-md shrink-0 select-none"
+        style={dimensionEstilo}
         title={`${nombre} (${clase})`}
       >
         <img
@@ -31,7 +59,6 @@ function AvatarUsuario({ nombre, avatar, tamaño = 40, variante = "beam" }) {
           className="w-full h-full object-contain scale-125"
           style={{ imageRendering: 'pixelated' }}
           onError={(e) => {
-            // Fallback en caso de que no cargue
             e.target.style.display = 'none';
           }}
         />
@@ -39,13 +66,36 @@ function AvatarUsuario({ nombre, avatar, tamaño = 40, variante = "beam" }) {
     );
   }
 
+  // 3. Si el avatar es una URL directa (externa o de assets)
+  if (avatar && (avatar.startsWith('http') || avatar.startsWith('/assets/'))) {
+    return (
+      <div
+        className="rounded-full bg-zinc-950 flex items-center justify-center overflow-hidden border border-zinc-700 shadow-md shrink-0 select-none"
+        style={dimensionEstilo}
+        title={nombre}
+      >
+        <img
+          src={avatar}
+          alt={nombre}
+          className="w-full h-full object-cover"
+          onError={(e) => {
+            e.target.style.display = 'none';
+          }}
+        />
+      </div>
+    );
+  }
+
+  // 4. Retrato Dinámico de Aventurero (Boring-Avatars)
   return (
-    <Avatar
-      size={tamaño}
-      name={nombre || "Aventurero Desconocido"} // El nombre genera el patrón único
-      variant={variante} // Opciones: marble, beam, pixel, sunset, ring, bauhaus
-      colors={paletaGremio}
-    />
+    <div style={dimensionEstilo} className="shrink-0 flex items-center justify-center overflow-hidden rounded-full">
+      <Avatar
+        size="100%"
+        name={nombre || "Aventurero Desconocido"}
+        variant={variante}
+        colors={paletaGremio}
+      />
+    </div>
   );
 }
 

@@ -1,6 +1,6 @@
 import Swal from 'sweetalert2';
 import { useState, useEffect } from 'react';
-import Avatar from 'boring-avatars';
+import AvatarUsuario from './AvatarUsuario';
 import { fetchProtegido } from '../utils/api';
 import { obtenerRangoDM } from '../utils/rangoHonor';
 import VitrinaMedallas from './VitrinaMedallas';
@@ -154,11 +154,11 @@ function PerfilPublico({ usuarioId, volver }) {
               <div className="relative group shrink-0">
                   <div className={`absolute inset-0 ${esFundador ? 'bg-amber-500/20' : 'bg-emerald-500/20'} blur-xl rounded-full transition-all`}></div>
                   <div className={`w-24 h-24 md:w-32 md:h-32 rounded-full shadow-2xl relative z-10 overflow-hidden border-4 ${esFundador ? 'border-amber-500 shadow-[0_0_20px_rgba(251,191,36,0.3)]' : 'border-zinc-800'}`}>
-                      <Avatar
-                        size="100%"
-                        name={perfil.nombre}
-                        variant="beam"
-                        colors={esFundador ? ['#f59e0b', '#d97706', '#b45309', '#92400e', '#78350f'] : ['#10b981', '#059669', '#34d399', '#065f46', '#047857']}
+                      <AvatarUsuario
+                        nombre={perfil.nombre}
+                        avatar={perfil.avatar}
+                        tamaño="100%"
+                        variante="beam"
                       />
                   </div>
               </div>

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import Avatar from 'boring-avatars';
+import AvatarUsuario from './AvatarUsuario';
 import { io } from 'socket.io-client';
 import { fetchProtegido } from '../utils/api';
 
@@ -38,20 +38,7 @@ function SalonFama({ cambiarVista }) {
   };
 
   const renderAvatar = (u) => {
-    if (u.avatar && u.avatar.startsWith('http')) {
-      return <img src={u.avatar} alt="Avatar" className="w-full h-full object-cover" />;
-    }
-    const mastersFiltrados = ranking.masters.filter(m => m.nombre.toLowerCase().includes(busqueda.toLowerCase()));
-  const jugadoresFiltrados = ranking.jugadores.filter(j => j.nombre.toLowerCase().includes(busqueda.toLowerCase()));
-
-  return (
-      <Avatar
-        size="100%"
-        name={u.nombre}
-        variant="beam"
-        colors={['#10b981', '#3b82f6', '#8b5cf6', '#f59e0b', '#ef4444']}
-      />
-    );
+    return <AvatarUsuario nombre={u?.nombre} avatar={u?.avatar} tamaño="100%" variante="beam" />;
   };
 
   const mastersFiltrados = ranking.masters.filter(m => m.nombre.toLowerCase().includes(busqueda.toLowerCase()));

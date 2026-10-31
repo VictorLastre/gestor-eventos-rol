@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import Swal from 'sweetalert2'; 
 import { fetchProtegido } from '../utils/api'; 
 import { io } from 'socket.io-client';
-import Avatar from 'boring-avatars';
+import AvatarUsuario from './AvatarUsuario';
 import { obtenerRangoDM } from '../utils/rangoHonor';
 // ✨ Importamos el componente de la solicitud de DM
 import SolicitudDM from './SolicitudDM';
@@ -248,18 +248,112 @@ function MisCronicas({ alActualizarUsuario }) {
         {editando ? (
           <div className="relative z-10 flex flex-col gap-8 animate-in zoom-in-95 duration-300">
             
-            <div className="flex flex-col md:flex-row items-center gap-6 bg-zinc-950/50 p-6 rounded-[2rem] border border-zinc-800/50 mb-6">
-              <div className="w-24 h-24 rounded-full shadow-2xl overflow-hidden shrink-0">
-                  <Avatar
-                    size="100%"
-                    name={perfil.nombre}
-                    variant="beam"
-                    colors={['#10b981', '#059669', '#34d399', '#065f46', '#047857']}
+            <div className="flex flex-col gap-5 bg-zinc-950/50 p-6 rounded-[2rem] border border-zinc-800/50 mb-6">
+              <div className="flex flex-col md:flex-row items-center gap-6">
+                <div className="w-24 h-24 rounded-full shadow-2xl overflow-hidden shrink-0 border-2 border-emerald-500/40">
+                  <AvatarUsuario
+                    nombre={perfil.nombre}
+                    avatar={perfil.avatar}
+                    tamaño="100%"
+                    variante="beam"
                   />
+                </div>
+                <div>
+                  <h4 className="text-white font-bold text-lg">Retrato de tu Ficha</h4>
+                  <p className="text-zinc-400 text-sm mt-1">
+                    Elige el rostro con el que te conocerá todo el Gremio. Puedes usar los <b>Retratos Oficiales de la Asociación</b>, un <b>Héroe Pixel Art</b> de la Cripta o el <b>Retrato Mágico</b> generado con tu Alias.
+                  </p>
+                </div>
               </div>
-              <div>
-                <h4 className="text-white font-bold text-lg">Retrato Dinámico</h4>
-                <p className="text-zinc-400 text-sm mt-1">Tu avatar se forja mágicamente usando la energía de tu alias. <b>¡Cambia tu Alias abajo y verás cómo tu retrato se transforma en vivo!</b> 🎨✨</p>
+
+              {/* Selector Interactivo de Avatares */}
+              <div className="pt-4 border-t border-zinc-800/80 space-y-4">
+                {/* 1. Retratos Oficiales de la Asociación (PNJ / Mesa Directiva) */}
+                <div>
+                  <span className="text-[11px] font-black uppercase tracking-wider text-amber-400 flex items-center gap-1.5 mb-2.5">
+                    👑 Retratos de la Mesa Directiva & PNJ (Asociación)
+                  </span>
+                  <div className="flex flex-wrap gap-2.5">
+                    {[
+                      { key: 'portrait:npc_strerbern', label: 'Víctor "DM"' },
+                      { key: 'portrait:npc_mati', label: 'Matías' },
+                      { key: 'portrait:npc_diny', label: 'Diana "Diny"' },
+                      { key: 'portrait:npc_delo', label: 'Agustina "Delo"' },
+                      { key: 'portrait:npc_chiquito', label: 'Guille "Chiquito"' },
+                      { key: 'portrait:npc_ayrton', label: 'Ayrton' },
+                      { key: 'portrait:npc_angel', label: 'Martín' },
+                      { key: 'portrait:npc_keith', label: 'Keith' },
+                      { key: 'portrait:npc_javi', label: 'Javier' }
+                    ].map(item => {
+                      const seleccionado = perfil.avatar === item.key;
+                      return (
+                        <button
+                          key={item.key}
+                          type="button"
+                          onClick={() => setPerfil(prev => ({ ...prev, avatar: item.key }))}
+                          className={`flex items-center gap-2 p-1.5 pr-3 rounded-full border transition-all text-xs font-bold cursor-pointer ${
+                            seleccionado
+                              ? 'bg-amber-500/20 border-amber-400 text-amber-300 ring-2 ring-amber-500/30'
+                              : 'bg-zinc-900/90 border-zinc-800 text-zinc-400 hover:border-zinc-600 hover:text-white'
+                          }`}
+                        >
+                          <AvatarUsuario nombre={item.label} avatar={item.key} tamaño={28} />
+                          <span>{item.label}</span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                {/* 2. Héroes de la Cripta (Pixel Art) */}
+                <div>
+                  <span className="text-[11px] font-black uppercase tracking-wider text-emerald-400 flex items-center gap-1.5 mb-2.5">
+                    ⚔️ Héroes de la Cripta (Pixel Art)
+                  </span>
+                  <div className="flex flex-wrap gap-2.5">
+                    {[
+                      { key: 'crawler:guerrero_m', label: 'Caballero' },
+                      { key: 'crawler:guerrero_f', label: 'Guerrera' },
+                      { key: 'crawler:mago_m', label: 'Mago' },
+                      { key: 'crawler:mago_f', label: 'Maga' },
+                      { key: 'crawler:picaro_m', label: 'Pícaro' },
+                      { key: 'crawler:picaro_f', label: 'Pícara' }
+                    ].map(item => {
+                      const seleccionado = perfil.avatar === item.key;
+                      return (
+                        <button
+                          key={item.key}
+                          type="button"
+                          onClick={() => setPerfil(prev => ({ ...prev, avatar: item.key }))}
+                          className={`flex items-center gap-2 p-1.5 pr-3 rounded-full border transition-all text-xs font-bold cursor-pointer ${
+                            seleccionado
+                              ? 'bg-emerald-500/20 border-emerald-400 text-emerald-300 ring-2 ring-emerald-500/30'
+                              : 'bg-zinc-900/90 border-zinc-800 text-zinc-400 hover:border-zinc-600 hover:text-white'
+                          }`}
+                        >
+                          <AvatarUsuario nombre={item.label} avatar={item.key} tamaño={28} />
+                          <span>{item.label}</span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                {/* 3. Retrato Mágico Procedural */}
+                <div>
+                  <button
+                    type="button"
+                    onClick={() => setPerfil(prev => ({ ...prev, avatar: '' }))}
+                    className={`flex items-center gap-2.5 p-2 px-3.5 rounded-2xl border transition-all text-xs font-bold cursor-pointer ${
+                      !perfil.avatar || !perfil.avatar.includes(':')
+                        ? 'bg-purple-500/20 border-purple-400 text-purple-300 ring-2 ring-purple-500/30'
+                        : 'bg-zinc-900/90 border-zinc-800 text-zinc-400 hover:border-zinc-600 hover:text-white'
+                    }`}
+                  >
+                    <AvatarUsuario nombre={perfil.nombre} avatar="" tamaño={26} />
+                    <span>🎨 Retrato Mágico Tradicional (Generado por Alias)</span>
+                  </button>
+                </div>
               </div>
             </div>
             
@@ -393,12 +487,12 @@ function MisCronicas({ alActualizarUsuario }) {
             <div className="flex flex-col md:flex-row items-center md:items-start text-center md:text-left gap-6 md:gap-8 w-full max-w-full overflow-hidden">
                 <div className="relative group shrink-0">
                     <div className="absolute inset-0 bg-emerald-500/20 blur-xl rounded-full group-hover:bg-emerald-500/40 transition-all"></div>
-                    <div className="w-24 h-24 md:w-32 md:h-32 rounded-full shadow-2xl relative z-10 overflow-hidden">
-                        <Avatar
-                          size="100%"
-                          name={perfil.nombre}
-                          variant="beam"
-                          colors={['#10b981', '#059669', '#34d399', '#065f46', '#047857']}
+                    <div className="w-24 h-24 md:w-32 md:h-32 rounded-full shadow-2xl relative z-10 overflow-hidden border-2 border-emerald-500/40">
+                        <AvatarUsuario
+                          nombre={perfil.nombre}
+                          avatar={perfil.avatar}
+                          tamaño="100%"
+                          variante="beam"
                         />
                     </div>
                 </div>

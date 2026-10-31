@@ -122,7 +122,7 @@ export default function CuadroDialogo({
         {/* Retrato del NPC */}
         <div className="w-full md:w-56 bg-zinc-900/90 p-4 flex flex-col items-center justify-center border-b md:border-b-0 md:border-r border-zinc-800 relative">
           <div 
-            className="w-24 h-24 sm:w-28 sm:h-28 rounded-xl border-2 flex items-center justify-center bg-zinc-950 shadow-inner overflow-hidden mb-3 relative group"
+            className="w-28 h-28 sm:w-32 sm:h-32 rounded-2xl border-2 flex items-center justify-center bg-zinc-950 shadow-inner overflow-hidden mb-3 relative group"
             style={{ borderColor: npc.colorTema }}
           >
             <img 
@@ -141,12 +141,6 @@ export default function CuadroDialogo({
               className="absolute inset-0 opacity-15 pointer-events-none"
               style={{ backgroundColor: npc.colorTema }}
             />
-            {/* Mini badge con el sprite animado en la esquina */}
-            {imgSrc && (
-              <div className="absolute bottom-1 right-1 w-7 h-7 rounded-md bg-black/75 border border-zinc-700/80 p-0.5 flex items-center justify-center pointer-events-none shadow-md backdrop-blur-xs">
-                <img src={imgSrc} alt="" className="w-6 h-6 object-contain pixelated" />
-              </div>
-            )}
           </div>
 
           <h3 className="font-bold text-base sm:text-lg text-center leading-tight" style={{ color: npc.colorTema }}>

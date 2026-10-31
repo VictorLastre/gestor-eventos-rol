@@ -87,6 +87,7 @@ export class DungeonGenerator {
     this.ayrtonPoint = { x: 0, y: 0 };
     this.keithPoint = { x: 0, y: 0 };
     this.javiPoint = { x: 0, y: 0 };
+    this.martinPoint = { x: 0, y: 0 };
     this.matiPoint = { x: 0, y: 0 };
     this.strerbernPoint = { x: 0, y: 0 };
     this.bossPoint = { x: 0, y: 0 };
@@ -163,9 +164,9 @@ export class DungeonGenerator {
     santuario.tipo = 'santuario';
     santuario.descubierta = false;
 
-    // Asegurar tamaño cómodo de santuario (mínimo 9x9) para toda la Asociación
-    if (santuario.ancho < 9) santuario.ancho = 9;
-    if (santuario.alto < 9) santuario.alto = 9;
+    // Asegurar tamaño cómodo de santuario (mínimo 11x11) para toda la Asociación
+    if (santuario.ancho < 11) santuario.ancho = 11;
+    if (santuario.alto < 11) santuario.alto = 11;
     if (santuario.x + santuario.ancho >= this.tamano - 2) {
       santuario.x = Math.max(2, this.tamano - santuario.ancho - 2);
     }
@@ -178,16 +179,18 @@ export class DungeonGenerator {
     const scx = santuario.centroX;
     const scy = santuario.centroY;
 
+    // Distribución armónica y espaciosa de la mesa directiva alrededor de la hoguera
     this.hogueraPoint = { x: scx, y: scy };
-    this.forjaPoint = { x: scx + 3, y: scy };
-    this.matiPoint = { x: scx, y: scy - 3 };
-    this.dinyPoint = { x: scx - 3, y: scy };
-    this.deloPoint = { x: scx - 2, y: scy - 2 };
-    this.guillePoint = { x: scx + 2, y: scy - 2 };
-    this.ayrtonPoint = { x: scx, y: scy + 3 };
-    this.keithPoint = { x: scx - 2, y: scy + 2 };
-    this.javiPoint = { x: scx + 2, y: scy + 2 };
-    this.strerbernPoint = { x: scx + 3, y: scy + 2 };
+    this.matiPoint = { x: scx, y: scy - 4 };         // Norte (Presidente)
+    this.martinPoint = { x: scx - 2, y: scy - 3 };    // Nor-Oeste (Ángel Fiscal)
+    this.guillePoint = { x: scx + 2, y: scy - 3 };    // Nor-Este (Tesorero)
+    this.deloPoint = { x: scx - 4, y: scy - 1 };      // Oeste superior (Alquimista)
+    this.dinyPoint = { x: scx - 4, y: scy + 2 };      // Oeste inferior (Cartógrafa)
+    this.forjaPoint = { x: scx + 4, y: scy - 1 };     // Este superior (Forja)
+    this.strerbernPoint = { x: scx + 4, y: scy + 2 }; // Este inferior (Archmago / DM)
+    this.keithPoint = { x: scx - 2, y: scy + 4 };     // Sur-Oeste (Jueza de Dados)
+    this.ayrtonPoint = { x: scx, y: scy + 4 };        // Sur (Bárbaro)
+    this.javiPoint = { x: scx + 2, y: scy + 4 };        // Sur-Este (Táctico)
 
     const habJefe = this.habitaciones[this.habitaciones.length - 1];
     habJefe.tipo = 'jefe';
@@ -260,6 +263,7 @@ export class DungeonGenerator {
       ayrtonPoint: this.ayrtonPoint,
       keithPoint: this.keithPoint,
       javiPoint: this.javiPoint,
+      martinPoint: this.martinPoint,
       matiPoint: this.matiPoint,
       strerbernPoint: this.strerbernPoint,
       bossPoint: this.bossPoint,

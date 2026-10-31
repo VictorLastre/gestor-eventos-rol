@@ -114,6 +114,7 @@ export class GameEngine {
     this.escaleraDesbloqueada = false;
 
     this.camera = { x: 0, y: 0 };
+    this.zoom = 1.35;
     this.tileSize = 32;
 
     this.teclas = {};
@@ -301,13 +302,29 @@ export class GameEngine {
         totalFrames: 5
       });
     }
+    if (this.dungeon.martinPoint) {
+      this.npcs.push({
+        id: 'martin',
+        tipo: 'martin',
+        x: (this.dungeon.martinPoint.x + 0.5) * this.tileSize,
+        y: (this.dungeon.martinPoint.y + 0.5) * this.tileSize,
+        radio: 16,
+        nombre: 'Martín',
+        cargo: 'Ángel Fiscal',
+        spriteKey: 'npc_angel',
+        colorTema: '#fbbf24',
+        animFrame: 0,
+        animTimer: 0,
+        totalFrames: 5
+      });
+    }
     if (this.dungeon.matiPoint) {
       this.npcs.push({
         id: 'mati',
         tipo: 'mati',
         x: (this.dungeon.matiPoint.x + 0.5) * this.tileSize,
         y: (this.dungeon.matiPoint.y + 0.5) * this.tileSize,
-        radio: 14,
+        radio: 16,
         nombre: 'Matías',
         cargo: 'Presidente',
         spriteKey: 'npc_mati',
@@ -374,8 +391,8 @@ export class GameEngine {
       const rect = this.canvas.getBoundingClientRect();
       this.mouse.x = e.clientX - rect.left;
       this.mouse.y = e.clientY - rect.top;
-      this.mouse.worldX = this.mouse.x + this.camera.x;
-      this.mouse.worldY = this.mouse.y + this.camera.y;
+      this.mouse.worldX = (this.mouse.x / this.zoom) + this.camera.x;
+      this.mouse.worldY = (this.mouse.y / this.zoom) + this.camera.y;
     };
 
     this.handleMouseDown = (e) => {
@@ -1095,14 +1112,16 @@ export class GameEngine {
       if (pt.vida <= 0) this.particulas.splice(i, 1);
     }
 
-    // 7. Cámara suave
-    const targetCamX = this.player.x - this.canvas.width / 2;
-    const targetCamY = this.player.y - this.canvas.height / 2;
+    // 7. Cámara suave con zoom
+    const viewW = this.canvas.width / this.zoom;
+    const viewH = this.canvas.height / this.zoom;
+    const targetCamX = this.player.x - viewW / 2;
+    const targetCamY = this.player.y - viewH / 2;
     this.camera.x += (targetCamX - this.camera.x) * 0.12;
     this.camera.y += (targetCamY - this.camera.y) * 0.12;
 
-    this.mouse.worldX = this.mouse.x + this.camera.x;
-    this.mouse.worldY = this.mouse.y + this.camera.y;
+    this.mouse.worldX = (this.mouse.x / this.zoom) + this.camera.x;
+    this.mouse.worldY = (this.mouse.y / this.zoom) + this.camera.y;
 
     this.notificarStats();
   }
@@ -1218,6 +1237,7 @@ export class GameEngine {
     ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
 
     ctx.save();
+    ctx.scale(this.zoom, this.zoom);
     ctx.translate(-Math.floor(this.camera.x), -Math.floor(this.camera.y));
 
     this.renderTilemap(ctx);
@@ -1237,10 +1257,12 @@ export class GameEngine {
 
   renderTilemap(ctx) {
     const ts = this.tileSize;
+    const viewW = this.canvas.width / this.zoom;
+    const viewH = this.canvas.height / this.zoom;
     const startCol = Math.max(0, Math.floor(this.camera.x / ts));
-    const endCol = Math.min(this.dungeon.tamano - 1, Math.floor((this.camera.x + this.canvas.width) / ts) + 1);
+    const endCol = Math.min(this.dungeon.tamano - 1, Math.floor((this.camera.x + viewW) / ts) + 1);
     const startRow = Math.max(0, Math.floor(this.camera.y / ts));
-    const endRow = Math.min(this.dungeon.tamano - 1, Math.floor((this.camera.y + this.canvas.height) / ts) + 1);
+    const endRow = Math.min(this.dungeon.tamano - 1, Math.floor((this.camera.y + viewH) / ts) + 1);
 
     const imgFloor = assets.get('tile_floor');
     const imgWall = assets.get('tile_wall');
@@ -1437,51 +1459,63 @@ export class GameEngine {
     for (const npc of this.npcs) {
       const frame = npc.animFrame || 0;
       const img = assets.get(`${npc.spriteKey}_${frame}`);
-      const tam = 28;
+      
+      // Proporciones naturales y tamaño destacado para los miembros de la Asociación
+      const alto = 48;
+      let ancho = 38;
+      if (img && img.naturalHeight && img.naturalWidth) {
+        ancho = Math.round(alto * (img.naturalWidth / img.naturalHeight));
+      }
 
       ctx.save();
       ctx.translate(npc.x, npc.y);
 
       // Sombra bajo el personaje
-      ctx.fillStyle = 'rgba(0, 0, 0, 0.45)';
+      ctx.fillStyle = 'rgba(0, 0, 0, 0.5)';
       ctx.beginPath();
-      ctx.ellipse(0, 10, 10, 4, 0, 0, Math.PI * 2);
+      ctx.ellipse(0, 10, 14, 5, 0, 0, Math.PI * 2);
       ctx.fill();
 
-      // Aura distintiva
+      // Aura distintiva de la Asociación
       ctx.fillStyle = npc.colorTema || '#38bdf8';
-      ctx.globalAlpha = 0.22;
+      ctx.globalAlpha = 0.24;
       ctx.beginPath();
-      ctx.arc(0, 0, 18, 0, Math.PI * 2);
+      ctx.arc(0, -alto / 2 + 10, 24, 0, Math.PI * 2);
       ctx.fill();
       ctx.globalAlpha = 1.0;
 
       // Sprite animado
       if (img) {
-        ctx.drawImage(img, -tam / 2, -tam / 2 - 2, tam, tam);
+        ctx.drawImage(img, -ancho / 2, -alto + 10, ancho, alto);
       } else {
         ctx.fillStyle = npc.colorTema || '#38bdf8';
         ctx.beginPath();
-        ctx.arc(0, 0, npc.radio, 0, Math.PI * 2);
+        ctx.arc(0, -alto / 2 + 10, npc.radio || 16, 0, Math.PI * 2);
         ctx.fill();
       }
 
-      // Nombre y Rol
-      ctx.font = 'bold 9px sans-serif';
+      // Nombre y Rol claramente por encima
+      ctx.font = 'bold 11px sans-serif';
       ctx.textAlign = 'center';
       ctx.fillStyle = npc.colorTema || '#ffffff';
-      ctx.fillText(npc.nombre, 0, -npc.radio - 6);
+      ctx.shadowColor = '#000000';
+      ctx.shadowBlur = 4;
+      ctx.fillText(npc.nombre, 0, -alto - 6);
 
-      ctx.font = '8px sans-serif';
+      ctx.font = 'bold 9px sans-serif';
       ctx.fillStyle = '#cbd5e1';
-      ctx.fillText(npc.cargo, 0, -npc.radio + 3);
+      ctx.fillText(npc.cargo, 0, -alto + 5);
+      ctx.shadowBlur = 0;
 
       // Indicador [E] Hablar si el jugador está cerca
       const dist = Math.hypot(this.player.x - npc.x, this.player.y - npc.y);
-      if (dist < 46) {
+      if (dist < 52) {
         ctx.fillStyle = '#facc15';
-        ctx.font = 'bold 10px monospace';
-        ctx.fillText('💬 [E] Hablar', 0, -npc.radio - 16);
+        ctx.font = 'bold 11px monospace';
+        ctx.shadowColor = '#000000';
+        ctx.shadowBlur = 4;
+        ctx.fillText('💬 [E] Hablar', 0, -alto - 20);
+        ctx.shadowBlur = 0;
       }
 
       ctx.restore();
@@ -1577,7 +1611,7 @@ export class GameEngine {
     const imgHeroe = assets.get(clave);
 
     if (imgHeroe) {
-      ctx.drawImage(imgHeroe, -16, -18, 32, 32);
+      ctx.drawImage(imgHeroe, -18, -20, 36, 36);
     } else {
       ctx.fillStyle = this.claseId === 'guerrero' ? '#3b82f6' : this.claseId === 'mago' ? '#a855f7' : '#10b981';
       ctx.beginPath();
@@ -1625,7 +1659,9 @@ export class GameEngine {
     grad.addColorStop(1, this.dungeon.bioma.colorAmbiente);
 
     ctx.fillStyle = grad;
-    ctx.fillRect(this.camera.x, this.camera.y, this.canvas.width, this.canvas.height);
+    const viewW = this.canvas.width / this.zoom;
+    const viewH = this.canvas.height / this.zoom;
+    ctx.fillRect(this.camera.x, this.camera.y, viewW, viewH);
   }
 
   renderTextosFlotantes(ctx) {

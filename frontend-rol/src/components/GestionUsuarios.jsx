@@ -354,7 +354,7 @@ function GestionUsuarios({ setVista }) {
                     <div className="flex items-center gap-4 w-full sm:w-auto">
                       {/* ✨ AVATAR INVOCADO AQUÍ */}
                       <div className="shrink-0 w-12 h-12 md:w-14 md:h-14 bg-zinc-950 rounded-full flex items-center justify-center border border-zinc-800 group-hover:border-purple-500/50 transition-colors overflow-hidden">
-                        <AvatarUsuario nombre={user.nombre} tamaño={56} variante="beam" />
+                        <AvatarUsuario nombre={user.nombre} avatar={user.avatar} tamaño={56} variante="beam" />
                       </div>
                       <div className="min-w-0 flex-1">
                         <p className="text-lg md:text-xl font-black text-white tracking-tighter uppercase italic truncate">{user.nombre}</p>
@@ -425,7 +425,7 @@ function GestionUsuarios({ setVista }) {
                         <td className="p-4 md:p-6 flex items-center gap-3 md:gap-4">
                           {/* ✨ AVATAR INVOCADO AQUÍ */}
                           <span className="shrink-0 w-10 h-10 md:w-12 md:h-12 bg-zinc-950 rounded-full flex items-center justify-center border border-zinc-800 group-hover:border-zinc-600 transition-all overflow-hidden">
-                            <AvatarUsuario nombre={user.nombre} tamaño={48} variante="beam" />
+                            <AvatarUsuario nombre={user.nombre} avatar={user.avatar} tamaño={48} variante="beam" />
                           </span>
                           <div className="min-w-0">
                             <p className="font-black text-zinc-200 uppercase italic tracking-tight flex flex-wrap items-center gap-1 md:gap-2">
