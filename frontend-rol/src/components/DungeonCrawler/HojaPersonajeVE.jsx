@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import Swal from 'sweetalert2';
+import { fetchProtegido } from '../../utils/api';
 import {
   RAZAS_VE,
   CLASES_VE,
@@ -35,6 +36,11 @@ export default function HojaPersonajeVE({ usuarioLogueado, alCerrar, alVincularC
   // Estadísticas derivadas calculadas
   const [stats, setStats] = useState(() => calcularEstadisticasPersonaje(pj));
 
+  // Estados de persistencia y sincronización con el backend
+  const [cargandoBackend, setCargandoBackend] = useState(false);
+  const [guardandoBackend, setGuardandoBackend] = useState(false);
+  const [ultimoGuardado, setUltimoGuardado] = useState(null);
+
   // Modales y estados auxiliares
   const [modalTirada, setModalTirada] = useState(null);
   const [tiradas3d6Disponibles, setTiradas3d6Disponibles] = useState([]);
@@ -42,12 +48,95 @@ export default function HojaPersonajeVE({ usuarioLogueado, alCerrar, alVincularC
   const [mostrarAyudaReglas, setMostrarAyudaReglas] = useState(false);
   const [mostrarAliadosAsociacion, setMostrarAliadosAsociacion] = useState(false);
 
-  // Recalcular estadísticas cuando cambia el personaje
+  // 1. Cargar personaje persistido desde la Bóveda del Gremio (Backend MySQL)
+  useEffect(() => {
+    let montado = true;
+    const cargarPersonajeDeServidor = async () => {
+      try {
+        setCargandoBackend(true);
+        const res = await fetchProtegido('/api/crawler/personaje');
+        if (res && res.ok) {
+          const data = await res.json();
+          if (data.existe && data.personaje && montado) {
+            setPj(data.personaje);
+            guardarPersonajeLocal(data.personaje);
+            setUltimoGuardado(new Date());
+          }
+        }
+      } catch (err) {
+        console.warn('Sin conexión con la Bóveda del Gremio; usando respaldo local:', err);
+      } finally {
+        if (montado) setCargandoBackend(false);
+      }
+    };
+
+    cargarPersonajeDeServidor();
+    return () => { montado = false; };
+  }, []);
+
+  // 2. Recalcular estadísticas y respaldo local cuando cambia el personaje
   useEffect(() => {
     const s = calcularEstadisticasPersonaje(pj);
     setStats(s);
     guardarPersonajeLocal(pj);
   }, [pj]);
+
+  // 3. Auto-sincronización con el servidor tras 4 segundos sin cambios
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      guardarEnServidor(true);
+    }, 4000);
+    return () => clearTimeout(timer);
+  }, [pj]);
+
+  // 4. Guardar explícito en la Bóveda del Gremio (Backend)
+  const guardarEnServidor = async (silencioso = false) => {
+    try {
+      setGuardandoBackend(true);
+      guardarPersonajeLocal(pj); // Respaldo local prioritario
+
+      const res = await fetchProtegido('/api/crawler/personaje/guardar', {
+        method: 'POST',
+        body: JSON.stringify(pj)
+      });
+
+      if (res && res.ok) {
+        const data = await res.json();
+        setUltimoGuardado(new Date());
+        if (alVincularConJuego) alVincularConJuego(pj);
+
+        if (!silencioso) {
+          Swal.fire({
+            title: '¡Hoja de Rol Sincronizada!',
+            html: `<p class="text-sm text-stone-300">El personaje <strong>${pj.nombre}</strong> (${pj.clase.toUpperCase()}) se ha guardado en la Bóveda de Datos de la Asociación.</p>`,
+            icon: 'success',
+            timer: 2000,
+            showConfirmButton: false,
+            background: '#1c1917',
+            color: '#f5f5f4'
+          });
+        }
+        return true;
+      } else {
+        throw new Error('Error al sincronizar con el backend');
+      }
+    } catch (err) {
+      console.warn('Guardado local efectuado; servidor no disponible:', err);
+      if (!silencioso) {
+        Swal.fire({
+          title: 'Guardado en Respaldo Local',
+          text: 'No se pudo contactar a la base de datos del servidor, pero tu ficha quedó resguardada en tu navegador.',
+          icon: 'warning',
+          timer: 2500,
+          background: '#1c1917',
+          color: '#f5f5f4'
+        });
+      }
+      return false;
+    } finally {
+      setGuardandoBackend(false);
+    }
+  };
 
   // Manejador de cambios directos en campos de texto/número
   const actualizarCampo = (campo, valor) => {
@@ -286,6 +375,27 @@ export default function HojaPersonajeVE({ usuarioLogueado, alCerrar, alVincularC
         </div>
 
         <div className="flex items-center gap-2 flex-wrap">
+          {/* Indicador de estado de sincronización */}
+          <div className="text-xs px-2.5 py-1 rounded-lg bg-stone-950/60 border border-stone-800 flex items-center gap-1.5">
+            {cargandoBackend ? (
+              <span className="text-amber-400 font-medium flex items-center gap-1 animate-pulse">
+                <span className="inline-block animate-spin">🌀</span> Sincronizando...
+              </span>
+            ) : guardandoBackend ? (
+              <span className="text-amber-300 font-medium flex items-center gap-1 animate-pulse">
+                <span>💾</span> Guardando en Bóveda...
+              </span>
+            ) : ultimoGuardado ? (
+              <span className="text-emerald-400 font-medium flex items-center gap-1">
+                <span>☁️</span> Bóveda sincronizada
+              </span>
+            ) : (
+              <span className="text-stone-400 font-medium flex items-center gap-1">
+                <span>💾</span> Respaldo local activo
+              </span>
+            )}
+          </div>
+
           <button
             onClick={ejecutarTirada3d6}
             className="px-3 py-1.5 bg-amber-700/30 hover:bg-amber-600/40 text-amber-300 border border-amber-600/50 rounded-xl text-xs font-bold transition flex items-center gap-1.5 shadow"
@@ -313,21 +423,17 @@ export default function HojaPersonajeVE({ usuarioLogueado, alCerrar, alVincularC
           </button>
 
           <button
-            onClick={() => {
-              if (alVincularConJuego) alVincularConJuego(pj);
-              Swal.fire({
-                title: '¡Personaje Guardado!',
-                text: 'La hoja de personaje ha quedado sincronizada con la Cripta.',
-                icon: 'success',
-                timer: 1500,
-                background: '#1c1917',
-                color: '#f5f5f4'
-              });
-            }}
-            className="px-3.5 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-xs font-black uppercase tracking-wider transition shadow flex items-center gap-1.5"
+            onClick={() => guardarEnServidor(false)}
+            disabled={guardandoBackend}
+            className={`px-3.5 py-1.5 ${
+              guardandoBackend
+                ? 'bg-emerald-800 opacity-60 cursor-not-allowed'
+                : 'bg-emerald-600 hover:bg-emerald-500'
+            } text-white rounded-xl text-xs font-black uppercase tracking-wider transition shadow flex items-center gap-1.5`}
+            title="Guardar personaje en la base de datos de la Asociación"
           >
-            <span>💾</span>
-            <span>Guardar</span>
+            <span>{guardandoBackend ? '⏳' : '💾'}</span>
+            <span>{guardandoBackend ? 'Guardando...' : 'Guardar'}</span>
           </button>
 
           {alCerrar && (

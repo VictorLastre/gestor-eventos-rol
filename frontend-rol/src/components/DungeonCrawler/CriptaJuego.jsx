@@ -72,9 +72,35 @@ export default function CriptaJuego({ usuarioLogueado, alActualizarUsuario, volv
     return () => document.removeEventListener('fullscreenchange', onFullscreenChange);
   }, []);
 
-  // 2. Precargar Assets
+  // 2. Precargar Assets y Sincronizar Progreso desde la Bóveda del Gremio
   useEffect(() => {
     let montado = true;
+
+    // Consultar progreso en backend
+    const sincronizarProgresoGremio = async () => {
+      try {
+        const res = await fetchProtegido('/api/crawler/progreso');
+        if (res && res.ok) {
+          const data = await res.json();
+          if (data.existe && montado) {
+            if (data.piso_actual) localStorage.setItem('crawler_piso', data.piso_actual);
+            if (data.oro !== undefined) localStorage.setItem('crawler_oro', data.oro);
+            if (data.clase) {
+              setClaseSeleccionada(data.clase);
+              localStorage.setItem('crawler_clase', data.clase);
+            }
+            if (data.genero) {
+              setGeneroSeleccionado(data.genero);
+              localStorage.setItem('crawler_genero', data.genero);
+            }
+          }
+        }
+      } catch (e) {
+        console.warn('Conexión con el servidor no disponible para progreso inicial:', e);
+      }
+    };
+    sincronizarProgresoGremio();
+
     assets.precargarTodo((progreso) => {
       if (montado) setProgresoCarga(progreso);
     }).then(() => {
@@ -812,6 +838,12 @@ export default function CriptaJuego({ usuarioLogueado, alActualizarUsuario, volv
               alVincularConJuego={(pjVE) => {
                 if (pjVE.clase) {
                   seleccionarClaseYGenero(pjVE.clase, generoSeleccionado);
+                }
+                if (engineRef.current && pjVE.monedas?.mo !== undefined) {
+                  const nuevoOro = parseInt(pjVE.monedas.mo, 10) || 0;
+                  engineRef.current.oro = nuevoOro;
+                  setStats(prev => ({ ...prev, oro: nuevoOro }));
+                  localStorage.setItem('crawler_oro', nuevoOro);
                 }
               }}
             />
