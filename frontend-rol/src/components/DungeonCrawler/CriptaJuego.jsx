@@ -8,6 +8,8 @@ import CuadroDialogo from './CuadroDialogo';
 import { PERSONALIDADES_NPC } from './PersonalidadesNPC';
 import HojaPersonajeVE from './HojaPersonajeVE';
 import CreacionPersonajeVE from './CreacionPersonajeVE';
+import CombatePorTurnosVE from './CombatePorTurnosVE';
+import { cargarPersonajeLocal, guardarPersonajeLocal } from './ViejaEscuelaEngine';
 
 export default function CriptaJuego({ usuarioLogueado, alActualizarUsuario, volver }) {
   const canvasRef = useRef(null);
@@ -24,6 +26,8 @@ export default function CriptaJuego({ usuarioLogueado, alActualizarUsuario, volv
   const [esFullscreen, setEsFullscreen] = useState(false);
   const [esDispositivoTactil, setEsDispositivoTactil] = useState(false);
   const [npcDialogoActivo, setNpcDialogoActivo] = useState(null);
+  const [encuentroCombate, setEncuentroCombate] = useState(null);
+  const [personajeVE, setPersonajeVE] = useState(null);
 
   // Clase y Avatar
   const [claseSeleccionada, setClaseSeleccionada] = useState(
@@ -82,12 +86,20 @@ export default function CriptaJuego({ usuarioLogueado, alActualizarUsuario, volv
     const sincronizarProgresoGremio = async () => {
       try {
         // Verificar si existe personaje de Vieja Escuela en backend
+        const localPj = cargarPersonajeLocal();
+        const tieneLocal = !!localPj;
+        if (localPj && montado) {
+          setPersonajeVE(localPj);
+        }
+
         const resPj = await fetchProtegido('/api/crawler/personaje');
         let tienePersonaje = false;
         if (resPj && resPj.ok) {
           const dataPj = await resPj.json();
           if (dataPj.existe && dataPj.personaje) {
             tienePersonaje = true;
+            if (montado) setPersonajeVE(dataPj.personaje);
+            guardarPersonajeLocal(dataPj.personaje);
           }
         }
 
@@ -211,6 +223,10 @@ export default function CriptaJuego({ usuarioLogueado, alActualizarUsuario, volv
       },
       onCambioPiso: (nuevoPiso) => {
         localStorage.setItem('crawler_piso', nuevoPiso);
+      },
+      onIniciarCombatePorTurnos: (enemigo) => {
+        const pj = cargarPersonajeLocal() || personajeVE;
+        setEncuentroCombate({ enemigo, personaje: pj });
       }
     });
 
@@ -242,6 +258,7 @@ export default function CriptaJuego({ usuarioLogueado, alActualizarUsuario, volv
       localStorage.setItem('crawler_genero', nuevoPj.genero || 'm');
       localStorage.setItem('personaje_vieja_escuela_v1', JSON.stringify(nuevoPj));
       localStorage.setItem('ve_aventura_iniciada_v1', 'true');
+      setPersonajeVE(nuevoPj);
 
       // 3. Actualizar estados de React
       setClaseSeleccionada(nuevoPj.clase);
@@ -300,6 +317,10 @@ export default function CriptaJuego({ usuarioLogueado, alActualizarUsuario, volv
           },
           onCambioPiso: (nuevoPiso) => {
             localStorage.setItem('crawler_piso', nuevoPiso);
+          },
+          onIniciarCombatePorTurnos: (enemigo) => {
+            const pj = cargarPersonajeLocal() || nuevoPj;
+            setEncuentroCombate({ enemigo, personaje: pj });
           }
         });
         nuevoEngine.start();
@@ -347,6 +368,55 @@ export default function CriptaJuego({ usuarioLogueado, alActualizarUsuario, volv
         setModalCreacionVE(true);
       }
     });
+  };
+
+  // -------------------------------------------------------------------
+  // CONTROL DEL SISTEMA DE COMBATE POR TURNOS (VIEJA ESCUELA OSR)
+  // -------------------------------------------------------------------
+  const handleFinalizarCombate = (resultado) => {
+    if (!encuentroCombate) return;
+    const { enemigo } = encuentroCombate;
+    const engine = engineRef.current;
+
+    if (resultado.victoria) {
+      if (engine) {
+        enemigo.hp = 0;
+        engine.procesarMuerteEnemigo(enemigo);
+        const pj = cargarPersonajeLocal() || personajeVE;
+        if (pj) {
+          pj.pvActual = resultado.pvRestante;
+          if (resultado.podRestante !== undefined) pj.podActual = resultado.podRestante;
+          guardarPersonajeLocal(pj);
+          setPersonajeVE({ ...pj });
+        }
+        engine.pausado = false;
+      }
+    } else {
+      if (engine) {
+        engine.pausado = false;
+        engine.infligirDanoJugador(9999, enemigo.nombre);
+      }
+    }
+    setEncuentroCombate(null);
+  };
+
+  const handleHuirCombate = () => {
+    if (!encuentroCombate) return;
+    const { enemigo } = encuentroCombate;
+    const engine = engineRef.current;
+    if (engine) {
+      enemigo.cooldownAtaque = 3.5;
+      const angulo = Math.atan2(engine.player.y - enemigo.y, engine.player.x - enemigo.x);
+      const pushDist = 36;
+      const nx = engine.player.x + Math.cos(angulo) * pushDist;
+      const ny = engine.player.y + Math.sin(angulo) * pushDist;
+      if (!engine.colisionaConMuro(nx, ny, engine.player.radio)) {
+        engine.player.x = nx;
+        engine.player.y = ny;
+      }
+      engine.pausado = false;
+    }
+    setEncuentroCombate(null);
   };
 
   const guardarProgresoEnStorage = async (s) => {
@@ -758,7 +828,7 @@ export default function CriptaJuego({ usuarioLogueado, alActualizarUsuario, volv
             <div>
               <div className="flex items-center gap-1.5">
                 <span className="text-xs sm:text-sm font-black text-white uppercase italic">
-                  {usuarioLogueado?.nombre}
+                  {personajeVE?.nombre || usuarioLogueado?.nombre}
                 </span>
                 <span className="text-[9px] sm:text-[10px] font-black uppercase tracking-widest text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded-full border border-emerald-500/20">
                   Nvl {stats.nivel}
@@ -984,6 +1054,16 @@ export default function CriptaJuego({ usuarioLogueado, alActualizarUsuario, volv
             alCrearPersonaje={iniciarAventuraConPersonaje}
           />
         </div>
+      )}
+
+      {/* Modal de Combate por Turnos Oficial Vieja Escuela */}
+      {encuentroCombate && (
+        <CombatePorTurnosVE
+          enemigo={encuentroCombate.enemigo}
+          personaje={encuentroCombate.personaje || personajeVE}
+          onFinalizarCombate={handleFinalizarCombate}
+          onHuir={handleHuirCombate}
+        />
       )}
 
       {/* Modal Pantalla Completa: Hoja de Personaje Oficial Vieja Escuela */}

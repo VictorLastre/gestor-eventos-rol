@@ -51,11 +51,168 @@ const asegurarTablas = async () => {
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
   `;
 
+  const sqlBestiario = `
+    CREATE TABLE IF NOT EXISTS ve_bestiario (
+      id INT AUTO_INCREMENT PRIMARY KEY,
+      nombre VARCHAR(100) NOT NULL,
+      tipo VARCHAR(50) NOT NULL DEFAULT 'monstruo',
+      nivel INT NOT NULL DEFAULT 1,
+      pv_max INT NOT NULL DEFAULT 5,
+      defensa INT NOT NULL DEFAULT 11,
+      atq_bono INT NOT NULL DEFAULT 1,
+      ataque_nombre VARCHAR(100) NOT NULL DEFAULT 'Ataque con arma',
+      dado_dano VARCHAR(20) NOT NULL DEFAULT '1d6',
+      dano_medio INT NOT NULL DEFAULT 3,
+      talentos TEXT NULL,
+      descripcion TEXT NULL,
+      piso_min INT NOT NULL DEFAULT 1,
+      piso_max INT NOT NULL DEFAULT 3,
+      es_jefe TINYINT(1) NOT NULL DEFAULT 0,
+      sprite_base VARCHAR(50) NOT NULL DEFAULT 'skelet',
+      oro_recompensa INT NOT NULL DEFAULT 5,
+      xp_recompensa INT NOT NULL DEFAULT 10,
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      INDEX idx_bestiario_piso (piso_min, piso_max, es_jefe)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+  `;
+
   try {
     await db.promise().query(sqlProgreso);
     await db.promise().query(sqlPersonajesVE);
+    await db.promise().query(sqlBestiario);
+
+    // Sembrar bestiario inicial si la tabla está vacía
+    const [conteo] = await db.promise().query('SELECT COUNT(*) as cant FROM ve_bestiario');
+    if (conteo[0]?.cant === 0) {
+      await sembrarBestiarioInicial();
+    }
   } catch (err) {
     console.error('Error al verificar tablas de Vieja Escuela / Cripta:', err);
+  }
+};
+
+// Función para poblar el bestiario oficial adaptado a la Mazmorra del Mago Loco
+const sembrarBestiarioInicial = async () => {
+  const monstruos = [
+    // --- PISO 1: Mazmorras Olvidadas & Cavernas de Saqueadores ---
+    [
+      'Rata de Alcantarilla Gigante', 'bestia', 0, 4, 10, 0,
+      'Mordisco infecto', '1d4', 2,
+      'Transmitir enfermedad contagiosa (1 de cada 10 mordiscos)',
+      'Roedores hinchados por la inmundicia que pululan en los túneles de entrada.',
+      1, 1, 0, 'imp', 2, 5
+    ],
+    [
+      'Trasgo Explorador', 'humanoide', 1, 5, 12, 1,
+      'Daga serrada', '1d6', 3,
+      'Astucia subterránea, emboscada en sombras',
+      'Miembro de las partidas de saqueo que acampan en los corredores del nivel 1.',
+      1, 2, 0, 'chort', 4, 10
+    ],
+    [
+      'Esqueleto Centinela', 'no_muerto', 1, 5, 11, 1,
+      'Espada herrumbrosa', '1d6', 3,
+      'Inmune a efectos sobre la mente (miedo, sueño, confusión)',
+      'Antiguos soldados reanimados por la magia residual de la cripta.',
+      1, 2, 0, 'skelet', 4, 10
+    ],
+    [
+      'Zombi Errante', 'no_muerto', 2, 10, 11, 2,
+      'Garras cadavéricas', '1d6', 3,
+      'Inmune a efectos mentales, tenacidad cadavérica',
+      'Cuerpos descompuestos que vagan ciegamente buscando carne tibia.',
+      1, 2, 0, 'zombie', 6, 15
+    ],
+    [
+      'Araña Gigante Tejedora', 'bestia', 1, 5, 11, 1,
+      'Mordisco ponzoñoso', '1d4', 2,
+      'Veneno mortal (Tirada de Instintos CON 11+ o 1d4 de daño adicional)',
+      'Acechan en techos y rincones oscuros tejiendo densas telarañas.',
+      1, 2, 0, 'chort', 5, 15
+    ],
+    [
+      'Ogro Rompehuesos (Jefe Piso 1)', 'gigante', 4, 24, 14, 4,
+      'Gran Garrote de Asedio', '1d8+1', 5,
+      'Gran Envergadura, Golpe Arrollador (empuja y aturde)',
+      'El colosal carcelero de la primera planta. Custodia el acceso a las Cámaras Arcanas.',
+      1, 1, 1, 'ogre', 35, 60
+    ],
+
+    // --- PISO 2: Cámaras Arcanas del Mago ---
+    [
+      'Diablillo Ígneo (Imp)', 'demonio', 2, 9, 13, 2,
+      'Aguijón ardiente', '1d4+1', 3,
+      'Resistencia al fuego y a la magia menor, vuelo evasivo',
+      'Espías invocados por el Mago Loco para vigilar sus laboratorios arcanos.',
+      2, 3, 0, 'imp', 7, 20
+    ],
+    [
+      'Guardia Esqueleto Acorazado', 'no_muerto', 2, 10, 13, 2,
+      'Lanza pesada y escudo', '1d6', 3,
+      'Muro de escudos (+1 DEF en grupo), Inmune a efectos mentales',
+      'La guardia personal de los antiguos eruditos de la torre subterránea.',
+      2, 3, 0, 'skelet', 8, 22
+    ],
+    [
+      'Chort de las Profundidades', 'demonio', 3, 15, 13, 3,
+      'Tridente runoso', '1d6', 3,
+      'Carga demoníaca, Resistencia arcana',
+      'Criaturas de azufre atadas a los círculos mágicos del segundo piso.',
+      2, 3, 0, 'chort', 12, 30
+    ],
+    [
+      'Zombi Colosal Reanimado', 'no_muerto', 4, 20, 12, 4,
+      'Golpe demoledor', '2d4', 5,
+      'Fuerza descomunal, Imparable (ignora el primer golpe crítico)',
+      'Monstruosidad de retazos de carne cosida que resguarda las puertas selladas.',
+      2, 3, 0, 'big_zombie', 16, 45
+    ],
+    [
+      'Nigromante de la Torre Oscura (Jefe Piso 2)', 'humanoide', 4, 22, 13, 4,
+      'Rayo de Muerte Arcana', '2d6', 7,
+      'Lanzador de conjuros, Escudo espectral, Levantar esbirros caídos',
+      'Uno de los discípulos más dementes del Mago Loco, amo de las almas errantes.',
+      2, 2, 1, 'necromancer', 55, 90
+    ],
+
+    // --- PISO 3: Bosques de Hongos & Ciénegas de Keith ---
+    [
+      'Espora Viviente Menor', 'planta', 1, 6, 11, 1,
+      'Nube de esporas tóxicas', '1d4', 2,
+      'Esporas adormecedoras (Instintos CON 11+ o desventaja en el siguiente turno)',
+      'Organismos micoides que reaccionan ante el calor corporal de los invasores.',
+      3, 4, 0, 'chort', 6, 15
+    ],
+    [
+      'Zombi Infestado de Hongos', 'no_muerto', 3, 14, 12, 3,
+      'Zarcillos purulentos', '1d6+1', 4,
+      'Explosión de esporas venenosas al morir (Instinto CON 11+)',
+      'Exploradores caídos en la ciénega cuyos cuerpos ahora nutren a la colonia de hongos.',
+      3, 4, 0, 'zombie', 14, 35
+    ],
+    [
+      'Gran Abominación Fúngica (Jefe Piso 3)', 'monstruosidad', 5, 32, 14, 5,
+      'Brazos descomunales de micelio', '2d6+1', 8,
+      'Regeneración biológica (+3 PV por turno), Esporulación masiva',
+      'El colosal hongo primigenio que domina la ciénega del tercer estrato.',
+      3, 3, 1, 'big_zombie', 80, 130
+    ]
+  ];
+
+  const sqlInsert = `
+    INSERT INTO ve_bestiario (
+      nombre, tipo, nivel, pv_max, defensa, atq_bono,
+      ataque_nombre, dado_dano, dano_medio, talentos,
+      descripcion, piso_min, piso_max, es_jefe,
+      sprite_base, oro_recompensa, xp_recompensa
+    ) VALUES ?
+  `;
+
+  try {
+    await db.promise().query(sqlInsert, [monstruos]);
+    console.log('📖 Bestiario oficial de Vieja Escuela sembrado con éxito en la base de datos.');
+  } catch (err) {
+    console.error('Error al sembrar bestiario inicial:', err);
   }
 };
 asegurarTablas();
@@ -425,6 +582,63 @@ router.post('/reset-total', verificarToken, async (req, res) => {
   } catch (error) {
     console.error('Error al resetear datos:', error);
     res.status(500).json({ error: 'Error al limpiar datos.' });
+  }
+});
+
+// =====================================================================
+// 🐉 RUTAS DEL BESTIARIO OFICIAL (Vieja Escuela OSR)
+// =====================================================================
+
+// 6. OBTENER LISTADO COMPLETO DEL BESTIARIO
+router.get('/bestiario', async (req, res) => {
+  const { piso, es_jefe } = req.query;
+  let sql = 'SELECT * FROM ve_bestiario WHERE 1=1';
+  const params = [];
+
+  if (piso) {
+    sql += ' AND piso_min <= ? AND piso_max >= ?';
+    params.push(parseInt(piso, 10), parseInt(piso, 10));
+  }
+
+  if (es_jefe !== undefined) {
+    sql += ' AND es_jefe = ?';
+    params.push(parseInt(es_jefe, 10) ? 1 : 0);
+  }
+
+  sql += ' ORDER BY piso_min ASC, es_jefe ASC, nivel ASC';
+
+  try {
+    const [monstruos] = await db.promise().query(sql, params);
+    res.json(monstruos);
+  } catch (error) {
+    console.error('Error al consultar el bestiario:', error);
+    res.status(500).json({ error: 'Error al consultar las criaturas de la mazmorra.' });
+  }
+});
+
+// 7. OBTENER BESTIARIO AGRUPADO PARA UN PISO ESPECÍFICO
+router.get('/bestiario/piso/:piso', async (req, res) => {
+  const numPiso = parseInt(req.params.piso, 10) || 1;
+  const sql = `
+    SELECT * FROM ve_bestiario 
+    WHERE piso_min <= ? AND piso_max >= ?
+    ORDER BY es_jefe ASC, nivel ASC
+  `;
+
+  try {
+    const [filas] = await db.promise().query(sql, [numPiso, numPiso]);
+    const normales = filas.filter(m => !m.es_jefe);
+    const jefes = filas.filter(m => !!m.es_jefe);
+
+    res.json({
+      piso: numPiso,
+      total: filas.length,
+      normales,
+      jefe: jefes.length > 0 ? jefes[0] : null
+    });
+  } catch (error) {
+    console.error(`Error al consultar bestiario del piso ${numPiso}:`, error);
+    res.status(500).json({ error: 'Error al consultar criaturas del piso.' });
   }
 });
 

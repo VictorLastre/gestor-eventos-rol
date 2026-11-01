@@ -9,6 +9,31 @@ export const TILE_WATER_MOSS = 4;
 export const TILE_STAIRS = 5;
 export const TILE_BOSS_GATE = 6; // Barrera mágica que sella la arena del jefe
 
+export const BESTIARIO_PISOS = {
+  1: [
+    { nombre: 'Esqueleto Centinela', tipo: 'skelet', nivel: 1, hp: 5, maxHp: 5, defensa: 11, atqBono: 1, dano: 3, oro: 4, xp: 10, ataque_nombre: 'Espada herrumbrosa' },
+    { nombre: 'Trasgo Explorador', tipo: 'chort', nivel: 1, hp: 5, maxHp: 5, defensa: 12, atqBono: 1, dano: 3, oro: 3, xp: 10, ataque_nombre: 'Daga serrada' },
+    { nombre: 'Zombi Errante', tipo: 'zombie', nivel: 2, hp: 10, maxHp: 10, defensa: 11, atqBono: 2, dano: 3, oro: 5, xp: 15, ataque_nombre: 'Garras cadavéricas' },
+    { nombre: 'Rata Gigante', tipo: 'imp', nivel: 0, hp: 4, maxHp: 4, defensa: 10, atqBono: 0, dano: 2, oro: 2, xp: 5, ataque_nombre: 'Mordisco infecto' }
+  ],
+  2: [
+    { nombre: 'Diablillo Ígneo (Imp)', tipo: 'imp', nivel: 2, hp: 9, maxHp: 9, defensa: 13, atqBono: 2, dano: 3, oro: 7, xp: 20, ataque_nombre: 'Aguijón ardiente' },
+    { nombre: 'Guardia Esqueleto', tipo: 'skelet', nivel: 2, hp: 10, maxHp: 10, defensa: 13, atqBono: 2, dano: 3, oro: 8, xp: 22, ataque_nombre: 'Lanza y escudo' },
+    { nombre: 'Chort del Abismo', tipo: 'chort', nivel: 3, hp: 15, maxHp: 15, defensa: 13, atqBono: 3, dano: 3, oro: 12, xp: 30, ataque_nombre: 'Tridente runoso' },
+    { nombre: 'Zombi Colosal', tipo: 'big_zombie', nivel: 4, hp: 20, maxHp: 20, defensa: 12, atqBono: 4, dano: 5, oro: 16, xp: 45, ataque_nombre: 'Golpe demoledor' }
+  ],
+  3: [
+    { nombre: 'Espora Viviente Menor', tipo: 'chort', nivel: 1, hp: 6, maxHp: 6, defensa: 11, atqBono: 1, dano: 2, oro: 6, xp: 15, ataque_nombre: 'Nube de esporas' },
+    { nombre: 'Zombi Infestado de Hongos', tipo: 'zombie', nivel: 3, hp: 14, maxHp: 14, defensa: 12, atqBono: 3, dano: 4, oro: 14, xp: 35, ataque_nombre: 'Zarcillos venenosos' }
+  ]
+};
+
+export const JEFES_PISOS = {
+  1: { nombre: 'Ogro Rompehuesos', tipo: 'ogre', nivel: 4, hp: 24, maxHp: 24, defensa: 14, atqBono: 4, dano: 5, esJefe: true, oro: 35, xp: 60, ataque_nombre: 'Gran Garrote de Asedio' },
+  2: { nombre: 'Nigromante de la Torre Oscura', tipo: 'necromancer', nivel: 4, hp: 22, maxHp: 22, defensa: 13, atqBono: 4, dano: 7, esJefe: true, oro: 55, xp: 90, ataque_nombre: 'Rayo de Muerte Arcana' },
+  3: { nombre: 'Gran Abominación Fúngica', tipo: 'big_zombie', nivel: 5, hp: 32, maxHp: 32, defensa: 14, atqBono: 5, dano: 8, esJefe: true, oro: 80, xp: 130, ataque_nombre: 'Brazos descomunales de micelio' }
+};
+
 export const BIOMAS = {
   1: {
     nombre: 'Catacumbas Ancestrales',
@@ -337,27 +362,21 @@ export class DungeonGenerator {
       if (h.tipo === 'spawn' || h.tipo === 'santuario') continue;
 
       if (h.tipo === 'normal') {
-        const cantidad = Math.floor(Math.random() * 3) + 2 + (this.piso - 1);
+        const cantidad = Math.floor(Math.random() * 2) + 1 + Math.min(this.piso, 2);
+        const poolEnemigos = BESTIARIO_PISOS[this.piso] || BESTIARIO_PISOS[1];
+
         for (let i = 0; i < cantidad; i++) {
           const ex = Math.floor(Math.random() * (h.ancho - 2)) + h.x + 1;
           const ey = Math.floor(Math.random() * (h.alto - 2)) + h.y + 1;
-          
-          let tipo = 'skelet';
-          if (this.piso === 2) {
-            tipo = Math.random() < 0.6 ? 'mushroom' : 'skelet';
-          } else if (this.piso === 3) {
-            tipo = Math.random() < 0.5 ? 'zombie' : 'skelet';
-          }
+          const plantilla = poolEnemigos[Math.floor(Math.random() * poolEnemigos.length)];
 
           this.spawnsEnemigos.push({
             x: ex,
             y: ey,
-            tipo,
-            hp: 35 + (this.piso - 1) * 20,
-            maxHp: 35 + (this.piso - 1) * 20,
-            dano: 8 + (this.piso - 1) * 5,
-            oro: Math.floor(Math.random() * 8) + 4,
-            materiales: Math.floor(Math.random() * 3) + 1
+            ...plantilla,
+            hp: plantilla.hp,
+            maxHp: plantilla.maxHp,
+            materiales: Math.floor(Math.random() * 2) + 1
           });
         }
 
@@ -368,8 +387,8 @@ export class DungeonGenerator {
             x: cx,
             y: cy,
             abierto: false,
-            oro: 15 + this.piso * 10,
-            materiales: Math.floor(Math.random() * 5) + 3,
+            oro: 10 + this.piso * 5,
+            materiales: Math.floor(Math.random() * 3) + 2,
             pocion: Math.random() < 0.5 ? 'vida' : 'durabilidad'
           });
         }
@@ -377,17 +396,13 @@ export class DungeonGenerator {
     }
 
     const habJefe = this.habitaciones[this.habitaciones.length - 1];
+    const jefePlantilla = JEFES_PISOS[this.piso] || JEFES_PISOS[1];
+
     this.spawnsEnemigos.push({
       x: habJefe.centroX,
       y: habJefe.centroY,
-      tipo: this.bioma.bossTipo,
-      nombre: this.bioma.bossNombre,
-      esJefe: true,
-      hp: this.bioma.bossHP,
-      maxHp: this.bioma.bossHP,
-      dano: this.bioma.bossDano,
-      oro: 100 * this.piso,
-      materiales: 15 * this.piso
+      ...jefePlantilla,
+      materiales: 10 * this.piso
     });
   }
 }

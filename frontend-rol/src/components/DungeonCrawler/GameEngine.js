@@ -130,6 +130,7 @@ export class GameEngine {
     this.onJefeDerrotado = config.onJefeDerrotado || (() => {});
     this.onCambioPiso = config.onCambioPiso || (() => {});
     this.onInteractuarNPC = config.onInteractuarNPC || (() => {});
+    this.onIniciarCombatePorTurnos = config.onIniciarCombatePorTurnos || null;
 
     this.npcs = [];
     this.npcCercano = null;
@@ -171,6 +172,7 @@ export class GameEngine {
     this.player.y = (this.dungeon.spawnPoint.y + 0.5) * this.tileSize;
 
     this.enemigos = this.dungeon.spawnsEnemigos.map((sp, idx) => ({
+      ...sp,
       id: idx,
       x: (sp.x + 0.5) * this.tileSize,
       y: (sp.y + 0.5) * this.tileSize,
@@ -642,6 +644,11 @@ export class GameEngine {
         diff = Math.abs(diff);
 
         if (diff <= arco / 1.7) {
+          if (this.onIniciarCombatePorTurnos) {
+            this.pausado = true;
+            this.onIniciarCombatePorTurnos(e);
+            return;
+          }
           this.infligirDanoEnemigo(e, dano, esCrit);
         }
       }
@@ -1037,9 +1044,14 @@ export class GameEngine {
           }
         }
 
-        // Ataque cuerpo a cuerpo
-        if (distAlJugador <= e.radio + this.player.radio + 10 && e.cooldownAtaque <= 0) {
+        // Ataque cuerpo a cuerpo / Encuentro táctico por turnos
+        if (distAlJugador <= e.radio + this.player.radio + 14 && e.cooldownAtaque <= 0) {
           if (this.hayLineaDeVision(e.x, e.y, this.player.x, this.player.y)) {
+            if (this.onIniciarCombatePorTurnos) {
+              this.pausado = true;
+              this.onIniciarCombatePorTurnos(e);
+              return;
+            }
             e.cooldownAtaque = e.esJefe ? 1.1 : 0.95;
             this.infligirDanoJugador(e.dano, e.nombre);
           }
@@ -1080,6 +1092,12 @@ export class GameEngine {
         for (const e of this.enemigos) {
           if (e.hp <= 0) continue;
           if (Math.hypot(e.x - p.x, e.y - p.y) < e.radio + p.radio) {
+            if (this.onIniciarCombatePorTurnos) {
+              this.pausado = true;
+              this.onIniciarCombatePorTurnos(e);
+              impacto = true;
+              break;
+            }
             this.infligirDanoEnemigo(e, p.dano, true);
             impacto = true;
             break;

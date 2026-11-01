@@ -304,6 +304,50 @@ export default function CreacionPersonajeVE({ usuarioLogueado, alCrearPersonaje,
               </button>
             </div>
           </div>
+
+          {/* 5. TRASFONDO DEL AVENTURERO */}
+          <div className="bg-stone-900/80 border border-stone-800/80 p-4 rounded-2xl shadow-inner">
+            <label className="block text-xs font-black uppercase tracking-wider text-amber-400 mb-1">
+              5. Trasfondo del Aventurero
+            </label>
+            <p className="text-[11px] text-stone-400 mb-2.5">
+              ¿Cuál es la historia u origen de tu héroe antes de descender a la Cripta?
+            </p>
+
+            <input
+              type="text"
+              value={trasfondo}
+              onChange={(e) => setTrasfondo(e.target.value)}
+              placeholder="Ej: Soldado veterano en busca de honor y redención"
+              className="w-full bg-stone-950 border border-stone-700/80 rounded-xl px-3.5 py-2 text-stone-100 font-medium text-xs focus:outline-none focus:border-amber-500 shadow-inner mb-2.5"
+            />
+
+            <div className="flex flex-wrap gap-1.5">
+              {[
+                '⚔️ Soldado veterano',
+                '🗝️ Ladrón de tumbas',
+                '📜 Erudito de ruinas arcanas',
+                '🌲 Cazador y rastreador',
+                '⛪ Acólito devoto expulsado',
+                '⛓️ Fugitivo de la Mazmorra',
+                '🍷 Tabernero arruinado',
+                '⚒️ Aprendiz de forja'
+              ].map(sug => (
+                <button
+                  key={sug}
+                  type="button"
+                  onClick={() => setTrasfondo(sug)}
+                  className={`text-[10px] px-2.5 py-1 rounded-lg border transition font-medium ${
+                    trasfondo === sug
+                      ? 'bg-amber-950/60 border-amber-500 text-amber-200'
+                      : 'bg-stone-950/50 border-stone-800 text-stone-400 hover:border-stone-700 hover:text-stone-200'
+                  }`}
+                >
+                  {sug}
+                </button>
+              ))}
+            </div>
+          </div>
         </div>
 
         {/* COLUMNA DERECHA: ATRIBUTOS 3D6 Y TARJETA PREVIEW (5 columnas) */}
@@ -327,6 +371,9 @@ export default function CreacionPersonajeVE({ usuarioLogueado, alCrearPersonaje,
             </h3>
             <p className="text-xs text-stone-400">
               {RAZAS_VE[razaSeleccionada]?.nombre} {CLASES_VE[claseSeleccionada]?.nombre} • Nivel 1
+            </p>
+            <p className="text-[11px] text-amber-300/80 italic mt-1 truncate px-2">
+              📜 "{trasfondo || 'Aventurero errante'}"
             </p>
 
             {/* ESTADÍSTICAS RÁPIDAS DE COMBATE */}
