@@ -1,0 +1,1024 @@
+=== PAGINA 1 ===
+
+
+=== PAGINA 2 ===
+1
+Vieja Escuela: el juego de rol
+Vieja Escuela -
+el juego de rol
+Escrito por Javier “cabohicks” García
+Editado por Eneko Menica y Eneko Palencia
+grapas&mapas
+Recopilación de material publicado en los números 2 y 3 del 
+fanzine Vieja Escuela. http://viejaescuela.nogarung.com
+El texto recogido en este juego se considera Open Game Content 
+bajo la licencia OGL 1.0a de Wizards of the Coast (página 16). 
+El arte, estilo de la maquetación y los terminos Vieja Escuela y 
+Vieja Escuela: el juego de rol, se consideran Product Identity, 
+y quedan bajo licencia Creative Commons Reconocimiento – 
+NoComercial – CompartirIgual (https://creativecommons.org/
+licenses/ by-nc-sa/4.0/) 
+Las ilustraciones y fotografías utilizadas en este juego pertene-
+cen al dominio público.
+Índice
+Capítulo I: Creación de personajes ..................2
+Capítulo II: Reglas de juego ..............................6
+Capítulo III: Magia y hechicería .....................10
+Capítulo IV: Monstruos y bestias ...................12
+Apéndice T: Tablas ..........................................13
+Hoja de personaje ............................................15
+Open Game License .........................................16
+
+=== PAGINA 3 ===
+2
+Vieja Escuela: el juego de rol
+Establece los 
+Atributos
+Todos los personajes tienen 6 atribu-
+tos principales que los definen: Fuerza, 
+Destreza, Constitución, Inteligencia, 
+Sabiduría y Carisma.
+Tira 3d6 siete veces y asigna seis resul-
+tados a tu elección.  Según el valor que 
+asignes obtendrás un modificador para 
+ese atributo:
+Valor Modificador
+3 -2
+4-6 -1
+7-14 0
+15-17 +1
+18 +2
+Los atributos pueden variar como 
+resultado de enfermedades, conjuros, 
+venenos o ataques especiales de los 
+monstruos.
+Elige una Raza
+Elfo
+Ganas los talentos Vista Aguda e Infra-
+visión. Tu movimiento (Mov) es de 12.
+Enano
+Ganas los talentos Afín a la Piedra e 
+Infravisión.  Tu movimiento (Mov) es 
+de 9.  
+Mediano
+Ganas los talentos Escurridizo y Certe-
+ro.  Tu movimiento (Mov) es de 9.
+Humano
+Ganas los talentos Ímpetu Empren-
+dedor y Adaptable.  Tu movimiento 
+(Mov) es de 12.
+Elige tu Clase
+Guerrero
+Ganas los talentos Lucha con X y Ata-
+ques Múltiples. Puedes usar cualquier 
+arma y armadura. Dado de Aguante 
+(DA): d8.
+Hechicero
+Ganas los talentos Sensibilidad Mágica 
+y Transferir Esencia. Solo puedes usar 
+dagas, bastones y hondas. No pue-
+des usar ninguna armadura. Dado de 
+Aguante (DA): d4.
+Capítulo I: 
+Creación de personajes
+
+=== PAGINA 4 ===
+3
+Vieja Escuela: el juego de rol
+Bribón
+Ganas los talentos Emboscar y Dedos 
+Ágiles. Puedes usar cualquier arma 
+pero solo armaduras ligeras (cuero). 
+Dado de Aguante (DA): d6.
+Elige tus 
+Habilidades
+Todos los aventureros empiezan a nivel 
+1 con 4 puntos para asignar entre las 6 
+habilidades disponibles. Cada habilidad 
+solo puede recibir un punto como máxi-
+mo. Las habilidades disponibles son: 
+Alerta, Comunicación, Manipulación, 
+Erudición, Subterfugio y Supervivencia.
+Define tu 
+Trasfondo
+Describe con una frase qué ha hecho 
+tu personaje antes de dedicarse a la 
+aventura: soldado en las guerras del 
+norte, asistente del gran templo de 
+Curias, custodio en la Gran Biblioteca 
+Púrpura, cazador de los Kuanda o pirata 
+en las costas de Landar son solo algunos 
+ejemplos.
+Compra tu Equipo
+Empiezas con 3d6 x 10 monedas de 
+oro (mo). Un personaje puede cargar 
+tantos bultos como puntuación de 
+Fuerza tenga. Si sobrepasas ese límite 
+pasarás a estar sobrecargado y tira-
+rás con desventaja cuando ataques o 
+realices pruebas relacionadas con el 
+movimiento.
+Consulta las tablas de equipo en el 
+Apéndice T (pág. 13).
+Calcula el resto de tus 
+Rasgos
+Movimiento (mov)
+Indica el número de metros que se 
+puede andar por asalto (10 segundos). 
+x2 si se corre. En un turno (10 minutos) 
+se puede mover Mov x 60 metros (x2 
+corriendo).
+Puntos de Vida (pv)
+A nivel 1 anota el número máximo del 
+Dado de Aguante de tu Clase (4 para d4, 
+6 para d6 y 8 para d8) más tu modifica-
+dor por CON.
+Defensa (def)
+La base es 10. Cuanto más alto mejor. 
+Suma tu modificador por DES y los 
+bonos por la armadura y escudo que 
+lleves.
+
+
+=== PAGINA 5 ===
+4
+Vieja Escuela: el juego de rol
+Talentos
+Talento Explicación
+Adaptable De alguna forma tienes facilidad para adaptarte a cualquier ambiente y 
+entorno. Ganas un modificador adicional de +1 a tu rasgo de Instintos.
+Afín a la 
+Piedra
+Tienes ventaja en cualquier prueba de Erudición relacionada con el 
+trabajo sobre piedra. También puedes hacer una prueba de Alerta para 
+detectar trampas hechas sobre roca.
+Ataques 
+Múltiples
+Al abatir a un enemigo puedes realizar inmediatamente otro ataque. De 
+esta forma puedes encadenar tantos ataques EXTRA como nivel tengas.
+Certero Tienes un bono adicional de +1 en todos los ataques de proyectiles.
+Dedos Ágiles Tienes ventaja en las pruebas de Manipulación que requieran precisión 
+(por ejemplo abrir cerraduras o sustraer las posesiones de otra persona).
+Emboscar
+Tienes ventaja en las pruebas de Subterfugio basadas en moverse en 
+silencio y en ocultarse en las sombras. Añade 1d6 al daño cuando ataques 
+a un blanco desprevenido.
+Escurridizo Tienes ventaja en las pruebas de Subterfugio relacionadas con moverse 
+en silencio.
+Ímpetu 
+Emprendedor Vives la vida con intensidad. Ganas un trasfondo adicional.
+Infravisión Ves en la oscuridad hasta 20 metros. La visión se basa en el calor despren-
+dido por los objetos.
+Lucha con X
+Sustituye X por: arma de mano y escudo o dos armas de mano o armas 
+a dos manos o armas de proyectiles. Peleando de esa forma ganas +1 al 
+ataque y al daño.
+Sensibilidad 
+Mágica Puedes gastar puntos de poder (Pod) para realizar conjuros.
+Transferir 
+Esencia Puedes convertir 3 puntos de vida en un punto de poder (Pod).
+Vista Aguda Tienes ventaja en las pruebas de Alerta basadas en la vista.
+
+
+=== PAGINA 6 ===
+5
+Vieja Escuela: el juego de rol
+Ataque (atq)
+Consulta la tabla de avance por nivel y 
+anota el bono para tu nivel y Clase. Para 
+los ataques cuerpo a cuerpo añade tu 
+modificador de FUE (también al daño 
+que hagas). Para proyectiles suma el de 
+DES.
+Instintos (ins)
+Es un modificador que se aplica a las 
+tiradas para resistir o evitar peligros de 
+forma instintiva. Consulta la tabla de 
+avance por nivel y anota el bono para 
+tu Clase.
+Poder (pod)
+Puntos para gastar en conjuros si se dis-
+pone del talento Sensibilidad Mágica. 
+Suma tu modificador de INT al total que 
+viene listado en la tabla de avance por 
+nivel.
+Últimos toques
+Escribe un par de líneas sobre las am-
+biciones y objetivos de tu aventurero 
+y consulta las reglas específicas de tus 
+talentos.
+Tabla de avance por nivel
+Nivel
+Guerrero Hechicero Bribón
+Atq Pod Ins Atq Pod Ins Atq Pod Ins
+1 +0 0 +1 +0 1 +0 +0 0 +0
+2 +1 0 +2 +0 2 +1 +0 0 +1
+3 +1 0 +3 +0 4 +2 +1 0 +2
+4 +2 0 +4 +1 5 +3 +1 0 +3
+5 +2 0 +5 +1 7 +4 +2 0 +4
+6* +3 0 +6 +2 8 +5 +2 0 +5
+7 +4 0 +7 +2 10 +6 +3 0 +6
+8 +5 0 +8 +3 12 +7 +3 0 +7
+9 +6 0 +9 +3 14 +8 +4 0 +8
+10 +7 0 +10 +3 15 +9 +5 0 +9
+11** +7 0 +11 +4 17 +10 +5 0 +10
+12 +8 0 +11 +4 19 +10 +6 0 +11
+13 +9 0 +11 +4 20 +10 +7 0 +11
+14 +9 0 +11 +5 22 +10 +7 0 +11
+* Los personajes ganan un nuevo talento a este nivel (ver pág. 9). 
+** Los personajes ganan un nuevo trasfondo a este nivel (ver pág. 9).
+
+=== PAGINA 7 ===
+6
+Vieja Escuela: el juego de rol
+Resolver acciones
+La regla más importante es aplicar 
+el sentido común. El DJ (director de 
+juego) decide cuando una acción tiene 
+éxito sopesando la explicación dada 
+por el jugador y su Clase. Si es necesa-
+rio tirar, se lanza 1d20 y se suman los 
+puntos de la habilidad más relacionada 
+con la acción o el modificador de un 
+atributo. Un resultado de 11+ suele ser 
+un éxito aunque el DJ puede aumentar o 
+disminuir este valor dependiendo de la 
+dificultad de la acción y de la situación 
+específica (14+, 17+, etc.).
+Un resultado natural de 20 es siempre 
+un éxito y un resultado natural de 1 es 
+siempre un fallo.
+Trasfondos
+Un jugador puede aducir que uno de sus 
+trasfondos le aporta ventaja en la rea-
+lización de una acción. Si hay algo de 
+relación entre la acción y el trasfondo, 
+el DJ puede otorgar un bono adicional 
+de +2. Si hay mucha relación puede per-
+mitir que la tirada se haga con ventaja.
+Ventaja y Desventaja
+Cuando un personaje debe tirar con 
+ventaja o desventaja se lanzan 2d20. 
+Con ventaja se elige el resultado más 
+alto y con desventaja el resultado más 
+bajo.
+Control del Tiempo
+El DJ establece bajo su criterio cómo 
+va transcurriendo el tiempo dentro 
+del mundo de juego. Sin embargo, el 
+combate se suele dividir en asaltos (10 
+segundos), mientras que el tiempo de 
+exploración se divide en turnos (10 
+minutos). De esta forma es fácil contro-
+lar, por ejemplo, cuándo se termina una 
+antorcha (1 hora) o una carga de aceite 
+(4 horas).
+Capítulo II: 
+Reglas de juego
+
+
+=== PAGINA 8 ===
+7
+Vieja Escuela: el juego de rol
+Combate
+En combate se actúa por orden de DES. 
+Primero el personaje con mayor pun-
+tuación. Para impactar (tanto en CaC 
+como con proyectiles) se lanza 1d20 y 
+se suma el bono de Atq con el arma. Si 
+el resultado es mayor o igual al valor 
+de Defensa del blanco se tiene éxito. 
+Se tira entonces el daño indicado por 
+dicha arma, que se resta de los puntos 
+de vida (PV) del blanco.
+Críticos
+Se considera que un ataque es un críti-
+co si el resultado del ataque fue un 20 
+natural (19 y 20 para Guerreros con el 
+talento Ataque Certero). En ese caso, el 
+atacante propone una consecuencia es-
+pecial derivada de su ataque. El DJ tiene 
+la última palabra a la hora de aceptar la 
+propuesta del jugador, aunque siempre 
+es posible elegir causar daño máximo 
++ 1.
+En el resto de los casos, primero se 
+calcula el daño de la forma habitual y 
+luego se aplica el efecto propuesto. Los 
+jugadores pueden describir cualquier 
+consecuencia que deseen, aunque para 
+mantener el juego dentro de unos már-
+genes razonables, la idea es que mecá-
+nicamente se represente como la pérdi-
+da de una pieza de equipo (un escudo, 
+el arma, etc.), se dañe la armadura (que 
+baja en un punto durante el resto del 
+combate), que el próximo ataque que 
+reciba el blanco se haga con ventaja, 
+que el blanco pierda su próximo ataque 
+o que el blanco se vea desplazado de su 
+posición actual.
+Pifias
+Se considera que un ataque es una pifia 
+si el resultado del ataque fue un 1 natu-
+ral. En ese caso, el personaje o criatura 
+ha quedado desequilibrado o ha dejado 
+su guardia abierta. Hasta que se inicie 
+su próximo asalto de combate, todos los 
+ataques que se hagan contra él se harán 
+con ventaja.
+Muerte y curación
+Un personaje que llega a 0 o menos 
+puntos de vida cae incapacitado y no 
+puede actuar. Si sus puntos de vida no 
+vuelven a ser superiores a 0 en me-
+nos de 10 asaltos habrá muerto. Un 
+personaje que descanse durante un día 
+entero recupera tantos PV como nivel 
+posea. Aplicar vendas (una sola vez por 
+combate) permite recuperar 1d4 puntos 
+de vida.
+
+
+=== PAGINA 9 ===
+8
+Vieja Escuela: el juego de rol
+Peligros e instintos
+El DJ puede permitir que un personaje 
+intente evitar o mitigar los efectos de 
+algunos conjuros mágicos, de venenos, 
+enfermedades o de trampas. En esos 
+casos se hace una tirada de Instintos. El 
+personaje lanza 1d20 y suma su bono 
+de Instintos y el bono de un atributo 
+dictado por el DJ (por ejemplo CON para 
+venenos, DES para esquivar una tram-
+pa, CAR para resistir el control mental, 
+etc.). El DJ debe establecer el valor a 
+superar en la tirada dependiendo del 
+nivel del conjurador, de la potencia del 
+veneno o de lo bien fabricada que esté 
+la trampa (11+, 14+, etc.).
+Salud Mental
+Cualquier aventurero que se precie de 
+serlo acabará topándose con horrores 
+sobrenaturales, fuerzas antinaturales 
+y seres demoniacos. No son pocos los 
+que acaban sucumbiendo a la locura. 
+De hecho, toparse con hechiceros o sa-
+cerdotes dementes es uno de los clichés 
+más típicos de los relatos de espada y 
+brujería. La característica de Sabiduría 
+de un personaje mide su salud mental. 
+Un personaje con un valor de 3 apenas 
+estará lúcido, confundirá realidad con 
+fantasía y estará al borde de la más 
+absoluta locura. Los aventureros que 
+caigan por debajo de ese valor enloque-
+cen por completo y pasan a ser perso-
+najes no jugadores mientras no cambie 
+su valor de Sabiduría.
+Cuando un personaje presencia algún 
+horror indescriptible o hace uso de la 
+magia más peligrosa (nigromancia, con-
+tacto con seres extraplanares, sondeo 
+mental de criaturas antinaturales, etc.), 
+debe hacer una tirada de Sabiduría. El 
+DJ establece la dificultad dependiendo 
+de la severidad del horror presenciado 
+o la potencia de la magia empleada (11+, 
+14+, 17+, etc.). Si el personaje falla la ti-
+rada, pierde 1d6 puntos de Sabiduría de 
+forma temporal. Si el resultado es un 
+6, uno de los puntos se pierde de forma 
+permanente. Los puntos temporales se 
+recuperan a una tasa de 1 punto por día 
+completo de descanso.
+Subir de nivel
+Al final de cada sesión de juego el DJ 
+otorga entre 0 y 3 puntos de experien-
+cia (PE) a cada jugador. 2 PE es el valor 
+“normal”, pero el DJ debería otorgarlos 
+dependiendo de la dificultad de los 
+retos superados. Por cada 10 PE acu-
+mulados se sube un nivel. En ese caso 
+
+=== PAGINA 10 ===
+9
+Vieja Escuela: el juego de rol
+se lanza el Dado de Aguante apropiado 
+y se suma el resultado a los puntos de 
+vida del aventurero. También hay que 
+asignar 2 nuevos puntos a habilida-
+des (1 como máximo por habilidad sin 
+que ninguna sobrepase los 10 en total) 
+y se ajustan otra vez el resto de rasgos 
+según lo indicado en la tabla de avance 
+por Clase.
+Nuevos Talentos
+Al sexto nivel, todos los aventureros 
+ganan un nuevo talento.
+Guerrero
+Ataque Certero: consigues un éxito 
+automático o crítico cuando atacas con 
+cualquier arma –incluso naturales-- y 
+obtienes un resultado natural de 19 o 20 
+en la tirada.
+Hechicero
+Sirviente Animal: un pequeño animal 
+(ratón, cuervo, comadreja, etc.) se con-
+vierte en tu familiar. Puedes darle órde-
+nes sencillas con la voz o mentalmente 
+hasta cinco kilómetros de distancia. En 
+este último caso debes concentrarte 
+y gastar un punto de Poder. Mientras 
+permanezcas concentrado podrás ver 
+y oír todo lo que perciba tu familiar. Si 
+por cualquier razón muriese, no podrás 
+invocar otro familiar hasta que alcances 
+un nuevo nivel.
+Bribón
+Leer Magia: eres capaz de usar perga-
+minos mágicos como si fueras un Hechi-
+cero cinco niveles inferior. Por tanto, a 
+nivel 6 activarás los pergaminos como 
+si fueras un hechicero de nivel 1.
+Nuevos Trasfondos
+Al alcanzar el nivel 11 todos los aven-
+tureros ganan un nuevo trasfondo. En 
+este punto se considera que son perso-
+najes de gran fama y relevancia, y pro-
+bablemente han ganado títulos y tierras 
+que gestionar. Por tanto, este nuevo 
+trasfondo debe estar obligatoriamente 
+relacionado con sus andanzas y estatus. 
+Protector de Aguasnegras, Conde de 
+Fronteranorte, Maestro del gremio de 
+ladrones de Puertogrís, Archimago de 
+la torre de Farinoa, etc. Aparte de los 
+beneficios normales que otorga cual-
+quier trasfondo, estos nuevos trasfon-
+dos pueden proporcionar beneficios y 
+obligaciones adicionales en forma de 
+impuestos, vasallos, aprendices o costes 
+de mantenimiento, siempre bajo el 
+criterio del DJ.
+
+
+=== PAGINA 11 ===
+10
+Vieja Escuela: el juego de rol
+Cuando un hechicero quiere lanzar un 
+conjuro, primero debe darle “forma” 
+mediante un nombre: “amistad”, “sa-
+nar heridas”, “amortiguar caída”, etc. 
+Entonces negocia con el DJ los efectos 
+exactos y cuántos puntos de poder 
+(Pod) serán necesarios. El DJ tiene la úl-
+tima palabra y puede demandar que se 
+haga un sacrificio extra en oro, puntos 
+de vida o puntos de atributo si los 
+resultados buscados son especialmente 
+poderosos. Como orientación, por cada 
+d6 de daño, curación o niveles afecta-
+dos se requiere 1 Pod. Normalmente 
+los conjuros son instantáneos 
+(curación y ataque) o duran 
+a lo sumo un día, siendo 
+lo habitual un combate. 
+El DJ puede dictaminar 
+que los objetivos de 
+un conjuro tienen de-
+recho a una tirada de 
+Instintos para evitar 
+o resistir los efectos. En 
+ese caso el valor a superar 
+será 10 + el nivel del lanzador. 
+A continuación se muestran a modo de 
+guía los nombres de algunos conjuros: 
+detectar magia, curar heridas, dormir, 
+escudo, hechizar persona, leer idiomas, 
+leer magia, luz, protección contra el 
+mal, proyectil ácido, cerradura, detec-
+tar invisibilidad, detectar el mal, levi-
+tar, localizar objeto, leer mente, bola de 
+fuego, eliminar maldición.
+Objetos mágicos
+Los objetos mágicos son una de las 
+recompensas más buscadas y peligrosas 
+que existen. Su forma y poderes solo 
+están limitados por la imaginación del 
+DJ. Cualquier objeto común es suscep-
+tible de tener contrapartidas mágicas 
+(armas, armaduras, ropa, etc.).
+Los objetos mágicos más comunes –si es 
+que se puede usar esta palabra– son las 
+pociones y los pergaminos. También 
+son relativamente los más seguros, 
+aunque no son pocos los aventureros 
+que han sucumbido al activar 
+la maldición encerrada 
+en un pergamino o han 
+ingerido un veneno al 
+confundirlo con una 
+poción de curación. 
+Cuando se usa cual-
+quiera de ellos –ya 
+sea bebiendo la poción 
+o leyendo en voz alta el 
+pergamino–, se desencadena 
+la magia que encierran y quedan 
+agotados. Cualquier aventurero puede 
+beber una poción, pero solo los He-
+chiceros y los Bribones con el talento 
+Leer Magia pueden usar pergaminos, 
+no requiere Puntos de Poder, pero sí 
+que el poseedor tenga el nivel reque-
+rido en la descripción del pergamino. 
+Como el resultado no deja de ser igual 
+Capítulo III: 
+Magia y hechicería
+
+
+=== PAGINA 12 ===
+11
+Vieja Escuela: el juego de rol
+que lanzar un conjuro, deben aplicarse 
+todas las reglas habituales, incluida la 
+posible pérdida de Salud Mental.
+Los objetos hechizados son sin duda 
+los más poderosos y únicos. Tam-
+bién son los más peligrosos, ya que la 
+mayoría están dotados de inteligencia 
+propia. Cualquier objeto que no entra 
+en la categoría de poción y pergamino 
+se considera un objeto hechizado. Nor-
+malmente cualquier personaje puede 
+utilizar uno de estos objetos, pero para 
+poder utilizar los más poderosos, el 
+aventurero tiene que sintonizar con él, 
+algo solo al alcance de los Hechiceros. 
+Para sintonizar, el personaje debe 
+gastar un punto de poder y realizar una 
+tirada de Carisma contra la dificultad 
+indicada en la descripción del objeto. 
+Solo se puede hacer un intento por 
+día, aunque no hay límite al número de 
+intentos que un mismo personaje puede 
+llevar a cabo. Algunos objetos realmen-
+te poderosos y extraños pueden reque-
+rir además del sacrificio de un punto en 
+una de las características del personaje. 
+El sacrificio solo tiene efecto si la tirada 
+de sintonización tuvo éxito, y la carac-
+terística en cuestión viene indicada en 
+la descripción del objeto.
+Por último, muchos objetos hechizados 
+requieren también de una palabra de 
+mando, una forma especial de activa-
+ción o tienen un número limitado de 
+veces de uso. Encontrar la información 
+sobre cómo activar el objeto o cómo 
+recargarlo es una gran fuente de aven-
+turas. El límite es, una vez más, la ima-
+ginación del DJ. Como ejemplo, puedes 
+encontrar a continuación la descripción 
+de un par de objetos hechizados.
+Talismán de la Mente en Blanco
+(Requiere sintonizar 14+): el talismán 
+obliga a sacrificar un punto de Inte-
+ligencia tras sintonizar. Se activa en 
+cuanto alguien trata de leer la mente 
+del portador. El intento falla y hay 
+que lanzar 1d20. Con un 20 natural, el 
+proceso se invierte y el portador accede 
+a la mente del atacante. Acceder a la 
+mente de otra persona puede ser una 
+experiencia traumática. El portador 
+debe superar una tirada de 
+Sabiduría contra 11+ o sufrir 
+los efectos descritos en la 
+sección sobre Salud Mental.
+Espada Danzarina
+(No requiere sintonizar): 
+la espada posee inteli-
+gencia propia. Para 
+activarla se debe 
+pronunciar el nombre 
+de la espada –grabado en la 
+propia hoja– y designar un 
+oponente. La espada volará 
+para luchar contra el blanco 
+(Atq +4; Daño 1d8+4). Una 
+vez iniciado el combate, solo 
+se puede parar matando al 
+portador o cuando la espada 
+mata a su blanco. La espada 
+disfruta combatiendo y pue-
+de dominar a su dueño. Si 
+el portador recula ante una 
+posible situación de comba-
+te, el DJ debe lanzar 1d20. El 
+portador tendrá que usar la 
+espada si el resultado iguala 
+o supera su Inteligencia.
+
+
+=== PAGINA 13 ===
+12
+Vieja Escuela: el juego de rol
+Araña Gigante
+Niv 1; Atq mordisco (1 pv + 
+veneno); Def 11; Talentos: 
+veneno mortal (Instintos 
+CON 11+).
+Arpía
+Niv 3; Atq garras (1d6); 
+Def 12; Talentos: hechizar 
+persona con su canción 
+(se permite tirada de Ins).
+Cieno Gris
+Niv 3; Atq golpe (2d6); 
+Def 11; Talentos: secreciones 
+ácidas.
+Cubo Gelatinoso
+Niv 4; Atq golpe (2d4); Def 
+11; Talentos: inmovilizar y 
+disolver a sus presas en su 
+interior.
+Doppelganger
+Niv 4; Atq garra(1d12); 
+Def 14; Talentos: copiar la 
+apariencia de otros.
+Dragón Cromático
+Niv 6-10 (depende de la 
+edad del dragón); Atq 2 
+garras(1d6) y mordisco 
+(2d10); Def 17; Talento: 
+arma de aliento hasta tres 
+veces al día.
+Esqueleto
+Niv 1; Atq arma (1d6); Def 
+11; Talentos: inmune a cual-
+quier efecto sobre la mente.
+Goblin
+Niv 1; Atq arma (1d6); 
+Def 12; Talentos: ninguno.
+Kobold
+Niv 0 (1d4 pv); Atq arma 
+(1d6); Def 13; Talentos: 
+ninguno.
+Necrófago
+Niv 2; Atq golpe (1d6); 
+Def 13; Talentos: paralizar 
+1d6 turnos cuando toca 
+(Instintos FUE 11+).
+Capítulo IV: 
+Monstruos y bestias
+Los principales rasgos de un monstruo vienen determinados por su nivel. El nivel 
+es directamente su bono de Atq, su bono de Instintos y cuantos d8 se lanzan para 
+calcular sus puntos de vida. El DJ debería inventar sus propios monstruos para 
+sorprender a sus jugadores, otorgándoles talentos únicos y especiales. A continua-
+ción puedes encontrar un listado con algunos de los monstruos más habituales. 
+Ogro
+Niv 4; Atq arma (1d8+1); 
+Def 14; Talentos: ninguno.
+Orco
+Niv 2; Atq arma (1d8+1); 
+Def 13; Talentos: ninguno.
+Rata Gigante
+Niv 0 (1d4 pv); Atq mordis-
+co (1d4); Def 10; Talentos: 
+transmitir enfermedad (1 
+entre 10).
+Trol
+Niv 6: Atq garras (1d8); 
+Def 15; Talentos: regenerar 
+(recupera 3 pv por asalto 
+salvo fuego o ácido).
+Vampiro
+Niv 7; Atq mordisco (1d10); 
+Def 17 (solo le afectan armas 
+mágicas); Talentos: cuando 
+hiere absorve 1d4 puntos de 
+CON de forma permanente 
+que suma a sus puntos de 
+golpe. Mueren instantanea-
+mente ante luz solar directa.
+Zombi
+Niv 2; Atq garras (1d6); Def 
+11; Talentos: inmune a cual-
+quier efecto sobre la mente.
+Dragón Negro: aliento ácido; 
+daño 4d6; éxito en Instintos redu-
+ce el daño a la mitad.
+Dragón Verde: aliento gaseoso; 
+daño 3d8; éxito en Instintos redu-
+ce el daño a la mitad.
+Dragón Blanco: aliento escarcha; 
+daño 2d12; éxito en Instintos 
+reduce el daño a la mitad.
+Dragón Azul: aliento rayo; daño 
+4d8; éxito en Instintos reduce el 
+daño a la mitad.
+Dragón Rojo: aliento fuego; daño 
+6d6; éxito en Instintos reduce el 
+daño a la mitad.
+
+=== PAGINA 14 ===
+13
+Vieja Escuela: el juego de rol
+Arma cuerpo a cuerpo Daño Coste
+Hacha de Batalla 1d8 5 mo
+Porra 1d4 0 mo
+Daga 1d4 2 mo
+Martillo de Guerra 1d4+1 1 mo
+Maza Pesada 1d6 10 mo
+Lanza 1d6 1 mo
+Bastón (a dos manos) 1d6 0 mo
+Espada Larga 1d8 15 mo
+Espada Corta 1d6 8 mo
+Espada a dos manos 1d10 30 mo
+Resumen de los bonos 
+en combate por equipo
+Usar escudo +1 Defensa
+Combatir con dos 
+armas de mano
++1 a la tirada de 
+Ataque
+Arma de mano 
+empuñada con dos 
+manos
++1 a la tirada de 
+Daño
+Armadura Defensa Coste
+Cuero +2 5 mo
+Anillos +3 30 mo
+Mallas +4 75 mo
+Placas* +6 100 mo
+Escudo +1 15 mo
+*Esta armadura solo permite un movimiento base 
+de 6 metros como máximo y el personaje aplica 
+las penalizaciones de estar sobrecargado.
+Dificultades habituales
+Tarea sencilla 
+o muy fácil
+¿De verdad 
+hace falta 
+tirar?
+Tarea compleja 
+o apresurada 11+
+Tarea difícil o bajo estrés 14+
+Tarea muy difícil o bajo 
+mucho estrés 17+
+Tarea extremadamente 
+difícil o en tiempo récord 20+
+Apéndice T: 
+Tablas
+Armas de Proyectiles Daño Disparos por asalto Alcance* Coste
+Arco 1d6 2 60 metros 15 mo
+Ballesta ligera 1d4+1 1 70 metros 12 mo
+Daga 1d4 1 4 metros 2 mo
+Honda 1d4 1 20 metros 2 mp
+Lanza 1d6 1 8 metros 1 mo
+* Atacar a más de esta distancia implica desventaja. No se puede disparar a más del doble del alcance 
+indicado en la tabla.
+
+=== PAGINA 15 ===
+14
+Vieja Escuela: el juego de rol
+Equipo diverso* Coste
+Aceite para quemar (frasco) 5 mp
+Agua sagrada (frasco) 25 mo
+Antorcha (1 hora de luz) 1 mc
+Cantimplora (2 litros) 1 mo
+Carcaj y 20 flechas 8 mp
+Cuerda común (15 metros) 1 mo
+Espejo, pequeño de acero 20 mo
+Estacas (4) y maza de madera 3 mo
+Farol con capuchón (4h de luz) 7 mo
+Farol de ojo de buey (4h de luz) 12 mo
+Garfio de escalada 1 mo
+Herramientas de ladrón 25 mo
+Instrumento musical 5 mo
+Libro de conjuros (50 hojas) 25 mo
+Mochila (10 kg de capacidad) 5 mo
+Palanca 2 mp
+Pértiga de madera (3 metros) 2 mp
+Piquetas de hierro (10) 5 mp
+Raciones comunes (1 día) 5 mp
+Raciones de viaje (1 día) 1 mo
+Saco (10 kilos de capacidad) 1 mo
+Saco de dormir 2 mp
+Símbolo religioso (plata) 25 mo
+Vendas para heridas (x1) 1 mp
+Yesca y pedernal 1 mp
+Posada modesta 
+(pensión completa) 5 mp
+Posada corriente 
+(pensión completa) 1 mo
+Posada lujosa (pensión completa) 3 mo
+Comida corriente 2 mp
+Botella de vino 2 mo
+Jarra de cerveza 1 mp
+*Los objetos pequeños se pueden agrupar para 
+formar “un bulto” a efectos de carga.
+Usos comunes de las habilidades
+Alerta
+Notar algo visible, oír un 
+ruido, buscar en, o regis-
+trar un lugar, etc.
+Comunicación Influir, motivar, enten-
+derse con otro seres, etc.
+Manipulación
+Abrir cerraduras, inuti-
+lizar el mecanismo de 
+una trampa, robar una 
+posesión sin ser descu-
+bierto, etc.
+Erudición
+Entender un escrito en 
+una lengua antigua, co-
+nocer una leyenda local, 
+conocer datos históricos, 
+identificar a una criatura 
+tras verla, etc.
+Subterfugio
+Deslizarse en silencio, 
+ocultarse en las sombras, 
+etc.
+Supervivencia
+Seguir un rastro, 
+orientarse al aire libre, 
+forrajear para conseguir 
+alimentos, etc.
+Características y tiradas de Instintos
+FUE Resistir la paralización, resistir 
+la petrificación, etc.
+DES
+Evitar caer por un pozo, esqui-
+var un proyectil en el último 
+segundo, esquivar un arma 
+de aliento, evitar una bola de 
+fuego, etc.
+CON
+Resistir un veneno, sobrepo-
+nerse a una enfermedad, evitar 
+un contagio, etc.
+INT Resistir el control mental sutil 
+o la influencia no evidente, etc.
+SAB
+Resistirse a una ilusión, evitar 
+mirar un glifo o símbolo mági-
+co, etc.
+CAR
+Cualquier efecto de control 
+mental directo o intento evi-
+dente de influencia, etc.
+1 moneda de oro (mo) = 10 monedas de 
+plata (mp) = 100 monedas de cobre (mc)
+
+=== PAGINA 16 ===
+
+
+=== PAGINA 17 ===
+16
+Vieja Escuela: el juego de rol
+OPEN GAME LICENSE Version 1.0a
+The following text is the property of Wizards of 
+the Coast, Inc. and is Copyright 2000 Wizards of 
+the Coast, Inc (“Wizards”). All Rights Reserved.
+1. Definitions: (a)”Contributors” means the copyright 
+and/or trademark owners who have contributed 
+Open Game Content; (b)”Derivative Material” means 
+copyrighted material including derivative works and 
+translations (including into other computer langua -
+ges), potation, modification, correction, addition, 
+extension, upgrade, improvement, compilation, 
+abridgment or other form in which an existing work 
+may be recast, transformed or adapted; (c) “Distri -
+bute” means to reproduce, license, rent, lease, sell, 
+broadcast, publicly display, transmit or otherwise 
+distribute; (d)”Open Game Content” means the game 
+mechanic and includes the methods, procedures, 
+processes and routines to the extent such content 
+does not embody the Product Identity and is an en -
+hancement over the prior art and any additional 
+content clearly identified as Open Game Content by 
+the Contributor, and means any work covered by this 
+License, including translations and derivative works 
+under copyright law, but specifically excludes Pro -
+duct Identity. (e) “Product Identity” means product 
+and product line names, logos and identifying marks 
+including trade dress; artifacts; creatures characters; 
+stories, storylines, plots, thematic elements, dialo -
+gue, incidents, language, artwork, symbols, desig -
+ns, depictions, likenesses, formats, poses, concepts, 
+themes and graphic, photographic and other visual 
+or audio representations; names and descriptions 
+of characters, spells, enchantments, personalities, 
+teams, personas, likenesses and special abilities; pla-
+ces, locations, environments, creatures, equipment, 
+magical or supernatural abilities or effects, logos, 
+symbols, or graphic designs; and any other trade -
+mark or registered trademark clearly identified as 
+Product identity by the owner of the Product Iden -
+tity, and which specifically excludes the Open Game 
+Content; (f) “Trademark” means the logos, names, 
+mark, sign, motto, designs that are used by a Contri-
+butor to identify itself or its 143 products or the asso-
+ciated products contributed to the Open Game Licen-
+se by the Contributor (g) “Use”, “Used” or “Using” 
+means to use, Distribute, copy, edit, format, modify, 
+translate and otherwise create Derivative Material of 
+Open Game Content. (h) “You” or “Your” means the 
+licensee in terms of this agreement.
+2. The License: This License applies to any Open Game 
+Content that contains a notice indicating that the 
+Open Game Content may only be Used under and in 
+terms of this License. You must affix such a notice to 
+any Open Game Content that you Use. No terms may 
+be added to or subtracted from this License except 
+as described by the License itself. No other terms or 
+conditions may be applied to any Open Game Content 
+distributed using this License.
+3.Offer and Acceptance: By Using the Open Game 
+Content You indicate Your acceptance of the terms 
+of this License. 
+4. Grant and Consideration: In consideration for 
+agreeing to use this License, the Contributors grant 
+You a perpetual, worldwide, royalty-free, non-exclu-
+sive license with the exact terms of this License to 
+Use, the Open Game Content.
+5.Representation of Authority to Contribute: If You 
+are contributing original material as Open Game 
+Content, You represent that Your Contributions are 
+Your original creation and/or You have sufficient 
+rights to grant the rights conveyed by this License.
+6.Notice of License Copyright: You must update the 
+COPYRIGHT NOTICE portion of this License to inclu -
+de the exact text of the COPYRIGHT NOTICE of any 
+Open Game Content You are copying, modifying 
+or distributing, and You must add the title, the co -
+pyright date, and the copyright holder’s name to the 
+COPYRIGHT NOTICE of any original Open Game Con -
+tent you Distribute.
+7. Use of Product Identity: You agree not to Use 
+any Product Identity, including as an indication 
+as to compatibility, except as expressly licensed in 
+another, independent Agreement with the owner of 
+each element of that Product Identity. You agree not 
+to indicate compatibility or co-adaptability with any 
+Trademark or Registered Trademark in conjunction 
+with a work containing Open Game Content except 
+as expressly licensed in another, independent Agree-
+ment with the owner of such Trademark or Registe -
+red Trademark. The use of any Product Identity in 
+Open Game Content does not constitute a challenge 
+to the ownership of that Product Identity. The owner 
+of any Product Identity used in Open Game Content 
+shall retain all rights, title and interest in and to that 
+Product Identity.
+8. Identification: If you distribute Open Game Con -
+tent You must clearly indicate which portions of the 
+work that you are distributing are Open Game Con -
+tent.
+9. Updating the License: Wizards or its designated 
+Agents may publish updated versions of this License. 
+You may use any authorized version of this License 
+to copy, modify and distribute any Open Game Con -
+tent originally distributed under any version of this 
+License.
+10. Copy of this License: You MUST include a copy of 
+this License with every copy of the Open Game Con -
+tent You Distribute.
+11. Use of Contributor Credits: You may not market 
+or advertise the Open Game Content using the name 
+of any Contributor unless You have written permis -
+sion from the Contributor to do so.
+12. Inability to Comply: If it is impossible for You to 
+comply with any of the terms of this License with 
+respect to some or all of the Open Game Content due 
+to statute, judicial order, or governmental regulation 
+then You may not Use any Open Game Material so 
+affected.
+13. Termination: This License will terminate automa-
+tically if You fail to comply with all terms herein and 
+fail to cure such breach within 30 days of becoming 
+aware of the breach. All sublicenses shall survive the 
+termination of this License.
+14. Reformation: If any provision of this License is 
+held to be unenforceable, such provision shall be 
+reformed only to the extent necessary to make it en-
+forceable.
+15. COPYRIGHT NOTICE
+Open Game License v 1.0a Copyright 2000, Wizards 
+of the Coast, Inc.
+Vieja Escuela Copyright 2016, Eneko Palencia y Eneko 
+Menica.
+Vieja Escuela: el juego de rol Copyright 2017, Javier 
+García “cabohicks”.
+
+=== PAGINA 18 ===
+
+

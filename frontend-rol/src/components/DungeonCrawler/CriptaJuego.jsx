@@ -6,6 +6,7 @@ import { sound } from './SoundEngine';
 import { fetchProtegido } from '../../utils/api';
 import CuadroDialogo from './CuadroDialogo';
 import { PERSONALIDADES_NPC } from './PersonalidadesNPC';
+import HojaPersonajeVE from './HojaPersonajeVE';
 
 export default function CriptaJuego({ usuarioLogueado, alActualizarUsuario, volver }) {
   const canvasRef = useRef(null);
@@ -16,6 +17,7 @@ export default function CriptaJuego({ usuarioLogueado, alActualizarUsuario, volv
   const [cargandoAssets, setCargandoAssets] = useState(true);
   const [progresoCarga, setProgresoCarga] = useState(0);
   const [modalPersonaje, setModalPersonaje] = useState(false);
+  const [modalHojaVE, setModalHojaVE] = useState(false);
   const [sonidoSilenciado, setSonidoSilenciado] = useState(false);
   const [esFullscreen, setEsFullscreen] = useState(false);
   const [esDispositivoTactil, setEsDispositivoTactil] = useState(false);
@@ -403,6 +405,14 @@ export default function CriptaJuego({ usuarioLogueado, alActualizarUsuario, volv
           {/* ACCIONES SUPERIORES */}
           <div className="flex items-center gap-1.5 sm:gap-2">
             <button
+              onClick={() => setModalHojaVE(true)}
+              className="text-xs font-bold text-amber-300 hover:text-white bg-amber-950/70 hover:bg-amber-900/80 px-2.5 py-1.5 rounded-xl border border-amber-600/50 transition-all flex items-center gap-1.5 shadow"
+              title="Abrir Hoja de Personaje oficial (Vieja Escuela OSR)"
+            >
+              <span>📜</span>
+              <span className="hidden sm:inline">Hoja de Rol</span>
+            </button>
+            <button
               onClick={toggleFullscreen}
               className="text-xs font-bold text-zinc-300 hover:text-white bg-zinc-800 hover:bg-zinc-700 px-2.5 py-1.5 rounded-xl border border-zinc-700 transition-all flex items-center gap-1"
               title="Alternar Pantalla Completa"
@@ -758,6 +768,15 @@ export default function CriptaJuego({ usuarioLogueado, alActualizarUsuario, volv
 
             <div className="flex flex-col sm:flex-row gap-3 justify-end pt-2 border-t border-zinc-800">
               <button
+                onClick={() => {
+                  setModalPersonaje(false);
+                  setModalHojaVE(true);
+                }}
+                className="bg-amber-950/70 hover:bg-amber-900/80 text-amber-300 border border-amber-600/50 font-bold text-xs uppercase tracking-widest px-4 py-3 rounded-xl transition-all flex items-center justify-center gap-1.5"
+              >
+                <span>📜</span> Hoja Vieja Escuela
+              </button>
+              <button
                 onClick={vincularAvatarAlGremio}
                 className="bg-emerald-600 hover:bg-emerald-500 text-white font-black text-xs uppercase tracking-widest px-5 py-3 rounded-xl transition-all shadow-lg flex items-center justify-center gap-2 cursor-pointer"
               >
@@ -781,6 +800,23 @@ export default function CriptaJuego({ usuarioLogueado, alActualizarUsuario, volv
           onEjecutarAccion={handleAccionDialogo}
           onCerrar={() => setNpcDialogoActivo(null)}
         />
+      )}
+
+      {/* Modal Pantalla Completa: Hoja de Personaje Oficial Vieja Escuela */}
+      {modalHojaVE && (
+        <div className="fixed inset-0 bg-black/90 backdrop-blur-md z-50 overflow-y-auto animate-in fade-in duration-200">
+          <div className="min-h-full py-2">
+            <HojaPersonajeVE
+              usuarioLogueado={usuarioLogueado}
+              alCerrar={() => setModalHojaVE(false)}
+              alVincularConJuego={(pjVE) => {
+                if (pjVE.clase) {
+                  seleccionarClaseYGenero(pjVE.clase, generoSeleccionado);
+                }
+              }}
+            />
+          </div>
+        </div>
       )}
     </div>
   );
