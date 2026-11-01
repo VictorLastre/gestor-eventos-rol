@@ -7,6 +7,7 @@ import { fetchProtegido } from '../../utils/api';
 import CuadroDialogo from './CuadroDialogo';
 import { PERSONALIDADES_NPC } from './PersonalidadesNPC';
 import HojaPersonajeVE from './HojaPersonajeVE';
+import CreacionPersonajeVE from './CreacionPersonajeVE';
 
 export default function CriptaJuego({ usuarioLogueado, alActualizarUsuario, volver }) {
   const canvasRef = useRef(null);
@@ -18,6 +19,7 @@ export default function CriptaJuego({ usuarioLogueado, alActualizarUsuario, volv
   const [progresoCarga, setProgresoCarga] = useState(0);
   const [modalPersonaje, setModalPersonaje] = useState(false);
   const [modalHojaVE, setModalHojaVE] = useState(false);
+  const [modalCreacionVE, setModalCreacionVE] = useState(false);
   const [sonidoSilenciado, setSonidoSilenciado] = useState(false);
   const [esFullscreen, setEsFullscreen] = useState(false);
   const [esDispositivoTactil, setEsDispositivoTactil] = useState(false);
@@ -76,9 +78,31 @@ export default function CriptaJuego({ usuarioLogueado, alActualizarUsuario, volv
   useEffect(() => {
     let montado = true;
 
-    // Consultar progreso en backend
+    // Consultar progreso en backend y existencia de personaje
     const sincronizarProgresoGremio = async () => {
       try {
+        // Verificar si existe personaje de Vieja Escuela en backend
+        const resPj = await fetchProtegido('/api/crawler/personaje');
+        let tienePersonaje = false;
+        if (resPj && resPj.ok) {
+          const dataPj = await resPj.json();
+          if (dataPj.existe && dataPj.personaje) {
+            tienePersonaje = true;
+          }
+        }
+
+        const aventuraIniciada = localStorage.getItem('ve_aventura_iniciada_v1');
+        // Si no se ha forjado un héroe con el nuevo sistema, abrir creador inmediatamente y limpiar residuo de pruebas
+        if (!aventuraIniciada && montado) {
+          localStorage.removeItem('crawler_piso');
+          localStorage.removeItem('crawler_oro');
+          localStorage.removeItem('crawler_clase');
+          setModalCreacionVE(true);
+        } else if (!tienePersonaje && !tieneLocal && montado) {
+          setModalCreacionVE(true);
+        }
+
+        // Consultar progreso previo de mazmorra
         const res = await fetchProtegido('/api/crawler/progreso');
         if (res && res.ok) {
           const data = await res.json();
@@ -106,9 +130,6 @@ export default function CriptaJuego({ usuarioLogueado, alActualizarUsuario, volv
     }).then(() => {
       if (montado) {
         setCargandoAssets(false);
-        if (!localStorage.getItem('crawler_clase')) {
-          setModalPersonaje(true);
-        }
       }
     });
 
@@ -201,6 +222,132 @@ export default function CriptaJuego({ usuarioLogueado, alActualizarUsuario, volv
       engine.destroy();
     };
   }, [cargandoAssets]);
+
+  // Forjar e Iniciar partida limpia con el nuevo personaje de Vieja Escuela
+  const iniciarAventuraConPersonaje = async (nuevoPj) => {
+    try {
+      // 1. Guardar en MySQL marcando reiniciarAventura: true para volver a Piso 1
+      await fetchProtegido('/api/crawler/personaje/guardar', {
+        method: 'POST',
+        body: JSON.stringify({
+          ...nuevoPj,
+          reiniciarAventura: true
+        })
+      });
+
+      // 2. Limpiar residuos y resetear al Piso 1 en localStorage
+      localStorage.setItem('crawler_piso', '1');
+      localStorage.setItem('crawler_oro', String(nuevoPj.monedas?.mo || 30));
+      localStorage.setItem('crawler_clase', nuevoPj.clase);
+      localStorage.setItem('crawler_genero', nuevoPj.genero || 'm');
+      localStorage.setItem('personaje_vieja_escuela_v1', JSON.stringify(nuevoPj));
+      localStorage.setItem('ve_aventura_iniciada_v1', 'true');
+
+      // 3. Actualizar estados de React
+      setClaseSeleccionada(nuevoPj.clase);
+      setGeneroSeleccionado(nuevoPj.genero || 'm');
+      setStats(prev => ({
+        ...prev,
+        piso: 1,
+        clase: nuevoPj.clase,
+        oro: nuevoPj.monedas?.mo || 30,
+        hp: nuevoPj.pvActual || 16,
+        maxHp: nuevoPj.pvActual || 16,
+        escaleraAbierta: false,
+        jefeHP: 0
+      }));
+
+      // 4. Reiniciar el GameEngine en el Piso 1
+      if (canvasRef.current) {
+        if (engineRef.current) {
+          engineRef.current.destroy();
+        }
+        const canvas = canvasRef.current;
+        const nuevoEngine = new GameEngine(canvas, {
+          pisoInicial: 1,
+          oroInicial: nuevoPj.monedas?.mo || 30,
+          claseId: nuevoPj.clase,
+          genero: nuevoPj.genero || 'm',
+          onActualizarStats: (nuevasStats) => {
+            setStats(nuevasStats);
+            if (nuevasStats.guardarEnDB) {
+              guardarProgresoEnStorage(nuevasStats);
+            }
+          },
+          onNotificacion: (notif) => {
+            mostrarNotificacionToast(notif);
+          },
+          onInteractuarNPC: (npcBasico) => {
+            const ficha = PERSONALIDADES_NPC[npcBasico.tipo];
+            if (ficha) setNpcDialogoActivo(ficha);
+          },
+          onMuerte: (data) => {
+            const juicio = PERSONALIDADES_NPC.martin.generarJuicioMuerte(data.armaQuebrada, data.oroPerdido, data.expulsado, data.piso);
+            Swal.fire({
+              title: juicio.titulo,
+              text: juicio.mensaje,
+              imageUrl: '/assets/crawler/portraits/npc_angel_portrait.png',
+              imageWidth: 96,
+              imageHeight: 96,
+              imageAlt: 'Martín el Ángel Fiscal',
+              background: '#09090b',
+              color: '#f4f4f5',
+              confirmButtonText: 'Reaparecer en la Hoguera',
+              confirmButtonColor: '#10b981'
+            }).then(() => {
+              nuevoEngine.renacerEnHoguera();
+            });
+          },
+          onCambioPiso: (nuevoPiso) => {
+            localStorage.setItem('crawler_piso', nuevoPiso);
+          }
+        });
+        nuevoEngine.start();
+        engineRef.current = nuevoEngine;
+      }
+
+      setModalCreacionVE(false);
+
+      Swal.fire({
+        title: '¡Aventura Iniciada!',
+        html: `<p class="text-xs text-stone-300">Bienvenido a la Cripta, <strong>${nuevoPj.nombre}</strong> (${nuevoPj.raza.toUpperCase()} ${nuevoPj.clase.toUpperCase()}).<br/>Tu aventura comienza en el <strong>Piso 1</strong>.</p>`,
+        icon: 'success',
+        timer: 2500,
+        showConfirmButton: false,
+        background: '#1c1917',
+        color: '#f5f5f4'
+      });
+    } catch (err) {
+      console.error('Error al iniciar aventura con nuevo personaje:', err);
+    }
+  };
+
+  // Preguntar al usuario si desea forjar un nuevo héroe
+  const handlePreguntarNuevoHeroe = () => {
+    Swal.fire({
+      title: '¿Forjar un Nuevo Héroe?',
+      html: `
+        <p class="text-xs text-stone-300 mb-2">
+          Podrás elegir tu <strong>raza</strong>, <strong>clase OSR</strong>, tirar <strong>3d6 para tus atributos</strong> y personalizar tu personaje oficial de Vieja Escuela.
+        </p>
+        <p class="text-[11px] text-amber-400 font-bold">
+          ⚠️ Tu aventura comenzará desde el <strong>Piso 1</strong> con tu nuevo héroe.
+        </p>
+      `,
+      icon: 'question',
+      showCancelButton: true,
+      confirmButtonText: '⚔️ Sí, Crear Personaje',
+      cancelButtonText: 'Cancelar',
+      confirmButtonColor: '#059669',
+      cancelButtonColor: '#292524',
+      background: '#1c1917',
+      color: '#f5f5f4'
+    }).then((result) => {
+      if (result.isConfirmed) {
+        setModalCreacionVE(true);
+      }
+    });
+  };
 
   const guardarProgresoEnStorage = async (s) => {
     localStorage.setItem('crawler_piso', s.piso);
@@ -447,12 +594,12 @@ export default function CriptaJuego({ usuarioLogueado, alActualizarUsuario, volv
               <span className="hidden sm:inline">{esFullscreen ? 'Ventana' : 'Pantalla Completa'}</span>
             </button>
             <button
-              onClick={() => setModalPersonaje(true)}
-              className="text-xs font-bold text-zinc-300 hover:text-white bg-zinc-800 hover:bg-zinc-700 px-2.5 py-1.5 rounded-xl border border-zinc-700 transition-all flex items-center gap-1"
-              title="Cambiar Héroe & Avatar"
+              onClick={handlePreguntarNuevoHeroe}
+              className="text-xs font-bold text-emerald-300 hover:text-white bg-emerald-950/70 hover:bg-emerald-900/80 px-2.5 py-1.5 rounded-xl border border-emerald-600/50 transition-all flex items-center gap-1.5 shadow"
+              title="Forjar un nuevo héroe desde cero (Reinicia al Piso 1)"
             >
-              <span>🧙‍♂️</span>
-              <span className="hidden sm:inline">Avatar</span>
+              <span>✨</span>
+              <span className="hidden sm:inline">Nuevo Héroe</span>
             </button>
             <button
               onClick={toggleMute}
@@ -826,6 +973,17 @@ export default function CriptaJuego({ usuarioLogueado, alActualizarUsuario, volv
           onEjecutarAccion={handleAccionDialogo}
           onCerrar={() => setNpcDialogoActivo(null)}
         />
+      )}
+
+      {/* Modal Pantalla Completa: Creación de Personaje Vieja Escuela */}
+      {modalCreacionVE && (
+        <div className="fixed inset-0 bg-black/90 backdrop-blur-md z-50 overflow-y-auto animate-in fade-in duration-200 flex items-center justify-center p-3 sm:p-6">
+          <CreacionPersonajeVE
+            usuarioLogueado={usuarioLogueado}
+            alCancelar={() => setModalCreacionVE(false)}
+            alCrearPersonaje={iniciarAventuraConPersonaje}
+          />
+        </div>
       )}
 
       {/* Modal Pantalla Completa: Hoja de Personaje Oficial Vieja Escuela */}

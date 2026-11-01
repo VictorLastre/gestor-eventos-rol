@@ -208,15 +208,19 @@ router.post('/personaje/guardar', verificarToken, async (req, res) => {
 
     // Sincronizar simultáneamente con crawler_progreso para compatibilidad con el juego
     const oroTotal = pj.monedas?.mo !== undefined ? parseInt(pj.monedas.mo, 10) : 0;
+    const reiniciarPiso = !!pj.reiniciarAventura;
+
     const sqlCrawlerSync = `
-      INSERT INTO crawler_progreso (usuario_id, clase, nivel, xp, hp_actual, oro)
-      VALUES (?, ?, ?, ?, ?, ?)
+      INSERT INTO crawler_progreso (usuario_id, clase, nivel, xp, hp_actual, oro, piso_actual, jefes_derrotados)
+      VALUES (?, ?, ?, ?, ?, ?, 1, 0)
       ON DUPLICATE KEY UPDATE
         clase = VALUES(clase),
         nivel = VALUES(nivel),
         xp = VALUES(xp),
         hp_actual = VALUES(hp_actual),
         oro = VALUES(oro),
+        piso_actual = ${reiniciarPiso ? '1' : 'piso_actual'},
+        jefes_derrotados = ${reiniciarPiso ? '0' : 'jefes_derrotados'},
         updated_at = CURRENT_TIMESTAMP
     `;
     await db.promise().query(sqlCrawlerSync, [
@@ -386,6 +390,41 @@ router.get('/ranking', verificarToken, async (req, res) => {
   } catch (error) {
     console.error('Error al obtener ranking:', error);
     res.status(500).json({ error: 'Error al consultar la tabla de líderes.' });
+  }
+});
+
+// 4. REINICIAR MAZMORRA AL PISO 1
+router.post('/reiniciar', verificarToken, async (req, res) => {
+  const usuarioId = req.usuario.id;
+  try {
+    await db.promise().query(
+      `UPDATE crawler_progreso 
+       SET piso_actual = 1, jefes_derrotados = 0, hp_actual = 160, durabilidad_actual = 70, oro = 0, updated_at = CURRENT_TIMESTAMP
+       WHERE usuario_id = ?`,
+      [usuarioId]
+    );
+    res.json({ ok: true, mensaje: 'Aventura reiniciada con éxito en el Piso 1.' });
+  } catch (error) {
+    console.error('Error al reiniciar aventura:', error);
+    res.status(500).json({ error: 'Error al reiniciar el piso.' });
+  }
+});
+
+// 5. BORRAR DATOS VIEJOS DE PRUEBA Y RESETEAR TODO
+router.post('/reset-total', verificarToken, async (req, res) => {
+  const usuarioId = req.usuario.id;
+  try {
+    await db.promise().query('DELETE FROM ve_personajes WHERE usuario_id = ?', [usuarioId]);
+    await db.promise().query(
+      `UPDATE crawler_progreso 
+       SET piso_actual = 1, jefes_derrotados = 0, hp_actual = 160, durabilidad_actual = 70, oro = 0, updated_at = CURRENT_TIMESTAMP
+       WHERE usuario_id = ?`,
+      [usuarioId]
+    );
+    res.json({ ok: true, mensaje: 'Datos de prueba anteriores borrados. Todo listo para forjar un nuevo héroe.' });
+  } catch (error) {
+    console.error('Error al resetear datos:', error);
+    res.status(500).json({ error: 'Error al limpiar datos.' });
   }
 });
 
