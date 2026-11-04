@@ -4,6 +4,7 @@ import { fetchProtegido } from '../utils/api';
 import { io } from 'socket.io-client';
 import { obtenerRangoDM } from '../utils/rangoHonor';
 import EvaluarMesaModal from './EvaluarMesaModal';
+import { obtenerPortadaSistema } from '../utils/portadasSistemas';
 
 const CONFIG_TEMAS = {
   "Fantasía Medieval": { color: "text-amber-400", bg: "bg-amber-500/10", border: "border-amber-500/30", hoverBorder: "hover:border-amber-500/30", hoverText: "group-hover:text-amber-400", icon: "🏰" },
@@ -33,7 +34,13 @@ const CONFIG_TEMAS = {
 
 function Partida(props) {
   const tema = CONFIG_TEMAS[props.etiqueta] || CONFIG_TEMAS['Fantasía Medieval'];
-  const esJuegoMesa = props.etiqueta === 'Juegos de Mesa'; 
+  const esJuegoMesa = props.etiqueta === 'Juegos de Mesa';
+
+  const portadaSistema = obtenerPortadaSistema({
+    sistema: props.sistema || props.sistema_db_nombre,
+    etiqueta: props.etiqueta,
+    sistema_imagen: props.sistema_imagen || props.imagen
+  }); 
 
   const cantJugadores = props.jugadoresIniciales ?? props.anotados ?? props.jugadores_anotados ?? 0;
   const cantSuplentesIniciales = props.suplentesIniciales ?? 0;
@@ -156,13 +163,41 @@ function Partida(props) {
   };
 
   const agregarSistema = async () => {
-    const { value: nombre } = await Swal.fire({
-      title: 'Nuevo Sistema', input: 'text', inputPlaceholder: 'Nombre del sistema...',
-      showCancelButton: true, background: '#18181b', color: '#fff', confirmButtonColor: '#f59e0b'
+    const { value: formValues } = await Swal.fire({
+      title: 'Nuevo Sistema',
+      html: `
+        <div class="text-left space-y-3">
+          <div>
+            <label class="text-xs text-zinc-400 font-bold block mb-1">Nombre del Sistema *</label>
+            <input id="swal-p-sys-nombre" class="w-full bg-zinc-900 border border-zinc-700 rounded-xl px-3 py-2 text-white outline-none focus:border-amber-500 text-sm" placeholder="Ej: D&D 5.5, Call of Cthulhu 7e...">
+          </div>
+          <div>
+            <label class="text-xs text-zinc-400 font-bold block mb-1">URL de Portada / Imagen (Opcional)</label>
+            <input id="swal-p-sys-imagen" class="w-full bg-zinc-900 border border-zinc-700 rounded-xl px-3 py-2 text-white outline-none focus:border-amber-500 text-sm" placeholder="https://ejemplo.com/portada.jpg">
+          </div>
+        </div>
+      `,
+      focusConfirm: false,
+      preConfirm: () => {
+        const nombre = document.getElementById('swal-p-sys-nombre')?.value?.trim();
+        const imagen = document.getElementById('swal-p-sys-imagen')?.value?.trim();
+        if (!nombre) {
+          Swal.showValidationMessage('El nombre es obligatorio');
+          return false;
+        }
+        return { nombre, imagen };
+      },
+      showCancelButton: true,
+      background: '#18181b',
+      color: '#fff',
+      confirmButtonColor: '#f59e0b'
     });
-    if (nombre) {
+    if (formValues && formValues.nombre) {
       try {
-        const res = await fetchProtegido('/api/sistemas', { method: 'POST', body: JSON.stringify({ nombre }) });
+        const res = await fetchProtegido('/api/sistemas', { 
+          method: 'POST', 
+          body: JSON.stringify({ nombre: formValues.nombre, imagen: formValues.imagen }) 
+        });
         const data = await res.json();
         if (!res.ok) throw new Error(data.error || 'Error al agregar');
         Toast.fire({ title: 'Sistema agregado', icon: 'success' });
@@ -176,13 +211,41 @@ function Partida(props) {
   const editarSistema = async () => {
     if (!datosEdicion.sistema_id) return;
     const sistemaActual = sistemas.find(s => s.id.toString() === datosEdicion.sistema_id.toString());
-    const { value: nombre } = await Swal.fire({
-      title: 'Editar Sistema', input: 'text', inputValue: sistemaActual?.nombre,
-      showCancelButton: true, background: '#18181b', color: '#fff', confirmButtonColor: '#f59e0b'
+    const { value: formValues } = await Swal.fire({
+      title: 'Editar Sistema',
+      html: `
+        <div class="text-left space-y-3">
+          <div>
+            <label class="text-xs text-zinc-400 font-bold block mb-1">Nombre del Sistema *</label>
+            <input id="swal-p-sys-nombre" class="w-full bg-zinc-900 border border-zinc-700 rounded-xl px-3 py-2 text-white outline-none focus:border-amber-500 text-sm" value="${sistemaActual?.nombre || ''}">
+          </div>
+          <div>
+            <label class="text-xs text-zinc-400 font-bold block mb-1">URL de Portada / Imagen (Opcional)</label>
+            <input id="swal-p-sys-imagen" class="w-full bg-zinc-900 border border-zinc-700 rounded-xl px-3 py-2 text-white outline-none focus:border-amber-500 text-sm" value="${sistemaActual?.imagen || ''}">
+          </div>
+        </div>
+      `,
+      focusConfirm: false,
+      preConfirm: () => {
+        const nombre = document.getElementById('swal-p-sys-nombre')?.value?.trim();
+        const imagen = document.getElementById('swal-p-sys-imagen')?.value?.trim();
+        if (!nombre) {
+          Swal.showValidationMessage('El nombre es obligatorio');
+          return false;
+        }
+        return { nombre, imagen };
+      },
+      showCancelButton: true,
+      background: '#18181b',
+      color: '#fff',
+      confirmButtonColor: '#f59e0b'
     });
-    if (nombre && nombre !== sistemaActual.nombre) {
+    if (formValues && formValues.nombre && (formValues.nombre !== sistemaActual.nombre || formValues.imagen !== sistemaActual.imagen)) {
       try {
-        const res = await fetchProtegido(`/api/sistemas/${datosEdicion.sistema_id}`, { method: 'PUT', body: JSON.stringify({ nombre }) });
+        const res = await fetchProtegido(`/api/sistemas/${datosEdicion.sistema_id}`, { 
+          method: 'PUT', 
+          body: JSON.stringify({ nombre: formValues.nombre, imagen: formValues.imagen }) 
+        });
         const data = await res.json();
         if (!res.ok) throw new Error(data.error || 'Error al editar');
         Toast.fire({ title: 'Sistema editado', icon: 'success' });
@@ -608,7 +671,21 @@ function Partida(props) {
           : `bg-zinc-900/60 hover:bg-zinc-900 hover:shadow-xl ${estiloBordeDisponibilidad}`
         }`}
       >
-        {soyElMaster && <div className="absolute top-0 right-0 w-32 h-32 bg-amber-500/10 blur-[60px] rounded-full pointer-events-none"></div>}
+        {/* ✨ PORTADA DEL SISTEMA DE FONDO (ATMOSFÉRICA) */}
+        {portadaSistema && (
+          <div className="absolute inset-0 z-0 overflow-hidden rounded-[1.5rem] sm:rounded-[2rem] pointer-events-none">
+            <img 
+              src={portadaSistema} 
+              alt={props.sistema || 'Portada del Sistema'} 
+              className="w-full h-full object-cover object-center opacity-20 group-hover:opacity-35 group-hover:scale-105 transition-all duration-700 select-none"
+              loading="lazy"
+            />
+            {/* Gradientes oscuros para garantizar 100% legibilidad y contraste */}
+            <div className="absolute inset-0 bg-gradient-to-t from-zinc-950 via-zinc-950/85 to-zinc-950/70"></div>
+          </div>
+        )}
+
+        {soyElMaster && <div className="absolute top-0 right-0 w-32 h-32 bg-amber-500/10 blur-[60px] rounded-full pointer-events-none z-0"></div>}
 
         <div className="flex justify-between items-start mb-6 relative z-10 gap-3">
           <div className="flex-1 min-w-0 space-y-3 pr-2">
@@ -790,8 +867,17 @@ function Partida(props) {
               </div>
 
               <div className="space-y-2">
-                <label className="text-[10px] font-black text-zinc-500 uppercase tracking-widest ml-1">{esJuegoMesa ? 'Notas del Organizador' : 'Sinopsis'}</label>
-                <textarea value={datosEdicion.descripcion} onChange={e => setDatosEdicion({...datosEdicion, descripcion: e.target.value})} required rows="4" className={`w-full bg-zinc-950 border border-zinc-800 rounded-2xl py-4 px-5 text-white focus:${tema.border} outline-none transition-all resize-none italic font-medium shadow-inner`} />
+                <div className="flex justify-between items-center ml-1">
+                  <label className="text-[10px] font-black text-zinc-500 uppercase tracking-widest">{esJuegoMesa ? 'Notas del Organizador' : 'Sinopsis'}</label>
+                  <span className="text-[9px] text-zinc-500 font-medium italic">↕ Puedes agrandar o achicar el campo desde la esquina</span>
+                </div>
+                <textarea 
+                  value={datosEdicion.descripcion} 
+                  onChange={e => setDatosEdicion({...datosEdicion, descripcion: e.target.value})} 
+                  required 
+                  rows="5" 
+                  className={`w-full bg-zinc-950 border border-zinc-800 rounded-2xl py-4 px-5 text-white focus:${tema.border} outline-none transition-all resize-y min-h-[140px] max-h-[600px] italic font-medium shadow-inner leading-relaxed`} 
+                />
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -983,9 +1069,16 @@ function Partida(props) {
       {modalAbierto && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 md:p-6 bg-black/95 backdrop-blur-md animate-in fade-in duration-300">
           <div 
-            className="bg-zinc-900 border border-zinc-800 w-full max-w-3xl max-h-[95vh] overflow-y-auto rounded-[2.5rem] p-8 md:p-12 relative shadow-[0_0_100px_rgba(0,0,0,0.8)] scrollbar-hide"
+            className="bg-zinc-900 border border-zinc-800 w-full max-w-3xl max-h-[95vh] overflow-y-auto rounded-[2.5rem] p-8 md:p-12 relative shadow-[0_0_100px_rgba(0,0,0,0.8)] scrollbar-hide overflow-hidden"
             style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
           >
+            {/* ✨ Portada del Sistema en la cabecera del Modal */}
+            {portadaSistema && (
+              <div className="absolute top-0 left-0 right-0 h-48 sm:h-56 overflow-hidden pointer-events-none opacity-20">
+                <img src={portadaSistema} alt="" className="w-full h-full object-cover object-center" />
+                <div className="absolute inset-0 bg-gradient-to-b from-transparent via-zinc-900/80 to-zinc-900"></div>
+              </div>
+            )}
             <div className="flex justify-end gap-2 md:gap-3 mb-6 md:mb-0 md:absolute md:top-6 md:right-6 z-20 w-full md:w-auto">
               {(soyElMaster || soyAdmin) && !props.eventoEsPasado && (
                 <>

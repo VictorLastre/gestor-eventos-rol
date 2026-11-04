@@ -18,6 +18,7 @@ const pool = mysql.createPool({
 pool.promise().getConnection()
   .then(connection => {
     console.log('📦 ¡Conexión a la Bóveda de Datos (MySQL) establecida con éxito!');
+    connection.query("ALTER TABLE sistemas ADD COLUMN imagen VARCHAR(500) DEFAULT NULL").catch(() => {});
     connection.release(); // Liberamos la conexión de prueba para que los usuarios la usen
   })
   .catch(err => {

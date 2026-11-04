@@ -128,7 +128,7 @@ router.get('/:id/partidas', verificarToken, (req, res) => {
   const sql = `
     SELECT 
       p.id, p.evento_id, p.dungeon_master_id, p.titulo, p.descripcion, p.requisitos, 
-      p.sistema, p.sistema_id, s.nombre AS sistema_db_nombre,
+      p.sistema, p.sistema_id, s.nombre AS sistema_db_nombre, s.imagen AS sistema_imagen,
       p.cupo, p.turno, p.estado, p.etiqueta, p.apta_novatos, p.para_infancias, p.clasificacion_edad, p.materiales_pedidos, p.continuacion_de_id,
       IF(p.codigo_privado IS NOT NULL AND p.codigo_privado != '', 1, 0) AS es_privada,
       IF(p.dungeon_master_id = ?, p.codigo_privado, NULL) AS codigo_privado,
@@ -159,7 +159,8 @@ router.get('/:id/partidas', verificarToken, (req, res) => {
     // Hacemos que si hay un sistema_id, mande el nombre de la BD, si no, que mande el string libre
     const formateados = resultados.map(r => ({
       ...r,
-      sistema: r.sistema_db_nombre || r.sistema
+      sistema: r.sistema_db_nombre || r.sistema,
+      sistema_imagen: r.sistema_imagen || null
     }));
 
     res.json(formateados);

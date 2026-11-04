@@ -3,6 +3,9 @@ const router = express.Router();
 const db = require('../config/db');
 const verificarToken = require('../middlewares/auth'); // ✨ Importante para la seguridad
 
+// Asegurar existencia de columna imagen en sistemas sin requerir SQL manual en Hostinger
+db.query("ALTER TABLE sistemas ADD COLUMN imagen VARCHAR(500) DEFAULT NULL", () => {});
+
 // 1. OBTENER SISTEMAS (Público: para que los DMs elijan al crear mesa)
 router.get('/', async (req, res) => {
     try {
@@ -19,12 +22,12 @@ router.get('/', async (req, res) => {
 router.post('/', verificarToken, async (req, res) => {
     if (req.usuario.rol !== 'admin') return res.status(403).json({ error: 'Acceso denegado.' });
     
-    const { nombre } = req.body;
+    const { nombre, imagen } = req.body;
     if (!nombre) return res.status(400).json({ error: 'El nombre es obligatorio.' });
 
     try {
         // ✨ EL PUENTE MÁGICO APLICADO AQUÍ
-        await db.promise().query('INSERT INTO sistemas (nombre) VALUES (?)', [nombre]);
+        await db.promise().query('INSERT INTO sistemas (nombre, imagen) VALUES (?, ?)', [nombre, imagen || null]);
         
         // ✨ WEBSOCKETS: Avisar a todos que hay un nuevo sistema en la biblioteca
         const io = req.app.get('io');
@@ -44,12 +47,12 @@ router.post('/', verificarToken, async (req, res) => {
 router.put('/:id', verificarToken, async (req, res) => {
     if (req.usuario.rol !== 'admin') return res.status(403).json({ error: 'Acceso denegado.' });
     
-    const { nombre } = req.body;
+    const { nombre, imagen } = req.body;
     const { id } = req.params;
 
     try {
         // ✨ EL PUENTE MÁGICO APLICADO AQUÍ
-        await db.promise().query('UPDATE sistemas SET nombre = ? WHERE id = ?', [nombre, id]);
+        await db.promise().query('UPDATE sistemas SET nombre = ?, imagen = ? WHERE id = ?', [nombre, imagen !== undefined ? imagen : null, id]);
         
         // ✨ WEBSOCKETS: Avisar del cambio en los pergaminos
         const io = req.app.get('io');

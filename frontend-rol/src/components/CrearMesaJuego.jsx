@@ -140,14 +140,17 @@ function CrearMesaJuego({ idEvento, alCrearMesa }) {
 
             {/* NOTAS / DESCRIPCIÓN */}
             <div className="space-y-2">
-              <label className="text-[11px] font-black text-zinc-500 uppercase ml-1 tracking-widest">Notas del Organizador</label>
+              <div className="flex justify-between items-center ml-1">
+                <label className="text-[11px] font-black text-zinc-500 uppercase tracking-widest">Notas del Organizador</label>
+                <span className="text-[10px] text-zinc-500 font-medium italic">↕ Puedes agrandar o achicar el campo desde la esquina</span>
+              </div>
               <textarea 
                 placeholder="Ej: Vamos a jugar formato Commander casual. Llevo 2 mazos extra para prestar si alguien no tiene." 
                 value={descripcion} 
                 onChange={e => setDescripcion(e.target.value)} 
                 required 
-                rows="3" 
-                className="w-full bg-zinc-950 border border-zinc-800 rounded-2xl py-3 px-4 md:py-4 md:px-6 text-white focus:border-rose-500 focus:ring-1 focus:ring-rose-500/30 outline-none transition-all resize-none italic font-medium placeholder:text-zinc-800"
+                rows="5" 
+                className="w-full bg-zinc-950 border border-zinc-800 rounded-2xl py-3 px-4 md:py-4 md:px-6 text-white focus:border-rose-500 focus:ring-1 focus:ring-rose-500/30 outline-none transition-all resize-y min-h-[140px] max-h-[600px] italic font-medium placeholder:text-zinc-800 shadow-inner leading-relaxed"
               />
             </div>
 
