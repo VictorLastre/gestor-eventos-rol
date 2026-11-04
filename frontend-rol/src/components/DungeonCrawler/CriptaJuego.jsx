@@ -1019,12 +1019,14 @@ export default function CriptaJuego({ usuarioLogueado, alActualizarUsuario, volv
               >
                 <span>📜</span> Hoja Vieja Escuela
               </button>
-              <button
-                onClick={vincularAvatarAlGremio}
-                className="bg-emerald-600 hover:bg-emerald-500 text-white font-black text-xs uppercase tracking-widest px-5 py-3 rounded-xl transition-all shadow-lg flex items-center justify-center gap-2 cursor-pointer"
-              >
-                <span>⚔️</span> Establecer como mi Avatar del Gremio
-              </button>
+              {usuarioLogueado?.rol === 'admin' && (
+                <button
+                  onClick={vincularAvatarAlGremio}
+                  className="bg-emerald-600 hover:bg-emerald-500 text-white font-black text-xs uppercase tracking-widest px-5 py-3 rounded-xl transition-all shadow-lg flex items-center justify-center gap-2 cursor-pointer"
+                >
+                  <span>⚔️</span> Establecer como mi Avatar del Gremio
+                </button>
+              )}
               <button
                 onClick={() => setModalPersonaje(false)}
                 className="bg-zinc-800 hover:bg-zinc-700 text-zinc-300 font-bold text-xs uppercase tracking-widest px-5 py-3 rounded-xl transition-all"

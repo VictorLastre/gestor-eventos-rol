@@ -156,9 +156,13 @@ function MisCronicas({ alActualizarUsuario }) {
 
   const guardarPerfil = async () => {
     try {
+      const perfilAGuardar = { ...perfil };
+      if (usuarioGuardado?.rol !== 'admin') {
+        perfilAGuardar.avatar = usuarioGuardado?.avatar;
+      }
       const res = await fetchProtegido('/api/usuarios/perfil', {
         method: 'PUT',
-        body: JSON.stringify(perfil)
+        body: JSON.stringify(perfilAGuardar)
       });
       
       if (res.ok) {
@@ -261,12 +265,15 @@ function MisCronicas({ alActualizarUsuario }) {
                 <div>
                   <h4 className="text-white font-bold text-lg">Retrato de tu Ficha</h4>
                   <p className="text-zinc-400 text-sm mt-1">
-                    Elige el rostro con el que te conocerá todo el Gremio. Puedes usar los <b>Retratos Oficiales de la Asociación</b>, un <b>Héroe Pixel Art</b> de la Cripta o el <b>Retrato Mágico</b> generado con tu Alias.
+                    {usuarioGuardado?.rol === 'admin' 
+                      ? 'Como Administrador, puedes personalizar tu avatar oficial de la Asociación, de la Cripta o procedural.'
+                      : 'El rostro con el que te reconoce el Gremio. La personalización de imagen de perfil estará disponible próximamente para todos los miembros.'}
                   </p>
                 </div>
               </div>
 
-              {/* Selector Interactivo de Avatares */}
+              {/* Selector Interactivo de Avatares (Solo Administradores) */}
+              {usuarioGuardado?.rol === 'admin' ? (
               <div className="pt-4 border-t border-zinc-800/80 space-y-4">
                 {/* 1. Retratos Oficiales de la Asociación (PNJ / Mesa Directiva) */}
                 <div>
@@ -355,6 +362,17 @@ function MisCronicas({ alActualizarUsuario }) {
                   </button>
                 </div>
               </div>
+              ) : (
+                <div className="pt-4 border-t border-zinc-800/80">
+                  <div className="flex items-center gap-3 p-3.5 bg-zinc-900/60 border border-zinc-800 rounded-2xl text-xs text-zinc-400">
+                    <span className="text-lg">🔒</span>
+                    <div>
+                      <span className="font-bold text-zinc-300 block">Imagen de Perfil</span>
+                      <span>La personalización de la foto de perfil estará habilitada próximamente para todos los aventureros.</span>
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
             
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">

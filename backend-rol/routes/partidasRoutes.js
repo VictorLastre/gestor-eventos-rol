@@ -458,7 +458,12 @@ router.put('/:id/asistencia', verificarToken, async (req, res) => {
 
   try {
     const [partidas] = await db.promise().query(
-      "SELECT p.dungeon_master_id, p.evento_id, p.titulo FROM partidas p WHERE p.id = ?",
+      `SELECT p.dungeon_master_id, p.evento_id, p.titulo,
+              DATE_FORMAT(e.fecha, '%Y-%m-%d') as fecha,
+              e.hora_inicio, e.hora_fin, e.estado as evento_estado
+       FROM partidas p
+       LEFT JOIN eventos e ON p.evento_id = e.id
+       WHERE p.id = ?`,
       [partidaId]
     );
 
@@ -466,9 +471,31 @@ router.put('/:id/asistencia', verificarToken, async (req, res) => {
       return res.status(404).json({ error: 'Mesa no encontrada.' });
     }
 
-    const { dungeon_master_id, evento_id } = partidas[0];
+    const { dungeon_master_id, evento_id, fecha, hora_inicio, hora_fin, evento_estado } = partidas[0];
     if (dungeon_master_id !== solicitanteId && solicitanteRol !== 'admin') {
       return res.status(403).json({ error: 'Solo el Director de Juego de esta mesa o un Administrador pueden tomar asistencia.' });
+    }
+
+    // ⏰ REGLA ESTRICTA: La asistencia solo puede tomarse durante el evento (desde hora_inicio hasta hora_fin).
+    // Si un master no toma la asistencia durante ese tiempo, la cierra y la deja sin completar.
+    if (solicitanteRol !== 'admin' && fecha && hora_inicio && hora_fin) {
+      const ahoraMs = Date.now();
+      const hInicio = hora_inicio.substring(0, 5);
+      const hFin = hora_fin.substring(0, 5);
+      const msInicio = Date.parse(`${fecha}T${hInicio}:00-03:00`);
+      const msFin = Date.parse(`${fecha}T${hFin}:00-03:00`);
+
+      if (ahoraMs < msInicio) {
+        return res.status(400).json({ 
+          error: `La toma de asistencia solo se habilita durante el evento (de ${hInicio} a ${hFin} hs). Aún no ha comenzado.` 
+        });
+      }
+
+      if (ahoraMs > msFin || evento_estado === 'Finalizado') {
+        return res.status(400).json({ 
+          error: `El tiempo para registrar la asistencia ha finalizado (cerró a las ${hFin} hs). La asistencia de la mesa ha quedado cerrada y sin completar.` 
+        });
+      }
     }
 
     const [updateResult] = await db.promise().query(

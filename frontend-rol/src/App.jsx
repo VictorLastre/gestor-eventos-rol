@@ -11,6 +11,7 @@ import PanelAdmin from './components/PanelAdmin';
 import PerfilPublico from './components/PerfilPublico'; 
 import BuzonAdmin from './components/BuzonAdmin';
 import BuzonFlotante from './components/BuzonFlotante';
+import CelebracionCumpleanos from './components/CelebracionCumpleanos';
 import SalonFama from './components/SalonFama';
 import CriptaJuego from './components/DungeonCrawler/CriptaJuego';
 import './App.css';
@@ -21,7 +22,8 @@ function App() {
   // Maneja la navegaciÃ³n de los que no tienen sesiÃ³n ('landing', 'login', 'registro')
   const [vistaInvitado, setVistaInvitado] = useState('landing'); 
   // Maneja la navegaciÃ³n interna ('eventos', 'mis-cronicas', 'admin')
-  const [vistaActual, setVistaActual] = useState('eventos'); 
+  const [vistaActual, setVistaActual] = useState('eventos');
+  const [mostrarCumpleanos, setMostrarCumpleanos] = useState(false); 
 
   const manejarLogin = (usuario) => {
     setUsuarioLogueado(usuario);
@@ -148,6 +150,36 @@ function App() {
     verificarFechaNacimiento();
   }, [usuarioLogueado?.id]);
 
+  // 🎂 DETECTOR DE CUMPLEAÑOS DEL AVENTURERO
+  useEffect(() => {
+    if (!usuarioLogueado || !usuarioLogueado.fecha_nacimiento) return;
+
+    try {
+      const parts = usuarioLogueado.fecha_nacimiento.split('T')[0].split('-');
+      if (parts.length >= 3) {
+        const mesNac = parseInt(parts[1], 10);
+        const diaNac = parseInt(parts[2], 10);
+
+        // Fecha actual en Argentina (UTC-3)
+        const hoyArg = new Date(Date.now() - 3 * 3600 * 1000);
+        const hoyMes = hoyArg.getUTCMonth() + 1;
+        const hoyDia = hoyArg.getUTCDate();
+        const hoyAnio = hoyArg.getUTCFullYear();
+
+        if (mesNac === hoyMes && diaNac === hoyDia) {
+          const claveStorage = `cumple_celebrado_${usuarioLogueado.id}_${hoyAnio}_${hoyMes}_${hoyDia}`;
+          const yaCelebradoHoy = sessionStorage.getItem(claveStorage);
+          if (!yaCelebradoHoy) {
+            setMostrarCumpleanos(true);
+            sessionStorage.setItem(claveStorage, 'true');
+          }
+        }
+      }
+    } catch (err) {
+      console.warn('Error al verificar cumpleaños:', err);
+    }
+  }, [usuarioLogueado?.id, usuarioLogueado?.fecha_nacimiento]);
+
   // 1. VISTA PARA USUARIOS NO LOGUEADOS
   if (!usuarioLogueado) {
     if (vistaInvitado === 'landing') {
@@ -229,6 +261,14 @@ function App() {
         )}
       </main>
       <BuzonFlotante />
+
+      {/* 🎈 CELEBRACIÓN DE CUMPLEAÑOS CON GLOBOS Y MENSAJE */}
+      {mostrarCumpleanos && (
+        <CelebracionCumpleanos 
+          usuario={usuarioLogueado}
+          onCerrar={() => setMostrarCumpleanos(false)}
+        />
+      )}
     </div>
   );
 }

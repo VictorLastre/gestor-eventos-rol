@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import Swal from 'sweetalert2'; 
-import Partida from './Partida'; 
+import Partida from './Partida';
+import CuentaRegresivaEvento from './CuentaRegresivaEvento'; 
 import CrearMesa from './CrearMesa'; 
 import CrearMesaJuego from './CrearMesaJuego'; // ✨ IMPORTAMOS EL NUEVO FORMULARIO
 import FormularioEscape from './FormularioEscape'; 
@@ -280,14 +281,26 @@ function Eventos({ setVista }) {
             Volver a la Agenda
           </button>
 
-          <div className="mb-12 border-b border-zinc-900 pb-8">
-            <h2 className="text-5xl md:text-7xl font-black text-white italic uppercase tracking-tighter leading-none mb-4 drop-shadow-2xl">
-              {eventoSeleccionado.nombre}
-            </h2>
-            <div className="flex flex-wrap gap-4 text-sm font-bold uppercase tracking-widest text-zinc-400">
-              <span className="flex items-center gap-2 bg-zinc-900/50 px-4 py-2 rounded-full border border-zinc-800/50 backdrop-blur-sm">🗓️ {formatearFechaManual(eventoSeleccionado.fecha)}</span>
-              {eventoSeleccionado.hora_inicio && <span className="flex items-center gap-2 bg-zinc-900/50 px-4 py-2 rounded-full border border-zinc-800/50 backdrop-blur-sm">⏰ {eventoSeleccionado.hora_inicio} a {eventoSeleccionado.hora_fin}</span>}
-              {eventoSeleccionado.lugar && <span className="flex items-center gap-2 bg-zinc-900/50 px-4 py-2 rounded-full border border-zinc-800/50 backdrop-blur-sm">📍 {eventoSeleccionado.lugar}</span>}
+          <div className="mb-10 border-b border-zinc-900 pb-8 flex flex-col lg:flex-row lg:items-center justify-between gap-6">
+            <div>
+              <h2 className="text-4xl sm:text-5xl md:text-7xl font-black text-white italic uppercase tracking-tighter leading-none mb-4 drop-shadow-2xl">
+                {eventoSeleccionado.nombre}
+              </h2>
+              <div className="flex flex-wrap gap-3 text-xs sm:text-sm font-bold uppercase tracking-widest text-zinc-400">
+                <span className="flex items-center gap-2 bg-zinc-900/50 px-4 py-2 rounded-full border border-zinc-800/50 backdrop-blur-sm">🗓️ {formatearFechaManual(eventoSeleccionado.fecha)}</span>
+                {eventoSeleccionado.hora_inicio && <span className="flex items-center gap-2 bg-zinc-900/50 px-4 py-2 rounded-full border border-zinc-800/50 backdrop-blur-sm">⏰ {eventoSeleccionado.hora_inicio} a {eventoSeleccionado.hora_fin} hs</span>}
+                {eventoSeleccionado.lugar && <span className="flex items-center gap-2 bg-zinc-900/50 px-4 py-2 rounded-full border border-zinc-800/50 backdrop-blur-sm">📍 {eventoSeleccionado.lugar}</span>}
+              </div>
+            </div>
+
+            {/* ⏳ CUENTA REGRESIVA DESTACADA EN LA FICHA */}
+            <div className="shrink-0 w-full lg:w-auto">
+              <CuentaRegresivaEvento 
+                fecha={eventoSeleccionado.fecha}
+                horaInicio={eventoSeleccionado.hora_inicio}
+                horaFin={eventoSeleccionado.hora_fin}
+                estado={eventoSeleccionado.estado}
+              />
             </div>
           </div>
 
@@ -388,6 +401,10 @@ function Eventos({ setVista }) {
                       <Partida 
                         {...p} 
                         eventoEsPasado={eventoSeleccionado.estado === 'Finalizado' || eventoSeleccionado.estado === 'Suspendido'} 
+                        eventoFecha={eventoSeleccionado.fecha}
+                        eventoHoraInicio={eventoSeleccionado.hora_inicio}
+                        eventoHoraFin={eventoSeleccionado.hora_fin}
+                        eventoEstado={eventoSeleccionado.estado}
                         esAdmin={esAdmin} 
                         setVista={setVista} 
                         esMiMesa={usuarioGuardado?.id === p.dungeon_master_id} 
@@ -576,6 +593,10 @@ function Eventos({ setVista }) {
                       <Partida 
                         {...p} 
                         eventoEsPasado={eventoSeleccionado.estado === 'Finalizado' || eventoSeleccionado.estado === 'Suspendido'} 
+                        eventoFecha={eventoSeleccionado.fecha}
+                        eventoHoraInicio={eventoSeleccionado.hora_inicio}
+                        eventoHoraFin={eventoSeleccionado.hora_fin}
+                        eventoEstado={eventoSeleccionado.estado}
                         esAdmin={esAdmin} 
                         setVista={setVista} 
                         esMiMesa={usuarioGuardado?.id === p.dungeon_master_id} 
@@ -665,7 +686,7 @@ function Eventos({ setVista }) {
                   <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-emerald-400 to-teal-500"></div>
                 )}
                 
-                <div className="flex justify-between items-start mb-6">
+                <div className="flex justify-between items-start mb-6 gap-2">
                   <div>
                     <p className="text-zinc-500 font-bold uppercase tracking-widest text-xs mb-2">
                       {formatearFechaManual(e.fecha)}
@@ -674,11 +695,14 @@ function Eventos({ setVista }) {
                       {e.nombre}
                     </h3>
                   </div>
-                  <span className={`px-4 py-1 rounded-full text-[9px] font-black uppercase tracking-widest border shadow-inner ${
-                    e.estado === 'En Curso' ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30' : 'bg-amber-500/10 text-amber-500 border-amber-500/30'
-                  }`}>
-                    {e.estado}
-                  </span>
+                  <div className="flex flex-col items-end gap-2 shrink-0">
+                    <span className={`px-4 py-1 rounded-full text-[9px] font-black uppercase tracking-widest border shadow-inner ${
+                      e.estado === 'En Curso' ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30' : 'bg-amber-500/10 text-amber-500 border-amber-500/30'
+                    }`}>
+                      {e.estado}
+                    </span>
+                    <CuentaRegresivaEvento fecha={e.fecha} horaInicio={e.hora_inicio} horaFin={e.hora_fin} estado={e.estado} compacta={true} />
+                  </div>
                 </div>
                 
                 <p className="text-zinc-400 text-sm italic line-clamp-2 mb-8 flex-1">

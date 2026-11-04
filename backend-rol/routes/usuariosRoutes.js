@@ -141,6 +141,13 @@ router.put('/perfil', verificarToken, async (req, res) => {
   const idUsuario = req.usuario.id;
 
   try {
+    // 🛡️ REGLA: Los usuarios que no son administradores no pueden cambiar su imagen de perfil
+    let avatarFinal = avatar;
+    if (req.usuario.rol !== 'admin') {
+      const [uActual] = await db.promise().query('SELECT avatar FROM usuarios WHERE id = ?', [idUsuario]);
+      avatarFinal = uActual.length > 0 ? uActual[0].avatar : 'guerrero';
+    }
+
     let sql;
     let params;
     let cambioPass = false;
@@ -150,19 +157,19 @@ router.put('/perfil', verificarToken, async (req, res) => {
       const hash = await bcrypt.hash(password, salt);
       if (fecha_nacimiento) {
         sql = "UPDATE usuarios SET nombre = ?, nombre_completo = ?, email = ?, password = ?, avatar = ?, telegram_chat_id = ?, biografia = ?, fecha_nacimiento = ? WHERE id = ?";
-        params = [nombre, nombre_completo, email, hash, avatar, telegram_chat_id || null, biografia || null, fecha_nacimiento, idUsuario];
+        params = [nombre, nombre_completo, email, hash, avatarFinal, telegram_chat_id || null, biografia || null, fecha_nacimiento, idUsuario];
       } else {
         sql = "UPDATE usuarios SET nombre = ?, nombre_completo = ?, email = ?, password = ?, avatar = ?, telegram_chat_id = ?, biografia = ? WHERE id = ?";
-        params = [nombre, nombre_completo, email, hash, avatar, telegram_chat_id || null, biografia || null, idUsuario];
+        params = [nombre, nombre_completo, email, hash, avatarFinal, telegram_chat_id || null, biografia || null, idUsuario];
       }
       cambioPass = true;
     } else {
       if (fecha_nacimiento) {
         sql = "UPDATE usuarios SET nombre = ?, nombre_completo = ?, email = ?, avatar = ?, telegram_chat_id = ?, biografia = ?, fecha_nacimiento = ? WHERE id = ?";
-        params = [nombre, nombre_completo, email, avatar, telegram_chat_id || null, biografia || null, fecha_nacimiento, idUsuario];
+        params = [nombre, nombre_completo, email, avatarFinal, telegram_chat_id || null, biografia || null, fecha_nacimiento, idUsuario];
       } else {
         sql = "UPDATE usuarios SET nombre = ?, nombre_completo = ?, email = ?, avatar = ?, telegram_chat_id = ?, biografia = ? WHERE id = ?";
-        params = [nombre, nombre_completo, email, avatar, telegram_chat_id || null, biografia || null, idUsuario];
+        params = [nombre, nombre_completo, email, avatarFinal, telegram_chat_id || null, biografia || null, idUsuario];
       }
     }
 
