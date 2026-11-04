@@ -360,19 +360,31 @@ function Partida(props) {
 
     // ⏰ Comprobar si la toma de asistencia está habilitada durante el evento
     const obtenerVentanaAsistencia = () => {
-      if (props.esAdmin || soyAdmin) return { habilitada: true, estado: 'en_curso' };
+      const f = props.eventoFecha || props.fecha;
+      const hIni = props.eventoHoraInicio || props.hora_inicio || '16:00';
+      const hEnd = props.eventoHoraFin || props.hora_fin || '20:00';
 
-      if (!props.eventoFecha || !props.eventoHoraInicio || !props.eventoHoraFin) {
-        if (props.eventoEsPasado) return { habilitada: false, estado: 'cerrada' };
-        return { habilitada: true, estado: 'en_curso' };
+      const hInicio = String(hIni).substring(0, 5);
+      const hFin = String(hEnd).substring(0, 5);
+
+      if (!f) {
+        if (props.eventoEsPasado || props.eventoEstado === 'Finalizado') {
+          return { habilitada: false, estado: 'cerrada', hInicio, hFin };
+        }
+        return { habilitada: false, estado: 'antes', hInicio, hFin };
       }
 
       const ahora = Date.now();
-      const hInicio = props.eventoHoraInicio.substring(0, 5);
-      const hFin = props.eventoHoraFin.substring(0, 5);
-      const fechaLimpia = props.eventoFecha.split('T')[0];
+      const fechaLimpia = String(f).split('T')[0];
       const msInicio = Date.parse(`${fechaLimpia}T${hInicio}:00-03:00`);
       const msFin = Date.parse(`${fechaLimpia}T${hFin}:00-03:00`);
+
+      if (isNaN(msInicio) || isNaN(msFin)) {
+        if (props.eventoEsPasado || props.eventoEstado === 'Finalizado') {
+          return { habilitada: false, estado: 'cerrada', hInicio, hFin };
+        }
+        return { habilitada: false, estado: 'antes', hInicio, hFin };
+      }
 
       if (ahora < msInicio) {
         return { habilitada: false, estado: 'antes', hInicio, hFin };
@@ -391,7 +403,7 @@ function Partida(props) {
       if (ventana.estado === 'antes') {
         Swal.fire({
           title: 'Asistencia No Habilitada',
-          html: `<p class="text-xs text-zinc-300">La toma de asistencia se habilitará cuando inicie el evento (de <strong>${ventana.hInicio}</strong> a <strong>${ventana.hFin} hs</strong>).</p>`,
+          html: `<p class="text-xs text-zinc-300">La toma de asistencia solo se habilitará durante el evento (de <strong>${ventana.hInicio}</strong> a <strong>${ventana.hFin} hs</strong>).</p>`,
           icon: 'info',
           background: '#09090b',
           color: '#fff',
@@ -402,7 +414,7 @@ function Partida(props) {
       if (ventana.estado === 'cerrada') {
         Swal.fire({
           title: 'Asistencia Cerrada',
-          html: `<p class="text-xs text-zinc-300">El evento ya finalizó (cerró a las <strong>${ventana.hFin} hs</strong>). La toma de asistencia ha caducado y quedó <strong>cerrada sin completar</strong>.</p>`,
+          html: `<p class="text-xs text-zinc-300">El evento ya finalizó (cerró a las <strong>${ventana.hFin} hs</strong>). La toma de asistencia no puede modificarse.</p>`,
           icon: 'warning',
           background: '#09090b',
           color: '#fff',
@@ -1118,32 +1130,24 @@ function Partida(props) {
                   {/* Banner de Estado de la Ventana de Asistencia */}
                   {(() => {
                     const v = obtenerVentanaAsistencia();
-                    if (soyElMaster || soyAdmin) {
-                      if (v.habilitada) {
-                        return (
-                          <div className="text-[10px] font-bold text-emerald-400 bg-emerald-500/10 border border-emerald-500/30 px-3 py-1.5 rounded-xl mb-4 flex items-center gap-1.5">
-                            <span>⚡</span>
-                            <span>Toma la asistencia antes de las {v.hFin} hs. Al terminar el evento quedará cerrada sin completar.</span>
-                          </div>
-                        );
-                      }
-                      if (v.estado === 'antes') {
-                        return (
-                          <div className="text-[10px] font-bold text-amber-400 bg-amber-500/10 border border-amber-500/30 px-3 py-1.5 rounded-xl mb-4 flex items-center gap-1.5">
-                            <span>⏳</span>
-                            <span>La asistencia se habilitará durante el evento ({v.hInicio} a {v.hFin} hs).</span>
-                          </div>
-                        );
-                      }
-                      if (v.estado === 'cerrada') {
-                        return (
-                          <div className="text-[10px] font-bold text-zinc-500 bg-zinc-950 border border-zinc-800 px-3 py-1.5 rounded-xl mb-4 flex items-center gap-1.5">
-                            <span>🔒</span>
-                            <span>El tiempo de asistencia finalizó. Las no registradas quedaron cerradas sin completar.</span>
-                          </div>
-                        );
-                      }
+                    // Solo durante el evento se muestra el aviso de tomar asistencia
+                    if (v.habilitada && (soyElMaster || soyAdmin)) {
+                      return (
+                        <div className="text-[10px] font-bold text-emerald-400 bg-emerald-500/10 border border-emerald-500/30 px-3 py-1.5 rounded-xl mb-4 flex items-center gap-1.5">
+                          <span>⚡</span>
+                          <span>Toma la asistencia antes de las {v.hFin} hs. Al terminar el evento quedará cerrada sin completar.</span>
+                        </div>
+                      );
                     }
+                    if (v.estado === 'cerrada' && (soyElMaster || soyAdmin)) {
+                      return (
+                        <div className="text-[10px] font-bold text-zinc-500 bg-zinc-950 border border-zinc-800 px-3 py-1.5 rounded-xl mb-4 flex items-center gap-1.5">
+                          <span>🔒</span>
+                          <span>La toma de asistencia ha finalizado y quedó cerrada. No se pueden realizar modificaciones.</span>
+                        </div>
+                      );
+                    }
+                    // Antes del evento: no mostrar banner
                     return null;
                   })()}
 
@@ -1210,17 +1214,47 @@ function Partida(props) {
                               const esCerrada = !v.habilitada && v.estado === 'cerrada';
                               const esAntes = !v.habilitada && v.estado === 'antes';
 
+                              // Antes del evento: NO se muestra ningún botón ni check de asistencia
+                              if (esAntes) {
+                                return null;
+                              }
+
+                              // Después del evento (cerrada): no se puede modificar la asistencia, solo badges estáticos de lectura
+                              if (esCerrada) {
+                                if (jugador.asistencia === 'presente') {
+                                  return (
+                                    <span className="px-2 py-1 rounded-lg text-[9px] font-black uppercase tracking-wider border flex items-center gap-1 bg-emerald-500/15 text-emerald-400 border-emerald-500/30">
+                                      ✅ Presente
+                                    </span>
+                                  );
+                                }
+                                if (jugador.asistencia === 'ausente') {
+                                  return (
+                                    <span className="px-2 py-1 rounded-lg text-[9px] font-black uppercase tracking-wider border flex items-center gap-1 bg-red-500/15 text-red-400 border-red-500/30">
+                                      ❌ Ausente
+                                    </span>
+                                  );
+                                }
+                                if (jugador.asistencia === 'justificado') {
+                                  return (
+                                    <span className="px-2 py-1 rounded-lg text-[9px] font-black uppercase tracking-wider border flex items-center gap-1 bg-amber-500/15 text-amber-400 border-amber-500/30">
+                                      ⚠️ Justificado
+                                    </span>
+                                  );
+                                }
+                                return (
+                                  <span className="px-2 py-1 rounded-lg text-[9px] font-black uppercase tracking-wider border flex items-center gap-1 bg-zinc-950 text-zinc-500 border-zinc-800 opacity-80" title="Asistencia cerrada sin completar">
+                                    🔒 Sin completar
+                                  </span>
+                                );
+                              }
+
+                              // Durante el evento (en_curso): Solo el DM de la mesa o un Admin pueden marcar / cambiar asistencia
                               if (soyElMaster || soyAdmin) {
                                 return (
                                   <button
                                     onClick={(e) => cambiarAsistencia(e, jugador.id, jugador.nombre, jugador.asistencia)}
-                                    title={
-                                      esCerrada
-                                        ? 'Asistencia cerrada sin completar'
-                                        : esAntes
-                                        ? `Se habilita a las ${v.hInicio} hs`
-                                        : 'Tomar Asistencia'
-                                    }
+                                    title="Tomar Asistencia"
                                     className={`px-2 py-1 rounded-lg text-[9px] font-black uppercase tracking-wider border transition-all flex items-center gap-1 ${
                                       jugador.asistencia === 'presente'
                                         ? 'bg-emerald-500/15 text-emerald-400 border-emerald-500/40 hover:bg-emerald-500/25'
@@ -1228,28 +1262,18 @@ function Partida(props) {
                                         ? 'bg-red-500/20 text-red-400 border-red-500/40 hover:bg-red-500/30 shadow-[0_0_8px_rgba(239,68,68,0.25)]'
                                         : jugador.asistencia === 'justificado'
                                         ? 'bg-amber-500/15 text-amber-400 border-amber-500/40 hover:bg-amber-500/25'
-                                        : esCerrada
-                                        ? 'bg-zinc-950 text-zinc-500 border-zinc-800 cursor-not-allowed opacity-80'
-                                        : esAntes
-                                        ? 'bg-zinc-900/60 text-zinc-500 border-zinc-800'
                                         : 'bg-zinc-900 text-amber-400 border-amber-500/50 hover:border-amber-400 animate-pulse'
                                     }`}
                                   >
                                     {jugador.asistencia === 'presente' && '✅ Presente'}
                                     {jugador.asistencia === 'ausente' && '❌ Ausente (-1)'}
                                     {jugador.asistencia === 'justificado' && '⚠️ Justificado'}
-                                    {(!jugador.asistencia || jugador.asistencia === 'pendiente') && (
-                                      esCerrada
-                                        ? '🔒 Sin completar'
-                                        : esAntes
-                                        ? `⏰ ${v.hInicio} hs`
-                                        : '📋 Asistencia'
-                                    )}
+                                    {(!jugador.asistencia || jugador.asistencia === 'pendiente') && '📋 Asistencia'}
                                   </button>
                                 );
                               }
 
-                              // Vista para jugadores normales
+                              // Vista para jugadores normales durante el evento
                               if (jugador.asistencia && jugador.asistencia !== 'pendiente') {
                                 return (
                                   <span className={`px-2 py-1 rounded-lg text-[9px] font-black uppercase tracking-wider border flex items-center gap-1 ${

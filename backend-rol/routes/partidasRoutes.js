@@ -477,8 +477,8 @@ router.put('/:id/asistencia', verificarToken, async (req, res) => {
     }
 
     // ⏰ REGLA ESTRICTA: La asistencia solo puede tomarse durante el evento (desde hora_inicio hasta hora_fin).
-    // Si un master no toma la asistencia durante ese tiempo, la cierra y la deja sin completar.
-    if (solicitanteRol !== 'admin' && fecha && hora_inicio && hora_fin) {
+    // Antes del inicio no se puede marcar asistencia, y una vez finalizado el evento no se puede modificar.
+    if (fecha && hora_inicio && hora_fin) {
       const ahoraMs = Date.now();
       const hInicio = hora_inicio.substring(0, 5);
       const hFin = hora_fin.substring(0, 5);
@@ -493,7 +493,7 @@ router.put('/:id/asistencia', verificarToken, async (req, res) => {
 
       if (ahoraMs > msFin || evento_estado === 'Finalizado') {
         return res.status(400).json({ 
-          error: `El tiempo para registrar la asistencia ha finalizado (cerró a las ${hFin} hs). La asistencia de la mesa ha quedado cerrada y sin completar.` 
+          error: `El tiempo para registrar la asistencia ha finalizado (cerró a las ${hFin} hs). La asistencia de la mesa ha quedado cerrada y no puede modificarse.` 
         });
       }
     }
