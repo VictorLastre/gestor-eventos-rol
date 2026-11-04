@@ -1,24 +1,48 @@
-// ✨ Catálogo inteligente de portadas e ilustraciones de sistemas y ambientaciones
-// Diseñadas para fondos de cartas de partidas con opacidad y gradientes cinemáticos.
+// ✨ Catálogo de portadas oficiales y emblemáticas de sistemas de rol y juegos de mesa
+// Diseñadas para proyectarse de fondo en las tarjetas de partidas.
 
 export const PORTADAS_SISTEMAS = {
-  // --- Sistemas Populares Específicos ---
-  dnd55: 'https://images.unsplash.com/photo-1578632767115-351597cf2477?auto=format&fit=crop&w=800&q=80', // Fantasía épica heroica / Dragón 2024
-  dnd5e: 'https://images.unsplash.com/photo-1518709268805-4e9042af9f23?auto=format&fit=crop&w=800&q=80', // Pergaminos, dados y magia D&D
-  cthulhu: 'https://images.unsplash.com/photo-1509198397868-475647b2a1e5?auto=format&fit=crop&w=800&q=80', // Misterio oscuro y horror cósmico Lovecraft
-  pathfinder: 'https://images.unsplash.com/photo-1514539079130-25950c84af65?auto=format&fit=crop&w=800&q=80', // Gran aventura fantástica
-  vampiro: 'https://images.unsplash.com/photo-1509248961158-e54f6934749c?auto=format&fit=crop&w=800&q=80', // Gotico, sombras y luna carmesí
-  cyberpunk: 'https://images.unsplash.com/photo-1542751371-adc38448a05e?auto=format&fit=crop&w=800&q=80', // Luces de neón distópicas y rascacielos
-  alien: 'https://images.unsplash.com/photo-1618336753974-aae8e04506aa?auto=format&fit=crop&w=800&q=80', // Terror espacial en nave abandonada
-  warhammer: 'https://images.unsplash.com/photo-1563089145-599997674d42?auto=format&fit=crop&w=800&q=80', // Fortaleza gótica sombría (Grimdark)
-  starwars: 'https://images.unsplash.com/photo-1451187580459-43490279c0fa?auto=format&fit=crop&w=800&q=80', // Nebulosa galáctica profunda
-  tolkien: 'https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?auto=format&fit=crop&w=800&q=80', // Montañas y ruinas místicas de la Tierra Media
-  western: 'https://images.unsplash.com/photo-1509316975850-ff9c5deb0cd9?auto=format&fit=crop&w=800&q=80', // Cañón polvoriento y atardecer del viejo oeste
-  juegosMesa: 'https://images.unsplash.com/photo-1610890716171-6b1bb98ffd09?auto=format&fit=crop&w=800&q=80', // Tablero de madera, dados y fichas
-  steampunk: 'https://images.unsplash.com/photo-1518770660439-4636190af475?auto=format&fit=crop&w=800&q=80' // Engranajes de cobre y vapor
+  // D&D 2024 / 5.5 - Portada oficial Player's Handbook (D&D Beyond)
+  dnd55: 'https://media.dndbeyond.com/compendium-images/phb/MKDHZ1nxSXDDLOw2/phb-2024-cover.jpeg',
+  
+  // D&D 5e (2014) - Portada oficial Player's Handbook
+  dnd5e: 'https://upload.wikimedia.org/wikipedia/en/8/86/Player%27s_Handbook%2C_2014_standard_print_cover.png',
+  
+  // Call of Cthulhu 7e - Portada oficial Chaosium Keeper Rulebook
+  cthulhu: 'https://d1vzi28wh99zvq.cloudfront.net/images/2/150997.webp',
+  
+  // Pathfinder 2e - Portada oficial Core Rulebook (Paizo)
+  pathfinder: 'https://d1vzi28wh99zvq.cloudfront.net/images/5549/443387.webp',
+  
+  // Cyberpunk RED - Portada oficial (R. Talsorian Games)
+  cyberpunk: 'https://d1vzi28wh99zvq.cloudfront.net/images/13/333585.webp',
+  
+  // Vampire: The Masquerade 5e - Portada oficial
+  vampiro: 'https://d1vzi28wh99zvq.cloudfront.net/images/18205/256795.webp',
+  
+  // Alien RPG - Portada oficial Free League
+  alien: 'https://d1vzi28wh99zvq.cloudfront.net/images/11437/520969.webp',
+
+  // Warhammer (40k / Fantasy)
+  warhammer: 'https://images.unsplash.com/photo-1563089145-599997674d42?auto=format&fit=crop&w=800&q=80',
+
+  // Star Wars RPG
+  starwars: 'https://images.unsplash.com/photo-1451187580459-43490279c0fa?auto=format&fit=crop&w=800&q=80',
+
+  // El Anillo Único / Tolkien
+  tolkien: 'https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?auto=format&fit=crop&w=800&q=80',
+
+  // Western / Deadlands
+  western: 'https://images.unsplash.com/photo-1509316975850-ff9c5deb0cd9?auto=format&fit=crop&w=800&q=80',
+
+  // Juegos de Mesa
+  juegosMesa: 'https://images.unsplash.com/photo-1610890716171-6b1bb98ffd09?auto=format&fit=crop&w=800&q=80',
+
+  // Steampunk
+  steampunk: 'https://images.unsplash.com/photo-1518770660439-4636190af475?auto=format&fit=crop&w=800&q=80'
 };
 
-// Mapeo por Ambientación / Temática (Fallback si el sistema no está en la lista de arriba)
+// Fallbacks de ambientación (si el sistema no tiene una portada oficial directa)
 export const PORTADAS_AMBIENTACION = {
   "Fantasía Medieval": PORTADAS_SISTEMAS.dnd55,
   "Fantasía Oscura": PORTADAS_SISTEMAS.dnd5e,
@@ -30,7 +54,7 @@ export const PORTADAS_AMBIENTACION = {
   "Space Opera": PORTADAS_SISTEMAS.starwars,
   "Cyberpunk": PORTADAS_SISTEMAS.cyberpunk,
   "Steampunk": PORTADAS_SISTEMAS.steampunk,
-  "Post-Apocalíptico": PORTADAS_SISTEMAS.cthulhu,
+  "Post-Apocalíptico": PORTADAS_SISTEMAS.cyberpunk,
   "Misterio / Investigación": PORTADAS_SISTEMAS.cthulhu,
   "Mundo de Tinieblas": PORTADAS_SISTEMAS.vampiro,
   "Superhéroes": PORTADAS_SISTEMAS.cyberpunk,
@@ -42,11 +66,13 @@ export const PORTADAS_AMBIENTACION = {
 };
 
 /**
- * Resuelve la portada ideal para una partida según su sistema_imagen manual,
- * el nombre del sistema o su ambientación/etiqueta.
+ * Resuelve la portada para la partida:
+ * 1. Portada manual configurada por el admin (sistema_imagen)
+ * 2. Mapeo específico por nombre de sistema
+ * 3. Mapeo por ambientación/etiqueta
  */
 export function obtenerPortadaSistema({ sistema = '', etiqueta = '', sistema_imagen = '' } = {}) {
-  // 1. Imagen manual específica si fue configurada en el sistema
+  // 1. Imagen manual específica si fue configurada
   if (sistema_imagen && typeof sistema_imagen === 'string' && sistema_imagen.trim().startsWith('http')) {
     return sistema_imagen.trim();
   }
@@ -56,7 +82,7 @@ export function obtenerPortadaSistema({ sistema = '', etiqueta = '', sistema_ima
     .normalize("NFD")
     .replace(/[\u0300-\u036f]/g, "");
 
-  // 2. Detección por nombre de sistema
+  // 2. Detección precisa de sistema
   if (s.includes('5.5') || s.includes('2024')) {
     return PORTADAS_SISTEMAS.dnd55;
   }
@@ -69,11 +95,11 @@ export function obtenerPortadaSistema({ sistema = '', etiqueta = '', sistema_ima
   if (s.includes('pathfinder') || s.includes('starfinder')) {
     return PORTADAS_SISTEMAS.pathfinder;
   }
-  if (s.includes('vampir') || s.includes('tinieblas') || s.includes('mascarada') || s.includes('werewolf') || s.includes('hombre lobo') || s.includes('mage')) {
-    return PORTADAS_SISTEMAS.vampiro;
-  }
-  if (s.includes('cyberpunk') || s.includes('shadowrun') || s.includes('netrun')) {
+  if (s.includes('cyberpunk') || s.includes('shadowrun')) {
     return PORTADAS_SISTEMAS.cyberpunk;
+  }
+  if (s.includes('vampir') || s.includes('tinieblas') || s.includes('mascarada') || s.includes('werewolf') || s.includes('hombre lobo')) {
+    return PORTADAS_SISTEMAS.vampiro;
   }
   if (s.includes('alien') || s.includes('mothership') || s.includes('nemesis')) {
     return PORTADAS_SISTEMAS.alien;
@@ -102,6 +128,6 @@ export function obtenerPortadaSistema({ sistema = '', etiqueta = '', sistema_ima
     return PORTADAS_AMBIENTACION[etiqueta];
   }
 
-  // 4. Fallback general: D&D / Fantasía clásica
+  // 4. Default: D&D clásico
   return PORTADAS_SISTEMAS.dnd5e;
 }

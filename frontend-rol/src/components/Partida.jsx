@@ -663,25 +663,25 @@ function Partida(props) {
     <>
       <div 
         onClick={() => setModalAbierto(true)}
-        className={`relative p-5 sm:p-8 rounded-[1.5rem] sm:rounded-[2rem] border-2 transition-all duration-500 flex flex-col min-h-[350px] sm:min-h-[450px] h-full cursor-pointer w-full min-w-0 group overflow-hidden ${
+        className={`relative p-5 sm:p-8 rounded-[1.5rem] sm:rounded-[2rem] border-2 transition-all duration-500 flex flex-col min-h-[350px] sm:min-h-[450px] h-full cursor-pointer w-full min-w-0 group overflow-hidden bg-zinc-950 shadow-xl hover:shadow-2xl ${
           props.para_infancias
-          ? "bg-cyan-900/10 border-cyan-400 shadow-[0_0_25px_rgba(6,182,212,0.4)] hover:bg-zinc-900 ring-2 ring-cyan-500/50"
+          ? "border-cyan-400 ring-2 ring-cyan-500/50 shadow-[0_0_25px_rgba(6,182,212,0.3)]"
           : soyElMaster 
-          ? "bg-amber-900/10 border-amber-500/80 shadow-[0_0_20px_rgba(245,158,11,0.25)]" 
-          : `bg-zinc-900/60 hover:bg-zinc-900 hover:shadow-xl ${estiloBordeDisponibilidad}`
+          ? "border-amber-500/80 shadow-[0_0_20px_rgba(245,158,11,0.25)]" 
+          : estiloBordeDisponibilidad
         }`}
       >
-        {/* ✨ PORTADA DEL SISTEMA DE FONDO (ATMOSFÉRICA) */}
+        {/* ✨ PORTADA DEL SISTEMA DE FONDO (VISUALMENTE IMPACTANTE) */}
         {portadaSistema && (
           <div className="absolute inset-0 z-0 overflow-hidden rounded-[1.5rem] sm:rounded-[2rem] pointer-events-none">
             <img 
               src={portadaSistema} 
               alt={props.sistema || 'Portada del Sistema'} 
-              className="w-full h-full object-cover object-center opacity-20 group-hover:opacity-35 group-hover:scale-105 transition-all duration-700 select-none"
+              className="w-full h-full object-cover object-top opacity-55 group-hover:opacity-75 group-hover:scale-105 transition-all duration-700 select-none filter contrast-110 saturate-110"
               loading="lazy"
             />
-            {/* Gradientes oscuros para garantizar 100% legibilidad y contraste */}
-            <div className="absolute inset-0 bg-gradient-to-t from-zinc-950 via-zinc-950/85 to-zinc-950/70"></div>
+            {/* Gradiente cinemático: despejado arriba para ver el arte oficial, degradé elegante al centro y oscuro abajo */}
+            <div className="absolute inset-0 bg-gradient-to-b from-black/35 via-zinc-950/70 to-zinc-950"></div>
           </div>
         )}
 
@@ -740,7 +740,7 @@ function Partida(props) {
               )}
             </div>
 
-            <h3 className={`text-xl sm:text-2xl font-black text-white italic uppercase tracking-tighter leading-tight line-clamp-2 drop-shadow-md break-words transition-colors ${soyElMaster ? 'group-hover:text-amber-400' : tema.hoverText}`}>
+            <h3 className={`text-xl sm:text-2xl font-black text-white italic uppercase tracking-tighter leading-tight line-clamp-2 drop-shadow-[0_2px_10px_rgba(0,0,0,1)] break-words transition-colors ${soyElMaster ? 'group-hover:text-amber-400' : tema.hoverText}`}>
               {props.titulo}
             </h3>
           </div>
@@ -760,7 +760,7 @@ function Partida(props) {
           </div>
         </div>
 
-        <p className="text-zinc-400 text-xs sm:text-sm leading-relaxed mb-4 sm:mb-6 border-l-2 border-zinc-800 pl-3 sm:pl-4 py-1 italic line-clamp-3 sm:line-clamp-4 flex-grow relative z-10 break-words whitespace-normal">
+        <p className="text-zinc-200 text-xs sm:text-sm leading-relaxed mb-4 sm:mb-6 border-l-2 border-amber-500/60 pl-3 sm:pl-4 py-2 italic line-clamp-3 sm:line-clamp-4 flex-grow relative z-10 break-words whitespace-normal bg-black/45 backdrop-blur-sm rounded-r-xl pr-3 shadow-md">
           "{props.description || props.descripcion}"
         </p>
 
@@ -1074,9 +1074,9 @@ function Partida(props) {
           >
             {/* ✨ Portada del Sistema en la cabecera del Modal */}
             {portadaSistema && (
-              <div className="absolute top-0 left-0 right-0 h-48 sm:h-56 overflow-hidden pointer-events-none opacity-20">
-                <img src={portadaSistema} alt="" className="w-full h-full object-cover object-center" />
-                <div className="absolute inset-0 bg-gradient-to-b from-transparent via-zinc-900/80 to-zinc-900"></div>
+              <div className="absolute top-0 left-0 right-0 h-64 overflow-hidden pointer-events-none opacity-35">
+                <img src={portadaSistema} alt="" className="w-full h-full object-cover object-top filter contrast-110" />
+                <div className="absolute inset-0 bg-gradient-to-b from-black/20 via-zinc-900/80 to-zinc-900"></div>
               </div>
             )}
             <div className="flex justify-end gap-2 md:gap-3 mb-6 md:mb-0 md:absolute md:top-6 md:right-6 z-20 w-full md:w-auto">
