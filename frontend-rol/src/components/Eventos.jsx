@@ -29,8 +29,8 @@ function Eventos({ setVista }) {
 
   const usuarioGuardado = JSON.parse(localStorage.getItem('usuario'));
   // Los DMs y Admins pueden crear mesas de rol.
-  const esDungeonMaster = usuarioGuardado && (usuarioGuardado.rol === 'dm' || usuarioGuardado.rol === 'admin');
-  const esAdmin = usuarioGuardado && usuarioGuardado.rol === 'admin';
+  const esDungeonMaster = usuarioGuardado && (usuarioGuardado.rol === 'dm' || (usuarioGuardado.rol === 'admin' || usuarioGuardado.rol === 'superadmin'));
+  const esAdmin = usuarioGuardado && (usuarioGuardado.rol === 'admin' || usuarioGuardado.rol === 'superadmin');
 
   const formatearFechaManual = (fechaStr) => {
     if (!fechaStr) return "Fecha Desconocida";

@@ -49,7 +49,7 @@ router.get('/mis-cronicas', verificarToken, (req, res) => {
 });
 
 router.get('/solicitudes-dm', verificarToken, (req, res) => {
-  if (req.usuario.rol !== 'admin') return res.status(403).json({ error: 'Acceso denegado.' });
+  if (req.usuario.rol !== 'admin' && req.usuario.rol !== 'superadmin') return res.status(403).json({ error: 'Acceso denegado.' });
   db.query("SELECT id, nombre, email FROM usuarios WHERE solicita_dm = 1 AND rol = 'jugador'", (err, resultados) => {
     if (err) return res.status(500).json({ error: 'Error.' });
     res.json(resultados || []);
@@ -58,7 +58,7 @@ router.get('/solicitudes-dm', verificarToken, (req, res) => {
 
 // ✨ SENADO 1: OBTENER VOTACIONES ACTIVAS
 router.get('/votaciones/activas', verificarToken, (req, res) => {
-  if (req.usuario.rol !== 'admin') return res.status(403).json({ error: 'Acceso denegado.' });
+  if (req.usuario.rol !== 'admin' && req.usuario.rol !== 'superadmin') return res.status(403).json({ error: 'Acceso denegado.' });
 
   const sql = `
     SELECT v.id, v.candidato_id, v.estado, c.nombre as candidato_nombre, p.nombre as proponente_nombre,
@@ -79,7 +79,7 @@ router.get('/votaciones/activas', verificarToken, (req, res) => {
 });
 
 router.get('/estadisticas', verificarToken, (req, res) => {
-  if (req.usuario.rol !== 'admin') return res.status(403).json({ error: 'Acceso denegado.' });
+  if (req.usuario.rol !== 'admin' && req.usuario.rol !== 'superadmin') return res.status(403).json({ error: 'Acceso denegado.' });
   const sql = `
     SELECT e.id, e.nombre, COUNT(DISTINCT p.id) AS total_mesas, COUNT(i.id) AS total_jugadores
     FROM eventos e LEFT JOIN partidas p ON e.id = p.evento_id LEFT JOIN inscripciones i ON p.id = i.partida_id
@@ -143,7 +143,7 @@ router.put('/perfil', verificarToken, async (req, res) => {
   try {
     // 🛡️ REGLA: Los usuarios que no son administradores no pueden cambiar su imagen de perfil
     let avatarFinal = avatar;
-    if (req.usuario.rol !== 'admin') {
+    if (req.usuario.rol !== 'admin' && req.usuario.rol !== 'superadmin') {
       const [uActual] = await db.promise().query('SELECT avatar FROM usuarios WHERE id = ?', [idUsuario]);
       avatarFinal = uActual.length > 0 ? uActual[0].avatar : 'guerrero';
     }
@@ -206,7 +206,7 @@ router.put('/:id/promover', verificarToken, promoverHandler);
 router.post('/:id/promover', verificarToken, promoverHandler);
 
 function promoverHandler(req, res) {
-  if (req.usuario.rol !== 'admin') return res.status(403).json({ error: 'Denegado.' });
+  if (req.usuario.rol !== 'admin' && req.usuario.rol !== 'superadmin') return res.status(403).json({ error: 'Denegado.' });
   
   db.query("UPDATE usuarios SET rol = 'dm', solicita_dm = 0, es_dm_nuevo = 1 WHERE id = ?", [req.params.id], (err) => {
     if (err) return res.status(500).send('Error al forjar el ascenso.');
@@ -228,7 +228,7 @@ function promoverHandler(req, res) {
 
 // ✨ CERTIFICADO DE DM: Marcar certificado como entregado y pasar a veterano (Solo Admin)
 router.put('/:id/certificado-entregado', verificarToken, (req, res) => {
-  if (req.usuario.rol !== 'admin') {
+  if (req.usuario.rol !== 'admin' && req.usuario.rol !== 'superadmin') {
     return res.status(403).json({ error: 'Acceso denegado. Solo administradores pueden gestionar certificados.' });
   }
 
@@ -259,7 +259,7 @@ router.put('/:id/certificado-entregado', verificarToken, (req, res) => {
 });
 
 router.put('/:id/rechazar-dm', verificarToken, (req, res) => {
-  if (req.usuario.rol !== 'admin') return res.status(403).json({ error: 'Denegado.' });
+  if (req.usuario.rol !== 'admin' && req.usuario.rol !== 'superadmin') return res.status(403).json({ error: 'Denegado.' });
   
   db.query("UPDATE usuarios SET solicita_dm = 0 WHERE id = ?", [req.params.id], (err) => {
     if (err) return res.status(500).send('Error al rechazar la petición.');
@@ -276,7 +276,7 @@ router.put('/:id/rechazar-dm', verificarToken, (req, res) => {
 });
 
 router.put('/:id/rol', verificarToken, (req, res) => {
-  if (req.usuario.rol !== 'admin') return res.status(403).json({ error: 'Sin autoridad.' });
+  if (req.usuario.rol !== 'admin' && req.usuario.rol !== 'superadmin') return res.status(403).json({ error: 'Sin autoridad.' });
 
   const { rol } = req.body; 
   const usuarioId = req.params.id;
@@ -299,7 +299,7 @@ router.put('/:id/rol', verificarToken, (req, res) => {
 
 // ✨ SENADO: PROPONER ADMIN
 router.post('/:id/proponer-admin', verificarToken, (req, res) => {
-  if (req.usuario.rol !== 'admin') return res.status(403).json({ error: 'Solo admins.' });
+  if (req.usuario.rol !== 'admin' && req.usuario.rol !== 'superadmin') return res.status(403).json({ error: 'Solo admins.' });
   
   const candidatoId = req.params.id;
 
@@ -324,7 +324,7 @@ router.post('/:id/proponer-admin', verificarToken, (req, res) => {
 
 // ✨ SENADO: VOTAR
 router.post('/votaciones/:id/votar', verificarToken, (req, res) => {
-  if (req.usuario.rol !== 'admin') return res.status(403).json({ error: 'Solo admins.' });
+  if (req.usuario.rol !== 'admin' && req.usuario.rol !== 'superadmin') return res.status(403).json({ error: 'Solo admins.' });
 
   const votacionId = req.params.id;
   const { voto } = req.body; 
@@ -368,7 +368,7 @@ router.post('/votaciones/:id/votar', verificarToken, (req, res) => {
 
 // ✨ HARD RESET DE CONTRASEÑA (NUEVO - SOLO PARA ADMINS)
 router.put('/:id/hard-reset', verificarToken, async (req, res) => {
-  if (req.usuario.rol !== 'admin') {
+  if (req.usuario.rol !== 'admin' && req.usuario.rol !== 'superadmin') {
     return res.status(403).json({ error: 'Solo los líderes del gremio tienen este poder.' });
   }
 
@@ -413,7 +413,7 @@ router.get('/notificaciones', verificarToken, (req, res) => {
   });
   
   router.get('/', verificarToken, (req, res) => {
-    if (req.usuario.rol !== 'admin') return res.status(403).json({ error: 'Denegado.' });
+    if (req.usuario.rol !== 'admin' && req.usuario.rol !== 'superadmin') return res.status(403).json({ error: 'Denegado.' });
     const page = Math.max(1, parseInt(req.query.page, 10) || 1);
     const limit = Math.max(1, Math.min(2000, parseInt(req.query.limit, 10) || 10));
     const offset = Math.max(0, (page - 1) * limit);
@@ -422,7 +422,7 @@ router.get('/notificaciones', verificarToken, (req, res) => {
         console.error('Error al contar usuarios:', err);
         return res.status(500).json({ error: 'Error al obtener usuarios.' });
       }
-      const sql = "SELECT id, nombre, nombre_completo, email, rol, avatar, biografia, solicita_dm, es_dm_nuevo, telegram_chat_id, DATE_FORMAT(fecha_nacimiento, '%Y-%m-%d') as fecha_nacimiento, TIMESTAMPDIFF(YEAR, fecha_nacimiento, CURDATE()) as edad, IFNULL((SELECT SUM(r.voto) FROM reputacion r JOIN partidas p ON r.partida_id = p.id WHERE r.evaluado_id = usuarios.id AND p.dungeon_master_id = usuarios.id), 0) as honor_total, IFNULL((SELECT SUM(r.voto) FROM reputacion r JOIN partidas p ON r.partida_id = p.id WHERE r.evaluado_id = usuarios.id AND p.dungeon_master_id != usuarios.id), 0) as reputacion_neta FROM usuarios ORDER BY nombre ASC LIMIT ? OFFSET ?";
+      const sql = "SELECT id, nombre, nombre_completo, email, rol, IFNULL(club_id, 1) as club_id, avatar, biografia, solicita_dm, es_dm_nuevo, telegram_chat_id, DATE_FORMAT(fecha_nacimiento, '%Y-%m-%d') as fecha_nacimiento, TIMESTAMPDIFF(YEAR, fecha_nacimiento, CURDATE()) as edad, IFNULL((SELECT SUM(r.voto) FROM reputacion r JOIN partidas p ON r.partida_id = p.id WHERE r.evaluado_id = usuarios.id AND p.dungeon_master_id = usuarios.id), 0) as honor_total, IFNULL((SELECT SUM(r.voto) FROM reputacion r JOIN partidas p ON r.partida_id = p.id WHERE r.evaluado_id = usuarios.id AND p.dungeon_master_id != usuarios.id), 0) as reputacion_neta FROM usuarios ORDER BY nombre ASC LIMIT ? OFFSET ?";
       db.query(sql, [limit, offset], (err, resultados) => {
         if (err) {
           console.error('Error al listar usuarios:', err);
@@ -434,7 +434,7 @@ router.get('/notificaciones', verificarToken, (req, res) => {
   });
   
   router.get('/yo', verificarToken, (req, res) => {
-    db.query("SELECT id, nombre, nombre_completo, email, rol, avatar, biografia, solicita_dm, es_dm_nuevo, telegram_chat_id, DATE_FORMAT(fecha_nacimiento, '%Y-%m-%d') as fecha_nacimiento, TIMESTAMPDIFF(YEAR, fecha_nacimiento, CURDATE()) as edad, IFNULL((SELECT SUM(r.voto) FROM reputacion r JOIN partidas p ON r.partida_id = p.id WHERE r.evaluado_id = usuarios.id AND p.dungeon_master_id = usuarios.id), 0) as honor_total, IFNULL((SELECT SUM(r.voto) FROM reputacion r JOIN partidas p ON r.partida_id = p.id WHERE r.evaluado_id = usuarios.id AND p.dungeon_master_id != usuarios.id), 0) as reputacion_neta FROM usuarios WHERE id = ?", [req.usuario.id], (err, resultados) => {
+    db.query("SELECT id, nombre, nombre_completo, email, rol, IFNULL(club_id, 1) as club_id, avatar, biografia, solicita_dm, es_dm_nuevo, telegram_chat_id, DATE_FORMAT(fecha_nacimiento, '%Y-%m-%d') as fecha_nacimiento, TIMESTAMPDIFF(YEAR, fecha_nacimiento, CURDATE()) as edad, IFNULL((SELECT SUM(r.voto) FROM reputacion r JOIN partidas p ON r.partida_id = p.id WHERE r.evaluado_id = usuarios.id AND p.dungeon_master_id = usuarios.id), 0) as honor_total, IFNULL((SELECT SUM(r.voto) FROM reputacion r JOIN partidas p ON r.partida_id = p.id WHERE r.evaluado_id = usuarios.id AND p.dungeon_master_id != usuarios.id), 0) as reputacion_neta FROM usuarios WHERE id = ?", [req.usuario.id], (err, resultados) => {
       if (err || resultados.length === 0) return res.status(404).json({ error: 'No encontrado.' });
       res.json(resultados[0]);
     });
@@ -646,7 +646,7 @@ router.delete('/bloqueos/:jugador_id', verificarToken, (req, res) => {
 
 // 1. Listar aventureros con métricas de asistencia y estado de sanción
 router.get('/sanciones/listado', verificarToken, async (req, res) => {
-  if (req.usuario.rol !== 'admin') {
+  if (req.usuario.rol !== 'admin' && req.usuario.rol !== 'superadmin') {
     return res.status(403).json({ error: 'Acceso denegado. Solo el Alto Mando puede gestionar sanciones.' });
   }
 
@@ -791,7 +791,7 @@ router.get('/:id/historial-asistencia', verificarToken, async (req, res) => {
 
 // 3. Justificar / Indultar una inasistencia específica
 router.put('/sanciones/justificar', verificarToken, async (req, res) => {
-  if (req.usuario.rol !== 'admin') {
+  if (req.usuario.rol !== 'admin' && req.usuario.rol !== 'superadmin') {
     return res.status(403).json({ error: 'Solo los administradores pueden otorgar indultos o justificar faltas.' });
   }
 
@@ -890,7 +890,7 @@ router.put('/sanciones/justificar', verificarToken, async (req, res) => {
 
 // 4. Indulto Total (perdonar todas las ausencias pendientes de un aventurero)
 router.put('/sanciones/indulto-total', verificarToken, async (req, res) => {
-  if (req.usuario.rol !== 'admin') {
+  if (req.usuario.rol !== 'admin' && req.usuario.rol !== 'superadmin') {
     return res.status(403).json({ error: 'Solo los administradores pueden otorgar un indulto total.' });
   }
 

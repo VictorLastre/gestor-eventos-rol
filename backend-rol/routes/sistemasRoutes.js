@@ -20,7 +20,7 @@ router.get('/', async (req, res) => {
 
 // 2. AGREGAR NUEVO SISTEMA (Solo Admin)
 router.post('/', verificarToken, async (req, res) => {
-    if (req.usuario.rol !== 'admin') return res.status(403).json({ error: 'Acceso denegado.' });
+    if ((req.usuario.rol !== 'admin' && req.usuario.rol !== 'superadmin')) return res.status(403).json({ error: 'Acceso denegado.' });
     
     const { nombre, imagen } = req.body;
     if (!nombre) return res.status(400).json({ error: 'El nombre es obligatorio.' });
@@ -45,7 +45,7 @@ router.post('/', verificarToken, async (req, res) => {
 
 // 3. MODIFICAR SISTEMA (Solo Admin)
 router.put('/:id', verificarToken, async (req, res) => {
-    if (req.usuario.rol !== 'admin') return res.status(403).json({ error: 'Acceso denegado.' });
+    if ((req.usuario.rol !== 'admin' && req.usuario.rol !== 'superadmin')) return res.status(403).json({ error: 'Acceso denegado.' });
     
     const { nombre, imagen } = req.body;
     const { id } = req.params;
@@ -67,7 +67,7 @@ router.put('/:id', verificarToken, async (req, res) => {
 
 // 4. ELIMINAR SISTEMA (Solo Admin)
 router.delete('/:id', verificarToken, async (req, res) => {
-    if (req.usuario.rol !== 'admin') return res.status(403).json({ error: 'Acceso denegado.' });
+    if ((req.usuario.rol !== 'admin' && req.usuario.rol !== 'superadmin')) return res.status(403).json({ error: 'Acceso denegado.' });
     
     const { id } = req.params;
 

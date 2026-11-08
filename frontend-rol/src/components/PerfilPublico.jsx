@@ -43,13 +43,13 @@ function PerfilPublico({ usuarioId, volver }) {
     </div>
   );
 
-  const rango = (perfil.rol === 'dm' || perfil.rol === 'admin') ? obtenerRangoDM(perfil.dirigiendo ? perfil.dirigiendo.filter(p => p.evento_estado === 'Finalizado').length : 0) : null;
+  const rango = (perfil.rol === 'dm' || (perfil.rol === 'admin' || perfil.rol === 'superadmin')) ? obtenerRangoDM(perfil.dirigiendo ? perfil.dirigiendo.filter(p => p.evento_estado === 'Finalizado').length : 0) : null;
   const fundadores = ['mati', 'martín', 'martin', 'delo', 'keith', 'guille', 'diny', 'sterbern'];
 
   const parseJwt = (token) => { try { return JSON.parse(atob(token.split('.')[1])); } catch (e) { return null; } };
   const token = localStorage.getItem('token');
   const usuarioActual = token ? parseJwt(token) : null;
-  const soyDM = usuarioActual && (usuarioActual.rol === 'dm' || usuarioActual.rol === 'admin');
+  const soyDM = usuarioActual && (usuarioActual.rol === 'dm' || (usuarioActual.rol === 'admin' || usuarioActual.rol === 'superadmin'));
   const esMiPropioPerfil = usuarioActual && usuarioActual.id === parseInt(usuarioId);
 
   const toggleBloqueo = async () => {
@@ -167,7 +167,7 @@ function PerfilPublico({ usuarioId, volver }) {
                   {perfil.nombre}
                 </p>
                 
-                {perfil.rol === 'admin' ? (
+                {(perfil.rol === 'admin' || perfil.rol === 'superadmin') ? (
                   <span className="flex flex-wrap items-center gap-2 text-emerald-400 font-black tracking-[0.2em] text-xs mt-2">
                     <span className="text-sm">👑</span> ADMINISTRADOR
                     {rango && <><span className="text-zinc-600 font-normal ml-1">•</span> <span className={`ml-1 flex items-center gap-1.5 px-2 py-0.5 rounded border border-zinc-800 bg-black/40 ${rango.colorClase}`}>NVL. {rango.nivel} - {rango.nombre.toUpperCase()}</span></>}
@@ -188,7 +188,7 @@ function PerfilPublico({ usuarioId, volver }) {
 
                 {/* ✨ REPUTACIÓN Y ETIQUETAS */}
                 <div className="mt-3 flex flex-wrap items-center gap-4">
-                    {(perfil.rol === 'dm' || perfil.rol === 'admin') ? (
+                    {(perfil.rol === 'dm' || (perfil.rol === 'admin' || perfil.rol === 'superadmin')) ? (
                       <div className="flex gap-4 border-r border-zinc-800 pr-4">
                         <div className="flex flex-col items-center justify-center">
                           <span className={`text-2xl font-black ${perfil.honor_total >= 0 ? 'text-amber-500' : 'text-red-500'}`}>
@@ -244,7 +244,7 @@ function PerfilPublico({ usuarioId, volver }) {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 md:gap-8">
         
         {/* LIDERANDO MESAS (Solo DMs y Admins) */}
-        {(perfil.rol === 'dm' || perfil.rol === 'admin') && (
+        {(perfil.rol === 'dm' || (perfil.rol === 'admin' || perfil.rol === 'superadmin')) && (
           <div className="bg-zinc-900/40 border border-zinc-800/80 p-6 md:p-8 rounded-[2rem]">
             <h3 className="text-amber-500 font-black uppercase tracking-widest text-sm md:text-base mb-6 flex items-center gap-3">
               🛡️ Expediciones Lideradas ({perfil.dirigiendo.length})

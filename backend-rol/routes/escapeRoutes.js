@@ -247,7 +247,7 @@ router.delete('/:id', verificarToken, (req, res) => {
 
     const { organizador_id, titulo, evento_id } = resultados[0];
 
-    if (organizador_id !== req.usuario.id && req.usuario.rol !== 'admin') {
+    if (organizador_id !== req.usuario.id && (req.usuario.rol !== 'admin' && req.usuario.rol !== 'superadmin')) {
       return res.status(403).json({ error: 'No puedes destruir una sala que no creaste.' });
     }
 
@@ -278,7 +278,7 @@ router.put('/:id', verificarToken, (req, res) => {
     const evento_id = resultados[0].evento_id;
     const titulo_viejo = resultados[0].titulo_viejo;
 
-    if (orgId !== usuarioId && rolUsuario !== 'admin') {
+    if (orgId !== usuarioId && (rolUsuario !== 'admin' && rolUsuario !== 'superadmin')) {
       return res.status(403).json({ error: 'No tienes autoridad para reescribir esta sala.' });
     }
 
@@ -309,7 +309,7 @@ router.put('/:id', verificarToken, (req, res) => {
 
 // 7. REPORTE LOGÍSTICO POR HORARIOS
 router.get('/reporte-logistico/:eventoId', verificarToken, (req, res) => {
-  if (req.usuario.rol !== 'admin') return res.status(403).json({ error: 'Solo para el consejo.' });
+  if ((req.usuario.rol !== 'admin' && req.usuario.rol !== 'superadmin')) return res.status(403).json({ error: 'Solo para el consejo.' });
 
   const sql = `
     SELECT 

@@ -20,8 +20,24 @@ const verificarToken = (req, res, next) => {
   jwt.verify(token, JWT_SECRET, (err, decoded) => {
     if (err) return res.status(401).json({ error: 'Tu Pase VIP es inválido o ha caducado.' });
     req.usuario = decoded; 
+    // Flag de conveniencia para roles con privilegios
+    req.usuario.esAdmin = decoded.rol === 'admin' || decoded.rol === 'superadmin';
+    req.usuario.esSuperAdmin = decoded.rol === 'superadmin';
     next();
   });
 };
+
+// Middleware exclusivo para Superadministrador (Fundador / Alto Mando Supremo)
+const verificarSuperAdmin = (req, res, next) => {
+  verificarToken(req, res, () => {
+    if (req.usuario && req.usuario.rol === 'superadmin') {
+      return next();
+    }
+    return res.status(403).json({ error: 'Acceso reservado exclusivamente para el Superadministrador del Gremio.' });
+  });
+};
+
+verificarToken.verificarToken = verificarToken;
+verificarToken.verificarSuperAdmin = verificarSuperAdmin;
 
 module.exports = verificarToken;

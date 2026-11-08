@@ -557,7 +557,7 @@ router.delete('/:id', verificarToken, (req, res) => {
 
     const { dungeon_master_id: dmId, titulo, evento_id, etiqueta } = resultados[0];
 
-    if (dmId !== usuarioId && rolUsuario !== 'admin') {
+    if (dmId !== usuarioId && (rolUsuario !== 'admin' && rolUsuario !== 'superadmin')) {
       return res.status(403).send('No tienes autoridad para disolver esta mesa.');
     }
 
@@ -611,7 +611,7 @@ router.put('/:id', verificarToken, (req, res) => {
 
     const { dungeon_master_id: dmId, evento_id, titulo_viejo, etiqueta_vieja } = resultados[0];
 
-    if (dmId !== usuarioId && rolUsuario !== 'admin') {
+    if (dmId !== usuarioId && (rolUsuario !== 'admin' && rolUsuario !== 'superadmin')) {
       return res.status(403).json({ error: 'Sin permisos.' });
     }
 
@@ -698,7 +698,7 @@ router.post('/:id/notificar-jugadores', verificarToken, (req, res) => {
 
 // ✨ LOGÍSTICA: Reporte completo para Fundadores (Rol y Juegos de Mesa)
 router.get('/reporte-logistico/:eventoId', verificarToken, (req, res) => {
-  if (req.usuario.rol !== 'admin') return res.status(403).json({ error: 'Acceso reservado a los fundadores.' });
+  if ((req.usuario.rol !== 'admin' && req.usuario.rol !== 'superadmin')) return res.status(403).json({ error: 'Acceso reservado a los fundadores.' });
 
   const sql = `
     SELECT 
@@ -749,7 +749,7 @@ router.delete('/:id/expulsar/:usuario_id', verificarToken, (req, res) => {
     if (pResult.length === 0) return res.status(404).json({error: 'Mesa no encontrada'});
 
     const dmId = pResult[0].dungeon_master_id;
-    if (dmId !== idSolicitante && rolSolicitante !== 'admin') {
+    if (dmId !== idSolicitante && (rolSolicitante !== 'admin' && rolSolicitante !== 'superadmin')) {
       return res.status(403).json({error: 'No tienes permiso para expulsar jugadores de esta mesa.'});
     }
 

@@ -21,7 +21,7 @@ const authLimiter = rateLimit({
 
 // ✨ REGISTRO: Actualizado para usar el puente mágico de Promesas
 router.post('/registro', authLimiter, async (req, res) => {
-  const { nombre, nombre_completo, email, password, fecha_nacimiento } = req.body;
+  const { nombre, nombre_completo, email, password, fecha_nacimiento, club_id } = req.body;
 
   // Validación de fecha de nacimiento obligatoria para clasificar edad (+18 o menores)
   if (!fecha_nacimiento) {
@@ -58,10 +58,10 @@ router.post('/registro', authLimiter, async (req, res) => {
     const hash = await bcrypt.hash(password, 10);
     
     // Añadimos nombre_completo y fecha_nacimiento a la consulta SQL
-    const sql = 'INSERT INTO usuarios (nombre, nombre_completo, email, password, rol, fecha_nacimiento) VALUES (?, ?, ?, ?, ?, ?)';
+    const sql = 'INSERT INTO usuarios (nombre, nombre_completo, email, password, rol, fecha_nacimiento, club_id) VALUES (?, ?, ?, ?, ?, ?, ?)';
     
     // ✨ EL PUENTE MÁGICO APLICADO AQUÍ: db.promise().query
-    await db.promise().query(sql, [nombre, nombre_completo, email, hash, 'jugador', fecha_nacimiento]);
+    await db.promise().query(sql, [nombre, nombre_completo, email, hash, 'jugador', fecha_nacimiento, club_id || 1]);
     
     res.status(201).json({ mensaje: '¡Aventurero registrado en el gremio!' });
   } catch (e) { 
@@ -82,6 +82,7 @@ router.post('/login', authLimiter, async (req, res) => {
     // ✨ EL PUENTE MÁGICO APLICADO AQUÍ: db.promise().query con cálculo de edad
     const sqlLogin = `
       SELECT u.*, 
+        IFNULL(u.club_id, 1) as club_id_seguro,
         DATE_FORMAT(u.fecha_nacimiento, '%Y-%m-%d') as fecha_nacimiento_formateada,
         TIMESTAMPDIFF(YEAR, u.fecha_nacimiento, CURDATE()) as edad_calculada
       FROM usuarios u 
@@ -101,7 +102,7 @@ router.post('/login', authLimiter, async (req, res) => {
       return res.status(401).json({ error: 'Credenciales incorrectas' });
     }
 
-    const token = jwt.sign({ id: usuario.id, rol: usuario.rol, nombre: usuario.nombre }, JWT_SECRET, { expiresIn: '2h' });
+    const token = jwt.sign({ id: usuario.id, rol: usuario.rol, nombre: usuario.nombre, club_id: usuario.club_id_seguro || 1 }, JWT_SECRET, { expiresIn: '2h' });
     
     // ✨ LOGIN EXITOSO: Enviamos los datos al Frontend
     res.json({ 
@@ -112,6 +113,7 @@ router.post('/login', authLimiter, async (req, res) => {
         nombre_completo: usuario.nombre_completo, // Enviamos el nombre real
         rol: usuario.rol, 
         email: usuario.email,
+        club_id: usuario.club_id_seguro || 1,
         avatar: usuario.avatar || 'guerrero',
         telegram_chat_id: usuario.telegram_chat_id,
         fecha_nacimiento: usuario.fecha_nacimiento_formateada || null,

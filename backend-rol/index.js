@@ -101,6 +101,9 @@ app.get(/.*/, (req, res) => {
 const PUERTO = process.env.PORT || 8080;
 
 // ✨ INICIAR CRON DE AVISOS SEMANALES
+const asegurarMultiClub = require('./config/asegurarMultiClub');
+asegurarMultiClub();
+
 const iniciarCronAvisos = require('./cron/avisosSemanales');
 iniciarCronAvisos();
 

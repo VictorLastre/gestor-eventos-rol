@@ -13,7 +13,8 @@ function Navbar({ usuario, alCerrarSesion, setVista }) {
   const [noLeidosBuzon, setNoLeidosBuzon] = useState(0);
   const dropdownRef = useRef(null); 
 
-  const esAdmin = usuario?.rol === 'admin';
+  const esAdmin = usuario?.rol === 'admin' || usuario?.rol === 'superadmin';
+  const esSuperAdmin = usuario?.rol === 'superadmin';
 
   const cargarNotificaciones = () => {
     if (usuario) {
@@ -222,7 +223,7 @@ function Navbar({ usuario, alCerrarSesion, setVista }) {
               </p>
               <div className="flex gap-2 justify-end items-center">
                 <p className={`text-[8px] md:text-[9px] font-black uppercase tracking-[0.2em] ${esFundador ? 'text-amber-600' : 'text-zinc-500'}`}>
-                  {usuario?.rol === 'admin' ? '👑 Admin' : usuario?.rol === 'dm' ? '🛡️ DM' : '⚔️ Aventurero'}
+                  {usuario?.rol === 'superadmin' ? '⚡ Superadmin' : usuario?.rol === 'admin' ? '👑 Admin' : usuario?.rol === 'dm' ? '🛡️ DM' : '⚔️ Aventurero'}
                 </p>
               </div>
             </div>

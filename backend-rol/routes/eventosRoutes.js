@@ -33,7 +33,7 @@ router.get('/', (req, res) => {
     // ✨ TRUCO MAESTRO: DATE_FORMAT evita que el driver de JS reste horas por zona horaria
     const sqlSelect = `
       SELECT 
-        id, nombre, descripcion, 
+        id, IFNULL(club_id, 1) as club_id, nombre, descripcion, 
         DATE_FORMAT(fecha, '%Y-%m-%d') as fecha, 
         hora_inicio, hora_fin, estado, lugar, ciudad,
         cupo_rol, cupo_juegos_mesa, cupo_escape_room,
@@ -55,9 +55,10 @@ const { enviarMensajeAlCanal } = require('../utils/telegram');
 
 // 2. Crear un nuevo evento (Solo Admins)
 router.post('/', verificarToken, (req, res) => {
-  if (req.usuario.rol !== 'admin') return res.status(403).json({ error: 'Solo Admins.' });
+  if (req.usuario.rol !== 'admin' && req.usuario.rol !== 'superadmin') return res.status(403).json({ error: 'Solo Admins.' });
   
   let { 
+    club_id, 
     nombre, 
     descripcion, 
     fecha, 
@@ -73,9 +74,9 @@ router.post('/', verificarToken, (req, res) => {
   // Limpiamos la fecha por si viene con barras / la pasamos a guiones -
   const fechaLimpia = fecha.replace(/\//g, '-');
 
-  const sqlInsert = 'INSERT INTO eventos (nombre, descripcion, fecha, hora_inicio, hora_fin, estado, lugar, ciudad, cupo_rol, cupo_juegos_mesa, cupo_escape_room) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)';
+  const sqlInsert = 'INSERT INTO eventos (club_id, nombre, descripcion, fecha, hora_inicio, hora_fin, estado, lugar, ciudad, cupo_rol, cupo_juegos_mesa, cupo_escape_room) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)';
   
-  db.query(sqlInsert, [nombre, descripcion, fechaLimpia, hora_inicio, hora_fin, 'Proximo', lugar, ciudad, cupo_rol || null, cupo_juegos_mesa || null, cupo_escape_room || null], (err) => {
+  db.query(sqlInsert, [club_id || req.usuario.club_id || 1, nombre, descripcion, fechaLimpia, hora_inicio, hora_fin, 'Proximo', lugar, ciudad, cupo_rol || null, cupo_juegos_mesa || null, cupo_escape_room || null], (err) => {
     if (err) {
       console.error(err);
       return res.status(500).json({ error: 'Error al convocar el evento.' });
@@ -339,7 +340,7 @@ router.post('/:id/partidas', verificarToken, (req, res) => {
 
 // 5. Modificar un Evento (Solo Admins)
 router.put('/:id', verificarToken, (req, res) => {
-  if (req.usuario.rol !== 'admin') return res.status(403).json({ error: 'Solo los líderes del gremio pueden alterar la historia.' });
+  if (req.usuario.rol !== 'admin' && req.usuario.rol !== 'superadmin') return res.status(403).json({ error: 'Solo los líderes del gremio pueden alterar la historia.' });
 
   const eventoId = req.params.id;
   let { nombre, descripcion, fecha, hora_inicio, hora_fin, estado, lugar, ciudad, cupo_rol, cupo_juegos_mesa, cupo_escape_room } = req.body;
@@ -369,7 +370,7 @@ router.put('/:id', verificarToken, (req, res) => {
 
 // 6. Eliminar un evento (Solo Admins)
 router.delete('/:id', verificarToken, (req, res) => {
-  if (req.usuario.rol !== 'admin') return res.status(403).json({ error: 'Sin autorización.' });
+  if (req.usuario.rol !== 'admin' && req.usuario.rol !== 'superadmin') return res.status(403).json({ error: 'Sin autorización.' });
   
   db.query("SELECT nombre FROM eventos WHERE id = ?", [req.params.id], (err, result) => {
       const nombreEvento = result[0]?.nombre || 'Desconocido';
@@ -389,7 +390,7 @@ router.delete('/:id', verificarToken, (req, res) => {
 
 // 7. Enviar convocatoria de DMs a Telegram (Solo Admins)
 router.post('/:id/convocatoria', verificarToken, (req, res) => {
-  if (req.usuario.rol !== 'admin') return res.status(403).json({ error: 'Sin autorización.' });
+  if (req.usuario.rol !== 'admin' && req.usuario.rol !== 'superadmin') return res.status(403).json({ error: 'Sin autorización.' });
   
   db.query("SELECT * FROM eventos WHERE id = ?", [req.params.id], (err, result) => {
     if (err || result.length === 0) return res.status(404).json({ error: 'Evento no encontrado.' });

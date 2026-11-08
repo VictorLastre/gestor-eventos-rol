@@ -28,7 +28,7 @@ router.post('/', (req, res) => {
 
 // GET /api/buzon - Obtener todos los mensajes (solo admin)
 router.get('/', verificarToken, (req, res) => {
-  if (req.usuario.rol !== 'admin') return res.status(403).json({ error: 'Acceso denegado.' });
+  if ((req.usuario.rol !== 'admin' && req.usuario.rol !== 'superadmin')) return res.status(403).json({ error: 'Acceso denegado.' });
   
   db.query("SELECT * FROM buzon_sugerencias ORDER BY fecha DESC", (err, resultados) => {
     if (err) return res.status(500).json({ error: 'Error al obtener el buzón.' });
@@ -38,7 +38,7 @@ router.get('/', verificarToken, (req, res) => {
 
 // PUT /api/buzon/:id/leer - Marcar como leído o no leído (solo admin)
 router.put('/:id/leer', verificarToken, (req, res) => {
-  if (req.usuario.rol !== 'admin') return res.status(403).json({ error: 'Acceso denegado.' });
+  if ((req.usuario.rol !== 'admin' && req.usuario.rol !== 'superadmin')) return res.status(403).json({ error: 'Acceso denegado.' });
   
   const { leido } = req.body; // true o false
   
@@ -54,7 +54,7 @@ router.put('/:id/leer', verificarToken, (req, res) => {
 
 // DELETE /api/buzon/:id - Eliminar un mensaje (solo admin)
 router.delete('/:id', verificarToken, (req, res) => {
-  if (req.usuario.rol !== 'admin') return res.status(403).json({ error: 'Acceso denegado.' });
+  if ((req.usuario.rol !== 'admin' && req.usuario.rol !== 'superadmin')) return res.status(403).json({ error: 'Acceso denegado.' });
   
   db.query("DELETE FROM buzon_sugerencias WHERE id = ?", [req.params.id], (err, result) => {
     if (err) return res.status(500).json({ error: 'Error al eliminar el mensaje.' });

@@ -265,7 +265,7 @@ function MisCronicas({ alActualizarUsuario }) {
                 <div>
                   <h4 className="text-white font-bold text-lg">Retrato de tu Ficha</h4>
                   <p className="text-zinc-400 text-sm mt-1">
-                    {usuarioGuardado?.rol === 'admin' 
+                    {(usuarioGuardado?.rol === 'admin' || usuarioGuardado?.rol === 'superadmin') 
                       ? 'Como Administrador, puedes personalizar tu avatar oficial de la Asociación, de la Cripta o procedural.'
                       : 'El rostro con el que te reconoce el Gremio. La personalización de imagen de perfil estará disponible próximamente para todos los miembros.'}
                   </p>
@@ -273,7 +273,7 @@ function MisCronicas({ alActualizarUsuario }) {
               </div>
 
               {/* Selector Interactivo de Avatares (Solo Administradores) */}
-              {usuarioGuardado?.rol === 'admin' ? (
+              {(usuarioGuardado?.rol === 'admin' || usuarioGuardado?.rol === 'superadmin') ? (
               <div className="pt-4 border-t border-zinc-800/80 space-y-4">
                 {/* 1. Retratos Oficiales de la Asociación (PNJ / Mesa Directiva) */}
                 <div>
@@ -528,7 +528,7 @@ function MisCronicas({ alActualizarUsuario }) {
                     </p>
                   )}
 
-                  {usuarioGuardado?.rol === 'admin' ? (
+                  {(usuarioGuardado?.rol === 'admin' || usuarioGuardado?.rol === 'superadmin') ? (
                     <p className="text-emerald-500 font-black text-[10px] uppercase tracking-[0.4em] mb-2 w-full truncate">👑 Administrador</p>
                   ) : usuarioGuardado?.rol === 'dm' ? (
                     <div className="flex flex-wrap items-center gap-2 mb-2 w-full">

@@ -63,7 +63,7 @@ function CrearMesa({ idEvento, alCrearMesa }) {
 
 
   const usuarioGuardado = JSON.parse(localStorage.getItem('usuario'));
-  const esAdmin = usuarioGuardado && usuarioGuardado.rol === 'admin';
+  const esAdmin = usuarioGuardado && (usuarioGuardado.rol === 'admin' || usuarioGuardado.rol === 'superadmin');
 
   const cargarSistemas = () => {
     fetch('/api/sistemas')
