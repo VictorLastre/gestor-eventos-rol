@@ -9,7 +9,7 @@ import TarjetaEscape from './TarjetaEscape';
 import { fetchProtegido } from '../utils/api'; 
 import { io } from 'socket.io-client';
 
-function Eventos({ setVista }) {
+function Eventos({ setVista, mesaActivaId, setMesaActivaId }) {
   const [eventos, setEventos] = useState([]);
   const [eventoSeleccionado, setEventoSeleccionado] = useState(null);
   const [partidasDelEvento, setPartidasDelEvento] = useState([]);
@@ -409,6 +409,8 @@ function Eventos({ setVista }) {
                         setVista={setVista} 
                         esMiMesa={usuarioGuardado?.id === p.dungeon_master_id} 
                         inscripcionesCerradas={inscripcionesCerradas} 
+                        mesaActivaId={mesaActivaId}
+                        setMesaActivaId={setMesaActivaId}
                       />
                     </div>
                   ))}
@@ -601,6 +603,8 @@ function Eventos({ setVista }) {
                         setVista={setVista} 
                         esMiMesa={usuarioGuardado?.id === p.dungeon_master_id} 
                         inscripcionesCerradas={inscripcionesCerradas} 
+                        mesaActivaId={mesaActivaId}
+                        setMesaActivaId={setMesaActivaId}
                       />
                     </div>
                   ))}

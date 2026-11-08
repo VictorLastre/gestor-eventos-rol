@@ -39,7 +39,7 @@ function PerfilPublico({ usuarioId, volver }) {
     <div className="flex flex-col items-center justify-center min-h-[50vh] text-center gap-4">
       <span className="text-6xl grayscale opacity-20">👻</span>
       <p className="text-zinc-500 font-bold uppercase tracking-widest">{error || 'El aventurero se ha desvanecido'}</p>
-      <button onClick={volver} className="mt-4 px-6 py-3 bg-zinc-800 hover:bg-zinc-700 text-white font-black rounded-xl uppercase tracking-widest text-xs transition-colors">Volver a la taberna</button>
+      <button onClick={() => { if (window.history.length > 1) { window.history.back(); } else if (volver) { volver(); } }} className="mt-4 px-6 py-3 bg-zinc-800 hover:bg-zinc-700 text-white font-black rounded-xl uppercase tracking-widest text-xs transition-colors cursor-pointer">Volver a la taberna</button>
     </div>
   );
 
@@ -126,8 +126,14 @@ function PerfilPublico({ usuarioId, volver }) {
     <div className="max-w-4xl mx-auto p-4 md:p-8 animate-in fade-in zoom-in-95 duration-500">
       
       <button 
-        onClick={volver}
-        className="mb-6 flex items-center gap-2 text-zinc-500 hover:text-emerald-400 font-black uppercase tracking-widest text-xs transition-colors"
+        onClick={() => {
+          if (window.history.length > 1) {
+            window.history.back();
+          } else if (volver) {
+            volver();
+          }
+        }}
+        className="mb-6 flex items-center gap-2 text-zinc-500 hover:text-emerald-400 font-black uppercase tracking-widest text-xs transition-colors cursor-pointer"
       >
         <span>←</span> Volver
       </button>

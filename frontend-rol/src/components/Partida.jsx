@@ -54,6 +54,36 @@ function Partida(props) {
   const [miEstado, setMiEstado] = useState(props.mi_estado || 'confirmada');
   const [listaJugadores, setListaJugadores] = useState([]);
   const [modalAbierto, setModalAbierto] = useState(false);
+
+  // 📱 Sincronizar apertura de modal con el botón Atrás del celular
+  useEffect(() => {
+    if (props.mesaActivaId && props.mesaActivaId === props.id) {
+      setModalAbierto(true);
+    } else if (props.mesaActivaId === null && modalAbierto && window.history.state?.partidaId !== props.id) {
+      setModalAbierto(false);
+    }
+  }, [props.mesaActivaId, props.id]);
+
+  const abrirModalMesa = () => {
+    setModalAbierto(true);
+    if (props.setMesaActivaId) {
+      props.setMesaActivaId(props.id);
+    }
+    if (window.history.state?.partidaId !== props.id) {
+      window.history.pushState({ tipo: 'modal-mesa', partidaId: props.id, vista: 'eventos' }, '');
+    }
+  };
+
+  const cerrarModalMesa = () => {
+    if (window.history.state?.tipo === 'modal-mesa' && window.history.state?.partidaId === props.id) {
+      window.history.back();
+    } else {
+      setModalAbierto(false);
+      if (props.setMesaActivaId) {
+        props.setMesaActivaId(null);
+      }
+    }
+  };
   const [mostrarEvaluar, setMostrarEvaluar] = useState(false);
   const usuarioGuardado = JSON.parse(localStorage.getItem('usuario') || '{}');
   const usuarioIdActual = usuarioGuardado.id;
@@ -662,7 +692,7 @@ function Partida(props) {
   return (
     <>
       <div 
-        onClick={() => setModalAbierto(true)}
+        onClick={abrirModalMesa}
         className={`relative p-5 sm:p-8 rounded-[1.5rem] sm:rounded-[2rem] border-2 transition-all duration-500 flex flex-col min-h-[350px] sm:min-h-[450px] h-full cursor-pointer w-full min-w-0 group overflow-hidden bg-zinc-950 shadow-xl hover:shadow-2xl ${
           props.para_infancias
           ? "border-cyan-400 ring-2 ring-cyan-500/50 shadow-[0_0_25px_rgba(6,182,212,0.3)]"
@@ -1067,7 +1097,12 @@ function Partida(props) {
       )}
 
       {modalAbierto && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 md:p-6 bg-black/95 backdrop-blur-md animate-in fade-in duration-300">
+        <div 
+          onClick={(e) => {
+            if (e.target === e.currentTarget) cerrarModalMesa();
+          }}
+          className="fixed inset-0 z-[100] flex items-center justify-center p-4 md:p-6 bg-black/95 backdrop-blur-md animate-in fade-in duration-300"
+        >
           <div 
             className="bg-zinc-900 border border-zinc-800 w-full max-w-3xl max-h-[95vh] overflow-y-auto rounded-[2.5rem] p-8 md:p-12 relative shadow-[0_0_100px_rgba(0,0,0,0.8)] scrollbar-hide overflow-hidden"
             style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
@@ -1097,8 +1132,8 @@ function Partida(props) {
                 </>
               )}
               <button 
-                onClick={() => setModalAbierto(false)}
-                className="w-10 h-10 flex items-center justify-center text-zinc-500 hover:text-white bg-zinc-950 border border-zinc-800 rounded-xl transition-colors hover:bg-zinc-800"
+                onClick={cerrarModalMesa}
+                className="w-10 h-10 flex items-center justify-center text-zinc-500 hover:text-white bg-zinc-950 border border-zinc-800 rounded-xl transition-colors hover:bg-zinc-800 cursor-pointer"
               >
                 ✕
               </button>
@@ -1174,7 +1209,7 @@ function Partida(props) {
                           <p 
                             className="text-xl text-zinc-200 font-black truncate flex items-center gap-2 cursor-pointer hover:text-emerald-400 transition-colors" 
                             title={soyAdmin && props.dm_nombre_completo ? `Nombre real: ${props.dm_nombre_completo}` : undefined}
-                            onClick={() => { if (props.eventoEsPasado && (anotado || soyElMaster)) { setMostrarEvaluar(true); } else if (props.setVista) { props.setVista(`perfil:${props.dungeon_master_id}`); setModalAbierto(false); } }}
+                            onClick={() => { if (props.eventoEsPasado && (anotado || soyElMaster)) { setMostrarEvaluar(true); } else if (props.setVista) { props.setVista(`perfil:${props.dungeon_master_id}`, { partidaId: props.id }); setModalAbierto(false); } }}
                           >
                             {props.dmNombre || props.dungeon_master_nombre} {props.dm_reputacion_neta !== undefined && props.dm_reputacion_neta !== 0 && (<span className={`px-2 py-0.5 rounded-lg text-[10px] border ${props.dm_reputacion_neta > 0 ? 'bg-emerald-500/20 text-emerald-400 border-emerald-500/50' : 'bg-red-500/20 text-red-400 border-red-500/50'}`}>{props.dm_reputacion_neta > 0 ? '+' : ''}{props.dm_reputacion_neta}</span>)}
                           </p>
@@ -1282,7 +1317,7 @@ function Partida(props) {
                                 if (props.eventoEsPasado && (anotado || soyElMaster)) {
                                   setMostrarEvaluar(true);
                                 } else if (props.setVista && jugador.id) {
-                                  props.setVista(`perfil:${jugador.id}`);
+                                  props.setVista(`perfil:${jugador.id}`, { partidaId: props.id });
                                   setModalAbierto(false);
                                 }
                               }}
@@ -1425,7 +1460,7 @@ function Partida(props) {
                               <span 
                                 onClick={() => {
                                   if (props.setVista && suplente.id) {
-                                    props.setVista(`perfil:${suplente.id}`);
+                                    props.setVista(`perfil:${suplente.id}`, { partidaId: props.id });
                                     setModalAbierto(false);
                                   }
                                 }}
@@ -1573,8 +1608,8 @@ function Partida(props) {
                   </>
                 )}
                 <button 
-                  onClick={() => setModalAbierto(false)}
-                  className={`py-5 px-8 shrink-0 bg-zinc-950 text-zinc-500 font-black rounded-2xl uppercase text-[10px] tracking-widest hover:bg-zinc-800 hover:text-white transition-colors border border-zinc-800 ${soyElMaster || props.eventoEsPasado ? 'w-full' : ''}`}
+                  onClick={cerrarModalMesa}
+                  className={`py-5 px-8 shrink-0 bg-zinc-950 text-zinc-500 font-black rounded-2xl uppercase text-[10px] tracking-widest hover:bg-zinc-800 hover:text-white transition-colors border border-zinc-800 cursor-pointer ${soyElMaster || props.eventoEsPasado ? 'w-full' : ''}`}
                 >
                   Regresar
                 </button>
