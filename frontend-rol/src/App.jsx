@@ -1,6 +1,7 @@
 ﻿import { useState, useEffect } from 'react';
 
 import Swal from 'sweetalert2';
+import { io } from 'socket.io-client';
 
 import { fetchProtegido } from './utils/api';
 
@@ -36,6 +37,10 @@ import './App.css';
 
 function App() {
   const [usuarioLogueado, setUsuarioLogueado] = useState(JSON.parse(localStorage.getItem('usuario')));
+  
+  // 🏛️ ESTADOS GLOBALES DE COMUNIDADES / CLUBES
+  const [clubes, setClubes] = useState([]);
+  const [clubActivo, setClubActivo] = useState(null);
   
   // Maneja la navegación de los que no tienen sesión ('landing', 'login', 'registro')
   const [vistaInvitado, setVistaInvitado] = useState(() => {
@@ -102,6 +107,120 @@ function App() {
     setMesaActivaId(null);
     window.history.replaceState({ tipo: 'vista-invitado', vistaInvitado: 'landing' }, '');
   };
+
+
+  // 🏛️ GESTIÓN Y RESOLUCIÓN DE COMUNIDAD ACTIVA
+  const cargarClubes = async () => {
+    try {
+      const res = await fetch('/api/clubes');
+      if (res.ok) {
+        const data = await res.json();
+        if (Array.isArray(data)) {
+          setClubes(data);
+          resolverClubInicial(data);
+        }
+      }
+    } catch (err) {
+      console.error('Error al cargar comunidades:', err);
+    }
+  };
+
+  const resolverClubInicial = async (listaClubes) => {
+    if (!listaClubes || listaClubes.length === 0) return;
+
+    // 1. URL Query parameter ?club=merlo-san-luis o ?club=2
+    const urlParams = new URLSearchParams(window.location.search);
+    const paramClub = urlParams.get('club');
+    if (paramClub) {
+      const paramLower = paramClub.toLowerCase();
+      const encontrado = listaClubes.find(c => 
+        (c.slug && c.slug.toLowerCase() === paramLower) || c.id.toString() === paramClub
+      );
+      if (encontrado) {
+        setClubActivo(encontrado);
+        localStorage.setItem('club_activo_id', encontrado.id);
+        return;
+      }
+    }
+
+    // 2. LocalStorage guardado previamente
+    const guardadoId = localStorage.getItem('club_activo_id');
+    const esSuperAdmin = usuarioLogueado?.rol === 'superadmin';
+    if (guardadoId === 'todos' && esSuperAdmin) {
+      setClubActivo({ id: 'todos', nombre: 'Todas las Comunidades', slug: 'todos', ciudad: 'Multiverso', provincia: 'Argentina' });
+      return;
+    }
+    if (guardadoId && guardadoId !== 'todos') {
+      const encontrado = listaClubes.find(c => c.id.toString() === guardadoId.toString());
+      if (encontrado) {
+        setClubActivo(encontrado);
+        return;
+      }
+    }
+
+    // 3. Club del usuario logueado
+    if (usuarioLogueado?.club_id) {
+      const encontrado = listaClubes.find(c => c.id === usuarioLogueado.club_id);
+      if (encontrado) {
+        setClubActivo(encontrado);
+        localStorage.setItem('club_activo_id', encontrado.id);
+        return;
+      }
+    }
+
+    // 4. Detección automática por IP (geolocalización)
+    try {
+      const resGeo = await fetch('/api/clubes/detectar/geo');
+      if (resGeo.ok) {
+        const dataGeo = await resGeo.json();
+        if (dataGeo.clubSugerido) {
+          const coincidencia = listaClubes.find(c => c.id === dataGeo.clubSugerido.id);
+          if (coincidencia) {
+            setClubActivo(coincidencia);
+            localStorage.setItem('club_activo_id', coincidencia.id);
+            return;
+          }
+        }
+      }
+    } catch (e) {
+      // Fallback silencioso
+    }
+
+    // 5. Fallback por defecto: Club 1 (La Pampa) o el primero disponible
+    const defecto = listaClubes.find(c => c.id === 1) || listaClubes[0];
+    setClubActivo(defecto);
+    if (defecto) localStorage.setItem('club_activo_id', defecto.id);
+  };
+
+  const cambiarClubActivo = (nuevoClub) => {
+    setClubActivo(nuevoClub);
+    if (nuevoClub) {
+      localStorage.setItem('club_activo_id', nuevoClub.id);
+    }
+  };
+
+  useEffect(() => {
+    cargarClubes();
+
+    const socket = io('/', { path: '/api/socket.io' });
+    socket.on('actualizacion-clubes', () => {
+      fetch('/api/clubes')
+        .then(res => res.json())
+        .then(data => {
+          if (Array.isArray(data)) {
+            setClubes(data);
+            setClubActivo(actual => {
+              if (!actual || actual.id === 'todos') return actual;
+              const act = data.find(c => c.id === actual.id);
+              return act || actual;
+            });
+          }
+        })
+        .catch(err => console.error(err));
+    });
+
+    return () => socket.disconnect();
+  }, [usuarioLogueado?.id]);
 
   // 📱 ESCUCHAR EVENTO POPSTATE PARA SOPORTAR EL BOTÓN "ATRÁS" DEL CELULAR
   useEffect(() => {
@@ -449,7 +568,7 @@ function App() {
 
         {vistaInvitado === 'registro' ? (
           <div className="w-full max-w-md animate-in fade-in zoom-in-95 duration-300">
-            <Registro irALogin={() => cambiarVistaInvitado('login')} />
+            <Registro irALogin={() => cambiarVistaInvitado('login')} clubActivo={clubActivo} clubes={clubes} />
             
             <p className="text-center mt-6 text-zinc-500 text-[10px] md:text-xs font-bold uppercase tracking-widest">
               ¿Ya eres miembro?{' '}
@@ -486,7 +605,10 @@ function App() {
       <Navbar 
         usuario={usuarioLogueado} 
         alCerrarSesion={cerrarSesion} 
-        setVista={cambiarVista} 
+        setVista={cambiarVista}
+        clubActivo={clubActivo}
+        setClubActivo={cambiarClubActivo}
+        clubes={clubes}
       />
 
       <main className="container mx-auto pb-20 relative z-0">
@@ -494,11 +616,14 @@ function App() {
           <Eventos 
             setVista={cambiarVista} 
             mesaActivaId={mesaActivaId} 
-            setMesaActivaId={setMesaActivaId} 
+            setMesaActivaId={setMesaActivaId}
+            clubActivo={clubActivo}
+            setClubActivo={cambiarClubActivo}
+            clubes={clubes}
           />
         )}
         {vistaActual === 'mis-cronicas' && <MisCronicas alActualizarUsuario={setUsuarioLogueado} />}
-        {vistaActual === 'admin' && <PanelAdmin setVista={cambiarVista} />}
+        {vistaActual === 'admin' && <PanelAdmin setVista={cambiarVista} clubActivo={clubActivo} clubes={clubes} />}
         {vistaActual.startsWith('perfil:') && (
           <PerfilPublico 
             usuarioId={vistaActual.split(':')[1]} 

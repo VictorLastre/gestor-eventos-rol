@@ -43,6 +43,67 @@ router.get('/', async (req, res) => {
   }
 });
 
+// 0. DETECTAR CLUB POR IP / GEOLOCALIZACIÓN (Público)
+router.get('/detectar/geo', async (req, res) => {
+  try {
+    let ip = req.headers['cf-connecting-ip'] || 
+             req.headers['x-real-ip'] || 
+             req.headers['x-forwarded-for']?.split(',')[0]?.trim() || 
+             req.socket.remoteAddress || '';
+
+    if (ip.startsWith('::ffff:')) {
+      ip = ip.replace('::ffff:', '');
+    }
+
+    const esLocal = ip === '::1' || ip === '127.0.0.1' || ip.startsWith('192.168.') || ip.startsWith('10.');
+
+    let ciudadDetectada = '';
+    let provinciaDetectada = '';
+
+    if (!esLocal && ip && !ip.startsWith('172.')) {
+      try {
+        const respuesta = await fetch(`http://ip-api.com/json/${ip}?fields=status,country,regionName,city`, { signal: AbortSignal.timeout(2500) });
+        if (respuesta.ok) {
+          const dataGeo = await respuesta.json();
+          if (dataGeo.status === 'success') {
+            ciudadDetectada = dataGeo.city || '';
+            provinciaDetectada = dataGeo.regionName || '';
+          }
+        }
+      } catch (e) {
+        // Fallback silencioso si falla la llamada externa
+      }
+    }
+
+    const [clubes] = await db.promise().query("SELECT id, nombre, slug, ciudad, provincia FROM clubes WHERE activo = 1");
+    
+    let clubSugerido = null;
+    if (provinciaDetectada || ciudadDetectada) {
+      const provLower = provinciaDetectada.toLowerCase();
+      const ciudLower = ciudadDetectada.toLowerCase();
+
+      clubSugerido = clubes.find(c => 
+        (c.provincia && (provLower.includes(c.provincia.toLowerCase()) || c.provincia.toLowerCase().includes(provLower))) ||
+        (c.ciudad && (ciudLower.includes(c.ciudad.toLowerCase()) || c.ciudad.toLowerCase().includes(ciudLower)))
+      );
+    }
+
+    if (!clubSugerido) {
+      clubSugerido = clubes.find(c => c.id === 1) || clubes[0] || null;
+    }
+
+    res.json({
+      ip,
+      ciudadDetectada,
+      provinciaDetectada,
+      clubSugerido
+    });
+  } catch (err) {
+    console.error('Error al detectar geolocalización:', err);
+    res.json({ clubSugerido: { id: 1, nombre: 'Asociación de Rol La Pampa', slug: 'la-pampa' } });
+  }
+});
+
 // 2. DETALLE DE UN CLUB ESPECÍFICO POR ID O SLUG (Público)
 router.get('/:identificador', async (req, res) => {
   const { identificador } = req.params;

@@ -9,7 +9,7 @@ import TarjetaEscape from './TarjetaEscape';
 import { fetchProtegido } from '../utils/api'; 
 import { io } from 'socket.io-client';
 
-function Eventos({ setVista, mesaActivaId, setMesaActivaId }) {
+function Eventos({ setVista, mesaActivaId, setMesaActivaId, clubActivo, setClubActivo, clubes = [] }) {
   const [eventos, setEventos] = useState([]);
   const [eventoSeleccionado, setEventoSeleccionado] = useState(null);
   const [partidasDelEvento, setPartidasDelEvento] = useState([]);
@@ -41,10 +41,16 @@ function Eventos({ setVista, mesaActivaId, setMesaActivaId }) {
   };
 
   const cargarEventos = () => {
-    fetch('/api/eventos')
+    let url = '/api/eventos';
+    if (clubActivo?.id === 'todos') {
+      url = '/api/eventos?club_id=todos';
+    } else if (clubActivo?.id) {
+      url = `/api/eventos?club_id=${clubActivo.id}`;
+    }
+    fetch(url)
       .then(res => res.json())
       .then(datos => setEventos(Array.isArray(datos) ? datos : []))
-      .catch(err => console.error("Error:", err));
+      .catch(err => console.error("Error cargando eventos:", err));
   };
 
   const cargarMesasDelEvento = (idEvento) => {
@@ -62,6 +68,11 @@ function Eventos({ setVista, mesaActivaId, setMesaActivaId }) {
       .catch(err => { if (err !== 'Sesión expirada') console.error(err); });
   };
 
+  // Recargar eventos cuando cambie la sede activa
+  useEffect(() => {
+    cargarEventos();
+  }, [clubActivo?.id]);
+
   useEffect(() => { 
     cargarEventos(); 
 
@@ -72,6 +83,10 @@ function Eventos({ setVista, mesaActivaId, setMesaActivaId }) {
     });
 
     socket.on('actualizacion-eventos', () => {
+      cargarEventos();
+    });
+
+    socket.on('actualizacion-clubes', () => {
       cargarEventos();
     });
 
@@ -666,6 +681,49 @@ function Eventos({ setVista, mesaActivaId, setMesaActivaId }) {
         </div>
       )}
 
+      {/* 🏛️ BANNER HERO DE LA COMUNIDAD / SEDE ACTIVA */}
+      <div className="mb-10 bg-gradient-to-r from-zinc-900/90 via-zinc-900/50 to-zinc-950 p-6 sm:p-8 rounded-[2.5rem] border border-zinc-800 shadow-2xl relative overflow-hidden flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6">
+        <div className="absolute top-0 right-0 w-96 h-96 bg-emerald-500/5 blur-3xl pointer-events-none rounded-full"></div>
+        <div className="flex items-center gap-4 sm:gap-5 min-w-0 relative z-10">
+          <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-2xl bg-zinc-950 border border-zinc-800 flex items-center justify-center shrink-0 shadow-inner overflow-hidden text-2xl sm:text-3xl">
+            {clubActivo?.logo ? (
+              <img src={clubActivo.logo} alt="" className="w-full h-full object-cover" />
+            ) : (
+              clubActivo?.id === 'todos' ? '🌐' : '🏛️'
+            )}
+          </div>
+          <div className="min-w-0">
+            <div className="flex items-center gap-2">
+              <span className="text-[9px] sm:text-[10px] font-black uppercase tracking-[0.25em] text-emerald-400">
+                {clubActivo?.id === 'todos' ? 'Multiverso Activo' : 'Sede del Gremio'}
+              </span>
+              {clubActivo?.id === 'todos' && (
+                <span className="text-[8px] font-black bg-purple-500/20 text-purple-300 border border-purple-500/30 px-2 py-0.5 rounded-full">
+                  TODAS LAS REGIONES
+                </span>
+              )}
+            </div>
+            <h2 className="text-2xl sm:text-3xl md:text-4xl font-black text-white uppercase italic tracking-tighter truncate mt-1">
+              {clubActivo ? clubActivo.nombre : 'Asociación de Rol La Pampa'}
+            </h2>
+            <p className="text-xs sm:text-sm text-zinc-400 font-bold flex items-center gap-2 mt-1">
+              <span>📍</span> {clubActivo?.id === 'todos' ? 'Todas las localidades de Argentina' : `${clubActivo?.ciudad || 'Santa Rosa'}, ${clubActivo?.provincia || 'La Pampa'}`}
+            </p>
+          </div>
+        </div>
+
+        {clubActivo?.whatsapp_url && (
+          <a 
+            href={clubActivo.whatsapp_url} 
+            target="_blank" 
+            rel="noreferrer"
+            className="relative z-10 px-4 py-2.5 rounded-xl bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 font-black text-xs uppercase tracking-widest flex items-center gap-2 transition-all shrink-0 hover:scale-105"
+          >
+            <span>💬</span> Grupo de la Sede
+          </a>
+        )}
+      </div>
+
       <section className="mb-20 relative">
         <div className="absolute inset-0 bg-gradient-to-r from-amber-500/5 via-transparent to-purple-500/5 blur-3xl pointer-events-none -z-10 rounded-[3rem]"></div>
         
@@ -692,6 +750,11 @@ function Eventos({ setVista, mesaActivaId, setMesaActivaId }) {
                 
                 <div className="flex justify-between items-start mb-6 gap-2">
                   <div>
+                    {e.club_nombre && clubActivo?.id === 'todos' && (
+                      <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[8px] font-black uppercase tracking-widest bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 mb-2">
+                        🏛️ {e.club_nombre} {e.club_ciudad ? `• ${e.club_ciudad}` : ''}
+                      </span>
+                    )}
                     <p className="text-zinc-500 font-bold uppercase tracking-widest text-xs mb-2">
                       {formatearFechaManual(e.fecha)}
                     </p>
@@ -782,9 +845,16 @@ function Eventos({ setVista, mesaActivaId, setMesaActivaId }) {
               onClick={() => entrarAlEvento(e)}
             >
               <div className="flex justify-between items-start mb-4">
-                <p className="text-zinc-600 font-bold uppercase tracking-widest text-[10px]">
-                  {formatearFechaManual(e.fecha)}
-                </p>
+                <div>
+                  {e.club_nombre && clubActivo?.id === 'todos' && (
+                    <span className="inline-block px-2 py-0.5 rounded-full text-[8px] font-black uppercase tracking-widest bg-zinc-900 text-zinc-400 border border-zinc-800 mb-1">
+                      🏛️ {e.club_nombre}
+                    </span>
+                  )}
+                  <p className="text-zinc-600 font-bold uppercase tracking-widest text-[10px]">
+                    {formatearFechaManual(e.fecha)}
+                  </p>
+                </div>
                 <span className="text-[9px] font-black uppercase tracking-widest text-zinc-500 bg-zinc-900 px-3 py-1 rounded-full border border-zinc-800">
                   {e.estado}
                 </span>

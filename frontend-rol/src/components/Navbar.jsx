@@ -7,11 +7,12 @@ import { io } from 'socket.io-client';
 // ✨ IMPORTAMOS EL NUEVO COMPONENTE DE AVATARES
 import AvatarUsuario from '../components/AvatarUsuario'; 
 
-function Navbar({ usuario, alCerrarSesion, setVista }) {
+function Navbar({ usuario, alCerrarSesion, setVista, clubActivo, setClubActivo, clubes = [] }) {
   const [notificaciones, setNotificaciones] = useState([]);
   const [mostrarCampana, setMostrarCampana] = useState(false);
   const [noLeidosBuzon, setNoLeidosBuzon] = useState(0);
-  const dropdownRef = useRef(null); 
+  const dropdownRef = useRef(null);
+  const [mostrarSelectorClubes, setMostrarSelectorClubes] = useState(false); 
 
   const esAdmin = usuario?.rol === 'admin' || usuario?.rol === 'superadmin';
   const esSuperAdmin = usuario?.rol === 'superadmin';
@@ -138,8 +139,35 @@ function Navbar({ usuario, alCerrarSesion, setVista }) {
           </div>
           <div className="flex flex-col leading-none">
             <span className="text-base sm:text-lg md:text-xl font-black text-white uppercase tracking-tighter italic">Asociación de Rol</span>
-            <span className="text-[8px] md:text-[10px] font-black text-emerald-500 uppercase tracking-[0.3em]">La Pampa</span>
+            <span className="text-[8px] md:text-[10px] font-black text-emerald-500 uppercase tracking-[0.3em]">{clubActivo?.id === 'todos' ? 'Multiverso' : (clubActivo?.ciudad || 'La Pampa')}</span>
           </div>
+        </div>
+
+        {/* 🏛️ SELECTOR DE COMUNIDAD / CLUB */}
+        <div className="flex items-center mx-1 sm:mx-2 min-w-0">
+          <button
+            onClick={() => setMostrarSelectorClubes(true)}
+            className="flex items-center gap-1.5 sm:gap-2.5 bg-zinc-900/90 hover:bg-zinc-800 border border-zinc-800 hover:border-emerald-500/50 py-1.5 px-2.5 sm:px-3.5 rounded-xl sm:rounded-2xl transition-all shadow-md group cursor-pointer min-w-0"
+            title="Cambiar de Sede o Comunidad"
+          >
+            <div className="w-6 h-6 sm:w-7 sm:h-7 rounded-lg sm:rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center shrink-0 group-hover:scale-110 transition-transform">
+              <span className="text-xs sm:text-sm">🏛️</span>
+            </div>
+            <div className="flex flex-col text-left overflow-hidden min-w-0 max-w-[90px] xs:max-w-[130px] sm:max-w-[180px] md:max-w-[220px]">
+              <div className="flex items-center gap-1">
+                <span className="text-[7px] sm:text-[8px] font-black uppercase tracking-widest text-emerald-500/90 leading-none truncate">
+                  {esSuperAdmin && clubActivo?.id === 'todos' ? '🌐 Multiverso' : 'Sede Activa'}
+                </span>
+                {esSuperAdmin && (
+                  <span className="text-[8px] text-purple-400 font-black leading-none" title="Superadmin">⚡</span>
+                )}
+              </div>
+              <span className="text-[10px] sm:text-xs font-black text-white group-hover:text-emerald-400 truncate leading-tight">
+                {clubActivo ? clubActivo.nombre : 'Comunidad'}
+              </span>
+            </div>
+            <span className="text-[8px] sm:text-[9px] text-zinc-500 group-hover:text-zinc-300 shrink-0">▼</span>
+          </button>
         </div>
         
         {/* ACCIONES DE USUARIO: Campana, Perfil, Salir (Orden 2 en móvil, Orden 3 en escritorio) */}
@@ -294,6 +322,194 @@ function Navbar({ usuario, alCerrarSesion, setVista }) {
         </div>
 
       </div>
+
+      {/* 🏛️ MODAL SELECTOR DE COMUNIDADES */}
+      {mostrarSelectorClubes && (
+        <div 
+          onClick={(e) => { if (e.target === e.currentTarget) setMostrarSelectorClubes(false); }}
+          className="fixed inset-0 z-[250] flex items-center justify-center p-4 bg-black/90 backdrop-blur-md animate-in fade-in duration-200"
+        >
+          <div className="bg-zinc-900 border border-zinc-800 w-full max-w-xl rounded-[2.5rem] p-6 sm:p-8 shadow-2xl relative max-h-[90vh] flex flex-col overflow-hidden">
+            {/* Cabecera */}
+            <div className="flex items-center justify-between pb-4 border-b border-zinc-800 shrink-0">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-xl">
+                  🏛️
+                </div>
+                <div>
+                  <h3 className="text-lg sm:text-xl font-black text-white uppercase italic tracking-tight">
+                    Alianza de Comunidades
+                  </h3>
+                  <p className="text-[9px] sm:text-[10px] text-zinc-400 uppercase tracking-widest font-bold">
+                    Selecciona tu sede de juego o viaja a otra región
+                  </p>
+                </div>
+              </div>
+              <button 
+                onClick={() => setMostrarSelectorClubes(false)}
+                className="w-8 h-8 rounded-full bg-zinc-800 text-zinc-400 hover:text-white flex items-center justify-center transition-colors text-sm"
+              >
+                ✕
+              </button>
+            </div>
+
+            {/* Lista de Comunidades con scroll */}
+            <div className="overflow-y-auto py-4 space-y-3 pr-1 scrollbar-hide flex-1">
+              
+              {/* Opción Superadmin: Multiverso / Todas las Comunidades */}
+              {esSuperAdmin && (
+                <div 
+                  onClick={() => {
+                    setClubActivo({ id: 'todos', nombre: 'Todas las Comunidades', slug: 'todos', ciudad: 'Multiverso', provincia: 'Argentina' });
+                    setMostrarSelectorClubes(false);
+                    Swal.fire({
+                      toast: true,
+                      position: 'top-end',
+                      icon: 'info',
+                      title: '🌐 Modo Multiverso activado',
+                      showConfirmButton: false,
+                      timer: 2000,
+                      background: '#09090b',
+                      color: '#fff'
+                    });
+                  }}
+                  className={`p-4 rounded-2xl border cursor-pointer transition-all flex items-center justify-between ${
+                    clubActivo?.id === 'todos'
+                      ? 'bg-purple-950/40 border-purple-500 shadow-[0_0_20px_rgba(168,85,247,0.25)]'
+                      : 'bg-zinc-950/60 border-purple-500/20 hover:border-purple-500/60 hover:bg-zinc-800/60'
+                  }`}
+                >
+                  <div className="flex items-center gap-3">
+                    <span className="text-2xl">🌐</span>
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <h4 className="text-xs sm:text-sm font-black text-white uppercase italic">Todas las Comunidades</h4>
+                        <span className="text-[8px] font-black bg-purple-500/20 text-purple-300 border border-purple-500/40 px-2 py-0.5 rounded-full">
+                          ⚡ SUPERADMIN
+                        </span>
+                      </div>
+                      <p className="text-[10px] text-zinc-400 mt-0.5">
+                        Ver todas las jornadas y eventos de todas las sedes del país sin filtros.
+                      </p>
+                    </div>
+                  </div>
+                  {clubActivo?.id === 'todos' && (
+                    <span className="text-purple-400 text-xs font-black shrink-0 ml-2">✓ Activo</span>
+                  )}
+                </div>
+              )}
+
+              {/* Lista de Clubes Registrados */}
+              {clubes.filter(c => c.activo !== 0).map(c => {
+                const esActivo = clubActivo?.id === c.id;
+                return (
+                  <div
+                    key={c.id}
+                    onClick={() => {
+                      setClubActivo(c);
+                      setMostrarSelectorClubes(false);
+                      Swal.fire({
+                        toast: true,
+                        position: 'top-end',
+                        icon: 'success',
+                        title: `🏛️ Sede activa: ${c.nombre}`,
+                        showConfirmButton: false,
+                        timer: 2000,
+                        background: '#09090b',
+                        color: '#fff'
+                      });
+                    }}
+                    className={`p-4 rounded-2xl border cursor-pointer transition-all flex items-center justify-between group ${
+                      esActivo
+                        ? 'bg-emerald-950/30 border-emerald-500 shadow-[0_0_20px_rgba(16,185,129,0.2)]'
+                        : 'bg-zinc-950/60 border-zinc-800 hover:border-emerald-500/50 hover:bg-zinc-800/50'
+                    }`}
+                  >
+                    <div className="flex items-center gap-3 min-w-0">
+                      <div className="w-10 h-10 rounded-xl bg-zinc-900 border border-zinc-800 flex items-center justify-center shrink-0 text-lg group-hover:scale-105 transition-transform overflow-hidden">
+                        {c.logo ? (
+                          <img src={c.logo} alt={c.nombre} className="w-full h-full object-cover" />
+                        ) : (
+                          '🏛️'
+                        )}
+                      </div>
+                      <div className="min-w-0">
+                        <h4 className={`text-xs sm:text-sm font-black uppercase italic truncate ${esActivo ? 'text-emerald-400' : 'text-white group-hover:text-emerald-400 transition-colors'}`}>
+                          {c.nombre}
+                        </h4>
+                        <p className="text-[10px] text-zinc-400 font-bold flex items-center gap-1 mt-0.5">
+                          <span>📍</span> {c.ciudad ? `${c.ciudad}, ${c.provincia || 'Argentina'}` : (c.provincia || 'Sede Regional')}
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-2 shrink-0 ml-3">
+                      {/* Botón copiar link directo */}
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          const url = `${window.location.origin}/?club=${c.slug || c.id}`;
+                          navigator.clipboard.writeText(url);
+                          Swal.fire({
+                            toast: true,
+                            position: 'top-end',
+                            icon: 'success',
+                            title: '📋 Enlace copiado al portapapeles',
+                            text: url,
+                            showConfirmButton: false,
+                            timer: 2000,
+                            background: '#09090b',
+                            color: '#fff'
+                          });
+                        }}
+                        className="p-2 rounded-lg bg-zinc-900 hover:bg-zinc-800 text-zinc-400 hover:text-white border border-zinc-800 transition-all text-xs"
+                        title="Copiar enlace directo a esta comunidad"
+                      >
+                        🔗
+                      </button>
+
+                      {esActivo ? (
+                        <span className="text-emerald-400 text-xs font-black px-2.5 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/30">
+                          ✓ Sede actual
+                        </span>
+                      ) : (
+                        <span className="text-zinc-500 group-hover:text-white text-xs font-black transition-colors">
+                          Entrar →
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
+
+              {clubes.length === 0 && (
+                <div className="text-center py-8 text-zinc-500 text-xs font-bold uppercase tracking-widest">
+                  Cargando sedes disponibles...
+                </div>
+              )}
+            </div>
+
+            {/* Pie del modal */}
+            {esSuperAdmin && (
+              <div className="pt-4 border-t border-zinc-800 flex justify-between items-center shrink-0">
+                <span className="text-[9px] text-purple-400 font-black uppercase tracking-widest">
+                  ⚡ Panel de Administración
+                </span>
+                <button
+                  onClick={() => {
+                    setMostrarSelectorClubes(false);
+                    setVista('admin');
+                  }}
+                  className="text-[10px] font-black uppercase tracking-widest text-white bg-purple-600 hover:bg-purple-500 px-4 py-2 rounded-xl transition-all shadow-md cursor-pointer"
+                >
+                  🏛️ Gestionar Clubes
+                </button>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
     </nav>
   );
 }

@@ -144,6 +144,9 @@ function Partida(props) {
     socket.on('actualizacion-mesas', () => {
        cargarListaJugadores();
     });
+    socket.on('actualizacion-usuarios', () => {
+       cargarListaJugadores();
+    });
 
     return () => socket.disconnect();
   }, [modalAbierto]);
@@ -1104,7 +1107,7 @@ function Partida(props) {
           className="fixed inset-0 z-[100] flex items-center justify-center p-4 md:p-6 bg-black/95 backdrop-blur-md animate-in fade-in duration-300"
         >
           <div 
-            className="bg-zinc-900 border border-zinc-800 w-full max-w-3xl max-h-[95vh] overflow-y-auto rounded-[2.5rem] p-8 md:p-12 relative shadow-[0_0_100px_rgba(0,0,0,0.8)] scrollbar-hide overflow-hidden"
+            className="bg-zinc-900 border border-zinc-800 w-full max-w-3xl max-h-[95vh] overflow-y-auto rounded-[2rem] sm:rounded-[2.5rem] p-4 sm:p-8 md:p-12 relative shadow-[0_0_100px_rgba(0,0,0,0.8)] scrollbar-hide overflow-hidden"
             style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
           >
             {/* ✨ Portada del Sistema en la cabecera del Modal */}

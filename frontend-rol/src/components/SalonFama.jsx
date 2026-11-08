@@ -27,10 +27,8 @@ function SalonFama({ cambiarVista }) {
     fetchRanking();
     const socket = io('/', { path: '/api/socket.io' });
     socket.on('actualizacion-usuarios', fetchRanking);
-    const mastersFiltrados = ranking.masters.filter(m => m.nombre.toLowerCase().includes(busqueda.toLowerCase()));
-  const jugadoresFiltrados = ranking.jugadores.filter(j => j.nombre.toLowerCase().includes(busqueda.toLowerCase()));
 
-  return () => socket.disconnect();
+    return () => socket.disconnect();
   }, []);
 
   const verPerfil = (id) => {
@@ -45,7 +43,7 @@ function SalonFama({ cambiarVista }) {
   const jugadoresFiltrados = ranking.jugadores.filter(j => j.nombre.toLowerCase().includes(busqueda.toLowerCase()));
 
   return (
-    <div className="min-h-screen pt-24 md:pt-32 pb-20 px-4">
+    <div className="min-h-screen py-4 md:py-8 pb-20 px-4">
       <div className="max-w-5xl mx-auto">
         <div className="text-center mb-10">
           <h1 className="text-4xl md:text-5xl font-black text-white uppercase tracking-tighter mb-4 text-glow">
@@ -118,15 +116,15 @@ function SalonFama({ cambiarVista }) {
                     onClick={() => verPerfil(master.id)}
                     className="flex items-center justify-between p-4 bg-zinc-950 border border-zinc-800/50 rounded-2xl cursor-pointer hover:border-amber-500/50 hover:bg-zinc-900 transition-all group"
                   >
-                    <div className="flex items-center gap-4">
-                      <div className="text-2xl font-black text-amber-500/30 w-8 text-center">
+                    <div className="flex items-center gap-3 sm:gap-4 min-w-0">
+                      <div className="text-xl sm:text-2xl font-black text-amber-500/30 w-6 sm:w-8 text-center shrink-0">
                         {index + 1}
                       </div>
-                      <div className="w-12 h-12 md:w-16 md:h-16 rounded-full overflow-hidden shadow-lg border-2 border-zinc-800 group-hover:border-amber-500/50 transition-colors">
+                      <div className="w-10 h-10 sm:w-12 sm:h-12 md:w-16 md:h-16 rounded-full overflow-hidden shadow-lg border-2 border-zinc-800 group-hover:border-amber-500/50 transition-colors shrink-0">
                         {renderAvatar(master)}
                       </div>
-                      <div>
-                        <h3 className="text-white font-black uppercase tracking-widest text-sm md:text-base group-hover:text-amber-400 transition-colors">
+                      <div className="min-w-0">
+                        <h3 className="text-white font-black uppercase tracking-widest text-xs sm:text-sm md:text-base group-hover:text-amber-400 transition-colors truncate">
                           {master.nombre}
                         </h3>
                         <p className="text-xs text-amber-500/80 font-bold tracking-widest mt-1">
@@ -158,15 +156,15 @@ function SalonFama({ cambiarVista }) {
                     onClick={() => verPerfil(jugador.id)}
                     className="flex items-center justify-between p-4 bg-zinc-950 border border-zinc-800/50 rounded-2xl cursor-pointer hover:border-emerald-500/50 hover:bg-zinc-900 transition-all group"
                   >
-                    <div className="flex items-center gap-4">
-                      <div className="text-2xl font-black text-emerald-500/30 w-8 text-center">
+                    <div className="flex items-center gap-3 sm:gap-4 min-w-0">
+                      <div className="text-xl sm:text-2xl font-black text-emerald-500/30 w-6 sm:w-8 text-center shrink-0">
                         {index + 1}
                       </div>
-                      <div className="w-12 h-12 md:w-16 md:h-16 rounded-full overflow-hidden shadow-lg border-2 border-zinc-800 group-hover:border-emerald-500/50 transition-colors">
+                      <div className="w-10 h-10 sm:w-12 sm:h-12 md:w-16 md:h-16 rounded-full overflow-hidden shadow-lg border-2 border-zinc-800 group-hover:border-emerald-500/50 transition-colors shrink-0">
                         {renderAvatar(jugador)}
                       </div>
-                      <div>
-                        <h3 className="text-white font-black uppercase tracking-widest text-sm md:text-base group-hover:text-emerald-400 transition-colors">
+                      <div className="min-w-0">
+                        <h3 className="text-white font-black uppercase tracking-widest text-xs sm:text-sm md:text-base group-hover:text-emerald-400 transition-colors truncate">
                           {jugador.nombre}
                         </h3>
                         <p className="text-xs text-zinc-500 font-bold tracking-widest mt-1">

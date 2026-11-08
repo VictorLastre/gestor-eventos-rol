@@ -5,7 +5,7 @@ import GestionSanciones from './GestionSanciones';
 import Estadisticas from './Estadisticas';
 import GestionClubes from './GestionClubes';
 
-function PanelAdmin({ setVista }) {
+function PanelAdmin({ setVista, clubActivo, clubes }) {
   const [pestanaAdmin, setPestanaAdmin] = useState('eventos');
   const usuarioGuardado = JSON.parse(localStorage.getItem('usuario')) || {};
   const esSuperAdmin = usuarioGuardado?.rol === 'superadmin';
@@ -37,12 +37,12 @@ function PanelAdmin({ setVista }) {
       <section className="bg-zinc-900 rounded-[2rem] md:rounded-[3rem] border border-purple-500/20 shadow-2xl overflow-hidden flex flex-col">
         
         {/* Ajuste de padding y gap en el nav para móviles */}
-        <nav className="flex flex-col sm:flex-row bg-zinc-950/80 p-2 sm:p-3 gap-2 border-b border-zinc-800 w-full">
+        <nav className="flex flex-row overflow-x-auto scrollbar-hide bg-zinc-950/80 p-2 sm:p-3 gap-2 border-b border-zinc-800 w-full" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
           {pestanasDisponibles.map(tab => (
             <button 
               key={tab} 
               onClick={() => setPestanaAdmin(tab)} 
-              className={`flex-1 py-4 px-2 rounded-xl sm:rounded-2xl font-black text-[10px] sm:text-[11px] uppercase tracking-[0.15em] sm:tracking-[0.2em] transition-all truncate ${
+              className={`shrink-0 sm:flex-1 py-3.5 sm:py-4 px-4 sm:px-2 rounded-xl sm:rounded-2xl font-black text-[10px] sm:text-[11px] uppercase tracking-[0.15em] sm:tracking-[0.2em] transition-all whitespace-nowrap ${
                 pestanaAdmin === tab 
                 ? 'bg-purple-600 text-white shadow-lg shadow-purple-900/40' 
                 : 'text-zinc-500 hover:text-zinc-300 hover:bg-zinc-800/50'
@@ -56,7 +56,7 @@ function PanelAdmin({ setVista }) {
         
         {/* overflow-x-hidden añadido por seguridad para evitar el scroll horizontal interno */}
         <div className="p-4 sm:p-6 md:p-12 w-full overflow-x-hidden">
-          {pestanaAdmin === 'eventos' && <CrearEvento alCrearEvento={() => {}} />}
+          {pestanaAdmin === 'eventos' && <CrearEvento alCrearEvento={() => {}} clubActivo={clubActivo} clubes={clubes} />}
           {pestanaAdmin === 'usuarios' && <GestionUsuarios setVista={setVista} />}
           {pestanaAdmin === 'sanciones' && <GestionSanciones setVista={setVista} />}
           {pestanaAdmin === 'clubes' && <GestionClubes />}

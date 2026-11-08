@@ -1,4 +1,5 @@
 import Swal from 'sweetalert2';
+import { io } from 'socket.io-client';
 import { useState, useEffect } from 'react';
 import AvatarUsuario from './AvatarUsuario';
 import { fetchProtegido } from '../utils/api';
@@ -10,7 +11,7 @@ function PerfilPublico({ usuarioId, volver }) {
   const [cargando, setCargando] = useState(true);
   const [error, setError] = useState('');
 
-  useEffect(() => {
+  const cargarPerfil = () => {
     fetchProtegido(`/api/usuarios/${usuarioId}/perfil_publico`)
       .then(res => {
         if (!res.ok) throw new Error('Aventurero no encontrado');
@@ -24,6 +25,16 @@ function PerfilPublico({ usuarioId, volver }) {
         setError(err.message);
         setCargando(false);
       });
+  };
+
+  useEffect(() => {
+    cargarPerfil();
+
+    const socket = io('/', { path: '/api/socket.io' });
+    socket.on('actualizacion-usuarios', cargarPerfil);
+    socket.on('actualizacion-mesas', cargarPerfil);
+
+    return () => socket.disconnect();
   }, [usuarioId]);
 
   if (cargando) return (

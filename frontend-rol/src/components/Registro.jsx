@@ -2,13 +2,14 @@ import { useState } from 'react';
 import Swal from 'sweetalert2'; 
 import LogoSVG from '../assets/Logo.svg';
 
-function Registro({ irALogin }) {
+function Registro({ irALogin, clubActivo, clubes = [] }) {
   const [nombre, setNombre] = useState('');
   const [nombreCompleto, setNombreCompleto] = useState(''); // ✨ NUEVO ESTADO
   const [email, setEmail] = useState('');
   const [fechaNacimiento, setFechaNacimiento] = useState('');
   const [password, setPassword] = useState('');
   const [mostrarPassword, setMostrarPassword] = useState(false);
+  const [clubId, setClubId] = useState(() => (clubActivo?.id && clubActivo.id !== 'todos' ? clubActivo.id : 1));
 
   const calcularEdad = (fecha) => {
     if (!fecha) return null;
@@ -89,7 +90,7 @@ function Registro({ irALogin }) {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         // ✨ INCLUIMOS nombre_completo Y fecha_nacimiento EN EL ENVÍO
-        body: JSON.stringify({ nombre, nombre_completo: nombreCompleto, email, password, fecha_nacimiento: fechaNacimiento })
+        body: JSON.stringify({ nombre, nombre_completo: nombreCompleto, email, password, fecha_nacimiento: fechaNacimiento, club_id: clubId })
       });
       
       const datos = await res.json();
@@ -158,7 +159,7 @@ function Registro({ irALogin }) {
             />
         </div>
         <h1 className="text-2xl md:text-3xl font-black text-white uppercase tracking-tighter italic">
-            Asociación de Rol <span className="text-emerald-500">La Pampa</span>
+            Asociación de Rol <span className="text-emerald-500">{clubActivo?.id === 'todos' ? 'Argentina' : (clubActivo?.nombre?.replace(/Asociación de Rol\s*/i, '') || 'La Pampa')}</span>
         </h1>
         <p className="text-zinc-500 text-[9px] md:text-[10px] font-black tracking-[0.4em] uppercase mt-2">
             Portal de Crónicas y Aventuras

@@ -30,21 +30,29 @@ router.get('/', (req, res) => {
   db.query(sqlUpdate, [ahoraArg, ahoraArg], (err) => {
     if (err) console.error("Error actualizando el reloj del gremio:", err);
     
-    // ✨ TRUCO MAESTRO: DATE_FORMAT evita que el driver de JS reste horas por zona horaria
-    const sqlSelect = `
+    // ✨ FILTRADO POR CLUB Y METADATOS DE COMUNIDAD
+    let sqlSelect = `
       SELECT 
-        id, IFNULL(club_id, 1) as club_id, nombre, descripcion, 
-        DATE_FORMAT(fecha, '%Y-%m-%d') as fecha, 
-        hora_inicio, hora_fin, estado, lugar, ciudad,
-        cupo_rol, cupo_juegos_mesa, cupo_escape_room,
-        (SELECT COUNT(*) FROM partidas WHERE evento_id = eventos.id AND etiqueta != 'Juegos de Mesa') as mesas_rol_actuales,
-        (SELECT COUNT(*) FROM partidas WHERE evento_id = eventos.id AND etiqueta = 'Juegos de Mesa') as mesas_juegos_actuales,
-        (SELECT COUNT(*) FROM escape_rooms WHERE evento_id = eventos.id) as salas_escape_actuales
-      FROM eventos 
-      ORDER BY fecha DESC
+        e.id, IFNULL(e.club_id, 1) as club_id, e.nombre, e.descripcion, 
+        DATE_FORMAT(e.fecha, '%Y-%m-%d') as fecha, 
+        e.hora_inicio, e.hora_fin, e.estado, e.lugar, e.ciudad,
+        e.cupo_rol, e.cupo_juegos_mesa, e.cupo_escape_room,
+        c.nombre as club_nombre, c.slug as club_slug, c.ciudad as club_ciudad, c.provincia as club_provincia,
+        (SELECT COUNT(*) FROM partidas WHERE evento_id = e.id AND etiqueta != 'Juegos de Mesa') as mesas_rol_actuales,
+        (SELECT COUNT(*) FROM partidas WHERE evento_id = e.id AND etiqueta = 'Juegos de Mesa') as mesas_juegos_actuales,
+        (SELECT COUNT(*) FROM escape_rooms WHERE evento_id = e.id) as salas_escape_actuales
+      FROM eventos e
+      LEFT JOIN clubes c ON e.club_id = c.id
     `;
 
-    db.query(sqlSelect, (err, resultados) => {
+    const params = [];
+    if (req.query.club_id && req.query.club_id !== 'todos') {
+      sqlSelect += " WHERE e.club_id = ?";
+      params.push(req.query.club_id);
+    }
+    sqlSelect += " ORDER BY e.fecha DESC";
+
+    db.query(sqlSelect, params, (err, resultados) => {
       if (err) return res.status(500).json({ error: 'Error leyendo los eventos' });
       res.json(resultados);
     });

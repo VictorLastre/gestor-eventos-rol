@@ -2,7 +2,7 @@ import { useState } from 'react';
 import Swal from 'sweetalert2'; 
 import { fetchProtegido } from '../utils/api'; 
 
-function CrearEvento({ alCrearEvento }) {
+function CrearEvento({ alCrearEvento, clubActivo, clubes = [] }) {
   const [nombre, setNombre] = useState('');
   const [descripcion, setDescripcion] = useState('');
   const [fecha, setFecha] = useState('');
@@ -20,6 +20,13 @@ function CrearEvento({ alCrearEvento }) {
   const [cupoEscape, setCupoEscape] = useState('');
   const [aulasDisponibles, setAulasDisponibles] = useState('2');
 
+  const usuarioGuardado = JSON.parse(localStorage.getItem('usuario')) || {};
+  const esSuperAdmin = usuarioGuardado?.rol === 'superadmin';
+  const [clubIdSeleccionado, setClubIdSeleccionado] = useState(() => {
+    if (clubActivo?.id && clubActivo.id !== 'todos') return clubActivo.id;
+    return usuarioGuardado.club_id || 1;
+  });
+
   const manejarCreacion = async (e) => {
     e.preventDefault();
     
@@ -32,6 +39,7 @@ function CrearEvento({ alCrearEvento }) {
       hora_fin: horaFin,
       lugar,
       ciudad,
+      club_id: esSuperAdmin ? parseInt(clubIdSeleccionado) : (usuarioGuardado.club_id || 1),
       cupo_rol: cupoRol ? parseInt(cupoRol) : null,
       cupo_juegos_mesa: cupoJuegos ? parseInt(cupoJuegos) : null,
       cupo_escape_room: cupoEscape ? parseInt(cupoEscape) : null
@@ -119,6 +127,28 @@ function CrearEvento({ alCrearEvento }) {
 
           <form onSubmit={manejarCreacion} className="relative z-10 flex flex-col gap-8">
             
+            {esSuperAdmin && (
+              <div className="space-y-3 bg-purple-950/20 p-5 rounded-2xl border border-purple-500/30">
+                <label className="text-[11px] font-black text-purple-400 uppercase tracking-widest flex items-center gap-2">
+                  <span>🏛️</span> Sede / Comunidad que convoca la Jornada (Superadmin)
+                </label>
+                <select
+                  value={clubIdSeleccionado}
+                  onChange={e => setClubIdSeleccionado(e.target.value)}
+                  className="w-full bg-zinc-900 border border-purple-500/30 rounded-xl py-3 px-4 text-white font-bold outline-none focus:border-purple-500 transition-all cursor-pointer text-sm"
+                >
+                  {clubes.filter(c => c.activo !== 0).map(c => (
+                    <option key={c.id} value={c.id}>
+                      🏛️ {c.nombre} ({c.ciudad ? `${c.ciudad}, ${c.provincia || 'Argentina'}` : (c.provincia || 'Sede Regional')})
+                    </option>
+                  ))}
+                </select>
+                <p className="text-[10px] text-zinc-400 italic">
+                  Como Superadmin puedes publicar eventos en cualquier sede de la Alianza de Comunidades.
+                </p>
+              </div>
+            )}
+
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
               
               {/* CAMPO: NOMBRE */}
