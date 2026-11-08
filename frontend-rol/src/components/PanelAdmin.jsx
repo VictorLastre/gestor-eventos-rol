@@ -3,9 +3,16 @@ import CrearEvento from './CrearEvento';
 import GestionUsuarios from './GestionUsuarios'; 
 import GestionSanciones from './GestionSanciones';
 import Estadisticas from './Estadisticas';
+import GestionClubes from './GestionClubes';
 
 function PanelAdmin({ setVista }) {
   const [pestanaAdmin, setPestanaAdmin] = useState('eventos');
+  const usuarioGuardado = JSON.parse(localStorage.getItem('usuario')) || {};
+  const esSuperAdmin = usuarioGuardado?.rol === 'superadmin';
+
+  const pestanasDisponibles = esSuperAdmin 
+    ? ['eventos', 'usuarios', 'sanciones', 'clubes', 'stats']
+    : ['eventos', 'usuarios', 'sanciones', 'stats'];
 
   return (
     <div className="max-w-7xl mx-auto p-4 sm:p-6 md:p-12 animate-in fade-in slide-in-from-bottom-4 duration-700">
@@ -31,7 +38,7 @@ function PanelAdmin({ setVista }) {
         
         {/* Ajuste de padding y gap en el nav para móviles */}
         <nav className="flex flex-col sm:flex-row bg-zinc-950/80 p-2 sm:p-3 gap-2 border-b border-zinc-800 w-full">
-          {['eventos', 'usuarios', 'sanciones', 'stats'].map(tab => (
+          {pestanasDisponibles.map(tab => (
             <button 
               key={tab} 
               onClick={() => setPestanaAdmin(tab)} 
@@ -40,9 +47,9 @@ function PanelAdmin({ setVista }) {
                 ? 'bg-purple-600 text-white shadow-lg shadow-purple-900/40' 
                 : 'text-zinc-500 hover:text-zinc-300 hover:bg-zinc-800/50'
               }`}
-              title={tab === 'eventos' ? 'Gestor de Jornadas' : tab === 'usuarios' ? 'Alistamiento' : tab === 'sanciones' ? 'Tribunal de Sanciones y Asistencias' : 'Oráculo de Datos'}
+              title={tab === 'eventos' ? 'Gestor de Jornadas' : tab === 'usuarios' ? 'Alistamiento' : tab === 'sanciones' ? 'Tribunal de Sanciones y Asistencias' : tab === 'clubes' ? 'Alianza de Comunidades y Clubes' : 'Oráculo de Datos'}
             >
-              {tab === 'eventos' ? '⚔️ Gestor de Jornadas' : tab === 'usuarios' ? '🛡️ Alistamiento' : tab === 'sanciones' ? '⚠️ Asistencias y Sanciones' : '📊 Oráculo de Datos'}
+              {tab === 'eventos' ? '⚔️ Gestor de Jornadas' : tab === 'usuarios' ? '🛡️ Alistamiento' : tab === 'sanciones' ? '⚠️ Asistencias y Sanciones' : tab === 'clubes' ? '🏛️ Clubes y Espacios' : '📊 Oráculo de Datos'}
             </button>
           ))}
         </nav>
@@ -52,6 +59,7 @@ function PanelAdmin({ setVista }) {
           {pestanaAdmin === 'eventos' && <CrearEvento alCrearEvento={() => {}} />}
           {pestanaAdmin === 'usuarios' && <GestionUsuarios setVista={setVista} />}
           {pestanaAdmin === 'sanciones' && <GestionSanciones setVista={setVista} />}
+          {pestanaAdmin === 'clubes' && <GestionClubes />}
           {pestanaAdmin === 'stats' && <Estadisticas />}
         </div>
       </section>

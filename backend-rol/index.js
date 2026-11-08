@@ -74,6 +74,7 @@ const telegramRoutes = require('./routes/telegramRoutes');
 const buzonRoutes = require('./routes/buzonRoutes');
 const reputacionRoutes = require('./routes/reputacionRoutes');
 const crawlerRoutes = require('./routes/crawlerRoutes');
+const clubesRoutes = require('./routes/clubesRoutes');
 
 // ✨ RUTAS DEL BACKEND ✨
 app.use('/api', authRoutes); 
@@ -86,6 +87,7 @@ app.use('/api/telegram', telegramRoutes);
 app.use('/api/buzon', buzonRoutes);
 app.use('/api/reputacion', reputacionRoutes);
 app.use('/api/crawler', crawlerRoutes);
+app.use('/api/clubes', clubesRoutes);
 
 // ✨ SERVIR EL FRONTEND DE VITE ✨
 // Le decimos a Express que busque los archivos visuales en tu carpeta 'public'
