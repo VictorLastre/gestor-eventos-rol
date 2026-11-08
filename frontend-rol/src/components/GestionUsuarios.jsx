@@ -305,7 +305,7 @@ function GestionUsuarios({ setVista }) {
     }
   };
 
-  const jerarquiaRoles = { admin: 1, dm: 2, jugador: 3 };
+  const jerarquiaRoles = { superadmin: 0, admin: 1, dm: 2, jugador: 3 };
 
   const usuariosProcesados = todosLosUsuarios
     .filter(user => {
@@ -384,13 +384,13 @@ function GestionUsuarios({ setVista }) {
               <button onClick={exportarLogistica} className="bg-emerald-600 hover:bg-emerald-500 text-white font-black px-6 py-3.5 rounded-2xl text-[9px] uppercase tracking-widest transition-all shadow-xl shadow-emerald-950/20">📊 Exportar Logística</button>
               
               <div className="flex gap-1 bg-zinc-950 border border-zinc-800 p-1.5 rounded-2xl overflow-x-auto scrollbar-hide">
-                {['todos', 'admin', 'dm', 'jugador'].map(rol => (
+                {['todos', 'superadmin', 'admin', 'dm', 'jugador'].map(rol => (
                   <button 
                     key={rol} 
                     onClick={() => setFiltroRol(rol)} 
                     className={`px-4 py-2 text-[9px] font-black uppercase tracking-widest rounded-xl transition-all whitespace-nowrap ${filtroRol === rol ? 'bg-zinc-800 text-emerald-400 shadow-md' : 'text-zinc-500 hover:text-zinc-300'}`}
                   >
-                    {rol === 'todos' ? 'Todos' : rol === 'admin' ? '👑 Admins' : rol === 'dm' ? '🛡️ DMs' : '⚔️ Jugadores'}
+                    {rol === 'todos' ? 'Todos' : rol === 'superadmin' ? '⚡ Superadmin' : rol === 'admin' ? '👑 Admins' : rol === 'dm' ? '🛡️ DMs' : '⚔️ Jugadores'}
                   </button>
                 ))}
               </div>
@@ -434,15 +434,15 @@ function GestionUsuarios({ setVista }) {
                             </p>
                             <p className="text-[9px] md:text-[10px] text-zinc-600 font-mono lowercase truncate">{user.email}</p>
                             {/* Mostrar rango en móviles si se oculta la columna */}
-                            <span className={`sm:hidden mt-1 inline-block text-[8px] font-black uppercase tracking-widest px-2 py-0.5 rounded-md border whitespace-nowrap ${user.rol === 'admin' ? 'bg-amber-500/10 text-amber-500 border-amber-500/20' : user.rol === 'dm' ? 'bg-purple-500/10 text-purple-400 border-purple-500/20' : 'bg-zinc-800/50 text-zinc-500 border-zinc-700/50'}`}>
-                              {user.rol === 'admin' ? '👑 Admin' : user.rol === 'dm' ? '🛡️ DM' : '⚔️ Jugador'}
+                            <span className={`sm:hidden mt-1 inline-block text-[8px] font-black uppercase tracking-widest px-2 py-0.5 rounded-md border whitespace-nowrap ${user.rol === 'superadmin' ? 'bg-purple-600/20 text-purple-300 border-purple-500/40 shadow-[0_0_10px_rgba(168,85,247,0.2)]' : user.rol === 'admin' ? 'bg-amber-500/10 text-amber-500 border-amber-500/20' : user.rol === 'dm' ? 'bg-purple-500/10 text-purple-400 border-purple-500/20' : 'bg-zinc-800/50 text-zinc-500 border-zinc-700/50'}`}>
+                              {user.rol === 'superadmin' ? '⚡ Superadmin' : user.rol === 'admin' ? '👑 Admin' : user.rol === 'dm' ? '🛡️ DM' : '⚔️ Jugador'}
                             </span>
                           </div>
                         </td>
                         <td className="p-4 md:p-6 hidden sm:table-cell">
                           {/* ✨ ESTA ES LA ETIQUETA CORREGIDA PARA QUE NO SALTE DE LÍNEA */}
-                          <span className={`text-[9px] font-black uppercase tracking-widest px-4 py-1.5 rounded-full border whitespace-nowrap ${user.rol === 'admin' ? 'bg-amber-500/10 text-amber-500 border-amber-500/20' : user.rol === 'dm' ? 'bg-purple-500/10 text-purple-400 border-purple-500/20' : 'bg-zinc-800/50 text-zinc-500 border-zinc-700/50'}`}>
-                            {user.rol === 'admin' ? '👑 Administrador' : user.rol === 'dm' ? '🛡️ Dungeon Master' : '⚔️ Aventurero'}
+                          <span className={`text-[9px] font-black uppercase tracking-widest px-4 py-1.5 rounded-full border whitespace-nowrap ${user.rol === 'superadmin' ? 'bg-gradient-to-r from-purple-900/60 to-indigo-900/60 text-purple-200 border-purple-500/60 shadow-[0_0_15px_rgba(168,85,247,0.35)]' : user.rol === 'admin' ? 'bg-amber-500/10 text-amber-500 border-amber-500/20' : user.rol === 'dm' ? 'bg-purple-500/10 text-purple-400 border-purple-500/20' : 'bg-zinc-800/50 text-zinc-500 border-zinc-700/50'}`}>
+                            {user.rol === 'superadmin' ? '⚡ Superadmin' : user.rol === 'admin' ? '👑 Administrador' : user.rol === 'dm' ? '🛡️ Dungeon Master' : '⚔️ Aventurero'}
                           </span>
                         </td>
                         <td className="p-4 md:p-6">
@@ -452,9 +452,17 @@ function GestionUsuarios({ setVista }) {
                               <button onClick={() => generarCertificado(user.id, user.nombre, user.nombre_completo)} className="w-8 h-8 md:w-10 md:h-10 bg-amber-500/10 border border-amber-500/50 text-amber-500 rounded-xl hover:bg-amber-500 hover:text-black transition-all text-sm shadow-[0_0_15px_rgba(245,158,11,0.3)] animate-pulse" title="Generar Certificado del Gremio">📜</button>
                             )}
 
-                            {user.rol !== 'admin' && <button onClick={() => proponerAdmin(user.id, user.nombre)} className="w-8 h-8 md:w-10 md:h-10 bg-zinc-950 border border-zinc-800 rounded-xl hover:border-amber-500 hover:text-amber-500 transition-all text-sm" title="Proponer al Senado">👑</button>}
-                            {user.rol !== 'dm' && user.rol !== 'admin' && <button onClick={() => cambiarRolDirecto(user.id, user.nombre, 'dm')} className="w-8 h-8 md:w-10 md:h-10 bg-zinc-950 border border-zinc-800 rounded-xl hover:border-purple-500 hover:text-purple-400 transition-all text-sm" title="Ascender a DM">🛡️</button>}
-                            {user.rol !== 'jugador' && <button onClick={() => cambiarRolDirecto(user.id, user.nombre, 'jugador')} className="w-8 h-8 md:w-10 md:h-10 bg-zinc-950 border border-zinc-800 rounded-xl hover:border-red-500 hover:text-red-500 transition-all text-sm" title="Revocar Rango">✕</button>}
+                            {user.rol === 'superadmin' ? (
+                              <span className="text-[10px] text-purple-300 font-mono font-black uppercase tracking-widest px-2.5 py-1 bg-purple-950/40 border border-purple-500/30 rounded-lg shadow-[0_0_10px_rgba(168,85,247,0.2)]">
+                                ⚡ Supremo
+                              </span>
+                            ) : (
+                              <>
+                                {user.rol !== 'admin' && <button onClick={() => proponerAdmin(user.id, user.nombre)} className="w-8 h-8 md:w-10 md:h-10 bg-zinc-950 border border-zinc-800 rounded-xl hover:border-amber-500 hover:text-amber-500 transition-all text-sm" title="Proponer al Senado">👑</button>}
+                                {user.rol !== 'dm' && user.rol !== 'admin' && <button onClick={() => cambiarRolDirecto(user.id, user.nombre, 'dm')} className="w-8 h-8 md:w-10 md:h-10 bg-zinc-950 border border-zinc-800 rounded-xl hover:border-purple-500 hover:text-purple-400 transition-all text-sm" title="Ascender a DM">🛡️</button>}
+                                {user.rol !== 'jugador' && <button onClick={() => cambiarRolDirecto(user.id, user.nombre, 'jugador')} className="w-8 h-8 md:w-10 md:h-10 bg-zinc-950 border border-zinc-800 rounded-xl hover:border-red-500 hover:text-red-500 transition-all text-sm" title="Revocar Rango">✕</button>}
+                              </>
+                            )}
                             
                             <button onClick={() => aplicarHardReset(user)} className="w-8 h-8 md:w-10 md:h-10 bg-zinc-950 border border-zinc-800 rounded-xl hover:border-red-500 hover:text-red-500 transition-all text-sm" title="Forzar restablecimiento de contraseña (Hard Reset)">🔑</button>
 

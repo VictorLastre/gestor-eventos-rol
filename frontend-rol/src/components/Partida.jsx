@@ -1255,7 +1255,10 @@ function Partida(props) {
                         let estilosRol = 'bg-blue-500/10 text-blue-400 border-blue-500/30'; 
                         let iconoRol = '👤';
 
-                        if (jugador.rol === 'admin') {
+                        if (jugador.rol === 'superadmin') {
+                          estilosRol = 'bg-purple-600/20 text-purple-300 border-purple-500/50 shadow-[0_0_15px_rgba(168,85,247,0.25)]';
+                          iconoRol = '⚡';
+                        } else if (jugador.rol === 'admin') {
                           estilosRol = 'bg-amber-500/10 text-amber-500 border-amber-500/40 shadow-[0_0_15px_rgba(251,191,36,0.15)]'; 
                           iconoRol = '👑';
                         } else if (jugador.rol === 'dm') {

@@ -145,7 +145,7 @@ function Registro({ irALogin }) {
   };
 
   return (
-    <div className="min-h-[85vh] flex flex-col items-center justify-center p-4 md:p-6 animate-in fade-in zoom-in-95 duration-700">
+    <div className="w-full flex flex-col items-center justify-center py-2 animate-in fade-in zoom-in-95 duration-700">
       
       {/* 🛡️ ESCUDO DEL GREMIO (Añadido para consistencia con Login) */}
       <div className="mb-6 md:mb-8 flex flex-col items-center group text-center">

@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import Swal from 'sweetalert2';
 import { io } from 'socket.io-client';
 import { fetchProtegido } from '../utils/api';
+import { PROVINCIAS_ARGENTINAS, LISTA_PROVINCIAS } from '../utils/provinciasArgentinas';
 
 function GestionClubes() {
   const [clubes, setClubes] = useState([]);
@@ -10,7 +11,30 @@ function GestionClubes() {
   const [clubSeleccionado, setClubSeleccionado] = useState(null);
   const [modalAdminAbierto, setModalAdminAbierto] = useState(false);
   const [modalEditarAbierto, setModalEditarAbierto] = useState(false);
-  const [datosEdicion, setDatosEdicion] = useState({});
+  const [modalCrearAbierto, setModalCrearAbierto] = useState(false);
+
+  // Estado para forjar nueva comunidad
+  const [datosCrear, setDatosCrear] = useState({
+    nombre: '',
+    provincia: 'San Luis',
+    ciudad: 'Merlo',
+    ciudadManual: '',
+    whatsapp_url: '',
+    historia: ''
+  });
+
+  // Estado para editar comunidad existente
+  const [datosEdicion, setDatosEdicion] = useState({
+    nombre: '',
+    provincia: 'La Pampa',
+    ciudad: 'Santa Rosa',
+    ciudadManual: '',
+    descripcion: '',
+    historia: '',
+    foto_grupal: '',
+    whatsapp_url: '',
+    instagram_url: ''
+  });
 
   const cargarClubes = async () => {
     setCargando(true);
@@ -50,106 +74,85 @@ function GestionClubes() {
     return () => socket.disconnect();
   }, []);
 
-  // ➕ MODAL PARA CREAR UN NUEVO CLUB
-  const abrirModalCrearClub = async () => {
-    const { value: formValues } = await Swal.fire({
-      title: '🏛️ Forjar Nueva Comunidad',
-      html: `
-        <div class="text-left text-xs space-y-3 text-zinc-300">
-          <p class="text-zinc-400">Crea un espacio independiente para que un club o agrupación gestione sus propias jornadas de rol sin mezclarse con otras comunidades.</p>
-          
-          <div>
-            <label class="block font-black text-amber-400 uppercase text-[10px] mb-1">Nombre de la Agrupación / Club *</label>
-            <input id="swal-nombre" class="w-full bg-zinc-900 border border-zinc-700 rounded-xl px-3 py-2 text-white text-xs outline-none focus:border-amber-500" placeholder="Ej: Club de Rol Merlo San Luis">
-          </div>
-
-          <div class="grid grid-cols-2 gap-2">
-            <div>
-              <label class="block font-black text-zinc-400 uppercase text-[10px] mb-1">Ciudad *</label>
-              <input id="swal-ciudad" class="w-full bg-zinc-900 border border-zinc-700 rounded-xl px-3 py-2 text-white text-xs outline-none focus:border-amber-500" placeholder="Ej: Merlo">
-            </div>
-            <div>
-              <label class="block font-black text-zinc-400 uppercase text-[10px] mb-1">Provincia *</label>
-              <input id="swal-provincia" class="w-full bg-zinc-900 border border-zinc-700 rounded-xl px-3 py-2 text-white text-xs outline-none focus:border-amber-500" placeholder="Ej: San Luis">
-            </div>
-          </div>
-
-          <div>
-            <label class="block font-black text-zinc-400 uppercase text-[10px] mb-1">Enlace a WhatsApp del Club (Opcional)</label>
-            <input id="swal-whatsapp" class="w-full bg-zinc-900 border border-zinc-700 rounded-xl px-3 py-2 text-white text-xs outline-none focus:border-amber-500" placeholder="https://chat.whatsapp.com/...">
-          </div>
-
-          <div>
-            <label class="block font-black text-zinc-400 uppercase text-[10px] mb-1">Historia / Sobre Nosotros (Opcional)</label>
-            <textarea id="swal-historia" rows="3" class="w-full bg-zinc-900 border border-zinc-700 rounded-xl px-3 py-2 text-white text-xs outline-none focus:border-amber-500 resize-none" placeholder="Breve historia del club, dónde juegan, etc..."></textarea>
-          </div>
-        </div>
-      `,
-      focusConfirm: false,
-      showCancelButton: true,
-      confirmButtonText: '⚔️ Forjar Espacio',
-      cancelButtonText: 'Cancelar',
-      confirmButtonColor: '#9333ea',
-      cancelButtonColor: '#27272a',
-      background: '#09090b',
-      color: '#fff',
-      customClass: { popup: 'border border-purple-500/30 rounded-3xl' },
-      preConfirm: () => {
-        const nombre = document.getElementById('swal-nombre').value.trim();
-        const ciudad = document.getElementById('swal-ciudad').value.trim();
-        const provincia = document.getElementById('swal-provincia').value.trim();
-        const whatsapp_url = document.getElementById('swal-whatsapp').value.trim();
-        const historia = document.getElementById('swal-historia').value.trim();
-
-        if (!nombre || !ciudad || !provincia) {
-          Swal.showValidationMessage('El nombre, la ciudad y la provincia son obligatorios.');
-          return false;
-        }
-
-        return { nombre, ciudad, provincia, whatsapp_url, historia };
-      }
+  // ➕ ABRIR MODAL PARA CREAR UN NUEVO CLUB
+  const abrirModalCrearClub = () => {
+    setDatosCrear({
+      nombre: '',
+      provincia: 'San Luis',
+      ciudad: 'Merlo',
+      ciudadManual: '',
+      whatsapp_url: '',
+      historia: ''
     });
+    setModalCrearAbierto(true);
+  };
 
-    if (formValues) {
-      try {
-        const res = await fetchProtegido('/api/clubes', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(formValues)
-        });
+  const manejarCrearClub = async (e) => {
+    e.preventDefault();
+    const ciudadFinal = datosCrear.ciudad === '__otra__' ? datosCrear.ciudadManual.trim() : datosCrear.ciudad;
 
-        const data = await res.json();
-        if (!res.ok) throw new Error(data.error || 'Error al crear la comunidad');
+    if (!datosCrear.nombre.trim() || !datosCrear.provincia || !ciudadFinal) {
+      return Swal.fire({
+        title: 'Campos requeridos',
+        text: 'El nombre del club, la provincia y la ciudad son obligatorios.',
+        icon: 'warning',
+        background: '#09090b',
+        color: '#fff'
+      });
+    }
 
-        Swal.fire({
-          title: '¡Comunidad Forjada!',
-          text: `El espacio "${formValues.nombre}" fue creado exitosamente. Ya puedes designar a sus administradores locales.`,
-          icon: 'success',
-          background: '#09090b',
-          color: '#fff',
-          confirmButtonColor: '#10b981'
-        });
+    try {
+      const payload = {
+        nombre: datosCrear.nombre.trim(),
+        provincia: datosCrear.provincia,
+        ciudad: ciudadFinal,
+        whatsapp_url: datosCrear.whatsapp_url.trim(),
+        historia: datosCrear.historia.trim()
+      };
 
-        cargarClubes();
-      } catch (err) {
-        Swal.fire({
-          title: 'Error',
-          text: err.message,
-          icon: 'error',
-          background: '#09090b',
-          color: '#fff'
-        });
-      }
+      const res = await fetchProtegido('/api/clubes', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Error al forjar la comunidad');
+
+      Swal.fire({
+        title: '¡Comunidad Forjada!',
+        text: `El espacio "${payload.nombre}" fue creado exitosamente en ${payload.ciudad}, ${payload.provincia}. Ya puedes designar a sus administradores locales.`,
+        icon: 'success',
+        background: '#09090b',
+        color: '#fff',
+        confirmButtonColor: '#10b981'
+      });
+
+      setModalCrearAbierto(false);
+      cargarClubes();
+    } catch (err) {
+      Swal.fire({
+        title: 'Error',
+        text: err.message,
+        icon: 'error',
+        background: '#09090b',
+        color: '#fff'
+      });
     }
   };
 
   // ✏️ ABRIR MODAL PARA EDITAR IDENTIDAD
   const abrirEditarClub = (club) => {
     setClubSeleccionado(club);
+    const prov = club.provincia || 'La Pampa';
+    const ciudadesDeProv = PROVINCIAS_ARGENTINAS[prov] || [];
+    const estaEnLista = ciudadesDeProv.includes(club.ciudad);
+
     setDatosEdicion({
       nombre: club.nombre || '',
-      ciudad: club.ciudad || '',
-      provincia: club.provincia || '',
+      provincia: prov,
+      ciudad: estaEnLista ? club.ciudad : '__otra__',
+      ciudadManual: estaEnLista ? '' : (club.ciudad || ''),
       descripcion: club.descripcion || '',
       historia: club.historia || '',
       foto_grupal: club.foto_grupal || '',
@@ -163,11 +166,33 @@ function GestionClubes() {
     e.preventDefault();
     if (!clubSeleccionado) return;
 
+    const ciudadFinal = datosEdicion.ciudad === '__otra__' ? datosEdicion.ciudadManual.trim() : datosEdicion.ciudad;
+    if (!datosEdicion.nombre.trim() || !datosEdicion.provincia || !ciudadFinal) {
+      return Swal.fire({
+        title: 'Campos requeridos',
+        text: 'El nombre, la provincia y la ciudad son obligatorios.',
+        icon: 'warning',
+        background: '#09090b',
+        color: '#fff'
+      });
+    }
+
     try {
+      const payload = {
+        nombre: datosEdicion.nombre.trim(),
+        provincia: datosEdicion.provincia,
+        ciudad: ciudadFinal,
+        descripcion: datosEdicion.descripcion,
+        historia: datosEdicion.historia,
+        foto_grupal: datosEdicion.foto_grupal,
+        whatsapp_url: datosEdicion.whatsapp_url,
+        instagram_url: datosEdicion.instagram_url
+      };
+
       const res = await fetchProtegido(`/api/clubes/${clubSeleccionado.id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(datosEdicion)
+        body: JSON.stringify(payload)
       });
 
       const data = await res.json();
@@ -301,7 +326,7 @@ function GestionClubes() {
 
         <button
           onClick={abrirModalCrearClub}
-          className="px-5 py-3 bg-purple-600 hover:bg-purple-500 text-white rounded-2xl text-xs font-black uppercase tracking-wider transition-all shadow-lg shadow-purple-950/50 flex items-center gap-2 active:scale-95 shrink-0"
+          className="px-5 py-3 bg-purple-600 hover:bg-purple-500 text-white rounded-2xl text-xs font-black uppercase tracking-wider transition-all shadow-lg shadow-purple-950/50 flex items-center gap-2 active:scale-95 shrink-0 cursor-pointer"
         >
           <span>➕</span> Forjar Nueva Comunidad
         </button>
@@ -379,13 +404,13 @@ function GestionClubes() {
               <div className="flex flex-wrap items-center gap-2 pt-2 border-t border-zinc-800/60">
                 <button
                   onClick={() => abrirEditarClub(club)}
-                  className="flex-1 py-2 px-3 bg-zinc-800 hover:bg-zinc-700 text-white rounded-xl text-xs font-bold transition flex items-center justify-center gap-1.5 border border-zinc-700"
+                  className="flex-1 py-2 px-3 bg-zinc-800 hover:bg-zinc-700 text-white rounded-xl text-xs font-bold transition flex items-center justify-center gap-1.5 border border-zinc-700 cursor-pointer"
                 >
                   <span>✏️</span> Editar Identidad
                 </button>
                 <button
                   onClick={() => abrirGestionAdmins(club)}
-                  className="flex-1 py-2 px-3 bg-purple-600/20 hover:bg-purple-600 text-purple-300 hover:text-white rounded-xl text-xs font-black transition flex items-center justify-center gap-1.5 border border-purple-500/40"
+                  className="flex-1 py-2 px-3 bg-purple-600/20 hover:bg-purple-600 text-purple-300 hover:text-white rounded-xl text-xs font-black transition flex items-center justify-center gap-1.5 border border-purple-500/40 cursor-pointer"
                 >
                   <span>👑</span> Administradores ({club.total_admins || 0})
                 </button>
@@ -393,6 +418,154 @@ function GestionClubes() {
 
             </div>
           ))}
+        </div>
+      )}
+
+      {/* ========================================================================= */}
+      {/* ➕ MODAL FORJAR NUEVA COMUNIDAD (REACT CON SELECTS DEPENDIENTES)          */}
+      {/* ========================================================================= */}
+      {modalCrearAbierto && (
+        <div className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-black/95 backdrop-blur-md animate-in fade-in duration-200">
+          <div className="relative w-full max-w-xl max-h-[90vh] bg-zinc-900 border border-purple-500/40 rounded-3xl shadow-2xl overflow-hidden flex flex-col">
+            
+            <div className="p-5 bg-zinc-950/80 border-b border-zinc-800 flex items-center justify-between">
+              <div>
+                <h4 className="text-xl font-black text-white flex items-center gap-2">
+                  <span>🏛️</span> Forjar Nueva Comunidad
+                </h4>
+                <p className="text-xs text-zinc-400 mt-0.5">
+                  Crea un espacio independiente con su propio catálogo de eventos y administradores.
+                </p>
+              </div>
+              <button 
+                onClick={() => setModalCrearAbierto(false)} 
+                className="w-8 h-8 rounded-full bg-zinc-800 text-zinc-400 hover:text-white flex items-center justify-center cursor-pointer"
+              >
+                ✕
+              </button>
+            </div>
+
+            <form onSubmit={manejarCrearClub} className="p-6 overflow-y-auto space-y-4 flex-1 text-xs">
+              
+              <div>
+                <label className="block font-black text-amber-400 uppercase text-[10px] mb-1">
+                  Nombre de la Agrupación / Club *
+                </label>
+                <input
+                  type="text"
+                  required
+                  placeholder="Ej: Club de Rol Merlo San Luis"
+                  value={datosCrear.nombre}
+                  onChange={(e) => setDatosCrear({ ...datosCrear, nombre: e.target.value })}
+                  className="w-full bg-zinc-950 border border-zinc-800 rounded-xl px-3 py-2.5 text-white font-bold text-xs outline-none focus:border-purple-500"
+                />
+              </div>
+
+              {/* SELECT DEPENDIENTE: PROVINCIA Y CIUDAD */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label className="block font-black text-zinc-300 uppercase text-[10px] mb-1">
+                    Provincia *
+                  </label>
+                  <select
+                    value={datosCrear.provincia}
+                    onChange={(e) => {
+                      const nuevaProv = e.target.value;
+                      const ciudades = PROVINCIAS_ARGENTINAS[nuevaProv] || [];
+                      setDatosCrear({
+                        ...datosCrear,
+                        provincia: nuevaProv,
+                        ciudad: ciudades[0] || '__otra__',
+                        ciudadManual: ''
+                      });
+                    }}
+                    className="w-full bg-zinc-950 border border-zinc-800 rounded-xl px-3 py-2.5 text-white font-bold text-xs outline-none focus:border-purple-500 cursor-pointer"
+                  >
+                    {LISTA_PROVINCIAS.map(p => (
+                      <option key={p} value={p}>{p}</option>
+                    ))}
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block font-black text-zinc-300 uppercase text-[10px] mb-1">
+                    Ciudad / Localidad *
+                  </label>
+                  <select
+                    value={datosCrear.ciudad}
+                    onChange={(e) => setDatosCrear({ ...datosCrear, ciudad: e.target.value })}
+                    className="w-full bg-zinc-950 border border-zinc-800 rounded-xl px-3 py-2.5 text-white font-bold text-xs outline-none focus:border-purple-500 cursor-pointer"
+                  >
+                    {(PROVINCIAS_ARGENTINAS[datosCrear.provincia] || []).map(c => (
+                      <option key={c} value={c}>{c}</option>
+                    ))}
+                    <option value="__otra__">✏️ Otra localidad (escribir manualmente)...</option>
+                  </select>
+                </div>
+              </div>
+
+              {/* Input manual en caso de seleccionar 'Otra localidad' */}
+              {datosCrear.ciudad === '__otra__' && (
+                <div className="animate-in fade-in slide-in-from-top-1 duration-200">
+                  <label className="block font-black text-purple-400 uppercase text-[10px] mb-1">
+                    Escribe el nombre de la Ciudad o Paraje *
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    placeholder="Ej: Carpintería, Los Molles, Realicó..."
+                    value={datosCrear.ciudadManual}
+                    onChange={(e) => setDatosCrear({ ...datosCrear, ciudadManual: e.target.value })}
+                    className="w-full bg-zinc-950 border border-purple-500/50 rounded-xl px-3 py-2 text-white font-bold text-xs outline-none focus:border-purple-400"
+                  />
+                </div>
+              )}
+
+              <div>
+                <label className="block font-black text-zinc-400 uppercase text-[10px] mb-1">
+                  Enlace a WhatsApp del Club (Opcional)
+                </label>
+                <input
+                  type="text"
+                  placeholder="https://chat.whatsapp.com/..."
+                  value={datosCrear.whatsapp_url}
+                  onChange={(e) => setDatosCrear({ ...datosCrear, whatsapp_url: e.target.value })}
+                  className="w-full bg-zinc-950 border border-zinc-800 rounded-xl px-3 py-2 text-white outline-none focus:border-purple-500 font-mono text-[11px]"
+                />
+              </div>
+
+              <div>
+                <label className="block font-black text-zinc-400 uppercase text-[10px] mb-1">
+                  Historia / Sobre Nosotros (Opcional)
+                </label>
+                <textarea
+                  rows="3"
+                  placeholder="Breve historia del club, dónde juegan, qué estilos prefieren..."
+                  value={datosCrear.historia}
+                  onChange={(e) => setDatosCrear({ ...datosCrear, historia: e.target.value })}
+                  className="w-full bg-zinc-950 border border-zinc-800 rounded-xl p-3 text-white outline-none focus:border-purple-500 resize-none leading-relaxed"
+                />
+              </div>
+
+              <div className="pt-4 border-t border-zinc-800 flex justify-end gap-2">
+                <button
+                  type="button"
+                  onClick={() => setModalCrearAbierto(false)}
+                  className="px-4 py-2 bg-zinc-800 hover:bg-zinc-700 text-zinc-300 rounded-xl font-bold cursor-pointer"
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="submit"
+                  className="px-6 py-2 bg-purple-600 hover:bg-purple-500 text-white rounded-xl font-black uppercase tracking-wider shadow-lg shadow-purple-950/50 cursor-pointer active:scale-95 transition"
+                >
+                  ⚔️ Forjar Espacio
+                </button>
+              </div>
+
+            </form>
+
+          </div>
         </div>
       )}
 
@@ -412,7 +585,7 @@ function GestionClubes() {
               </div>
               <button 
                 onClick={() => setModalEditarAbierto(false)} 
-                className="w-8 h-8 rounded-full bg-zinc-800 text-zinc-400 hover:text-white flex items-center justify-center"
+                className="w-8 h-8 rounded-full bg-zinc-800 text-zinc-400 hover:text-white flex items-center justify-center cursor-pointer"
               >
                 ✕
               </button>
@@ -420,36 +593,76 @@ function GestionClubes() {
 
             <form onSubmit={guardarEdicionClub} className="p-6 overflow-y-auto space-y-4 flex-1 text-xs">
               
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div>
+                <label className="block font-black text-zinc-400 uppercase text-[10px] mb-1">Nombre Oficial</label>
+                <input
+                  type="text"
+                  required
+                  value={datosEdicion.nombre}
+                  onChange={(e) => setDatosEdicion({ ...datosEdicion, nombre: e.target.value })}
+                  className="w-full bg-zinc-950 border border-zinc-800 rounded-xl px-3 py-2 text-white font-bold outline-none focus:border-purple-500"
+                />
+              </div>
+
+              {/* SELECT DEPENDIENTE: PROVINCIA Y CIUDAD EN EDICIÓN */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
-                  <label className="block font-black text-zinc-400 uppercase text-[10px] mb-1">Nombre Oficial</label>
-                  <input
-                    type="text"
-                    value={datosEdicion.nombre}
-                    onChange={(e) => setDatosEdicion({ ...datosEdicion, nombre: e.target.value })}
-                    className="w-full bg-zinc-950 border border-zinc-800 rounded-xl px-3 py-2 text-white font-bold outline-none focus:border-purple-500"
-                  />
+                  <label className="block font-black text-zinc-300 uppercase text-[10px] mb-1">
+                    Provincia *
+                  </label>
+                  <select
+                    value={datosEdicion.provincia}
+                    onChange={(e) => {
+                      const nuevaProv = e.target.value;
+                      const ciudades = PROVINCIAS_ARGENTINAS[nuevaProv] || [];
+                      setDatosEdicion({
+                        ...datosEdicion,
+                        provincia: nuevaProv,
+                        ciudad: ciudades[0] || '__otra__',
+                        ciudadManual: ''
+                      });
+                    }}
+                    className="w-full bg-zinc-950 border border-zinc-800 rounded-xl px-3 py-2 text-white font-bold text-xs outline-none focus:border-purple-500 cursor-pointer"
+                  >
+                    {LISTA_PROVINCIAS.map(p => (
+                      <option key={p} value={p}>{p}</option>
+                    ))}
+                  </select>
                 </div>
+
                 <div>
-                  <label className="block font-black text-zinc-400 uppercase text-[10px] mb-1">Localidad y Provincia</label>
-                  <div className="grid grid-cols-2 gap-2">
-                    <input
-                      type="text"
-                      placeholder="Ciudad"
-                      value={datosEdicion.ciudad}
-                      onChange={(e) => setDatosEdicion({ ...datosEdicion, ciudad: e.target.value })}
-                      className="w-full bg-zinc-950 border border-zinc-800 rounded-xl px-3 py-2 text-white outline-none focus:border-purple-500"
-                    />
-                    <input
-                      type="text"
-                      placeholder="Provincia"
-                      value={datosEdicion.provincia}
-                      onChange={(e) => setDatosEdicion({ ...datosEdicion, provincia: e.target.value })}
-                      className="w-full bg-zinc-950 border border-zinc-800 rounded-xl px-3 py-2 text-white outline-none focus:border-purple-500"
-                    />
-                  </div>
+                  <label className="block font-black text-zinc-300 uppercase text-[10px] mb-1">
+                    Ciudad / Localidad *
+                  </label>
+                  <select
+                    value={datosEdicion.ciudad}
+                    onChange={(e) => setDatosEdicion({ ...datosEdicion, ciudad: e.target.value })}
+                    className="w-full bg-zinc-950 border border-zinc-800 rounded-xl px-3 py-2 text-white font-bold text-xs outline-none focus:border-purple-500 cursor-pointer"
+                  >
+                    {(PROVINCIAS_ARGENTINAS[datosEdicion.provincia] || []).map(c => (
+                      <option key={c} value={c}>{c}</option>
+                    ))}
+                    <option value="__otra__">✏️ Otra localidad (escribir manualmente)...</option>
+                  </select>
                 </div>
               </div>
+
+              {/* Input manual en edición */}
+              {datosEdicion.ciudad === '__otra__' && (
+                <div className="animate-in fade-in slide-in-from-top-1 duration-200">
+                  <label className="block font-black text-purple-400 uppercase text-[10px] mb-1">
+                    Escribe el nombre de la Ciudad o Paraje *
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    placeholder="Ej: Carpintería, Los Molles, Realicó..."
+                    value={datosEdicion.ciudadManual}
+                    onChange={(e) => setDatosEdicion({ ...datosEdicion, ciudadManual: e.target.value })}
+                    className="w-full bg-zinc-950 border border-purple-500/50 rounded-xl px-3 py-2 text-white font-bold text-xs outline-none focus:border-purple-400"
+                  />
+                </div>
+              )}
 
               <div>
                 <label className="block font-black text-zinc-400 uppercase text-[10px] mb-1">Descripción Breve</label>
@@ -512,13 +725,13 @@ function GestionClubes() {
                 <button
                   type="button"
                   onClick={() => setModalEditarAbierto(false)}
-                  className="px-4 py-2 bg-zinc-800 hover:bg-zinc-700 text-zinc-300 rounded-xl font-bold"
+                  className="px-4 py-2 bg-zinc-800 hover:bg-zinc-700 text-zinc-300 rounded-xl font-bold cursor-pointer"
                 >
                   Cancelar
                 </button>
                 <button
                   type="submit"
-                  className="px-6 py-2 bg-purple-600 hover:bg-purple-500 text-white rounded-xl font-black uppercase tracking-wider shadow-lg shadow-purple-950/50"
+                  className="px-6 py-2 bg-purple-600 hover:bg-purple-500 text-white rounded-xl font-black uppercase tracking-wider shadow-lg shadow-purple-950/50 cursor-pointer active:scale-95 transition"
                 >
                   💾 Grabar Cambios
                 </button>
@@ -538,53 +751,63 @@ function GestionClubes() {
           <div className="relative w-full max-w-xl max-h-[90vh] bg-zinc-900 border border-purple-500/30 rounded-3xl shadow-2xl overflow-hidden flex flex-col">
             
             <div className="p-5 bg-zinc-950/80 border-b border-zinc-800 flex items-center justify-between">
-              <div>
-                <h4 className="text-xl font-black text-white flex items-center gap-2">
-                  <span>👑</span> Administradores de "{clubSeleccionado.nombre}"
-                </h4>
-                <p className="text-xs text-zinc-400">Designa qué usuarios tendrán autoridad local para este club.</p>
+              <div className="flex items-center gap-3">
+                <span className="text-2xl">👑</span>
+                <div>
+                  <h4 className="text-lg font-black text-white">
+                    Administradores de "{clubSeleccionado.nombre}"
+                  </h4>
+                  <p className="text-xs text-zinc-400">
+                    Solo ellos podrán crear eventos y moderar mesas para esta sede.
+                  </p>
+                </div>
               </div>
               <button 
                 onClick={() => setModalAdminAbierto(false)} 
-                className="w-8 h-8 rounded-full bg-zinc-800 text-zinc-400 hover:text-white flex items-center justify-center"
+                className="w-8 h-8 rounded-full bg-zinc-800 text-zinc-400 hover:text-white flex items-center justify-center cursor-pointer"
               >
                 ✕
               </button>
             </div>
 
-            <div className="p-6 overflow-y-auto space-y-5 flex-1">
+            <div className="p-6 overflow-y-auto space-y-6 flex-1 text-xs">
               
               {/* Administradores actuales */}
               <div>
-                <h5 className="font-black text-zinc-400 uppercase text-[10px] tracking-wider mb-2">
+                <h5 className="font-black text-amber-400 uppercase tracking-widest text-[10px] mb-3">
                   Líderes Actuales ({clubSeleccionado.administradores?.length || 0})
                 </h5>
 
                 {(!clubSeleccionado.administradores || clubSeleccionado.administradores.length === 0) ? (
-                  <p className="text-xs italic text-zinc-500 bg-zinc-950/50 p-3 rounded-xl border border-zinc-800">
+                  <p className="text-zinc-500 italic p-3 bg-zinc-950/50 rounded-xl border border-zinc-800 text-center">
                     Esta comunidad aún no tiene un administrador local asignado.
                   </p>
                 ) : (
                   <div className="space-y-2">
                     {clubSeleccionado.administradores.map((admin) => (
-                      <div key={admin.id} className="p-3 bg-zinc-950 rounded-2xl border border-zinc-800 flex items-center justify-between gap-3">
-                        <div>
-                          <div className="flex items-center gap-2">
-                            <span className="font-black text-white text-sm">{admin.nombre}</span>
-                            <span className="px-2 py-0.2 bg-purple-500/20 text-purple-400 border border-purple-500/30 rounded text-[9px] font-black uppercase">
-                              {admin.rol}
-                            </span>
+                      <div 
+                        key={admin.id}
+                        className="flex items-center justify-between p-3 bg-zinc-950/70 border border-zinc-800 rounded-2xl"
+                      >
+                        <div className="flex items-center gap-3">
+                          <span className="text-lg">👑</span>
+                          <div>
+                            <p className="font-black text-white">{admin.nombre}</p>
+                            <p className="text-zinc-500 text-[10px] font-mono">{admin.email}</p>
                           </div>
-                          <p className="text-[11px] text-zinc-500">{admin.email}</p>
                         </div>
 
-                        {admin.rol !== 'superadmin' && (
+                        {clubSeleccionado.id === 1 && admin.rol === 'superadmin' ? (
+                          <span className="px-2.5 py-1 bg-purple-500/20 text-purple-300 border border-purple-500/40 rounded-lg text-[9px] font-black uppercase">
+                            ⚡ Superadmin
+                          </span>
+                        ) : (
                           <button
                             onClick={() => revocarAdminDeClub(admin.id)}
-                            className="px-3 py-1 bg-red-500/10 hover:bg-red-500 text-red-400 hover:text-white border border-red-500/30 rounded-xl text-xs font-bold transition"
+                            className="px-3 py-1.5 bg-red-500/10 hover:bg-red-500 text-red-400 hover:text-white border border-red-500/30 rounded-xl text-[10px] font-bold transition cursor-pointer"
                             title="Revocar rango de administrador"
                           >
-                            Revocar
+                            ✕ Revocar
                           </button>
                         )}
                       </div>
@@ -595,39 +818,45 @@ function GestionClubes() {
 
               {/* Selector para nombrar nuevo administrador */}
               <div className="pt-4 border-t border-zinc-800">
-                <h5 className="font-black text-amber-400 uppercase text-[10px] tracking-wider mb-2">
+                <h5 className="font-black text-purple-400 uppercase tracking-widest text-[10px] mb-2">
                   Nombrar Nuevo Administrador
                 </h5>
-                <p className="text-[11px] text-zinc-400 mb-3">
+                <p className="text-zinc-400 text-xs mb-3">
                   Selecciona a un aventurero registrado para ascenderlo a Administrador oficial de este club.
                 </p>
 
-                <div className="flex gap-2">
-                  <select
-                    id="select-nuevo-admin"
-                    className="flex-1 bg-zinc-950 border border-zinc-800 rounded-xl px-3 py-2 text-white text-xs outline-none focus:border-purple-500"
-                  >
-                    <option value="">Seleccionar aventurero...</option>
-                    {usuariosDisponibles
-                      .filter(u => !clubSeleccionado.administradores?.some(a => a.id === u.id))
-                      .map(u => (
-                        <option key={u.id} value={u.id}>
-                          {u.nombre} ({u.nombre_completo || u.email})
-                        </option>
-                      ))}
-                  </select>
-                  <button
-                    onClick={() => {
-                      const sel = document.getElementById('select-nuevo-admin');
-                      if (sel && sel.value) asignarAdminAClub(sel.value);
-                    }}
-                    className="px-4 py-2 bg-purple-600 hover:bg-purple-500 text-white rounded-xl text-xs font-black uppercase tracking-wider"
-                  >
-                    Asignar
-                  </button>
+                <div className="space-y-2 max-h-48 overflow-y-auto pr-1">
+                  {usuariosDisponibles
+                    .filter(u => !clubSeleccionado.administradores?.some(a => a.id === u.id))
+                    .map((user) => (
+                      <div 
+                        key={user.id}
+                        className="flex items-center justify-between p-2.5 bg-zinc-950/40 hover:bg-zinc-950 border border-zinc-800/80 hover:border-purple-500/40 rounded-xl transition"
+                      >
+                        <div>
+                          <p className="font-bold text-white text-xs">{user.nombre}</p>
+                          <p className="text-zinc-500 text-[10px]">{user.email}</p>
+                        </div>
+                        <button
+                          onClick={() => asignarAdminAClub(user.id)}
+                          className="px-3 py-1 bg-purple-600 hover:bg-purple-500 text-white rounded-lg text-[10px] font-black uppercase tracking-wider transition cursor-pointer active:scale-95"
+                        >
+                          ➕ Nombrar
+                        </button>
+                      </div>
+                    ))}
                 </div>
               </div>
 
+            </div>
+
+            <div className="p-4 bg-zinc-950/80 border-t border-zinc-800 text-right">
+              <button
+                onClick={() => setModalAdminAbierto(false)}
+                className="px-5 py-2 bg-zinc-800 hover:bg-zinc-700 text-white rounded-xl font-bold cursor-pointer"
+              >
+                Cerrar
+              </button>
             </div>
 
           </div>

@@ -528,7 +528,9 @@ function MisCronicas({ alActualizarUsuario }) {
                     </p>
                   )}
 
-                  {(usuarioGuardado?.rol === 'admin' || usuarioGuardado?.rol === 'superadmin') ? (
+                  {usuarioGuardado?.rol === 'superadmin' ? (
+                    <p className="text-purple-400 font-black text-[10px] uppercase tracking-[0.4em] mb-2 w-full truncate">⚡ Superadmin</p>
+                  ) : usuarioGuardado?.rol === 'admin' ? (
                     <p className="text-emerald-500 font-black text-[10px] uppercase tracking-[0.4em] mb-2 w-full truncate">👑 Administrador</p>
                   ) : usuarioGuardado?.rol === 'dm' ? (
                     <div className="flex flex-wrap items-center gap-2 mb-2 w-full">

@@ -64,7 +64,7 @@ router.get('/votaciones/activas', verificarToken, (req, res) => {
     SELECT v.id, v.candidato_id, v.estado, c.nombre as candidato_nombre, p.nombre as proponente_nombre,
     (SELECT COUNT(*) FROM votos_admin WHERE votacion_id = v.id AND voto = 'a favor') as votos_favor,
     (SELECT COUNT(*) FROM votos_admin WHERE votacion_id = v.id AND voto = 'en contra') as votos_contra,
-    (SELECT COUNT(*) FROM usuarios WHERE rol = 'admin') as total_admins,
+    (SELECT COUNT(*) FROM usuarios WHERE rol = 'admin' OR rol = 'superadmin') as total_admins,
     (SELECT COUNT(*) FROM votos_admin WHERE votacion_id = v.id AND admin_id = ?) as ya_vote
     FROM votaciones_admin v
     JOIN usuarios c ON v.candidato_id = c.id
@@ -340,7 +340,7 @@ router.post('/votaciones/:id/votar', verificarToken, (req, res) => {
       SELECT v.candidato_id, c.nombre as candidato_nombre,
       (SELECT COUNT(*) FROM votos_admin WHERE votacion_id = ? AND voto = 'a favor') as votos_favor,
       (SELECT COUNT(*) FROM votos_admin WHERE votacion_id = ? AND voto = 'en contra') as votos_contra,
-      (SELECT COUNT(*) FROM usuarios WHERE rol = 'admin') as total_admins
+      (SELECT COUNT(*) FROM usuarios WHERE rol = 'admin' OR rol = 'superadmin') as total_admins
       FROM votaciones_admin v JOIN usuarios c ON v.candidato_id = c.id WHERE v.id = ?
     `;
 

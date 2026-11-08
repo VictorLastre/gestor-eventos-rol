@@ -452,6 +452,11 @@ function GestionSanciones({ setVista }) {
                         <div className="min-w-0">
                           <div className="flex items-center gap-2">
                             <span className="font-black text-white text-sm truncate">{u.nombre}</span>
+                            {u.rol === 'superadmin' && (
+                              <span className="px-1.5 py-0.2 bg-purple-500/20 text-purple-300 border border-purple-500/40 rounded text-[9px] font-black uppercase">
+                                ⚡ Superadmin
+                              </span>
+                            )}
                             {u.rol === 'admin' && (
                               <span className="px-1.5 py-0.2 bg-red-500/20 text-red-400 border border-red-500/30 rounded text-[9px] font-black uppercase">
                                 Admin

@@ -167,7 +167,12 @@ function PerfilPublico({ usuarioId, volver }) {
                   {perfil.nombre}
                 </p>
                 
-                {(perfil.rol === 'admin' || perfil.rol === 'superadmin') ? (
+                {perfil.rol === 'superadmin' ? (
+                  <span className="flex flex-wrap items-center gap-2 text-purple-300 font-black tracking-[0.2em] text-xs mt-2">
+                    <span className="text-sm">⚡</span> SUPERADMIN
+                    {rango && <><span className="text-zinc-600 font-normal ml-1">•</span> <span className={`ml-1 flex items-center gap-1.5 px-2 py-0.5 rounded border border-purple-500/40 bg-purple-950/40 ${rango.colorClase}`}>NVL. {rango.nivel} - {rango.nombre.toUpperCase()}</span></>}
+                  </span>
+                ) : perfil.rol === 'admin' ? (
                   <span className="flex flex-wrap items-center gap-2 text-emerald-400 font-black tracking-[0.2em] text-xs mt-2">
                     <span className="text-sm">👑</span> ADMINISTRADOR
                     {rango && <><span className="text-zinc-600 font-normal ml-1">•</span> <span className={`ml-1 flex items-center gap-1.5 px-2 py-0.5 rounded border border-zinc-800 bg-black/40 ${rango.colorClase}`}>NVL. {rango.nivel} - {rango.nombre.toUpperCase()}</span></>}
