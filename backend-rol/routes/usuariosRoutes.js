@@ -655,6 +655,7 @@ router.get('/ranking/salon-fama', verificarToken, (req, res) => {
       SELECT 
         id, 
         nombre, 
+        nombre_completo,
         rol, 
         avatar, 
         IFNULL(club_id, 1) as club_id,
@@ -664,7 +665,7 @@ router.get('/ranking/salon-fama', verificarToken, (req, res) => {
     `;
     const params = [];
     if (clubId && clubId !== 'todos') {
-      sql += " WHERE IFNULL(club_id, 1) = ?";
+      sql += " WHERE (IFNULL(club_id, 1) = ? OR rol = 'superadmin')";
       params.push(clubId);
     }
     
