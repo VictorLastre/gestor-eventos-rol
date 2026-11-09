@@ -3,7 +3,7 @@ import AvatarUsuario from './AvatarUsuario';
 import { io } from 'socket.io-client';
 import { fetchProtegido } from '../utils/api';
 
-function SalonFama({ cambiarVista }) {
+function SalonFama({ cambiarVista, clubActivo }) {
   const [ranking, setRanking] = useState({ masters: [], jugadores: [] });
   const [cargando, setCargando] = useState(true);
   const [pestanaActiva, setPestanaActiva] = useState('masters');
@@ -11,7 +11,8 @@ function SalonFama({ cambiarVista }) {
 
   const fetchRanking = async () => {
     try {
-      const res = await fetchProtegido('/api/usuarios/ranking/salon-fama');
+      const clubParam = clubActivo?.id ? `?club_id=${clubActivo.id}` : '';
+      const res = await fetchProtegido(`/api/usuarios/ranking/salon-fama${clubParam}`);
       if (res.ok) {
         const data = await res.json();
         setRanking(data);
@@ -29,7 +30,7 @@ function SalonFama({ cambiarVista }) {
     socket.on('actualizacion-usuarios', fetchRanking);
 
     return () => socket.disconnect();
-  }, []);
+  }, [clubActivo?.id]);
 
   const verPerfil = (id) => {
     cambiarVista('perfilPublico', { id });
@@ -50,7 +51,7 @@ function SalonFama({ cambiarVista }) {
             Salón de la Fama
           </h1>
           <p className="text-zinc-400 font-bold uppercase tracking-widest text-sm">
-            El prestigio del Gremio forjado en cada partida
+            {clubActivo?.id === 'todos' ? 'El prestigio del Gremio a través de todas las tierras' : `El prestigio forjado en ${clubActivo?.nombre || 'la Asociación'}`}
           </p>
         </div>
 

@@ -17,15 +17,22 @@ const registrarLog = (usuario, accion, descripcion) => {
 // 1. MIS CRÓNICAS
 router.get('/mis-cronicas', verificarToken, (req, res) => {
   const idUsuario = req.usuario.id;
+  const clubId = req.query.club_id;
 
-  const sqlDirigiendo = `
+  let sqlDirigiendo = `
     SELECT p.*, e.nombre as evento_nombre, DATE_FORMAT(e.fecha, '%Y-%m-%d') as evento_fecha, e.estado as evento_estado 
     FROM partidas p 
     JOIN eventos e ON p.evento_id = e.id 
     WHERE p.dungeon_master_id = ?
   `;
+  const paramsDirigiendo = [idUsuario];
+  if (clubId && clubId !== 'todos') {
+    sqlDirigiendo += " AND IFNULL(e.club_id, 1) = ?";
+    paramsDirigiendo.push(clubId);
+  }
+  sqlDirigiendo += " ORDER BY e.fecha DESC";
   
-  const sqlJugando = `
+  let sqlJugando = `
     SELECT p.*, e.nombre as evento_nombre, DATE_FORMAT(e.fecha, '%Y-%m-%d') as evento_fecha, e.estado as evento_estado, u.nombre as dm_nombre, i.estado as mi_estado
     FROM inscripciones i 
     JOIN partidas p ON i.partida_id = p.id 
@@ -33,11 +40,17 @@ router.get('/mis-cronicas', verificarToken, (req, res) => {
     JOIN usuarios u ON p.dungeon_master_id = u.id
     WHERE i.usuario_id = ?
   `;
+  const paramsJugando = [idUsuario];
+  if (clubId && clubId !== 'todos') {
+    sqlJugando += " AND IFNULL(e.club_id, 1) = ?";
+    paramsJugando.push(clubId);
+  }
+  sqlJugando += " ORDER BY e.fecha DESC";
   
-  db.query(sqlDirigiendo, [idUsuario], (err, dirigiendo) => {
+  db.query(sqlDirigiendo, paramsDirigiendo, (err, dirigiendo) => {
     if (err) return res.status(500).json({ error: 'Error en crónicas de DM.' });
     
-    db.query(sqlJugando, [idUsuario], (err, jugando) => {
+    db.query(sqlJugando, paramsJugando, (err, jugando) => {
       if (err) return res.status(500).json({ error: 'Error en crónicas de jugador.' });
       
       res.json({ 
@@ -50,7 +63,14 @@ router.get('/mis-cronicas', verificarToken, (req, res) => {
 
 router.get('/solicitudes-dm', verificarToken, (req, res) => {
   if (req.usuario.rol !== 'admin' && req.usuario.rol !== 'superadmin') return res.status(403).json({ error: 'Acceso denegado.' });
-  db.query("SELECT id, nombre, email FROM usuarios WHERE solicita_dm = 1 AND rol = 'jugador'", (err, resultados) => {
+  const clubId = req.query.club_id;
+  let sql = "SELECT id, nombre, email, IFNULL(club_id, 1) as club_id FROM usuarios WHERE solicita_dm = 1 AND rol = 'jugador'";
+  const params = [];
+  if (clubId && clubId !== 'todos') {
+    sql += " AND IFNULL(club_id, 1) = ?";
+    params.push(clubId);
+  }
+  db.query(sql, params, (err, resultados) => {
     if (err) return res.status(500).json({ error: 'Error.' });
     res.json(resultados || []);
   });
@@ -59,20 +79,32 @@ router.get('/solicitudes-dm', verificarToken, (req, res) => {
 // ✨ SENADO 1: OBTENER VOTACIONES ACTIVAS
 router.get('/votaciones/activas', verificarToken, (req, res) => {
   if (req.usuario.rol !== 'admin' && req.usuario.rol !== 'superadmin') return res.status(403).json({ error: 'Acceso denegado.' });
+  const clubId = req.query.club_id;
 
-  const sql = `
+  let sql = `
     SELECT v.id, v.candidato_id, v.estado, c.nombre as candidato_nombre, p.nombre as proponente_nombre,
     (SELECT COUNT(*) FROM votos_admin WHERE votacion_id = v.id AND voto = 'a favor') as votos_favor,
     (SELECT COUNT(*) FROM votos_admin WHERE votacion_id = v.id AND voto = 'en contra') as votos_contra,
-    (SELECT COUNT(*) FROM usuarios WHERE rol = 'admin' OR rol = 'superadmin') as total_admins,
+    (SELECT COUNT(*) FROM usuarios WHERE (rol = 'admin' OR rol = 'superadmin')`;
+  
+  if (clubId && clubId !== 'todos') {
+    sql += ` AND IFNULL(club_id, 1) = ${db.escape(clubId)}`;
+  }
+
+  sql += `) as total_admins,
     (SELECT COUNT(*) FROM votos_admin WHERE votacion_id = v.id AND admin_id = ?) as ya_vote
     FROM votaciones_admin v
     JOIN usuarios c ON v.candidato_id = c.id
     JOIN usuarios p ON v.proponente_id = p.id
     WHERE v.estado = 'pendiente'
   `;
+  const params = [req.usuario.id];
+  if (clubId && clubId !== 'todos') {
+    sql += " AND IFNULL(c.club_id, 1) = ?";
+    params.push(clubId);
+  }
 
-  db.query(sql, [req.usuario.id], (err, resultados) => {
+  db.query(sql, params, (err, resultados) => {
     if (err) return res.status(500).json({ error: 'Error al consultar el Senado.' });
     res.json(resultados);
   });
@@ -80,11 +112,18 @@ router.get('/votaciones/activas', verificarToken, (req, res) => {
 
 router.get('/estadisticas', verificarToken, (req, res) => {
   if (req.usuario.rol !== 'admin' && req.usuario.rol !== 'superadmin') return res.status(403).json({ error: 'Acceso denegado.' });
-  const sql = `
+  const clubId = req.query.club_id;
+  let sql = `
     SELECT e.id, e.nombre, COUNT(DISTINCT p.id) AS total_mesas, COUNT(i.id) AS total_jugadores
     FROM eventos e LEFT JOIN partidas p ON e.id = p.evento_id LEFT JOIN inscripciones i ON p.id = i.partida_id
-    GROUP BY e.id ORDER BY e.fecha DESC`;
-  db.query(sql, (err, resultados) => {
+  `;
+  const params = [];
+  if (clubId && clubId !== 'todos') {
+    sql += " WHERE IFNULL(e.club_id, 1) = ?";
+    params.push(clubId);
+  }
+  sql += " GROUP BY e.id ORDER BY e.fecha DESC";
+  db.query(sql, params, (err, resultados) => {
     if (err) return res.status(500).json({ error: 'Error.' });
     res.json(resultados);
   });
@@ -417,13 +456,26 @@ router.get('/notificaciones', verificarToken, (req, res) => {
     const page = Math.max(1, parseInt(req.query.page, 10) || 1);
     const limit = Math.max(1, Math.min(2000, parseInt(req.query.limit, 10) || 10));
     const offset = Math.max(0, (page - 1) * limit);
-    db.query("SELECT COUNT(*) AS total FROM usuarios", (err, countResult) => {
+    const clubId = req.query.club_id;
+
+    let whereClausula = "";
+    const paramsCount = [];
+    const paramsSelect = [];
+
+    if (clubId && clubId !== 'todos') {
+      whereClausula = " WHERE IFNULL(club_id, 1) = ?";
+      paramsCount.push(clubId);
+      paramsSelect.push(clubId);
+    }
+    paramsSelect.push(limit, offset);
+
+    db.query(`SELECT COUNT(*) AS total FROM usuarios ${whereClausula}`, paramsCount, (err, countResult) => {
       if (err) {
         console.error('Error al contar usuarios:', err);
         return res.status(500).json({ error: 'Error al obtener usuarios.' });
       }
-      const sql = "SELECT id, nombre, nombre_completo, email, rol, IFNULL(club_id, 1) as club_id, avatar, biografia, solicita_dm, es_dm_nuevo, telegram_chat_id, DATE_FORMAT(fecha_nacimiento, '%Y-%m-%d') as fecha_nacimiento, TIMESTAMPDIFF(YEAR, fecha_nacimiento, CURDATE()) as edad, IFNULL((SELECT SUM(r.voto) FROM reputacion r JOIN partidas p ON r.partida_id = p.id WHERE r.evaluado_id = usuarios.id AND p.dungeon_master_id = usuarios.id), 0) as honor_total, IFNULL((SELECT SUM(r.voto) FROM reputacion r JOIN partidas p ON r.partida_id = p.id WHERE r.evaluado_id = usuarios.id AND p.dungeon_master_id != usuarios.id), 0) as reputacion_neta FROM usuarios ORDER BY nombre ASC LIMIT ? OFFSET ?";
-      db.query(sql, [limit, offset], (err, resultados) => {
+      const sql = `SELECT id, nombre, nombre_completo, email, rol, IFNULL(club_id, 1) as club_id, avatar, biografia, solicita_dm, es_dm_nuevo, telegram_chat_id, DATE_FORMAT(fecha_nacimiento, '%Y-%m-%d') as fecha_nacimiento, TIMESTAMPDIFF(YEAR, fecha_nacimiento, CURDATE()) as edad, IFNULL((SELECT SUM(r.voto) FROM reputacion r JOIN partidas p ON r.partida_id = p.id WHERE r.evaluado_id = usuarios.id AND p.dungeon_master_id = usuarios.id), 0) as honor_total, IFNULL((SELECT SUM(r.voto) FROM reputacion r JOIN partidas p ON r.partida_id = p.id WHERE r.evaluado_id = usuarios.id AND p.dungeon_master_id != usuarios.id), 0) as reputacion_neta FROM usuarios ${whereClausula} ORDER BY nombre ASC LIMIT ? OFFSET ?`;
+      db.query(sql, paramsSelect, (err, resultados) => {
         if (err) {
           console.error('Error al listar usuarios:', err);
           return res.status(500).json({ error: 'Error al obtener usuarios.' });
@@ -444,12 +496,13 @@ router.get('/notificaciones', verificarToken, (req, res) => {
   // ✨ MEDALLAS Y LOGROS DEL AVENTURERO (100% RETROACTIVO)
   router.get('/:id/logros', verificarToken, async (req, res) => {
     const idUsuario = req.params.id === 'yo' ? req.usuario.id : parseInt(req.params.id, 10);
+    const clubId = req.query.club_id;
     if (!idUsuario || isNaN(idUsuario)) {
       return res.status(400).json({ error: 'ID de aventurero no válido.' });
     }
 
     try {
-      const dataLogros = await calcularLogrosUsuario(idUsuario, db);
+      const dataLogros = await calcularLogrosUsuario(idUsuario, db, clubId);
       if (!dataLogros) {
         return res.status(404).json({ error: 'Aventurero no encontrado.' });
       }
@@ -463,10 +516,21 @@ router.get('/notificaciones', verificarToken, (req, res) => {
   // ✨ PERFIL PÚBLICO DE CUALQUIER USUARIO
   router.get('/:id/perfil_publico', verificarToken, (req, res) => {
     const idObj = req.params.id;
+    const clubId = req.query.club_id;
+
+    let honorSql = `(SELECT IFNULL(SUM(r.voto), 0) FROM reputacion r JOIN partidas p ON r.partida_id = p.id JOIN eventos e ON p.evento_id = e.id WHERE r.evaluado_id = usuarios.id AND p.dungeon_master_id = usuarios.id`;
+    let repSql = `(SELECT IFNULL(SUM(r.voto), 0) FROM reputacion r JOIN partidas p ON r.partida_id = p.id JOIN eventos e ON p.evento_id = e.id WHERE r.evaluado_id = usuarios.id AND p.dungeon_master_id != usuarios.id`;
+    if (clubId && clubId !== 'todos') {
+      honorSql += ` AND IFNULL(e.club_id, 1) = ${db.escape(clubId)}`;
+      repSql += ` AND IFNULL(e.club_id, 1) = ${db.escape(clubId)}`;
+    }
+    honorSql += `) as honor_total`;
+    repSql += `) as reputacion_neta`;
+
     const sqlPerfil = `
-      SELECT id, nombre, rol, avatar, biografia, 
-      IFNULL((SELECT SUM(r.voto) FROM reputacion r JOIN partidas p ON r.partida_id = p.id WHERE r.evaluado_id = usuarios.id AND p.dungeon_master_id = usuarios.id), 0) as honor_total,
-      IFNULL((SELECT SUM(r.voto) FROM reputacion r JOIN partidas p ON r.partida_id = p.id WHERE r.evaluado_id = usuarios.id AND p.dungeon_master_id != usuarios.id), 0) as reputacion_neta
+      SELECT id, nombre, rol, avatar, biografia, IFNULL(club_id, 1) as club_id,
+      ${honorSql},
+      ${repSql}
       FROM usuarios WHERE id = ?`;
 
     db.query(sqlPerfil, [idObj], (err, resPerfil) => {
@@ -475,34 +539,55 @@ router.get('/notificaciones', verificarToken, (req, res) => {
       const usuarioPublico = resPerfil[0];
       
       // Obtener mesas que dirigió
-      const sqlDirigiendo = `
+      let sqlDirigiendo = `
         SELECT p.id, p.titulo, p.etiqueta, e.nombre as evento_nombre, DATE_FORMAT(e.fecha, '%Y-%m-%d') as evento_fecha, e.estado as evento_estado 
-        FROM partidas p JOIN eventos e ON p.evento_id = e.id WHERE p.dungeon_master_id = ? ORDER BY e.fecha DESC
+        FROM partidas p JOIN eventos e ON p.evento_id = e.id WHERE p.dungeon_master_id = ?
       `;
+      const paramsDirigiendo = [idObj];
+      if (clubId && clubId !== 'todos') {
+        sqlDirigiendo += " AND IFNULL(e.club_id, 1) = ?";
+        paramsDirigiendo.push(clubId);
+      }
+      sqlDirigiendo += " ORDER BY e.fecha DESC";
+
       // Obtener mesas que jugó
-      const sqlJugando = `
+      let sqlJugando = `
         SELECT p.id, p.titulo, p.etiqueta, e.nombre as evento_nombre, DATE_FORMAT(e.fecha, '%Y-%m-%d') as evento_fecha, e.estado as evento_estado 
-        FROM inscripciones i JOIN partidas p ON i.partida_id = p.id JOIN eventos e ON p.evento_id = e.id WHERE i.usuario_id = ? ORDER BY e.fecha DESC
+        FROM inscripciones i JOIN partidas p ON i.partida_id = p.id JOIN eventos e ON p.evento_id = e.id WHERE i.usuario_id = ?
       `;
+      const paramsJugando = [idObj];
+      if (clubId && clubId !== 'todos') {
+        sqlJugando += " AND IFNULL(e.club_id, 1) = ?";
+        paramsJugando.push(clubId);
+      }
+      sqlJugando += " ORDER BY e.fecha DESC";
       
-      db.query(sqlDirigiendo, [idObj], (err2, dirigiendo) => {
+      db.query(sqlDirigiendo, paramsDirigiendo, (err2, dirigiendo) => {
         if (err2) return res.status(500).json({ error: 'Error cargando crónicas.' });
         
-        db.query(sqlJugando, [idObj], (err3, jugando) => {
+        db.query(sqlJugando, paramsJugando, (err3, jugando) => {
           if (err3) return res.status(500).json({ error: 'Error cargando crónicas.' });
           
-          db.query(`SELECT r.etiqueta, COUNT(*) as cantidad, (p.dungeon_master_id = r.evaluado_id) as es_dm FROM reputacion r JOIN partidas p ON r.partida_id = p.id WHERE r.evaluado_id = ? GROUP BY r.etiqueta, es_dm ORDER BY cantidad DESC LIMIT 3`, [idObj], async (err4, topTags) => {
+          let sqlTags = `SELECT r.etiqueta, COUNT(*) as cantidad, (p.dungeon_master_id = r.evaluado_id) as es_dm FROM reputacion r JOIN partidas p ON r.partida_id = p.id JOIN eventos e ON p.evento_id = e.id WHERE r.evaluado_id = ?`;
+          const paramsTags = [idObj];
+          if (clubId && clubId !== 'todos') {
+            sqlTags += " AND IFNULL(e.club_id, 1) = ?";
+            paramsTags.push(clubId);
+          }
+          sqlTags += " GROUP BY r.etiqueta, es_dm ORDER BY cantidad DESC LIMIT 3";
+
+          db.query(sqlTags, paramsTags, async (err4, topTags) => {
             let dataLogros = null;
             try {
-              dataLogros = await calcularLogrosUsuario(idObj, db);
+              dataLogros = await calcularLogrosUsuario(idObj, db, clubId);
             } catch (errLogros) {
               console.error('Error calculando logros para perfil público:', errLogros);
             }
 
             res.json({
               ...usuarioPublico,
-              dirigiendo,
-              jugando,
+              dirigiendo: dirigiendo || [],
+              jugando: jugando || [],
               topTags: err4 ? [] : topTags,
               logros: dataLogros
             });
@@ -555,28 +640,43 @@ router.get('/notificaciones', verificarToken, (req, res) => {
 
 // GET RANKING (SALON DE LA FAMA)
 router.get('/ranking/salon-fama', verificarToken, (req, res) => {
-    // Calculamos el honor_total para DMs y la reputacion_neta para jugadores
-    const sql = `
+    const clubId = req.query.club_id;
+
+    let honorSql = `(SELECT IFNULL(SUM(r.voto), 0) FROM reputacion r JOIN partidas p ON r.partida_id = p.id JOIN eventos e ON p.evento_id = e.id WHERE r.evaluado_id = usuarios.id AND p.dungeon_master_id = usuarios.id`;
+    let repSql = `(SELECT IFNULL(SUM(r.voto), 0) FROM reputacion r JOIN partidas p ON r.partida_id = p.id JOIN eventos e ON p.evento_id = e.id WHERE r.evaluado_id = usuarios.id AND p.dungeon_master_id != usuarios.id`;
+    if (clubId && clubId !== 'todos') {
+      honorSql += ` AND IFNULL(e.club_id, 1) = ${db.escape(clubId)}`;
+      repSql += ` AND IFNULL(e.club_id, 1) = ${db.escape(clubId)}`;
+    }
+    honorSql += `) as honor_total`;
+    repSql += `) as reputacion_neta`;
+
+    let sql = `
       SELECT 
         id, 
         nombre, 
         rol, 
         avatar, 
-        IFNULL((SELECT SUM(r.voto) FROM reputacion r JOIN partidas p ON r.partida_id = p.id WHERE r.evaluado_id = usuarios.id AND p.dungeon_master_id = usuarios.id), 0) as honor_total, 
-        IFNULL((SELECT SUM(r.voto) FROM reputacion r JOIN partidas p ON r.partida_id = p.id WHERE r.evaluado_id = usuarios.id AND p.dungeon_master_id != usuarios.id), 0) as reputacion_neta
+        IFNULL(club_id, 1) as club_id,
+        ${honorSql}, 
+        ${repSql}
       FROM usuarios
     `;
+    const params = [];
+    if (clubId && clubId !== 'todos') {
+      sql += " WHERE IFNULL(club_id, 1) = ?";
+      params.push(clubId);
+    }
     
-    db.query(sql, (err, resultados) => {
+    db.query(sql, params, (err, resultados) => {
         if (err) return res.status(500).json({ error: 'Error al consultar el ranking.' });
         
         // Separar y ordenar
         const masters = resultados
-            .filter(u => u.rol === 'dm' || u.rol === 'admin')
+            .filter(u => u.rol === 'dm' || u.rol === 'admin' || u.rol === 'superadmin')
             .sort((a, b) => b.honor_total - a.honor_total);
             
         const jugadores = resultados
-            // Puedes mostrar a todos o solo a los que no son DM. Si un DM también juega, debería aparecer. Mostraremos a todos.
             .sort((a, b) => b.reputacion_neta - a.reputacion_neta);
 
         res.json({ masters, jugadores });
@@ -650,8 +750,10 @@ router.get('/sanciones/listado', verificarToken, async (req, res) => {
     return res.status(403).json({ error: 'Acceso denegado. Solo el Alto Mando puede gestionar sanciones.' });
   }
 
+  const clubId = req.query.club_id;
+
   try {
-    const sqlUsuarios = `
+    let sqlUsuarios = `
       SELECT 
         u.id, 
         u.nombre, 
@@ -660,6 +762,7 @@ router.get('/sanciones/listado', verificarToken, async (req, res) => {
         u.rol, 
         u.avatar, 
         u.telegram_chat_id,
+        IFNULL(u.club_id, 1) as club_id,
         COUNT(CASE WHEN i.asistencia = 'ausente' THEN 1 END) as total_ausencias,
         COUNT(CASE WHEN i.asistencia = 'presente' THEN 1 END) as total_presentes,
         COUNT(CASE WHEN i.asistencia = 'justificado' THEN 1 END) as total_justificadas,
@@ -667,19 +770,30 @@ router.get('/sanciones/listado', verificarToken, async (req, res) => {
       FROM usuarios u
       LEFT JOIN inscripciones i ON u.id = i.usuario_id
       LEFT JOIN partidas p ON i.partida_id = p.id
-      GROUP BY u.id
+      LEFT JOIN eventos e ON p.evento_id = e.id
     `;
-    const [usuarios] = await db.promise().query(sqlUsuarios);
+    const paramsUsuarios = [];
+    if (clubId && clubId !== 'todos') {
+      sqlUsuarios += " WHERE IFNULL(u.club_id, 1) = ?";
+      paramsUsuarios.push(clubId);
+    }
+    sqlUsuarios += " GROUP BY u.id";
+    const [usuarios] = await db.promise().query(sqlUsuarios, paramsUsuarios);
 
-    const sqlHistorial = `
+    let sqlHistorial = `
       SELECT i.usuario_id, i.asistencia, e.id as evento_id, e.fecha, e.nombre as evento_nombre
       FROM inscripciones i
       JOIN partidas p ON i.partida_id = p.id
       JOIN eventos e ON p.evento_id = e.id
       WHERE e.estado = 'Finalizado' AND i.asistencia IN ('presente', 'ausente')
-      ORDER BY e.fecha DESC, p.id DESC
     `;
-    const [historial] = await db.promise().query(sqlHistorial);
+    const paramsHistorial = [];
+    if (clubId && clubId !== 'todos') {
+      sqlHistorial += " AND IFNULL(e.club_id, 1) = ?";
+      paramsHistorial.push(clubId);
+    }
+    sqlHistorial += " ORDER BY e.fecha DESC, p.id DESC";
+    const [historial] = await db.promise().query(sqlHistorial, paramsHistorial);
 
     const historialPorUsuario = {};
     for (const h of historial) {

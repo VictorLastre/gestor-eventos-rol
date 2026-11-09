@@ -582,7 +582,7 @@ function App() {
           }}
           className="fixed top-6 left-6 md:top-8 md:left-8 text-zinc-400 hover:text-emerald-400 font-bold uppercase tracking-widest text-xs flex items-center gap-2 transition-all hover:scale-105 z-20 bg-zinc-900/80 backdrop-blur-md px-4 py-2.5 rounded-xl border border-zinc-800 shadow-xl cursor-pointer"
         >
-          <span className="text-sm font-black">←</span> Volver al Inicio
+          <span className="text-sm font-black">&larr;</span> Volver al Inicio
         </button>
 
         {vistaInvitado === 'registro' ? (
@@ -590,7 +590,7 @@ function App() {
             <Registro irALogin={() => cambiarVistaInvitado('login')} clubActivo={clubActivo} clubes={clubes} />
             
             <p className="text-center mt-6 text-zinc-500 text-[10px] md:text-xs font-bold uppercase tracking-widest">
-              ¿Ya eres miembro?{' '}
+              {"\u00bfYa eres miembro? "}
               <button 
                 onClick={() => cambiarVistaInvitado('login')} 
                 className="text-emerald-500 hover:text-emerald-400 hover:underline cursor-pointer transition-colors font-black ml-1"
@@ -603,7 +603,7 @@ function App() {
           <div className="w-full max-w-md animate-in fade-in zoom-in-95 duration-300">
             <Login alLoguearse={manejarLogin} />
             <p className="text-center mt-6 text-zinc-500 text-[10px] md:text-xs font-bold uppercase tracking-widest">
-              ¿No tienes cuenta?{' '}
+              {"\u00bfNo tienes cuenta? "}
               <button 
                 onClick={() => cambiarVistaInvitado('registro')} 
                 className="text-emerald-500 hover:text-emerald-400 hover:underline cursor-pointer transition-colors font-black ml-1"
@@ -641,11 +641,12 @@ function App() {
             clubes={clubes}
           />
         )}
-        {vistaActual === 'mis-cronicas' && <MisCronicas alActualizarUsuario={setUsuarioLogueado} />}
+        {vistaActual === 'mis-cronicas' && <MisCronicas alActualizarUsuario={setUsuarioLogueado} clubActivo={clubActivo} />}
         {vistaActual === 'admin' && <PanelAdmin setVista={cambiarVista} clubActivo={clubActivo} clubes={clubes} />}
         {vistaActual.startsWith('perfil:') && (
           <PerfilPublico 
             usuarioId={vistaActual.split(':')[1]} 
+            clubActivo={clubActivo}
             volver={() => {
               if (window.history.length > 1) {
                 window.history.back();
@@ -658,12 +659,13 @@ function App() {
         {vistaActual === 'buzon' && <BuzonAdmin usuarioLogueado={usuarioLogueado} />}
         {vistaActual === 'salon-fama' && (
           <SalonFama 
+            clubActivo={clubActivo}
             cambiarVista={(v, params) => { 
               if (v === 'perfilPublico') cambiarVista(`perfil:${params.id}`);
             }} 
           />
         )}
-        {vistaActual === 'cripta' && (
+        {vistaActual === 'cripta' && (!clubActivo || clubActivo.id === 1) && (
           <CriptaJuego 
             usuarioLogueado={usuarioLogueado} 
             alActualizarUsuario={setUsuarioLogueado}

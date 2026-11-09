@@ -6,13 +6,13 @@ import { fetchProtegido } from '../utils/api';
 import { obtenerRangoDM } from '../utils/rangoHonor';
 import VitrinaMedallas from './VitrinaMedallas';
 
-function PerfilPublico({ usuarioId, volver }) {
+function PerfilPublico({ usuarioId, volver, clubActivo }) {
   const [perfil, setPerfil] = useState(null);
   const [cargando, setCargando] = useState(true);
   const [error, setError] = useState('');
 
   const cargarPerfil = () => {
-    fetchProtegido(`/api/usuarios/${usuarioId}/perfil_publico`)
+    fetchProtegido(`/api/usuarios/${usuarioId}/perfil_publico${clubActivo?.id ? `?club_id=${clubActivo.id}` : ''}`)
       .then(res => {
         if (!res.ok) throw new Error('Aventurero no encontrado');
         return res.json();
@@ -35,7 +35,7 @@ function PerfilPublico({ usuarioId, volver }) {
     socket.on('actualizacion-mesas', cargarPerfil);
 
     return () => socket.disconnect();
-  }, [usuarioId]);
+  }, [usuarioId, clubActivo?.id]);
 
   if (cargando) return (
     <div className="flex justify-center items-center min-h-[50vh]">
@@ -260,7 +260,7 @@ function PerfilPublico({ usuarioId, volver }) {
       </section>
 
       {/* 🏅 VITRINA DE MEDALLAS Y LOGROS */}
-      <VitrinaMedallas usuarioId={perfil.id} datosIniciales={perfil.logros} />
+      <VitrinaMedallas usuarioId={perfil.id} datosIniciales={perfil.logros} clubId={clubActivo?.id} />
 
       {/* HISTORIAL */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 md:gap-8">

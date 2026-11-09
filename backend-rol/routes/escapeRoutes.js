@@ -14,15 +14,25 @@ const registrarLog = (usuario, accion, descripcion) => {
 // ✨ ESTADÍSTICAS: Obtener el Top de Escape Rooms
 router.get('/estadisticas/top', verificarToken, (req, res) => {
   const eventoId = req.query.eventoId;
+  const clubId = req.query.club_id;
   let sql = `
     SELECT er.titulo as sistema, COUNT(et.id) as cantidad 
     FROM escape_rooms er
     JOIN escape_turnos et ON er.id = et.escape_room_id
+    JOIN eventos e ON er.evento_id = e.id
   `;
   const params = [];
+  const whereConditions = [];
   if (eventoId) {
-    sql += " WHERE er.evento_id = ?";
+    whereConditions.push("er.evento_id = ?");
     params.push(eventoId);
+  }
+  if (clubId && clubId !== 'todos') {
+    whereConditions.push("IFNULL(e.club_id, 1) = ?");
+    params.push(clubId);
+  }
+  if (whereConditions.length > 0) {
+    sql += " WHERE " + whereConditions.join(" AND ");
   }
   sql += " GROUP BY er.titulo ORDER BY cantidad DESC LIMIT 5";
   

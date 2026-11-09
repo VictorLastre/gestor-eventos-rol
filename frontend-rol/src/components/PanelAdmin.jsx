@@ -57,10 +57,10 @@ function PanelAdmin({ setVista, clubActivo, clubes }) {
         {/* overflow-x-hidden añadido por seguridad para evitar el scroll horizontal interno */}
         <div className="p-4 sm:p-6 md:p-12 w-full overflow-x-hidden">
           {pestanaAdmin === 'eventos' && <CrearEvento alCrearEvento={() => {}} clubActivo={clubActivo} clubes={clubes} />}
-          {pestanaAdmin === 'usuarios' && <GestionUsuarios setVista={setVista} />}
-          {pestanaAdmin === 'sanciones' && <GestionSanciones setVista={setVista} />}
+          {pestanaAdmin === 'usuarios' && <GestionUsuarios setVista={setVista} clubActivo={clubActivo} />}
+          {pestanaAdmin === 'sanciones' && <GestionSanciones setVista={setVista} clubActivo={clubActivo} />}
           {pestanaAdmin === 'clubes' && <GestionClubes />}
-          {pestanaAdmin === 'stats' && <Estadisticas />}
+          {pestanaAdmin === 'stats' && <Estadisticas clubActivo={clubActivo} />}
         </div>
       </section>
 

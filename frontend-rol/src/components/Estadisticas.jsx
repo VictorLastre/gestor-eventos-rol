@@ -57,7 +57,7 @@ const TopRankings = ({ titulo, icono, data, color }) => (
   </div>
 );
 
-function Estadisticas() {
+function Estadisticas({ clubActivo }) {
   const [eventos, setEventos] = useState([]);
   const [eventoSeleccionado, setEventoSeleccionado] = useState('global');
   const [pestanaActiva, setPestanaActiva] = useState('resumen'); 
@@ -74,7 +74,8 @@ function Estadisticas() {
   const [cargandoDetalles, setCargandoDetalles] = useState(false);
 
   useEffect(() => {
-    fetchProtegido('/api/usuarios/estadisticas')
+    const clubParam = clubActivo?.id ? `?club_id=${clubActivo.id}` : '';
+    fetchProtegido(`/api/usuarios/estadisticas${clubParam}`)
       .then(res => res.json())
       .then(datosGlobales => {
         setEventos(datosGlobales);
@@ -83,10 +84,13 @@ function Estadisticas() {
         setResumenGlobal({ total_mesas: tMesas, total_jugadores: tJugadores });
       })
       .catch(err => { if (err !== 'Sesión expirada') console.error(err); });
-  }, []);
+  }, [clubActivo?.id]);
 
   useEffect(() => {
-    const params = eventoSeleccionado !== 'global' ? `?eventoId=${eventoSeleccionado}` : '';
+    let queryParts = [];
+    if (eventoSeleccionado !== 'global') queryParts.push(`eventoId=${eventoSeleccionado}`);
+    if (clubActivo?.id) queryParts.push(`club_id=${clubActivo.id}`);
+    const params = queryParts.length > 0 ? `?${queryParts.join('&')}` : '';
 
     Promise.all([
       fetchProtegido(`/api/partidas/estadisticas/sistemas${params}`).then(r => r.json()),
@@ -115,7 +119,7 @@ function Estadisticas() {
       setMesasJuegos([]);
       setEscapeRooms([]);
     }
-  }, [eventoSeleccionado]);
+  }, [eventoSeleccionado, clubActivo?.id]);
 
   let resumenMostrado = { jornadas: 0, mesas: 0, aventureros: 0, ocupacion: 0, dms: 0 };
   

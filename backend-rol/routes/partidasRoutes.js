@@ -24,23 +24,44 @@ router.get('/historial/mias', verificarToken, (req, res) => {
 });
 
 router.get('/estadisticas/sistemas', verificarToken, (req, res) => {
-  const sql = `
+  const eventoId = req.query.eventoId;
+  const clubId = req.query.club_id;
+
+  let sql = `
     SELECT 
       s.nombre as sistema, 
       COUNT(p.id) as cantidad 
     FROM partidas p
     JOIN sistemas s ON p.sistema_id = s.id
-    WHERE p.etiqueta != 'Juegos de Mesa' -- Solo contamos estadísticas de rol
-    GROUP BY p.sistema_id, s.nombre
-    ORDER BY cantidad DESC 
-    LIMIT 5
+    JOIN eventos e ON p.evento_id = e.id
+    WHERE p.etiqueta != 'Juegos de Mesa'
   `;
+  const params = [];
+  if (eventoId) {
+    sql += " AND p.evento_id = ?";
+    params.push(eventoId);
+  }
+  if (clubId && clubId !== 'todos') {
+    sql += " AND IFNULL(e.club_id, 1) = ?";
+    params.push(clubId);
+  }
+  sql += " GROUP BY p.sistema_id, s.nombre ORDER BY cantidad DESC LIMIT 5";
   
-  db.query(sql, (err, resultados) => {
+  db.query(sql, params, (err, resultados) => {
     if (err) {
       console.error("Error al consultar el Oráculo de Sistemas:", err);
-      const sqlFallback = `SELECT sistema, COUNT(*) as cantidad FROM partidas WHERE etiqueta != 'Juegos de Mesa' GROUP BY sistema ORDER BY cantidad DESC LIMIT 5`;
-      return db.query(sqlFallback, (errFB, resFB) => {
+      let sqlFallback = `SELECT p.sistema, COUNT(*) as cantidad FROM partidas p JOIN eventos e ON p.evento_id = e.id WHERE p.etiqueta != 'Juegos de Mesa'`;
+      const paramsFB = [];
+      if (eventoId) {
+        sqlFallback += " AND p.evento_id = ?";
+        paramsFB.push(eventoId);
+      }
+      if (clubId && clubId !== 'todos') {
+        sqlFallback += " AND IFNULL(e.club_id, 1) = ?";
+        paramsFB.push(clubId);
+      }
+      sqlFallback += " GROUP BY p.sistema ORDER BY cantidad DESC LIMIT 5";
+      return db.query(sqlFallback, paramsFB, (errFB, resFB) => {
         if(errFB) return res.status(500).json({ error: 'Error leyendo los sistemas más jugados.' });
         res.json(resFB);
       });
@@ -51,15 +72,27 @@ router.get('/estadisticas/sistemas', verificarToken, (req, res) => {
 
 // ✨ ESTADÍSTICAS: Obtener el Top de Juegos de Mesa
 router.get('/estadisticas/juegos-mesa', verificarToken, (req, res) => {
-  const sql = `
-    SELECT sistema, COUNT(*) as cantidad 
-    FROM partidas 
-    WHERE etiqueta = 'Juegos de Mesa' 
-    GROUP BY sistema 
-    ORDER BY cantidad DESC 
-    LIMIT 5
+  const eventoId = req.query.eventoId;
+  const clubId = req.query.club_id;
+
+  let sql = `
+    SELECT p.sistema, COUNT(*) as cantidad 
+    FROM partidas p
+    JOIN eventos e ON p.evento_id = e.id
+    WHERE p.etiqueta = 'Juegos de Mesa'
   `;
-  db.query(sql, (err, resultados) => {
+  const params = [];
+  if (eventoId) {
+    sql += " AND p.evento_id = ?";
+    params.push(eventoId);
+  }
+  if (clubId && clubId !== 'todos') {
+    sql += " AND IFNULL(e.club_id, 1) = ?";
+    params.push(clubId);
+  }
+  sql += " GROUP BY p.sistema ORDER BY cantidad DESC LIMIT 5";
+
+  db.query(sql, params, (err, resultados) => {
     if (err) return res.status(500).json({ error: 'Error leyendo los juegos de mesa.' });
     res.json(resultados);
   });

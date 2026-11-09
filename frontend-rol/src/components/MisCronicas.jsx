@@ -9,7 +9,7 @@ import SolicitudDM from './SolicitudDM';
 import EvaluarMesaModal from './EvaluarMesaModal';
 import VitrinaMedallas from './VitrinaMedallas';
 
-function MisCronicas({ alActualizarUsuario }) { 
+function MisCronicas({ alActualizarUsuario, clubActivo }) { 
   const [cronicas, setCronicas] = useState({ dirigiendo: [], jugando: [] });
   const [cargando, setCargando] = useState(true);
   const [honoresOtorgados, setHonoresOtorgados] = useState([]);
@@ -38,7 +38,7 @@ function MisCronicas({ alActualizarUsuario }) {
   const cargarCronicas = async () => {
     try {
       const [resCronicas, resHonor] = await Promise.all([
-        fetchProtegido('/api/usuarios/mis-cronicas'),
+        fetchProtegido(`/api/usuarios/mis-cronicas${clubActivo?.id ? `?club_id=${clubActivo.id}` : ''}`),
         fetchProtegido('/api/usuarios/honor-otorgado')
       ]);
       const datosCronicas = await resCronicas.json();
@@ -148,7 +148,7 @@ function MisCronicas({ alActualizarUsuario }) {
     return () => {
       socket.disconnect();
     };
-  }, [usuarioGuardado.rol]); 
+  }, [usuarioGuardado.rol, clubActivo?.id]); 
 
   const manejarCambioPerfil = (e) => {
     setPerfil({ ...perfil, [e.target.name]: e.target.value });
@@ -590,7 +590,7 @@ function MisCronicas({ alActualizarUsuario }) {
       </section>
 
       {/* 🏅 VITRINA DE MEDALLAS Y LOGROS */}
-      <VitrinaMedallas usuarioId={usuarioGuardado?.id} />
+      <VitrinaMedallas usuarioId={usuarioGuardado?.id} clubId={clubActivo?.id} />
 
       {/* ⚔️ LISTADO DE CRÓNICAS */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 md:gap-12">

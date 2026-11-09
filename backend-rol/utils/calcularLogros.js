@@ -4,13 +4,20 @@
  * por cada aventurero o Director de Juego en base al historial de la base de datos.
  */
 
-const calcularLogrosUsuario = async (usuarioId, db) => {
+const calcularLogrosUsuario = async (usuarioId, db, clubId = null) => {
   try {
-    // 1. Obtener datos básicos del usuario
+    // 1. Obtener datos básicos del usuario con honor y reputación filtrados por club si corresponde
+    let honorSubquery = `(SELECT IFNULL(SUM(r.voto), 0) FROM reputacion r JOIN partidas p ON r.partida_id = p.id JOIN eventos e ON p.evento_id = e.id WHERE r.evaluado_id = usuarios.id AND p.dungeon_master_id = usuarios.id`;
+    let repSubquery = `(SELECT IFNULL(SUM(r.voto), 0) FROM reputacion r JOIN partidas p ON r.partida_id = p.id JOIN eventos e ON p.evento_id = e.id WHERE r.evaluado_id = usuarios.id AND p.dungeon_master_id != usuarios.id`;
+    if (clubId && clubId !== 'todos') {
+      honorSubquery += ` AND IFNULL(e.club_id, 1) = ${db.escape(clubId)}`;
+      repSubquery += ` AND IFNULL(e.club_id, 1) = ${db.escape(clubId)}`;
+    }
+    honorSubquery += `) as honor_total`;
+    repSubquery += `) as reputacion_neta`;
+
     const [usuarios] = await db.promise().query(
-      `SELECT id, nombre, email, rol, telegram_chat_id, 
-        IFNULL((SELECT SUM(r.voto) FROM reputacion r JOIN partidas p ON r.partida_id = p.id WHERE r.evaluado_id = usuarios.id AND p.dungeon_master_id = usuarios.id), 0) as honor_total, 
-        IFNULL((SELECT SUM(r.voto) FROM reputacion r JOIN partidas p ON r.partida_id = p.id WHERE r.evaluado_id = usuarios.id AND p.dungeon_master_id != usuarios.id), 0) as reputacion_neta 
+      `SELECT id, nombre, email, rol, telegram_chat_id, ${honorSubquery}, ${repSubquery}
        FROM usuarios WHERE id = ?`,
       [usuarioId]
     );
@@ -18,7 +25,7 @@ const calcularLogrosUsuario = async (usuarioId, db) => {
     const usuario = usuarios[0];
 
     // 2. Mesas jugadas y sus sistemas
-    const sqlJugadas = `
+    let sqlJugadas = `
       SELECT p.id, p.titulo, COALESCE(s.nombre, p.sistema, 'Rol') as sistema_nombre, i.asistencia, e.estado as evento_estado
       FROM inscripciones i
       JOIN partidas p ON i.partida_id = p.id
@@ -26,27 +33,42 @@ const calcularLogrosUsuario = async (usuarioId, db) => {
       LEFT JOIN sistemas s ON p.sistema_id = s.id
       WHERE i.usuario_id = ? AND (i.asistencia = 'presente' OR (e.estado = 'Finalizado' AND i.asistencia != 'ausente'))
     `;
-    const [mesasJugadas] = await db.promise().query(sqlJugadas, [usuarioId]);
+    const paramsJugadas = [usuarioId];
+    if (clubId && clubId !== 'todos') {
+      sqlJugadas += " AND IFNULL(e.club_id, 1) = ?";
+      paramsJugadas.push(clubId);
+    }
+    const [mesasJugadas] = await db.promise().query(sqlJugadas, paramsJugadas);
 
     // 3. Mesas dirigidas y sus sistemas
-    const sqlDirigidas = `
+    let sqlDirigidas = `
       SELECT p.id, p.titulo, COALESCE(s.nombre, p.sistema, 'Rol') as sistema_nombre, e.estado as evento_estado
       FROM partidas p
       JOIN eventos e ON p.evento_id = e.id
       LEFT JOIN sistemas s ON p.sistema_id = s.id
       WHERE p.dungeon_master_id = ? AND e.estado = 'Finalizado'
     `;
-    const [mesasDirigidas] = await db.promise().query(sqlDirigidas, [usuarioId]);
+    const paramsDirigidas = [usuarioId];
+    if (clubId && clubId !== 'todos') {
+      sqlDirigidas += " AND IFNULL(e.club_id, 1) = ?";
+      paramsDirigidas.push(clubId);
+    }
+    const [mesasDirigidas] = await db.promise().query(sqlDirigidas, paramsDirigidas);
 
     // 4. Inasistencias sin aviso en eventos finalizados
-    const sqlFaltas = `
+    let sqlFaltas = `
       SELECT COUNT(*) as total_faltas
       FROM inscripciones i
       JOIN partidas p ON i.partida_id = p.id
       JOIN eventos e ON p.evento_id = e.id
       WHERE i.usuario_id = ? AND e.estado = 'Finalizado' AND i.asistencia = 'ausente'
     `;
-    const [faltasResult] = await db.promise().query(sqlFaltas, [usuarioId]);
+    const paramsFaltas = [usuarioId];
+    if (clubId && clubId !== 'todos') {
+      sqlFaltas += " AND IFNULL(e.club_id, 1) = ?";
+      paramsFaltas.push(clubId);
+    }
+    const [faltasResult] = await db.promise().query(sqlFaltas, paramsFaltas);
     const faltasSinAviso = (faltasResult[0] && faltasResult[0].total_faltas) || 0;
 
     // 5. Reputación y votos de honor recibidos con sus etiquetas

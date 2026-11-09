@@ -4,7 +4,7 @@ import { io } from 'socket.io-client';
 import { fetchProtegido } from '../utils/api';
 import AvatarUsuario from './AvatarUsuario';
 
-function GestionSanciones({ setVista }) {
+function GestionSanciones({ setVista, clubActivo }) {
   const [usuarios, setUsuarios] = useState([]);
   const [cargando, setCargando] = useState(true);
   const [busqueda, setBusqueda] = useState('');
@@ -18,7 +18,7 @@ function GestionSanciones({ setVista }) {
 
   const cargarListado = () => {
     setCargando(true);
-    fetchProtegido('/api/usuarios/sanciones/listado')
+    fetchProtegido(`/api/usuarios/sanciones/listado${clubActivo?.id ? `?club_id=${clubActivo.id}` : ''}`)
       .then(res => {
         if (!res.ok) throw new Error('Error al cargar sanciones');
         return res.json();
@@ -48,10 +48,10 @@ function GestionSanciones({ setVista }) {
     socket.on('actualizacion-usuarios', refrescar);
 
     return () => socket.disconnect();
-  }, [modalUsuario?.id]);
+  }, [modalUsuario?.id, clubActivo?.id]);
 
   const recargarHistorial = (usuarioId) => {
-    fetchProtegido(`/api/usuarios/${usuarioId}/historial-asistencia`)
+    fetchProtegido(`/api/usuarios/${usuarioId}/historial-asistencia${clubActivo?.id ? `?club_id=${clubActivo.id}` : ''}`)
       .then(res => res.json())
       .then(data => {
         setHistorialUsuario(data.historial || []);
@@ -62,7 +62,7 @@ function GestionSanciones({ setVista }) {
   const abrirHistorial = (usuario) => {
     setModalUsuario(usuario);
     setCargandoHistorial(true);
-    fetchProtegido(`/api/usuarios/${usuario.id}/historial-asistencia`)
+    fetchProtegido(`/api/usuarios/${usuario.id}/historial-asistencia${clubActivo?.id ? `?club_id=${clubActivo.id}` : ''}`)
       .then(res => {
         if (!res.ok) throw new Error('Error al cargar historial');
         return res.json();

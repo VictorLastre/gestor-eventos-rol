@@ -7,7 +7,7 @@ import { io } from 'socket.io-client';
 // ✨ IMPORTAMOS EL NUEVO COMPONENTE DE AVATARES
 import AvatarUsuario from '../components/AvatarUsuario';
 
-function GestionUsuarios({ setVista }) {
+function GestionUsuarios({ setVista, clubActivo }) {
   const [solicitudes, setSolicitudes] = useState([]);
   const [votaciones, setVotaciones] = useState([]); 
   const [eventos, setEventos] = useState([]); 
@@ -19,24 +19,24 @@ function GestionUsuarios({ setVista }) {
   const usuariosPorPagina = 10; 
 
   const cargarDatosPrincipales = () => {
-    fetchProtegido('/api/usuarios/solicitudes-dm')
+    fetchProtegido(`/api/usuarios/solicitudes-dm${clubActivo?.id ? `?club_id=${clubActivo.id}` : ''}`)
       .then(res => res.json())
       .then(datos => setSolicitudes(Array.isArray(datos) ? datos : []))
       .catch(err => { if (err !== 'Sesión expirada') console.error(err); });
 
-    fetchProtegido('/api/usuarios/votaciones/activas')
+    fetchProtegido(`/api/usuarios/votaciones/activas${clubActivo?.id ? `?club_id=${clubActivo.id}` : ''}`)
       .then(res => res.json())
       .then(datos => setVotaciones(Array.isArray(datos) ? datos : []))
       .catch(err => { if (err !== 'Sesión expirada') console.error(err); });
 
-    fetchProtegido('/api/eventos')
+    fetchProtegido(`/api/eventos${clubActivo?.id ? `?club_id=${clubActivo.id}` : ''}`)
       .then(res => res.json())
       .then(datos => setEventos(Array.isArray(datos) ? datos : []))
       .catch(err => console.error(err));
   };
 
   const cargarCenso = () => {
-    fetchProtegido('/api/usuarios?limit=1000')
+    fetchProtegido(`/api/usuarios?limit=1000${clubActivo?.id ? `&club_id=${clubActivo.id}` : ''}`)
       .then(res => res.json())
       .then(data => {
         const usuarios = data.datos ? data.datos : (Array.isArray(data) ? data : []);
@@ -58,7 +58,7 @@ function GestionUsuarios({ setVista }) {
     socket.on('actualizacion-sistemas', cargarDatosPrincipales);
 
     return () => socket.disconnect();
-  }, []);
+  }, [clubActivo?.id]);
 
   useEffect(() => {
     setPaginaCenso(1);

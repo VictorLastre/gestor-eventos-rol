@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { fetchProtegido } from '../utils/api';
 
-function VitrinaMedallas({ usuarioId, datosIniciales, compacta = false }) {
+function VitrinaMedallas({ usuarioId, datosIniciales, compacta = false, clubId = null }) {
   const [logros, setLogros] = useState(datosIniciales || null);
   const [cargando, setCargando] = useState(!datosIniciales);
   const [filtroCategoria, setFiltroCategoria] = useState('todas');
@@ -16,7 +16,7 @@ function VitrinaMedallas({ usuarioId, datosIniciales, compacta = false }) {
 
     if (usuarioId) {
       setCargando(true);
-      fetchProtegido(`/api/usuarios/${usuarioId}/logros`)
+      fetchProtegido(`/api/usuarios/${usuarioId}/logros${clubId ? `?club_id=${clubId}` : ''}`)
         .then(res => {
           if (!res.ok) throw new Error('Error al cargar logros');
           return res.json();
@@ -30,7 +30,7 @@ function VitrinaMedallas({ usuarioId, datosIniciales, compacta = false }) {
           setCargando(false);
         });
     }
-  }, [usuarioId, datosIniciales]);
+  }, [usuarioId, datosIniciales, clubId]);
 
   if (cargando) {
     return (

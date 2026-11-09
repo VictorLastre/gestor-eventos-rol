@@ -91,7 +91,17 @@ app.use('/api/clubes', clubesRoutes);
 
 // ✨ SERVIR EL FRONTEND DE VITE ✨
 // Le decimos a Express que busque los archivos visuales en tu carpeta 'public'
-app.use(express.static(path.join(__dirname, 'public')));
+app.use(express.static(path.join(__dirname, 'public'), {
+  setHeaders: (res, filePath) => {
+    if (filePath.endsWith('.js')) {
+      res.setHeader('Content-Type', 'application/javascript; charset=utf-8');
+    } else if (filePath.endsWith('.html')) {
+      res.setHeader('Content-Type', 'text/html; charset=utf-8');
+    } else if (filePath.endsWith('.css')) {
+      res.setHeader('Content-Type', 'text/css; charset=utf-8');
+    }
+  }
+}));
 
 // Catch-all actualizado: Usamos una expresión regular /.*/ en lugar del string '*'
 // Esto evita el PathError de las nuevas versiones de Express
