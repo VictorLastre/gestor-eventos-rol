@@ -463,7 +463,7 @@ router.get('/notificaciones', verificarToken, (req, res) => {
     const paramsSelect = [];
 
     if (clubId && clubId !== 'todos') {
-      whereClausula = " WHERE IFNULL(club_id, 1) = ?";
+      whereClausula = " WHERE (IFNULL(club_id, 1) = ? OR rol = 'superadmin')";
       paramsCount.push(clubId);
       paramsSelect.push(clubId);
     }

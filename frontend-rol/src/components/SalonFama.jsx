@@ -133,23 +133,16 @@ function SalonFama({ cambiarVista, clubActivo }) {
                         {renderAvatar(master)}
                       </div>
                       <div className="min-w-0">
-                        <div className="flex items-center gap-2">
-                          <h3 className="text-white font-black uppercase tracking-widest text-xs sm:text-sm md:text-base group-hover:text-amber-400 transition-colors truncate">
-                            {master.nombre}
-                          </h3>
-                          {master.rol === 'superadmin' && (
-                            <span className="text-[8px] font-black uppercase px-2 py-0.5 rounded-full bg-purple-500/20 text-purple-300 border border-purple-500/40 shrink-0">
-                              ⚡ Superadmin
-                            </span>
-                          )}
-                        </div>
+                        <h3 className="text-white font-black uppercase tracking-widest text-xs sm:text-sm md:text-base group-hover:text-amber-400 transition-colors truncate">
+                          {master.nombre}
+                        </h3>
                         {master.nombre_completo && (
                           <p className="text-[10px] text-zinc-500 font-bold tracking-wider truncate">
                             {master.nombre_completo}
                           </p>
                         )}
-                        <p className="text-xs text-amber-500/80 font-bold tracking-widest mt-0.5">
-                          {master.rol === 'superadmin' ? 'Alto Mando Supremo' : master.rol === 'admin' ? 'Administrador' : 'Dungeon Master'}
+                        <p className="text-xs text-amber-500/80 font-bold tracking-widest mt-1">
+                          Dungeon Master
                         </p>
                       </div>
                     </div>
@@ -185,23 +178,16 @@ function SalonFama({ cambiarVista, clubActivo }) {
                         {renderAvatar(jugador)}
                       </div>
                       <div className="min-w-0">
-                        <div className="flex items-center gap-2">
-                          <h3 className="text-white font-black uppercase tracking-widest text-xs sm:text-sm md:text-base group-hover:text-emerald-400 transition-colors truncate">
-                            {jugador.nombre}
-                          </h3>
-                          {jugador.rol === 'superadmin' && (
-                            <span className="text-[8px] font-black uppercase px-2 py-0.5 rounded-full bg-purple-500/20 text-purple-300 border border-purple-500/40 shrink-0">
-                              ⚡ Superadmin
-                            </span>
-                          )}
-                        </div>
+                        <h3 className="text-white font-black uppercase tracking-widest text-xs sm:text-sm md:text-base group-hover:text-emerald-400 transition-colors truncate">
+                          {jugador.nombre}
+                        </h3>
                         {jugador.nombre_completo && (
                           <p className="text-[10px] text-zinc-500 font-bold tracking-wider truncate">
                             {jugador.nombre_completo}
                           </p>
                         )}
-                        <p className="text-xs text-zinc-500 font-bold tracking-widest mt-0.5">
-                          {jugador.rol === 'superadmin' ? 'Alto Mando Supremo' : jugador.rol === 'admin' ? 'Administrador Consagrado' : jugador.rol === 'dm' ? 'Dungeon Master' : (jugador.reputacion_neta > 0 ? 'Héroe Consagrado' : 'Aventurero Novato')}
+                        <p className="text-xs text-zinc-500 font-bold tracking-widest mt-1">
+                          {jugador.rol === 'aventurero' ? 'Aventurero Novato' : 'Héroe Consagrado'}
                         </p>
                       </div>
                     </div>
