@@ -356,7 +356,7 @@ function Navbar({ usuario, alCerrarSesion, setVista, clubActivo, setClubActivo, 
             {/* Cabecera */}
             <div className="flex items-center justify-between pb-4 border-b border-zinc-800 shrink-0">
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-xl">
+                <div className="w-10 h-10 rounded-2xl bg-purple-500/10 border border-purple-500/20 flex items-center justify-center text-xl">
                   🏛️
                 </div>
                 <div>
@@ -370,7 +370,7 @@ function Navbar({ usuario, alCerrarSesion, setVista, clubActivo, setClubActivo, 
               </div>
               <button 
                 onClick={() => setMostrarSelectorClubes(false)}
-                className="w-8 h-8 rounded-full bg-zinc-800 text-zinc-400 hover:text-white flex items-center justify-center transition-colors text-sm"
+                className="w-8 h-8 rounded-full bg-zinc-800 text-zinc-400 hover:text-white flex items-center justify-center transition-colors text-sm cursor-pointer"
               >
                 ✕
               </button>
@@ -418,13 +418,9 @@ function Navbar({ usuario, alCerrarSesion, setVista, clubActivo, setClubActivo, 
                   </div>
                   {clubActivo?.id === 'todos' && (
                     <span className="text-purple-400 text-xs font-black shrink-0 ml-2">✓ Activo</span>
-                  ,
-        document.body
-      )}
+                  )}
                 </div>
-              ,
-        document.body
-      )}
+              )}
 
               {/* Lista de Clubes Registrados */}
               {clubes.filter(c => c.activo !== 0).map(c => {
@@ -458,9 +454,7 @@ function Navbar({ usuario, alCerrarSesion, setVista, clubActivo, setClubActivo, 
                           <img src={c.logo} alt={c.nombre} className="w-full h-full object-cover" />
                         ) : (
                           '🏛️'
-                        ,
-        document.body
-      )}
+                        )}
                       </div>
                       <div className="min-w-0">
                         <h4 className={`text-xs sm:text-sm font-black uppercase italic truncate ${esActivo ? 'text-emerald-400' : 'text-white group-hover:text-emerald-400 transition-colors'}`}>
