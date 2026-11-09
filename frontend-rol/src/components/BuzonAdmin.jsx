@@ -3,13 +3,14 @@ import { fetchProtegido } from '../utils/api';
 import Swal from 'sweetalert2';
 import io from 'socket.io-client';
 
-const BuzonAdmin = ({ usuarioLogueado }) => {
+const BuzonAdmin = ({ usuarioLogueado, clubActivo }) => {
   const [mensajes, setMensajes] = useState([]);
   const [cargando, setCargando] = useState(true);
 
   const fetchMensajes = async () => {
     try {
-      const response = await fetchProtegido('/api/buzon');
+      const clubParam = clubActivo?.id ? `?club_id=${clubActivo.id}` : '';
+      const response = await fetchProtegido(`/api/buzon${clubParam}`);
       const data = await response.json();
       setMensajes(data);
     } catch (error) {
@@ -33,7 +34,7 @@ const BuzonAdmin = ({ usuarioLogueado }) => {
     });
 
     return () => socket.disconnect();
-  }, []);
+  }, [clubActivo?.id]);
 
   const toggleLeido = async (id, estadoActual) => {
     try {
@@ -99,6 +100,9 @@ const BuzonAdmin = ({ usuarioLogueado }) => {
           <h1 className="text-3xl font-black text-white uppercase tracking-widest flex items-center gap-3">
             <span>📬</span> Buzón de la Taberna
           </h1>
+          <p className="text-xs text-indigo-400 font-bold uppercase tracking-widest mt-1">
+            {clubActivo?.id === 'todos' ? '🌐 Todas las sedes (Multiverso)' : `🏛️ Sede activa: ${clubActivo?.nombre || 'Comunidad'}`}
+          </p>
           <p className="text-zinc-400 text-sm mt-1">Aquí llegan las quejas, dudas y sugerencias anónimas de los usuarios.</p>
         </div>
         <div className="mt-4 md:mt-0 bg-indigo-900/50 border border-indigo-500/50 text-indigo-300 px-4 py-2 rounded-lg font-bold tracking-widest text-sm uppercase flex items-center gap-2">

@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import Swal from 'sweetalert2';
 
-const BuzonFlotante = () => {
+const BuzonFlotante = ({ clubActivo }) => {
   const [abierto, setAbierto] = useState(false);
   const [tipo, setTipo] = useState('Sugerencia');
   const [mensaje, setMensaje] = useState('');
@@ -18,7 +18,11 @@ const BuzonFlotante = () => {
       const response = await fetch('/api/buzon', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ tipo, mensaje })
+        body: JSON.stringify({
+          tipo,
+          mensaje,
+          club_id: (clubActivo?.id && clubActivo?.id !== 'todos') ? clubActivo.id : 1
+        })
       });
       
       if (response.ok) {
@@ -67,8 +71,8 @@ const BuzonFlotante = () => {
             
             <div className="text-center mb-6">
               <span className="text-4xl mb-2 block">📮</span>
-              <h2 className="text-2xl font-black text-white uppercase tracking-widest">Buzón de la Taberna</h2>
-              <p className="text-zinc-400 text-sm mt-2">Déjanos tu duda, queja o sugerencia. Este mensaje es <strong className="text-indigo-400">100% anónimo</strong>, no guardaremos rastro de quién lo envió.</p>
+              <h2 className="text-2xl font-black text-white uppercase tracking-widest">Buzón de {clubActivo?.id === 'todos' ? 'la Taberna' : (clubActivo?.nombre || 'la Taberna')}</h2>
+              <p className="text-zinc-400 text-sm mt-2">Déjanos tu duda, queja o sugerencia para esta sede. Este mensaje es <strong className="text-indigo-400">100% anónimo</strong>, no guardaremos rastro de quién lo envió.</p>
             </div>
             
             <form onSubmit={handleSubmit} className="space-y-4">

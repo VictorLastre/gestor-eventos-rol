@@ -92,6 +92,13 @@ const asegurarMultiClub = async () => {
     // 7. Promover a Víctor a 'superadmin'
     await promiseDb.query("UPDATE usuarios SET rol = 'superadmin' WHERE email = 'rockzila2011@gmail.com' OR nombre = 'Sterbern'");
 
+    // 8. Comprobar y agregar columna 'club_id' en 'buzon_sugerencias'
+    const [colBuzon] = await promiseDb.query("SHOW COLUMNS FROM buzon_sugerencias LIKE 'club_id'");
+    if (colBuzon.length === 0) {
+      console.log('📌 Agregando columna club_id en tabla buzon_sugerencias...');
+      await promiseDb.query("ALTER TABLE buzon_sugerencias ADD COLUMN club_id INT NOT NULL DEFAULT 1 AFTER id, ADD INDEX idx_buzon_club (club_id)");
+    }
+
     console.log('✅ Bóveda Multi-Club (Fase 1 y 2) sincronizada y asegurada.');
   } catch (err) {
     console.warn('⚠️ Nota sobre migración Multi-Club:', err.message);

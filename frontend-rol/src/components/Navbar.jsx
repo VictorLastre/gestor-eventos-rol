@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import Swal from 'sweetalert2';
 import { fetchProtegido } from '../utils/api';
 import LogoSVG from '../assets/Logo.svg'; 
@@ -32,7 +33,8 @@ function Navbar({ usuario, alCerrarSesion, setVista, clubActivo, setClubActivo, 
 
   const cargarBuzon = () => {
     if (esAdmin) {
-      fetchProtegido('/api/buzon')
+      const clubParam = clubActivo?.id ? `?club_id=${clubActivo.id}` : '';
+      fetchProtegido(`/api/buzon${clubParam}`)
         .then(res => res.json())
         .then(data => {
           if (Array.isArray(data)) {
@@ -70,7 +72,7 @@ function Navbar({ usuario, alCerrarSesion, setVista, clubActivo, setClubActivo, 
     return () => {
       socket.disconnect();
     };
-  }, [usuario]); 
+  }, [usuario, clubActivo?.id]); 
 
   useEffect(() => {
     function handleClickOutside(event) {
@@ -345,12 +347,12 @@ function Navbar({ usuario, alCerrarSesion, setVista, clubActivo, setClubActivo, 
       </div>
 
       {/* 🏛️ MODAL SELECTOR DE COMUNIDADES (EXCLUSIVO SUPERADMIN) */}
-      {mostrarSelectorClubes && esSuperAdmin && (
+      {mostrarSelectorClubes && esSuperAdmin && typeof document !== 'undefined' && createPortal(
         <div 
           onClick={(e) => { if (e.target === e.currentTarget) setMostrarSelectorClubes(false); }}
-          className="fixed inset-0 z-[250] flex items-center justify-center p-4 bg-black/90 backdrop-blur-md animate-in fade-in duration-200"
+          className="fixed inset-0 z-[999] flex items-center justify-center p-4 sm:p-6 bg-black/85 backdrop-blur-md animate-in fade-in duration-200 overflow-y-auto"
         >
-          <div className="bg-zinc-900 border border-zinc-800 w-full max-w-xl rounded-[2.5rem] p-6 sm:p-8 shadow-2xl relative max-h-[90vh] flex flex-col overflow-hidden">
+          <div className="bg-zinc-900 border border-purple-500/30 w-full max-w-xl rounded-[2rem] sm:rounded-[2.5rem] p-5 sm:p-7 shadow-2xl relative max-h-[85vh] flex flex-col my-auto overflow-hidden">
             {/* Cabecera */}
             <div className="flex items-center justify-between pb-4 border-b border-zinc-800 shrink-0">
               <div className="flex items-center gap-3">
@@ -416,9 +418,13 @@ function Navbar({ usuario, alCerrarSesion, setVista, clubActivo, setClubActivo, 
                   </div>
                   {clubActivo?.id === 'todos' && (
                     <span className="text-purple-400 text-xs font-black shrink-0 ml-2">✓ Activo</span>
-                  )}
+                  ,
+        document.body
+      )}
                 </div>
-              )}
+              ,
+        document.body
+      )}
 
               {/* Lista de Clubes Registrados */}
               {clubes.filter(c => c.activo !== 0).map(c => {
@@ -452,7 +458,9 @@ function Navbar({ usuario, alCerrarSesion, setVista, clubActivo, setClubActivo, 
                           <img src={c.logo} alt={c.nombre} className="w-full h-full object-cover" />
                         ) : (
                           '🏛️'
-                        )}
+                        ,
+        document.body
+      )}
                       </div>
                       <div className="min-w-0">
                         <h4 className={`text-xs sm:text-sm font-black uppercase italic truncate ${esActivo ? 'text-emerald-400' : 'text-white group-hover:text-emerald-400 transition-colors'}`}>
@@ -528,7 +536,8 @@ function Navbar({ usuario, alCerrarSesion, setVista, clubActivo, setClubActivo, 
               </div>
             )}
           </div>
-        </div>
+        </div>,
+        document.body
       )}
 
     </nav>

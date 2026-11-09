@@ -613,7 +613,7 @@ function App() {
             </p>
           </div>
         )}
-        <BuzonFlotante />
+        <BuzonFlotante clubActivo={clubActivo} />
       </div>
     );
   }
@@ -656,7 +656,7 @@ function App() {
             }} 
           />
         )}
-        {vistaActual === 'buzon' && <BuzonAdmin usuarioLogueado={usuarioLogueado} />}
+        {vistaActual === 'buzon' && <BuzonAdmin usuarioLogueado={usuarioLogueado} clubActivo={clubActivo} />}
         {vistaActual === 'salon-fama' && (
           <SalonFama 
             clubActivo={clubActivo}
@@ -679,7 +679,7 @@ function App() {
           />
         )}
       </main>
-      <BuzonFlotante />
+      <BuzonFlotante clubActivo={clubActivo} />
 
       {/* 🎈 CELEBRACIÓN DE CUMPLEAÑOS CON GLOBOS Y MENSAJE */}
       {mostrarCumpleanos && (
