@@ -96,6 +96,16 @@ function App() {
     setVistaActual('eventos');
     setMesaActivaId(null);
     window.history.replaceState({ tipo: 'vista-interna', vista: 'eventos' }, '');
+
+    // 🔒 REGLA: Si no es superadmin, forzar inmediatamente a su propio club registrado
+    if (usuario && usuario.rol !== 'superadmin') {
+      const idClub = usuario.club_id || 1;
+      const clubEncontrado = clubes.find(c => c.id === idClub) || clubes.find(c => c.id === 1);
+      if (clubEncontrado) {
+        setClubActivo(clubEncontrado);
+        localStorage.setItem('club_activo_id', clubEncontrado.id);
+      }
+    }
   };
 
   const cerrarSesion = () => {
@@ -128,7 +138,20 @@ function App() {
   const resolverClubInicial = async (listaClubes) => {
     if (!listaClubes || listaClubes.length === 0) return;
 
-    // 1. URL Query parameter ?club=merlo-san-luis o ?club=2
+    // 🔒 REGLA ESTRICTA: SI EL USUARIO ESTÁ LOGUEADO Y NO ES SUPERADMIN,
+    // SU SEDE ES ÚNICA Y OBLIGATORIAMENTE LA DE SU REGISTRO (usuario.club_id).
+    // NO PUEDE CAMBIAR A OTRO CLUB NI USAR HISTORIAL PREVIO.
+    if (usuarioLogueado && usuarioLogueado.rol !== 'superadmin') {
+      const idClubUsuario = usuarioLogueado.club_id || 1;
+      const clubUsuario = listaClubes.find(c => c.id === idClubUsuario) || listaClubes.find(c => c.id === 1) || listaClubes[0];
+      setClubActivo(clubUsuario);
+      localStorage.setItem('club_activo_id', clubUsuario.id);
+      return;
+    }
+
+    const esSuperAdmin = usuarioLogueado?.rol === 'superadmin';
+
+    // 1. URL Query parameter ?club=merlo-san-luis o ?club=2 (para superadmin o invitados)
     const urlParams = new URLSearchParams(window.location.search);
     const paramClub = urlParams.get('club');
     if (paramClub) {
@@ -138,37 +161,31 @@ function App() {
       );
       if (encontrado) {
         setClubActivo(encontrado);
-        localStorage.setItem('club_activo_id', encontrado.id);
+        if (esSuperAdmin) localStorage.setItem('club_activo_id', encontrado.id);
         return;
       }
     }
 
-    // 2. LocalStorage guardado previamente
-    const guardadoId = localStorage.getItem('club_activo_id');
-    const esSuperAdmin = usuarioLogueado?.rol === 'superadmin';
-    if (guardadoId === 'todos' && esSuperAdmin) {
-      setClubActivo({ id: 'todos', nombre: 'Todas las Comunidades', slug: 'todos', ciudad: 'Multiverso', provincia: 'Argentina' });
+    // 2. LocalStorage guardado previamente (SOLO PARA SUPERADMIN)
+    if (esSuperAdmin) {
+      const guardadoId = localStorage.getItem('club_activo_id');
+      if (guardadoId === 'todos') {
+        setClubActivo({ id: 'todos', nombre: 'Todas las Comunidades', slug: 'todos', ciudad: 'Multiverso', provincia: 'Argentina' });
+        return;
+      }
+      if (guardadoId) {
+        const encontrado = listaClubes.find(c => c.id.toString() === guardadoId.toString());
+        if (encontrado) {
+          setClubActivo(encontrado);
+          return;
+        }
+      }
+      const clubSuper = listaClubes.find(c => c.id === (usuarioLogueado?.club_id || 1)) || listaClubes[0];
+      setClubActivo(clubSuper);
       return;
     }
-    if (guardadoId && guardadoId !== 'todos') {
-      const encontrado = listaClubes.find(c => c.id.toString() === guardadoId.toString());
-      if (encontrado) {
-        setClubActivo(encontrado);
-        return;
-      }
-    }
 
-    // 3. Club del usuario logueado
-    if (usuarioLogueado?.club_id) {
-      const encontrado = listaClubes.find(c => c.id === usuarioLogueado.club_id);
-      if (encontrado) {
-        setClubActivo(encontrado);
-        localStorage.setItem('club_activo_id', encontrado.id);
-        return;
-      }
-    }
-
-    // 4. Detección automática por IP (geolocalización)
+    // 3. Invitados no logueados: Detección automática por IP (geolocalización)
     try {
       const resGeo = await fetch('/api/clubes/detectar/geo');
       if (resGeo.ok) {
@@ -177,7 +194,6 @@ function App() {
           const coincidencia = listaClubes.find(c => c.id === dataGeo.clubSugerido.id);
           if (coincidencia) {
             setClubActivo(coincidencia);
-            localStorage.setItem('club_activo_id', coincidencia.id);
             return;
           }
         }
@@ -186,13 +202,16 @@ function App() {
       // Fallback silencioso
     }
 
-    // 5. Fallback por defecto: Club 1 (La Pampa) o el primero disponible
+    // 4. Fallback por defecto para invitados: Club 1 (La Pampa) o el primero disponible
     const defecto = listaClubes.find(c => c.id === 1) || listaClubes[0];
     setClubActivo(defecto);
-    if (defecto) localStorage.setItem('club_activo_id', defecto.id);
   };
 
   const cambiarClubActivo = (nuevoClub) => {
+    // 🛡️ SEGURIDAD: Solo el superadmin tiene permiso de cambiar de sede voluntariamente
+    if (usuarioLogueado && usuarioLogueado.rol !== 'superadmin') {
+      return;
+    }
     setClubActivo(nuevoClub);
     if (nuevoClub) {
       localStorage.setItem('club_activo_id', nuevoClub.id);
@@ -220,7 +239,7 @@ function App() {
     });
 
     return () => socket.disconnect();
-  }, [usuarioLogueado?.id]);
+  }, [usuarioLogueado?.id, usuarioLogueado?.rol, usuarioLogueado?.club_id]);
 
   // 📱 ESCUCHAR EVENTO POPSTATE PARA SOPORTAR EL BOTÓN "ATRÁS" DEL CELULAR
   useEffect(() => {
@@ -479,7 +498,7 @@ function App() {
 
     verificarFechaNacimiento();
 
-  }, [usuarioLogueado?.id]);
+  }, [usuarioLogueado?.id, usuarioLogueado?.rol, usuarioLogueado?.club_id]);
 
 
 

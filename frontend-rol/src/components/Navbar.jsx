@@ -143,31 +143,50 @@ function Navbar({ usuario, alCerrarSesion, setVista, clubActivo, setClubActivo, 
           </div>
         </div>
 
-        {/* 🏛️ SELECTOR DE COMUNIDAD / CLUB */}
+        {/* 🏛️ INDICADOR O SELECTOR DE COMUNIDAD */}
         <div className="flex items-center mx-1 sm:mx-2 min-w-0">
-          <button
-            onClick={() => setMostrarSelectorClubes(true)}
-            className="flex items-center gap-1.5 sm:gap-2.5 bg-zinc-900/90 hover:bg-zinc-800 border border-zinc-800 hover:border-emerald-500/50 py-1.5 px-2.5 sm:px-3.5 rounded-xl sm:rounded-2xl transition-all shadow-md group cursor-pointer min-w-0"
-            title="Cambiar de Sede o Comunidad"
-          >
-            <div className="w-6 h-6 sm:w-7 sm:h-7 rounded-lg sm:rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center shrink-0 group-hover:scale-110 transition-transform">
-              <span className="text-xs sm:text-sm">🏛️</span>
-            </div>
-            <div className="flex flex-col text-left overflow-hidden min-w-0 max-w-[90px] xs:max-w-[130px] sm:max-w-[180px] md:max-w-[220px]">
-              <div className="flex items-center gap-1">
-                <span className="text-[7px] sm:text-[8px] font-black uppercase tracking-widest text-emerald-500/90 leading-none truncate">
-                  {esSuperAdmin && clubActivo?.id === 'todos' ? '🌐 Multiverso' : 'Sede Activa'}
-                </span>
-                {esSuperAdmin && (
-                  <span className="text-[8px] text-purple-400 font-black leading-none" title="Superadmin">⚡</span>
-                )}
+          {esSuperAdmin ? (
+            /* Botón interactivo EXCLUSIVO para Superadmin */
+            <button
+              onClick={() => setMostrarSelectorClubes(true)}
+              className="flex items-center gap-1.5 sm:gap-2.5 bg-purple-950/40 hover:bg-purple-900/50 border border-purple-500/40 hover:border-purple-400 py-1.5 px-2.5 sm:px-3.5 rounded-xl sm:rounded-2xl transition-all shadow-md group cursor-pointer min-w-0"
+              title="Cambiar de Sede o Territorio (Exclusivo Superadmin)"
+            >
+              <div className="w-6 h-6 sm:w-7 sm:h-7 rounded-lg sm:rounded-xl bg-purple-500/20 border border-purple-500/40 flex items-center justify-center shrink-0 group-hover:scale-110 transition-transform">
+                <span className="text-xs sm:text-sm">{clubActivo?.id === 'todos' ? '🌐' : '🏛️'}</span>
               </div>
-              <span className="text-[10px] sm:text-xs font-black text-white group-hover:text-emerald-400 truncate leading-tight">
-                {clubActivo ? clubActivo.nombre : 'Comunidad'}
-              </span>
+              <div className="flex flex-col text-left overflow-hidden min-w-0 max-w-[90px] xs:max-w-[130px] sm:max-w-[180px] md:max-w-[220px]">
+                <div className="flex items-center gap-1">
+                  <span className="text-[7px] sm:text-[8px] font-black uppercase tracking-widest text-purple-300 leading-none truncate">
+                    {clubActivo?.id === 'todos' ? '🌐 Multiverso' : 'Sede Activa'}
+                  </span>
+                  <span className="text-[8px] text-amber-400 font-black leading-none" title="Superadmin">⚡</span>
+                </div>
+                <span className="text-[10px] sm:text-xs font-black text-white group-hover:text-purple-300 truncate leading-tight">
+                  {clubActivo ? clubActivo.nombre : 'Comunidad'}
+                </span>
+              </div>
+              <span className="text-[8px] sm:text-[9px] text-purple-400 group-hover:text-purple-200 shrink-0">▼</span>
+            </button>
+          ) : (
+            /* Insignia Fija NO interactiva para Aventureros, DMs y Admins de sede */
+            <div
+              className="flex items-center gap-1.5 sm:gap-2.5 bg-zinc-900/70 border border-zinc-800/80 py-1.5 px-2.5 sm:px-3.5 rounded-xl sm:rounded-2xl shadow-sm min-w-0 cursor-default"
+              title={`Tu sede asignada es: ${clubActivo?.nombre || 'Comunidad'}`}
+            >
+              <div className="w-6 h-6 sm:w-7 sm:h-7 rounded-lg sm:rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center shrink-0">
+                <span className="text-xs sm:text-sm">🏛️</span>
+              </div>
+              <div className="flex flex-col text-left overflow-hidden min-w-0 max-w-[90px] xs:max-w-[130px] sm:max-w-[180px] md:max-w-[220px]">
+                <span className="text-[7px] sm:text-[8px] font-black uppercase tracking-widest text-emerald-500/80 leading-none truncate">
+                  Mi Sede
+                </span>
+                <span className="text-[10px] sm:text-xs font-black text-zinc-200 truncate leading-tight">
+                  {clubActivo ? clubActivo.nombre : 'Comunidad'}
+                </span>
+              </div>
             </div>
-            <span className="text-[8px] sm:text-[9px] text-zinc-500 group-hover:text-zinc-300 shrink-0">▼</span>
-          </button>
+          )}
         </div>
         
         {/* ACCIONES DE USUARIO: Campana, Perfil, Salir (Orden 2 en móvil, Orden 3 en escritorio) */}
@@ -323,8 +342,8 @@ function Navbar({ usuario, alCerrarSesion, setVista, clubActivo, setClubActivo, 
 
       </div>
 
-      {/* 🏛️ MODAL SELECTOR DE COMUNIDADES */}
-      {mostrarSelectorClubes && (
+      {/* 🏛️ MODAL SELECTOR DE COMUNIDADES (EXCLUSIVO SUPERADMIN) */}
+      {mostrarSelectorClubes && esSuperAdmin && (
         <div 
           onClick={(e) => { if (e.target === e.currentTarget) setMostrarSelectorClubes(false); }}
           className="fixed inset-0 z-[250] flex items-center justify-center p-4 bg-black/90 backdrop-blur-md animate-in fade-in duration-200"
