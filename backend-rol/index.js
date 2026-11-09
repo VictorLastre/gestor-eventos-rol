@@ -42,6 +42,22 @@ const io = new Server(server, {
 app.set('io', io);
 
 io.on('connection', (socket) => {
+
+  // 🏛️ Gestión de salas por sede (Multi-Tenancy Socket Rooms)
+  socket.on('unirse-club', (clubId) => {
+    try {
+      for (const room of socket.rooms) {
+        if (room.startsWith('club_') && room !== socket.id) {
+          socket.leave(room);
+        }
+      }
+      const targetRoom = clubId === 'todos' ? 'club_todos' : `club_${clubId || 1}`;
+      socket.join(targetRoom);
+      socket.join('club_general');
+    } catch (e) {
+      console.warn('Error al unirse a sala de club:', e.message);
+    }
+  });
   console.log('🔮 Un aventurero se ha conectado a la red telepática:', socket.id);
   socket.on('disconnect', () => {
     console.log('💨 Un aventurero ha dejado la red telepática:', socket.id);

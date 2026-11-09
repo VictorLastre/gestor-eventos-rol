@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const db = require('../config/db');
 const verificarToken = require('../middlewares/auth');
+const { emitirAClub } = require('../utils/socketNotifier');
 
 // POST /api/buzon - Enviar un mensaje (público)
 router.post('/', (req, res) => {
@@ -21,7 +22,7 @@ router.post('/', (req, res) => {
     
     // Opcional: Notificar a los admins conectados (Socket.io)
     const io = req.app.get('io');
-    if (io) io.emit('nuevo-mensaje-buzon', { club_id: idClub });
+    if (io) emitirAClub(io, 'nuevo-mensaje-buzon', { club_id: idClub }, idClub);
     
     res.status(201).json({ success: true, message: 'Mensaje depositado en el buzón.' });
   });
@@ -70,7 +71,7 @@ router.put('/:id/leer', verificarToken, (req, res) => {
     if (err) return res.status(500).json({ error: 'Error al actualizar el estado.' });
     
     const io = req.app.get('io');
-    if (io) io.emit('actualizacion-buzon');
+    if (io) emitirAClub(io, 'actualizacion-buzon');
     
     res.json({ success: true });
   });
@@ -86,7 +87,7 @@ router.delete('/:id', verificarToken, (req, res) => {
     if (err) return res.status(500).json({ error: 'Error al eliminar el mensaje.' });
     
     const io = req.app.get('io');
-    if (io) io.emit('actualizacion-buzon');
+    if (io) emitirAClub(io, 'actualizacion-buzon');
     
     res.json({ success: true });
   });

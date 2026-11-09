@@ -82,6 +82,8 @@ function Eventos({ setVista, mesaActivaId, setMesaActivaId, clubActivo, setClubA
       reconnectionAttempts: 5
     });
 
+    socket.emit('unirse-club', clubActivo?.id || 1);
+
     socket.on('actualizacion-eventos', () => {
       cargarEventos();
     });
@@ -112,7 +114,7 @@ function Eventos({ setVista, mesaActivaId, setMesaActivaId, clubActivo, setClubA
     return () => {
       socket.disconnect();
     };
-  }, []);
+  }, [clubActivo?.id]);
 
   // ✨ SCROLL HORIZONTAL CON RUEDA DEL RATÓN
   useEffect(() => {

@@ -1,4 +1,4 @@
-﻿import { useState, useEffect } from 'react';
+﻿import { useState, useEffect, lazy, Suspense } from 'react';
 
 import Swal from 'sweetalert2';
 import { io } from 'socket.io-client';
@@ -13,23 +13,29 @@ import Registro from './components/Registro';
 
 import Eventos from './components/Eventos';
 
-import MisCronicas from './components/MisCronicas';
-
-import Navbar from './components/Navbar'; 
-
-import PanelAdmin from './components/PanelAdmin'; 
-
-import PerfilPublico from './components/PerfilPublico'; 
-
-import BuzonAdmin from './components/BuzonAdmin';
-
+import Navbar from './components/Navbar';
 import BuzonFlotante from './components/BuzonFlotante';
 
-import CelebracionCumpleanos from './components/CelebracionCumpleanos';
+// 🚀 Code-Splitting de Fase 1: Carga diferida de vistas y módulos pesados
+const MisCronicas = lazy(() => import('./components/MisCronicas'));
+const PanelAdmin = lazy(() => import('./components/PanelAdmin'));
+const PerfilPublico = lazy(() => import('./components/PerfilPublico'));
+const BuzonAdmin = lazy(() => import('./components/BuzonAdmin'));
+const CelebracionCumpleanos = lazy(() => import('./components/CelebracionCumpleanos'));
+const SalonFama = lazy(() => import('./components/SalonFama'));
+const CriptaJuego = lazy(() => import('./components/DungeonCrawler/CriptaJuego'));
 
-import SalonFama from './components/SalonFama';
-
-import CriptaJuego from './components/DungeonCrawler/CriptaJuego';
+// 🎲 Fallback temático del Gremio durante transiciones diferidas
+const LoadingFallback = () => (
+  <div className="flex flex-col items-center justify-center min-h-[50vh] p-8 text-center animate-in fade-in duration-300">
+    <div className="w-12 h-12 rounded-2xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-center text-2xl animate-spin">
+      🎲
+    </div>
+    <span className="text-xs font-black uppercase tracking-widest text-zinc-400 mt-4">
+      Consultando los pergaminos del Gremio...
+    </span>
+  </div>
+);
 
 import './App.css';
 
@@ -222,6 +228,7 @@ function App() {
     cargarClubes();
 
     const socket = io('/', { path: '/api/socket.io' });
+    socket.emit('unirse-club', clubActivo?.id || 1);
     socket.on('actualizacion-clubes', () => {
       fetch('/api/clubes')
         .then(res => res.json())
@@ -239,7 +246,7 @@ function App() {
     });
 
     return () => socket.disconnect();
-  }, [usuarioLogueado?.id, usuarioLogueado?.rol, usuarioLogueado?.club_id]);
+  }, [usuarioLogueado?.id, usuarioLogueado?.rol, usuarioLogueado?.club_id, clubActivo?.id]);
 
   // 📱 ESCUCHAR EVENTO POPSTATE PARA SOPORTAR EL BOTÓN "ATRÁS" DEL CELULAR
   useEffect(() => {
@@ -631,6 +638,7 @@ function App() {
       />
 
       <main className="container mx-auto pb-20 relative z-0">
+        <Suspense fallback={<LoadingFallback />}>
         {vistaActual === 'eventos' && (
           <Eventos 
             setVista={cambiarVista} 
@@ -678,16 +686,20 @@ function App() {
             }} 
           />
         )}
+      
+        </Suspense>
       </main>
       <BuzonFlotante clubActivo={clubActivo} />
 
       {/* 🎈 CELEBRACIÓN DE CUMPLEAÑOS CON GLOBOS Y MENSAJE */}
-      {mostrarCumpleanos && (
-        <CelebracionCumpleanos 
-          usuario={usuarioLogueado}
-          onCerrar={() => setMostrarCumpleanos(false)}
-        />
-      )}
+      <Suspense fallback={null}>
+        {mostrarCumpleanos && (
+          <CelebracionCumpleanos 
+            usuario={usuarioLogueado}
+            onCerrar={() => setMostrarCumpleanos(false)}
+          />
+        )}
+      </Suspense>
     </div>
   );
 }

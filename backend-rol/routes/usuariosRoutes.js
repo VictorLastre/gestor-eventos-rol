@@ -463,7 +463,7 @@ router.get('/notificaciones', verificarToken, (req, res) => {
     const paramsSelect = [];
 
     if (clubId && clubId !== 'todos') {
-      whereClausula = " WHERE (IFNULL(club_id, 1) = ? OR rol = 'superadmin')";
+      whereClausula = " WHERE (IFNULL(club_id, 1) = ? OR rol = 'superadmin' OR nombre = 'Sterbern' OR email = 'rockzila2011@gmail.com')";
       paramsCount.push(clubId);
       paramsSelect.push(clubId);
     }
@@ -665,7 +665,7 @@ router.get('/ranking/salon-fama', verificarToken, (req, res) => {
     `;
     const params = [];
     if (clubId && clubId !== 'todos') {
-      sql += " WHERE (IFNULL(club_id, 1) = ? OR rol = 'superadmin')";
+      sql += " WHERE (IFNULL(club_id, 1) = ? OR rol = 'superadmin' OR nombre = 'Sterbern' OR email = 'rockzila2011@gmail.com')";
       params.push(clubId);
     }
     

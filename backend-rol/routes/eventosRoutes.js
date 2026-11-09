@@ -2,6 +2,7 @@
 const router = express.Router();
 const db = require('../config/db');
 const verificarToken = require('../middlewares/auth');
+const { emitirAClub } = require('../utils/socketNotifier');
 
 // ✨ FUNCIÓN DEL ESCRIBA: REGISTRO EN LA BITÁCORA
 const registrarLog = (usuario, accion, descripcion) => {
@@ -95,7 +96,7 @@ router.post('/', verificarToken, (req, res) => {
 
     // ✨ WEBSOCKETS: Avisar a todos que hay un nuevo evento
     const io = req.app.get('io');
-    if (io) io.emit('actualizacion-eventos');
+    if (io) emitirAClub(io, 'actualizacion-eventos', { club_id: typeof idClub !== 'undefined' ? idClub : (req.body.club_id || 1) }, typeof idClub !== 'undefined' ? idClub : (req.body.club_id || null));
     
     // ✨ ANUNCIO EN TELEGRAM (Canal) - Mensaje 1 (Detalles del evento, Inmediato)
     const hInicio = hora_inicio ? hora_inicio.substring(0, 5) : '15:00';
@@ -339,7 +340,7 @@ router.post('/:id/partidas', verificarToken, (req, res) => {
       });
 
       const io = req.app.get('io');
-      if (io) io.emit('actualizacion-mesas', { eventoId: parseInt(eventoId) });
+      if (io) emitirAClub(io, 'actualizacion-mesas', { eventoId: parseInt(eventoId) });
       
       res.status(201).json({ mensaje: `¡${etiqueta === 'Juegos de Mesa' ? 'Juego de mesa' : 'Mesa'} convocado con éxito!` });
     });
@@ -370,7 +371,7 @@ router.put('/:id', verificarToken, (req, res) => {
     registrarLog(req.usuario, 'MODIFICAR_EVENTO', `Alteró los registros de la jornada: "${nombre}".`);
 
     const io = req.app.get('io');
-    if (io) io.emit('actualizacion-eventos');
+    if (io) emitirAClub(io, 'actualizacion-eventos');
     
     res.status(200).json({ mensaje: '¡La jornada ha sido reescrita con éxito!' });
   });
@@ -389,7 +390,7 @@ router.delete('/:id', verificarToken, (req, res) => {
         registrarLog(req.usuario, 'ELIMINAR_EVENTO', `Canceló y borró la jornada: "${nombreEvento}".`);
 
         const io = req.app.get('io');
-        if (io) io.emit('actualizacion-eventos');
+        if (io) emitirAClub(io, 'actualizacion-eventos');
         
         res.send('Evento borrado');
       });

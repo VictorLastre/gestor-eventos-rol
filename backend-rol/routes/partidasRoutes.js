@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const db = require('../config/db');
 const verificarToken = require('../middlewares/auth');
+const { emitirAClub } = require('../utils/socketNotifier');
 const { enviarMensajeAlCanal, enviarMensajeTelegram } = require('../utils/telegram');
 
 // ✨ FUNCIÓN DEL ESCRIBA: REGISTRO EN LA BITÁCORA
@@ -205,7 +206,7 @@ router.post('/', verificarToken, (req, res) => {
       }
 
       const io = req.app.get('io');
-      if (io) io.emit('actualizacion-mesas', { eventoId: parseInt(evento_id) });
+      if (io) emitirAClub(io, 'actualizacion-mesas', { eventoId: parseInt(evento_id) });
 
       res.status(201).json({ mensaje: `¡${etiqueta === 'Juegos de Mesa' ? 'Juego de mesa' : 'Mesa'} convocado con éxito!` });
     });
@@ -267,8 +268,8 @@ const promoverPrimerSuplente = async (partidaId, eventoId, titulo, etiqueta, dmT
         }
 
         if (io) {
-          io.emit('actualizacion-mesas', { eventoId: parseInt(eventoId) });
-          io.emit('actualizacion-notificaciones');
+          emitirAClub(io, 'actualizacion-mesas', { eventoId: parseInt(eventoId) });
+          emitirAClub(io, 'actualizacion-notificaciones');
         }
 
         return suplente;
@@ -393,7 +394,7 @@ router.post('/:id/inscripciones', verificarToken, (req, res) => {
         if (err) return res.status(400).send('Error al anotarse.');
         
         const io = req.app.get('io');
-        if (io) io.emit('actualizacion-mesas', { eventoId: parseInt(evento_id) });
+        if (io) emitirAClub(io, 'actualizacion-mesas', { eventoId: parseInt(evento_id) });
 
         if (mesaLlena) {
           const posicion = suplentes_count + 1;
@@ -454,7 +455,7 @@ router.delete('/:id/inscripciones', verificarToken, (req, res) => {
 
       if (eraSuplente) {
         registrarLog(req.usuario, 'SALIR_ESPERA', `Salió de la lista de espera de "${titulo}".`);
-        if (io) io.emit('actualizacion-mesas', { eventoId: parseInt(evento_id) });
+        if (io) emitirAClub(io, 'actualizacion-mesas', { eventoId: parseInt(evento_id) });
         return res.status(200).send('Has salido de la lista de espera.');
       }
       
@@ -471,7 +472,7 @@ router.delete('/:id/inscripciones', verificarToken, (req, res) => {
       // ✨ MAGIA: Promover automáticamente al primer suplente
       await promoverPrimerSuplente(idPartida, evento_id, titulo, etiqueta, dm_telegram_id, io);
 
-      if (io) io.emit('actualizacion-mesas', { eventoId: parseInt(evento_id) });
+      if (io) emitirAClub(io, 'actualizacion-mesas', { eventoId: parseInt(evento_id) });
 
       res.status(200).send('Has abandonado la mesa exitosamente.');
     });
@@ -558,8 +559,8 @@ router.put('/:id/asistencia', verificarToken, async (req, res) => {
 
     const io = req.app.get('io');
     if (io) {
-      io.emit('actualizacion-mesas', { eventoId: parseInt(evento_id) });
-      io.emit('actualizacion-usuarios');
+      emitirAClub(io, 'actualizacion-mesas', { eventoId: parseInt(evento_id) });
+      emitirAClub(io, 'actualizacion-usuarios');
     }
 
     res.json({ mensaje: `Asistencia actualizada a ${asistencia}.` });
@@ -625,7 +626,7 @@ router.delete('/:id', verificarToken, (req, res) => {
         registrarLog(req.usuario, tipoMesaLog, `Disolvió la mesa de ${etiqueta} "${titulo}"${dmId !== usuarioId ? ' (Acción de Administrador)' : ''}.`);
 
         const io = req.app.get('io');
-        if (io) io.emit('actualizacion-mesas', { eventoId: parseInt(evento_id) });
+        if (io) emitirAClub(io, 'actualizacion-mesas', { eventoId: parseInt(evento_id) });
 
         res.send('Mesa disuelta correctamente y aventureros notificados.');
       });
@@ -673,7 +674,7 @@ router.put('/:id', verificarToken, (req, res) => {
       registrarLog(req.usuario, 'EDITAR_MESA', `Reescribió los detalles de la mesa de ${etiqueta_vieja} "${titulo_viejo}" (Ahora: "${titulo}").`);
 
       const io = req.app.get('io');
-      if (io) io.emit('actualizacion-mesas', { eventoId: parseInt(evento_id) });
+      if (io) emitirAClub(io, 'actualizacion-mesas', { eventoId: parseInt(evento_id) });
 
       res.json({ mensaje: '¡Cambios grabados!' });
     });
@@ -794,7 +795,7 @@ router.delete('/:id/expulsar/:usuario_id', verificarToken, (req, res) => {
       // Promover automáticamente al primer suplente si existía
       await promoverPrimerSuplente(idPartida, pResult[0].evento_id, pResult[0].titulo, pResult[0].etiqueta, null, io);
 
-      if (io) io.emit('actualizacion-mesas', { eventoId: pResult[0].evento_id });
+      if (io) emitirAClub(io, 'actualizacion-mesas', { eventoId: pResult[0].evento_id });
       
       res.json({ mensaje: 'Jugador retirado de la mesa.' });
     });
@@ -817,7 +818,7 @@ router.put('/:id/inscripciones/confirmar', verificarToken, (req, res) => {
     db.query("SELECT evento_id FROM partidas WHERE id = ?", [idPartida], (err, evRes) => {
       if (!err && evRes.length > 0) {
         const io = req.app.get('io');
-        if (io) io.emit('actualizacion-mesas', { eventoId: evRes[0].evento_id });
+        if (io) emitirAClub(io, 'actualizacion-mesas', { eventoId: evRes[0].evento_id });
       }
     });
 

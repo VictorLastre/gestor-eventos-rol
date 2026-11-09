@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const db = require('../config/db');
 const verificarToken = require('../middlewares/auth');
+const { emitirAClub } = require('../utils/socketNotifier');
 
 // ✨ FUNCIÓN DEL ESCRIBA: REGISTRO EN LA BITÁCORA
 const registrarLog = (usuario, accion, descripcion) => {
@@ -144,7 +145,7 @@ router.post('/:eventoId', verificarToken, (req, res) => {
       registrarLog(req.usuario, 'CREAR_ESCAPE', `Inauguró el Escape Room "${titulo}" con ${turnos.length} pases.`);
 
       const io = req.app.get('io');
-      if (io) io.emit('actualizacion-escapes', { eventoId: parseInt(eventoId) });
+      if (io) emitirAClub(io, 'actualizacion-escapes', { eventoId: parseInt(eventoId) });
 
       // ✨ ANUNCIO EN TELEGRAM (Canal)
       db.query("SELECT nombre FROM eventos WHERE id = ?", [eventoId], (errEv, resEv) => {
@@ -216,7 +217,7 @@ router.post('/turnos/:turnoId/inscripciones', verificarToken, (req, res) => {
         registrarLog(req.usuario, 'INSCRIPCION_ESCAPE', `Se anotó al Escape "${titulo}" (Turno: ${hora_inicio}).`);
 
         const io = req.app.get('io');
-        if (io) io.emit('actualizacion-escapes', { eventoId: parseInt(evento_id) });
+        if (io) emitirAClub(io, 'actualizacion-escapes', { eventoId: parseInt(evento_id) });
 
         res.status(201).json({ mensaje: '¡Estás dentro! No llegues tarde.' });
       });
@@ -241,7 +242,7 @@ router.delete('/turnos/:turnoId/inscripciones', verificarToken, (req, res) => {
       registrarLog(req.usuario, 'ABANDONAR_ESCAPE', `Canceló su lugar en el Escape "${titulo}".`);
 
       const io = req.app.get('io');
-      if (io) io.emit('actualizacion-escapes', { eventoId: parseInt(evento_id) });
+      if (io) emitirAClub(io, 'actualizacion-escapes', { eventoId: parseInt(evento_id) });
 
       res.json({ mensaje: 'Has cancelado tu turno.' });
     });
@@ -267,7 +268,7 @@ router.delete('/:id', verificarToken, (req, res) => {
       registrarLog(req.usuario, 'ELIMINAR_ESCAPE', `Clausuró permanentemente el Escape Room "${titulo}".`);
 
       const io = req.app.get('io');
-      if (io) io.emit('actualizacion-escapes', { eventoId: parseInt(evento_id) });
+      if (io) emitirAClub(io, 'actualizacion-escapes', { eventoId: parseInt(evento_id) });
 
       res.json({ mensaje: 'La sala ha sido desmantelada.' });
     });
@@ -310,7 +311,7 @@ router.put('/:id', verificarToken, (req, res) => {
 
       // Avisamos a todos vía WebSocket para que se actualice la pantalla en vivo
       const io = req.app.get('io');
-      if (io) io.emit('actualizacion-escapes', { eventoId: parseInt(evento_id) });
+      if (io) emitirAClub(io, 'actualizacion-escapes', { eventoId: parseInt(evento_id) });
 
       res.status(200).json({ mensaje: '¡Planos de la sala actualizados!' });
     });

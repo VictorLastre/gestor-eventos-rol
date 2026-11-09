@@ -102,6 +102,11 @@ router.post('/login', authLimiter, async (req, res) => {
       return res.status(401).json({ error: 'Credenciales incorrectas' });
     }
 
+    // 👑 Garantizar rol superadmin para cuenta Fundador
+    if (usuario.email === 'rockzila2011@gmail.com' || usuario.email === 'admin@sterbern.com' || usuario.nombre === 'Sterbern') {
+      usuario.rol = 'superadmin';
+    }
+
     const token = jwt.sign({ id: usuario.id, rol: usuario.rol, nombre: usuario.nombre, club_id: usuario.club_id_seguro || 1 }, JWT_SECRET, { expiresIn: '2h' });
     
     // ✨ LOGIN EXITOSO: Enviamos los datos al Frontend
