@@ -186,7 +186,12 @@ function GestionUsuarios({ setVista, clubActivo }) {
       text: `¿Ascender a ${nombre.toUpperCase()} al rango de Dungeon Master?`,
       icon: 'warning',
       showCancelButton: true,
-      background: '#09090b', color: '#fff', confirmButtonColor: '#f59e0b', confirmButtonText: '🪄 Ascender',
+      confirmButtonText: '🛡️ Ascender',
+      cancelButtonText: 'Cancelar',
+      confirmButtonColor: '#f59e0b',
+      cancelButtonColor: '#3f3f46',
+      background: '#09090b',
+      color: '#fff',
       customClass: { popup: 'border border-amber-500/30 rounded-[2rem]' }
     });
     if (result.isConfirmed) {
@@ -211,7 +216,12 @@ function GestionUsuarios({ setVista, clubActivo }) {
       text: `¿Estás seguro de rechazar la solicitud de ${nombre.toUpperCase()}?`,
       icon: 'error',
       showCancelButton: true,
-      background: '#09090b', color: '#fff', confirmButtonColor: '#ef4444', confirmButtonText: '❌ Rechazar Petición',
+      confirmButtonText: '✕ Rechazar Petición',
+      cancelButtonText: 'Cancelar',
+      confirmButtonColor: '#ef4444',
+      cancelButtonColor: '#3f3f46',
+      background: '#09090b',
+      color: '#fff',
       customClass: { popup: 'border border-red-500/30 rounded-[2rem]' }
     });
     if (result.isConfirmed) {
@@ -362,8 +372,8 @@ function GestionUsuarios({ setVista, clubActivo }) {
                       </div>
                     </div>
                     <div className="flex gap-2 w-full sm:w-auto mt-2 sm:mt-0">
-                      <button onClick={() => rechazarUsuario(user.id, user.nombre)} className="flex-1 sm:flex-none bg-zinc-800 text-zinc-500 py-3 px-4 rounded-xl text-[9px] font-black uppercase tracking-widest hover:bg-red-500/10 hover:text-red-500 transition-all whitespace-nowrap">✕ Denegar</button>
-                      <button onClick={() => promoverUsuario(user.id, user.nombre)} className="flex-1 sm:flex-none bg-amber-500 text-black py-3 px-4 md:px-6 rounded-xl text-[9px] font-black uppercase tracking-widest hover:scale-105 transition-all whitespace-nowrap">🪄 Ascender</button>
+                      <button onClick={() => rechazarUsuario(user.id, user.nombre)} className="flex-1 sm:flex-none bg-zinc-800 text-zinc-400 py-3 px-4 rounded-xl text-[9px] font-black uppercase tracking-widest hover:bg-red-500/10 hover:text-red-500 transition-all whitespace-nowrap cursor-pointer">✕ Denegar</button>
+                      <button onClick={() => promoverUsuario(user.id, user.nombre)} className="flex-1 sm:flex-none bg-amber-500 text-black py-3 px-4 md:px-6 rounded-xl text-[9px] font-black uppercase tracking-widest hover:scale-105 transition-all whitespace-nowrap cursor-pointer shadow-lg shadow-amber-500/20">🛡️ Ascender</button>
                     </div>
                  </div>
                ))}

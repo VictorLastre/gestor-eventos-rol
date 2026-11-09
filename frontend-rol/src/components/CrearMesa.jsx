@@ -528,7 +528,7 @@ function CrearMesa({ idEvento, alCrearMesa }) {
                       className="w-[60px] h-[60px] shrink-0 bg-purple-500/10 border border-purple-500/50 text-purple-400 rounded-2xl flex items-center justify-center hover:bg-purple-500 hover:text-white transition-all shadow-[0_0_15px_rgba(168,85,247,0.2)]"
                       title="Generar Clave Mágica"
                     >
-                      🪄
+                      ✨
                     </button>
                   </div>
                 )}
