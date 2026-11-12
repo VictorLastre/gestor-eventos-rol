@@ -1,7 +1,6 @@
 import { useState, useEffect } from 'react';
 import Swal from 'sweetalert2'; 
 import { fetchProtegido } from '../utils/api'; 
-import * as XLSX from 'xlsx'; 
 import CertificadoBase from '../assets/CertificadoBase.png'; 
 import { io } from 'socket.io-client';
 // ✨ IMPORTAMOS EL NUEVO COMPONENTE DE AVATARES
@@ -10,7 +9,6 @@ import AvatarUsuario from '../components/AvatarUsuario';
 function GestionUsuarios({ setVista, clubActivo }) {
   const [solicitudes, setSolicitudes] = useState([]);
   const [votaciones, setVotaciones] = useState([]); 
-  const [eventos, setEventos] = useState([]); 
   const [pestanaActiva, setPestanaActiva] = useState('peticiones');
   const [filtroRol, setFiltroRol] = useState('todos'); 
   const [busqueda, setBusqueda] = useState('');
@@ -29,10 +27,6 @@ function GestionUsuarios({ setVista, clubActivo }) {
       .then(datos => setVotaciones(Array.isArray(datos) ? datos : []))
       .catch(err => { if (err !== 'Sesión expirada') console.error(err); });
 
-    fetchProtegido(`/api/eventos${clubActivo?.id ? `?club_id=${clubActivo.id}` : ''}`)
-      .then(res => res.json())
-      .then(datos => setEventos(Array.isArray(datos) ? datos : []))
-      .catch(err => console.error(err));
   };
 
   const cargarCenso = () => {
@@ -63,43 +57,6 @@ function GestionUsuarios({ setVista, clubActivo }) {
   useEffect(() => {
     setPaginaCenso(1);
   }, [filtroRol, busqueda]);
-
-  const exportarLogistica = async () => {
-    if (eventos.length === 0) return Swal.fire({ title: 'Error', text: 'No hay eventos registrados.', icon: 'error', background: '#09090b', color: '#fff' });
-
-    const hoyObj = new Date();
-    const fechaHoyLocal = `${hoyObj.getFullYear()}-${String(hoyObj.getMonth() + 1).padStart(2, '0')}-${String(hoyObj.getDate()).padStart(2, '0')}`;
-
-    const eventosExportables = eventos.filter(e => e.fecha?.startsWith(fechaHoyLocal) && e.estado !== 'Suspendido' && e.estado !== 'Finalizado');
-
-    if (eventosExportables.length === 0) {
-      return Swal.fire({ title: 'El Tablón está en calma', text: 'No hay jornadas activas para hoy.', icon: 'info', background: '#09090b', color: '#fff' });
-    }
-
-    const { value: eventoId } = await Swal.fire({
-      title: '📊 Reporte Logístico',
-      input: 'select',
-      inputOptions: Object.fromEntries(eventosExportables.map(e => [e.id, e.nombre])),
-      background: '#09090b', color: '#fff', confirmButtonColor: '#10b981'
-    });
-
-    if (eventoId) {
-      try {
-        const res = await fetchProtegido(`/api/partidas/reporte-logistico/${eventoId}`);
-        const datos = await res.json();
-        const filas = datos.map(m => ({
-          "ESTADO": m.es_dm_nuevo ? "⚠️ NUEVO" : "VETERANO",
-          "DIRECTOR": (m.nombre_completo || m.dm_nombre).toUpperCase(), 
-          "TURNO": m.turno, "MESA": m.mesa, "SISTEMA": m.sistema,
-          "JUGADORES": m.jugadores || "Sin inscritos", "MATERIALES": m.materiales_pedidos || "✅ NADA"
-        }));
-        const hoja = XLSX.utils.json_to_sheet(filas);
-        const libro = XLSX.utils.book_new();
-        XLSX.utils.book_append_sheet(libro, hoja, "Planilla");
-        XLSX.writeFile(libro, `Logistica_${eventoId}.xlsx`);
-      } catch (e) { console.error(e); }
-    }
-  };
 
   const generarCertificado = (idDM, nombreDM, nombreReal) => {
     const nombreAFijar = nombreReal || nombreDM;
@@ -398,8 +355,6 @@ function GestionUsuarios({ setVista, clubActivo }) {
             </div>
             
             <div className="flex flex-wrap items-center gap-3">
-              <button onClick={exportarLogistica} className="bg-emerald-600 hover:bg-emerald-500 text-white font-black px-6 py-3.5 rounded-2xl text-[9px] uppercase tracking-widest transition-all shadow-xl shadow-emerald-950/20">📊 Exportar Logística</button>
-              
               <div className="flex gap-1 bg-zinc-950 border border-zinc-800 p-1.5 rounded-2xl overflow-x-auto scrollbar-hide">
                 {['todos', 'superadmin', 'admin', 'dm', 'jugador'].map(rol => (
                   <button 

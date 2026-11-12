@@ -8,6 +8,7 @@ import FormularioEscape from './FormularioEscape';
 import TarjetaEscape from './TarjetaEscape'; 
 import { fetchProtegido } from '../utils/api'; 
 import { io } from 'socket.io-client';
+import * as XLSX from 'xlsx';
 
 function Eventos({ setVista, mesaActivaId, setMesaActivaId, clubActivo, setClubActivo, clubes = [] }) {
   const [eventos, setEventos] = useState([]);
@@ -21,6 +22,10 @@ function Eventos({ setVista, mesaActivaId, setMesaActivaId, clubActivo, setClubA
   const [mostrarFormularioMesa, setMostrarFormularioMesa] = useState(false);
   const [mostrarFormularioEscape, setMostrarFormularioEscape] = useState(false);
   const [mostrarFormularioJuegoMesa, setMostrarFormularioJuegoMesa] = useState(false); // ✨ NUEVO ESTADO
+  const [modalLogisticaEvento, setModalLogisticaEvento] = useState(null);
+  const [datosLogistica, setDatosLogistica] = useState(null);
+  const [cargandoLogistica, setCargandoLogistica] = useState(false);
+  const [filtroLogistica, setFiltroLogistica] = useState('todos');
   
   const carruselEventosRef = useRef(null);
   const carruselPartidasRef = useRef(null); 
@@ -241,6 +246,359 @@ function Eventos({ setVista, mesaActivaId, setMesaActivaId, clubActivo, setClubA
   const eventosProximos = eventos.filter(e => e.estado === 'Proximo' || e.estado === 'En Curso').sort((a, b) => a.fecha.localeCompare(b.fecha));
   const eventosPasados = eventos.filter(e => e.estado === 'Finalizado' || e.estado === 'Suspendido').sort((a, b) => b.fecha.localeCompare(a.fecha)); 
 
+  const abrirLogistica = async (evento, e) => {
+    if (e) e.stopPropagation();
+    setModalLogisticaEvento(evento);
+    setCargandoLogistica(true);
+    setDatosLogistica(null);
+    setFiltroLogistica('todos');
+
+    try {
+      const [resMesas, resEscapes] = await Promise.all([
+        fetchProtegido(`/api/partidas/reporte-logistico/${evento.id}`),
+        fetchProtegido(`/api/escapes/reporte-logistico/${evento.id}`).catch(() => ({ ok: false }))
+      ]);
+
+      const mesas = resMesas.ok ? await resMesas.json() : [];
+      const escapes = resEscapes && resEscapes.ok ? await resEscapes.json() : [];
+
+      setDatosLogistica({
+        mesas: Array.isArray(mesas) ? mesas : [],
+        escapes: Array.isArray(escapes) ? escapes : []
+      });
+    } catch (err) {
+      if (err !== 'Sesión expirada') console.error('Error al cargar logística:', err);
+      Swal.fire({
+        title: 'Error',
+        text: 'No se pudo obtener la información logística del evento.',
+        icon: 'error',
+        background: '#09090b',
+        color: '#fff'
+      });
+      setModalLogisticaEvento(null);
+    } finally {
+      setCargandoLogistica(false);
+    }
+  };
+
+  const descargarExcelLogistica = () => {
+    if (!datosLogistica || !modalLogisticaEvento) return;
+
+    const filas = datosLogistica.mesas.map(m => ({
+      "TIPO": m.etiqueta || "Rol",
+      "ESTADO DM": m.es_dm_nuevo ? "⚠️ NUEVO" : "VETERANO",
+      "DIRECTOR": (m.nombre_completo || m.dm_o_creador_nombre || "Anónimo").toUpperCase(),
+      "TURNO": m.turno || "Tarde",
+      "MESA / AVENTURA": m.mesa,
+      "SISTEMA / JUEGO": m.sistema,
+      "JUGADORES INSCRITOS": m.jugadores || "Sin inscritos aún",
+      "MATERIALES PEDIDOS AL GREMIO": m.materiales_pedidos && m.materiales_pedidos.trim() !== '' ? m.materiales_pedidos : "✅ Sin pedidos especiales"
+    }));
+
+    if (datosLogistica.escapes && datosLogistica.escapes.length > 0) {
+      datosLogistica.escapes.forEach(esc => {
+        filas.push({
+          "TIPO": "Escape Room",
+          "ESTADO DM": "ORGANIZADOR",
+          "DIRECTOR": (esc.organizador || "").toUpperCase(),
+          "TURNO": `${esc.inicio || ''} - ${esc.fin || ''}`,
+          "MESA / AVENTURA": esc.sala,
+          "SISTEMA / JUEGO": "Escape Room",
+          "JUGADORES INSCRITOS": esc.jugadores || "Sin inscritos",
+          "MATERIALES PEDIDOS AL GREMIO": esc.materiales_pedidos || "✅ Sin pedidos especiales"
+        });
+      });
+    }
+
+    if (filas.length === 0) {
+      return Swal.fire({
+        title: 'Planilla Vacía',
+        text: 'Aún no hay mesas convocadas en este evento.',
+        icon: 'info',
+        background: '#09090b',
+        color: '#fff'
+      });
+    }
+
+    const hoja = XLSX.utils.json_to_sheet(filas);
+    const libro = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(libro, hoja, "Planilla Logística");
+
+    const nombreLimpio = (modalLogisticaEvento.nombre || 'Evento').replace(/[^a-zA-Z0-9_-]/g, '_');
+    const fechaLimpia = (modalLogisticaEvento.fecha || '').split('T')[0];
+    XLSX.writeFile(libro, `Logistica_${nombreLimpio}_${fechaLimpia}.xlsx`);
+  };
+
+  const renderModalLogistica = () => {
+    if (!modalLogisticaEvento) return null;
+
+    const mesas = datosLogistica?.mesas || [];
+    const escapes = datosLogistica?.escapes || [];
+
+    const mesasConMaterial = mesas.filter(m => m.materiales_pedidos && m.materiales_pedidos.trim() !== '');
+    const escapesConMaterial = escapes.filter(e => e.materiales_pedidos && e.materiales_pedidos.trim() !== '');
+    const totalConMaterial = mesasConMaterial.length + escapesConMaterial.length;
+
+    const mesasFiltradas = filtroLogistica === 'con_pedidos' 
+      ? mesas.filter(m => m.materiales_pedidos && m.materiales_pedidos.trim() !== '')
+      : mesas;
+
+    const escapesFiltrados = filtroLogistica === 'con_pedidos'
+      ? escapes.filter(e => e.materiales_pedidos && e.materiales_pedidos.trim() !== '')
+      : escapes;
+
+    return (
+      <div 
+        onClick={(e) => { if (e.target === e.currentTarget) setModalLogisticaEvento(null); }}
+        className="fixed inset-0 z-[350] flex items-center justify-center p-3 sm:p-6 bg-black/85 backdrop-blur-md animate-in fade-in duration-200 overflow-y-auto"
+      >
+        <div className="bg-zinc-950 border border-amber-500/30 w-full max-w-4xl max-h-[90vh] rounded-[2rem] sm:rounded-[2.5rem] p-5 sm:p-8 flex flex-col shadow-2xl relative my-auto overflow-hidden">
+          
+          {/* Cabecera */}
+          <div className="flex items-center justify-between pb-4 border-b border-zinc-800 shrink-0 gap-4">
+            <div className="flex items-center gap-3">
+              <div className="w-12 h-12 rounded-2xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-center text-2xl shrink-0">
+                📦
+              </div>
+              <div>
+                <h3 className="text-xl sm:text-2xl font-black text-white uppercase italic tracking-tight flex items-center gap-2">
+                  Logística y Pedidos de DMs
+                </h3>
+                <p className="text-[10px] sm:text-xs text-zinc-400 font-bold uppercase tracking-widest mt-0.5">
+                  {modalLogisticaEvento.nombre} • {formatearFechaManual(modalLogisticaEvento.fecha)}
+                </p>
+              </div>
+            </div>
+            
+            <button 
+              onClick={() => setModalLogisticaEvento(null)}
+              className="w-9 h-9 rounded-full bg-zinc-900 hover:bg-zinc-800 text-zinc-400 hover:text-white flex items-center justify-center transition-colors text-sm cursor-pointer border border-zinc-800 shrink-0"
+            >
+              ✕
+            </button>
+          </div>
+
+          {/* Barra de métricas y exportación */}
+          <div className="py-4 border-b border-zinc-800/80 flex flex-wrap items-center justify-between gap-3 shrink-0">
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="text-[10px] sm:text-xs font-black uppercase tracking-wider bg-zinc-900 text-zinc-300 border border-zinc-800 px-3 py-1.5 rounded-xl">
+                🎲 {mesas.length} Mesas
+              </span>
+              <span className={`text-[10px] sm:text-xs font-black uppercase tracking-wider px-3 py-1.5 rounded-xl border transition-all ${
+                totalConMaterial > 0 
+                  ? 'bg-amber-500/20 text-amber-300 border-amber-500/40 shadow-[0_0_15px_rgba(245,158,11,0.2)]' 
+                  : 'bg-zinc-900 text-zinc-500 border-zinc-800'
+              }`}>
+                📦 {totalConMaterial} con Solicitudes
+              </span>
+            </div>
+
+            <div className="flex items-center gap-2">
+              {/* Filtro Todas / Con Pedidos */}
+              <div className="flex bg-zinc-900 border border-zinc-800 p-1 rounded-xl">
+                <button 
+                  onClick={() => setFiltroLogistica('todos')}
+                  className={`px-3 py-1 text-[9px] sm:text-[10px] font-black uppercase tracking-wider rounded-lg transition-all ${
+                    filtroLogistica === 'todos' 
+                      ? 'bg-zinc-800 text-amber-400 shadow' 
+                      : 'text-zinc-500 hover:text-zinc-300'
+                  }`}
+                >
+                  Todas
+                </button>
+                <button 
+                  onClick={() => setFiltroLogistica('con_pedidos')}
+                  className={`px-3 py-1 text-[9px] sm:text-[10px] font-black uppercase tracking-wider rounded-lg transition-all ${
+                    filtroLogistica === 'con_pedidos' 
+                      ? 'bg-amber-500 text-black shadow font-black' 
+                      : 'text-zinc-500 hover:text-zinc-300'
+                  }`}
+                >
+                  Solo Pedidos ({totalConMaterial})
+                </button>
+              </div>
+
+              {/* Botón Exportar a Excel */}
+              <button 
+                onClick={descargarExcelLogistica}
+                disabled={cargandoLogistica || (mesas.length === 0 && escapes.length === 0)}
+                className="bg-emerald-600 hover:bg-emerald-500 disabled:opacity-40 text-white font-black px-4 py-2 rounded-xl text-[10px] sm:text-xs uppercase tracking-wider transition-all flex items-center gap-2 shadow-lg shadow-emerald-950/30 cursor-pointer"
+                title="Descargar planilla completa en formato Excel"
+              >
+                <span>📊</span> Exportar Excel
+              </button>
+            </div>
+          </div>
+
+          {/* Lista scrolleable de mesas y pedidos */}
+          <div className="overflow-y-auto py-4 space-y-4 pr-1 scrollbar-hide flex-1">
+            {cargandoLogistica ? (
+              <div className="py-20 flex flex-col items-center justify-center gap-3">
+                <div className="w-10 h-10 border-4 border-amber-500/20 border-t-amber-500 rounded-full animate-spin"></div>
+                <p className="text-amber-400 font-black uppercase tracking-widest text-xs animate-pulse">
+                  Consultando registros de la jornada...
+                </p>
+              </div>
+            ) : (mesasFiltradas.length === 0 && escapesFiltrados.length === 0) ? (
+              <div className="py-16 text-center border-2 border-dashed border-zinc-800/80 rounded-2xl bg-zinc-900/20 p-6">
+                <span className="text-3xl block mb-2 opacity-40">📭</span>
+                <p className="text-zinc-400 font-bold text-xs uppercase tracking-widest">
+                  {filtroLogistica === 'con_pedidos' 
+                    ? 'No hay solicitudes de materiales especiales en este evento.' 
+                    : 'Aún no se han convocado mesas para esta jornada.'}
+                </p>
+              </div>
+            ) : (
+              <>
+                {/* MESAS DE ROL Y JUEGOS DE MESA */}
+                {mesasFiltradas.map((m, idx) => {
+                  const tieneMaterial = Boolean(m.materiales_pedidos && m.materiales_pedidos.trim() !== '');
+                  const directorNombre = m.nombre_completo || m.dm_o_creador_nombre || 'Sin DM';
+
+                  return (
+                    <div 
+                      key={idx} 
+                      className={`p-4 sm:p-5 rounded-2xl border transition-all ${
+                        tieneMaterial 
+                          ? 'bg-zinc-900/80 border-amber-500/40 shadow-[0_0_20px_rgba(245,158,11,0.08)]' 
+                          : 'bg-zinc-900/40 border-zinc-800/70'
+                      }`}
+                    >
+                      <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-2 mb-3">
+                        <div>
+                          <div className="flex flex-wrap items-center gap-2 mb-1">
+                            <span className="text-[9px] font-black uppercase tracking-widest px-2.5 py-0.5 rounded-md bg-amber-500/10 text-amber-400 border border-amber-500/20">
+                              {m.turno ? `Turno ${m.turno}` : 'Turno Tarde'}
+                            </span>
+                            <span className="text-[9px] font-black uppercase tracking-widest px-2.5 py-0.5 rounded-md bg-zinc-800 text-zinc-300 border border-zinc-700">
+                              {m.etiqueta || 'Rol'}
+                            </span>
+                            {m.sistema && (
+                              <span className="text-[9px] font-bold text-zinc-400 border-l border-zinc-700 pl-2">
+                                🎲 {m.sistema}
+                              </span>
+                            )}
+                          </div>
+                          <h4 className="text-base sm:text-lg font-black text-white uppercase italic tracking-tight">
+                            {m.mesa}
+                          </h4>
+                        </div>
+
+                        {/* DM Info */}
+                        <div className="text-left sm:text-right shrink-0">
+                          <p className="text-xs font-black text-amber-300 uppercase tracking-tight flex items-center sm:justify-end gap-1.5">
+                            <span>🛡️</span> {directorNombre}
+                            {m.nombre_completo && m.dm_o_creador_nombre && m.nombre_completo !== m.dm_o_creador_nombre && (
+                              <span className="text-[10px] text-zinc-500 font-mono lowercase">({m.dm_o_creador_nombre})</span>
+                            )}
+                          </p>
+                          {Boolean(m.es_dm_nuevo) && (
+                            <span className="inline-block mt-0.5 text-[8px] font-black uppercase tracking-widest bg-yellow-500/20 text-yellow-300 border border-yellow-500/30 px-2 py-0.5 rounded">
+                              ⚠️ DM Primerizo (Requiere Certificado)
+                            </span>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* Caja de Materiales Pedidos */}
+                      <div className={`p-3 rounded-xl border mt-3 ${
+                        tieneMaterial 
+                          ? 'bg-amber-950/30 border-amber-500/50 text-amber-200' 
+                          : 'bg-zinc-950/40 border-zinc-800/50 text-zinc-500'
+                      }`}>
+                        <div className="flex items-center gap-2 mb-1">
+                          <span className="text-xs">{tieneMaterial ? '📦' : '✅'}</span>
+                          <span className="text-[10px] font-black uppercase tracking-widest">
+                            {tieneMaterial ? 'Materiales Solicitados al Gremio:' : 'Sin pedidos de material:'}
+                          </span>
+                        </div>
+                        <p className={`text-xs font-medium pl-5 ${tieneMaterial ? 'text-amber-100 font-bold' : 'italic text-zinc-500'}`}>
+                          {tieneMaterial ? m.materiales_pedidos : 'El DM no solicitó materiales para esta aventura.'}
+                        </p>
+                      </div>
+
+                      {/* Jugadores anotados */}
+                      <div className="mt-3 flex items-center gap-2 flex-wrap text-[10px] text-zinc-400">
+                        <span className="font-bold uppercase tracking-wider text-zinc-500">Aventureros:</span>
+                        {m.jugadores ? (
+                          <span className="text-zinc-300 font-medium">{m.jugadores}</span>
+                        ) : (
+                          <span className="italic text-zinc-600">Sin inscripciones aún</span>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
+
+                {/* ESCAPES SI HUBIERA */}
+                {escapesFiltrados.map((esc, eIdx) => {
+                  const tieneMaterial = Boolean(esc.materiales_pedidos && esc.materiales_pedidos.trim() !== '');
+
+                  return (
+                    <div 
+                      key={`esc-${eIdx}`}
+                      className={`p-4 sm:p-5 rounded-2xl border transition-all ${
+                        tieneMaterial 
+                          ? 'bg-zinc-900/80 border-indigo-500/40' 
+                          : 'bg-zinc-900/40 border-zinc-800/70'
+                      }`}
+                    >
+                      <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-2 mb-3">
+                        <div>
+                          <span className="text-[9px] font-black uppercase tracking-widest px-2.5 py-0.5 rounded-md bg-indigo-500/20 text-indigo-300 border border-indigo-500/30">
+                            🔐 Escape Room • {esc.inicio} a {esc.fin} hs
+                          </span>
+                          <h4 className="text-base sm:text-lg font-black text-white uppercase italic tracking-tight mt-1">
+                            {esc.sala}
+                          </h4>
+                        </div>
+                        <div className="text-left sm:text-right">
+                          <p className="text-xs font-black text-indigo-300 uppercase">
+                            Organizador: {esc.organizador}
+                          </p>
+                        </div>
+                      </div>
+
+                      <div className={`p-3 rounded-xl border mt-3 ${
+                        tieneMaterial ? 'bg-indigo-950/30 border-indigo-500/50 text-indigo-200' : 'bg-zinc-950/40 border-zinc-800/50 text-zinc-500'
+                      }`}>
+                        <div className="flex items-center gap-2 mb-1">
+                          <span className="text-xs">{tieneMaterial ? '📦' : '✅'}</span>
+                          <span className="text-[10px] font-black uppercase tracking-widest">
+                            {tieneMaterial ? 'Materiales Solicitados:' : 'Materiales:'}
+                          </span>
+                        </div>
+                        <p className={`text-xs pl-5 ${tieneMaterial ? 'font-bold' : 'italic text-zinc-500'}`}>
+                          {tieneMaterial ? esc.materiales_pedidos : 'Sin solicitudes especiales'}
+                        </p>
+                      </div>
+
+                      <div className="mt-3 flex items-center gap-2 flex-wrap text-[10px] text-zinc-400">
+                        <span className="font-bold uppercase tracking-wider text-zinc-500">Inscritos:</span>
+                        <span className="text-zinc-300">{esc.jugadores || 'Sin inscritos'}</span>
+                      </div>
+                    </div>
+                  );
+                })}
+              </>
+            )}
+          </div>
+
+          {/* Footer */}
+          <div className="pt-3 border-t border-zinc-800 flex justify-end shrink-0">
+            <button 
+              onClick={() => setModalLogisticaEvento(null)}
+              className="px-6 py-2.5 bg-zinc-900 hover:bg-zinc-800 text-zinc-300 hover:text-white rounded-xl text-xs font-black uppercase tracking-wider transition-all cursor-pointer border border-zinc-800"
+            >
+              Cerrar
+            </button>
+          </div>
+
+        </div>
+      </div>
+    );
+  };
+
   const scrollEventosIzq = () => carruselEventosRef.current?.scrollBy({ left: -400, behavior: 'smooth' });
   const scrollEventosDer = () => carruselEventosRef.current?.scrollBy({ left: 400, behavior: 'smooth' });
 
@@ -307,6 +665,15 @@ function Eventos({ setVista, mesaActivaId, setMesaActivaId, clubActivo, setClubA
                 <span className="flex items-center gap-2 bg-zinc-900/50 px-4 py-2 rounded-full border border-zinc-800/50 backdrop-blur-sm">🗓️ {formatearFechaManual(eventoSeleccionado.fecha)}</span>
                 {eventoSeleccionado.hora_inicio && <span className="flex items-center gap-2 bg-zinc-900/50 px-4 py-2 rounded-full border border-zinc-800/50 backdrop-blur-sm">⏰ {eventoSeleccionado.hora_inicio} a {eventoSeleccionado.hora_fin} hs</span>}
                 {eventoSeleccionado.lugar && <span className="flex items-center gap-2 bg-zinc-900/50 px-4 py-2 rounded-full border border-zinc-800/50 backdrop-blur-sm">📍 {eventoSeleccionado.lugar}</span>}
+                {esAdmin && (
+                  <button 
+                    onClick={() => abrirLogistica(eventoSeleccionado)}
+                    className="flex items-center gap-2 bg-gradient-to-r from-amber-500/20 to-emerald-500/20 hover:from-amber-500/30 hover:to-emerald-500/30 px-4 py-2 rounded-full border border-amber-500/40 text-amber-300 hover:text-white font-bold text-xs uppercase tracking-widest shadow-lg shadow-amber-950/20 transition-all cursor-pointer"
+                    title="Ver pedidos de materiales de los DMs y exportar planilla"
+                  >
+                    <span>📦</span> Logística y Pedidos de DMs
+                  </button>
+                )}
               </div>
             </div>
 
@@ -635,6 +1002,7 @@ function Eventos({ setVista, mesaActivaId, setMesaActivaId, clubActivo, setClubA
           )}
 
         </main>
+        {renderModalLogistica()}
       </div>
     );
   }
@@ -807,6 +1175,13 @@ function Eventos({ setVista, mesaActivaId, setMesaActivaId, clubActivo, setClubA
                     
                     {esAdmin && (
                       <>
+                        <button 
+                          onClick={(evt) => abrirLogistica(e, evt)} 
+                          className="p-3 bg-zinc-950 text-amber-500 rounded-xl hover:bg-amber-500/10 hover:text-amber-400 transition-colors border border-amber-500/30 group/btn"
+                          title="Ver logística, pedidos de DMs y exportar"
+                        >
+                          <span className="group-hover/btn:scale-110 inline-block transition-transform">📦</span>
+                        </button>
                         <button onClick={(evt) => abrirEdicion(e, evt)} className="p-3 bg-zinc-950 text-zinc-500 rounded-xl hover:text-white transition-colors border border-zinc-800">
                           ✏️
                         </button>
@@ -872,6 +1247,7 @@ function Eventos({ setVista, mesaActivaId, setMesaActivaId, clubActivo, setClubA
         </div>
       </section>
 
+      {renderModalLogistica()}
     </div>
   );
 }
