@@ -561,20 +561,72 @@ function Partida(props) {
 
   const expulsarJugador = async (e, jugadorId, jugadorNombre) => {
     e.stopPropagation();
+    const esYo = jugadorId === usuarioIdActual;
+
+    if (esYo) {
+      const result = await Swal.fire({
+        title: '¿Abandonar la Mesa?',
+        text: 'Liberarás tu cupo en esta aventura.',
+        icon: 'question',
+        showCancelButton: true,
+        background: '#09090b', color: '#fff', confirmButtonColor: '#ef4444', cancelButtonColor: '#27272a',
+        confirmButtonText: 'Sí, salir', cancelButtonText: 'Cancelar'
+      });
+      if (!result.isConfirmed) return;
+
+      try {
+        const res = await fetchProtegido(`/api/partidas/${props.id}/expulsar/${jugadorId}`, { method: 'DELETE' });
+        if (res.ok) {
+          Toast.fire({ icon: 'success', title: 'Has abandonado la mesa' });
+          cargarListaJugadores();
+        } else {
+          const data = await res.json();
+          Swal.fire({ title: 'Aviso', text: data.error || 'No se pudo salir de la mesa.', icon: 'warning', background: '#09090b', color: '#fff' });
+        }
+      } catch (err) {
+        if (err !== 'Sesión expirada') console.error(err);
+      }
+      return;
+    }
+
     const result = await Swal.fire({
       title: '¿Expulsar Jugador?',
-      text: `Estás a punto de quitar a ${jugadorNombre} de tu mesa. El lugar quedará libre.`,
+      html: `
+        <p class="text-zinc-300 text-sm mb-4">Estás a punto de quitar a <b class="text-white">${jugadorNombre}</b> de tu mesa. El lugar quedará libre.</p>
+        <label class="flex items-center gap-2 justify-center text-xs text-amber-400 font-bold cursor-pointer select-none bg-zinc-950 p-2.5 rounded-xl border border-zinc-800 hover:border-amber-500/40 transition-colors">
+          <input type="checkbox" id="check-bloquear-futuras" class="rounded accent-amber-500 w-4 h-4 cursor-pointer" />
+          <span>🚫 También restringir de mis futuras mesas</span>
+        </label>
+      `,
       icon: 'warning',
       showCancelButton: true,
       background: '#09090b', color: '#fff', confirmButtonColor: '#ef4444', cancelButtonColor: '#27272a',
-      confirmButtonText: 'Sí, expulsar', cancelButtonText: 'Cancelar'
+      confirmButtonText: 'Sí, expulsar', cancelButtonText: 'Cancelar',
+      preConfirm: () => {
+        return {
+          bloquear: document.getElementById('check-bloquear-futuras')?.checked || false
+        };
+      }
     });
 
     if (result.isConfirmed) {
       try {
         const res = await fetchProtegido(`/api/partidas/${props.id}/expulsar/${jugadorId}`, { method: 'DELETE' });
         if (res.ok) {
-          Toast.fire({ icon: 'success', title: 'Jugador expulsado' });
+          if (result.value?.bloquear) {
+            try {
+              await fetchProtegido('/api/usuarios/bloqueos', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ jugador_id: jugadorId, motivo: `Expulsado de la mesa "${props.titulo || 'Mesa'}"` })
+              });
+              Toast.fire({ icon: 'success', title: 'Jugador expulsado y restringido de tus mesas' });
+            } catch (errBloqueo) {
+              Toast.fire({ icon: 'success', title: 'Jugador expulsado' });
+            }
+          } else {
+            Toast.fire({ icon: 'success', title: 'Jugador expulsado' });
+          }
           cargarListaJugadores();
         } else {
           const data = await res.json();

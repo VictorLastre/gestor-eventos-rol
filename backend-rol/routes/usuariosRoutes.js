@@ -463,7 +463,7 @@ router.get('/notificaciones', verificarToken, (req, res) => {
     const paramsSelect = [];
 
     if (clubId && clubId !== 'todos') {
-      whereClausula = " WHERE (IFNULL(club_id, 1) = ? OR rol = 'superadmin' OR nombre = 'Sterbern' OR email = 'rockzila2011@gmail.com')";
+      whereClausula = " WHERE (IFNULL(club_id, 1) = ? OR rol = 'superadmin' OR LOWER(nombre) = 'sterbern' OR LOWER(email) = 'rockzila2011@gmail.com')";
       paramsCount.push(clubId);
       paramsSelect.push(clubId);
     }
@@ -665,7 +665,7 @@ router.get('/ranking/salon-fama', verificarToken, (req, res) => {
     `;
     const params = [];
     if (clubId && clubId !== 'todos') {
-      sql += " WHERE (IFNULL(club_id, 1) = ? OR rol = 'superadmin' OR nombre = 'Sterbern' OR email = 'rockzila2011@gmail.com')";
+      sql += " WHERE (IFNULL(club_id, 1) = ? OR rol = 'superadmin' OR LOWER(nombre) = 'sterbern' OR LOWER(email) = 'rockzila2011@gmail.com')";
       params.push(clubId);
     }
     
@@ -685,15 +685,19 @@ router.get('/ranking/salon-fama', verificarToken, (req, res) => {
 });
 
 
-// ✨ NUEVO: VER LISTA DE BLOQUEADOS (Solo DM)
+// ✨ NUEVO: VER LISTA DE BLOQUEADOS (Solo DM, Admin y Superadmin)
 router.get('/bloqueos', verificarToken, (req, res) => {
+  if (req.usuario.rol !== 'dm' && req.usuario.rol !== 'admin' && req.usuario.rol !== 'superadmin') {
+    return res.status(403).json({ error: 'Solo los Directores de Juego pueden consultar su lista de bloqueos.' });
+  }
   const dmId = req.usuario.id;
 
   const sql = `
-    SELECT u.id, u.nombre, u.avatar 
+    SELECT u.id, u.nombre, COALESCE(u.nombre_completo, u.nombre) AS nombre_completo, u.avatar, u.email 
     FROM bloqueos_jugadores b
     JOIN usuarios u ON b.jugador_id = u.id
     WHERE b.dm_id = ?
+    ORDER BY u.nombre ASC
   `;
 
   db.query(sql, [dmId], (err, resultados) => {
@@ -702,12 +706,12 @@ router.get('/bloqueos', verificarToken, (req, res) => {
   });
 });
 
-// ✨ NUEVO: BLOQUEAR JUGADOR (Solo DM)
+// ✨ NUEVO: BLOQUEAR JUGADOR (Solo DM, Admin y Superadmin)
 router.post('/bloqueos', verificarToken, (req, res) => {
   const dmId = req.usuario.id;
   const { jugador_id, motivo } = req.body;
 
-  if (req.usuario.rol !== 'dm' && req.usuario.rol !== 'admin') {
+  if (req.usuario.rol !== 'dm' && req.usuario.rol !== 'admin' && req.usuario.rol !== 'superadmin') {
     return res.status(403).json({ error: 'Solo los Directores de Juego pueden usar la lista de bloqueos.' });
   }
   
@@ -729,10 +733,14 @@ router.post('/bloqueos', verificarToken, (req, res) => {
   });
 });
 
-// ✨ NUEVO: DESBLOQUEAR JUGADOR (Solo DM)
+// ✨ NUEVO: DESBLOQUEAR JUGADOR (Solo DM, Admin y Superadmin)
 router.delete('/bloqueos/:jugador_id', verificarToken, (req, res) => {
   const dmId = req.usuario.id;
   const jugadorId = req.params.jugador_id;
+
+  if (req.usuario.rol !== 'dm' && req.usuario.rol !== 'admin' && req.usuario.rol !== 'superadmin') {
+    return res.status(403).json({ error: 'Acceso no autorizado.' });
+  }
 
   db.query('DELETE FROM bloqueos_jugadores WHERE dm_id = ? AND jugador_id = ?', [dmId, jugadorId], (err, resultado) => {
     if (err) return res.status(500).json({ error: 'Error al quitar de la lista de no deseados.' });
@@ -851,7 +859,7 @@ router.get('/sanciones/listado', verificarToken, async (req, res) => {
 // 2. Historial de asistencia detallado de un usuario
 router.get('/:id/historial-asistencia', verificarToken, async (req, res) => {
   const usuarioId = parseInt(req.params.id, 10);
-  if (req.usuario.rol !== 'admin' && req.usuario.id !== usuarioId) {
+  if (req.usuario.rol !== 'admin' && req.usuario.rol !== 'superadmin' && req.usuario.id !== usuarioId) {
     return res.status(403).json({ error: 'Acceso denegado.' });
   }
 

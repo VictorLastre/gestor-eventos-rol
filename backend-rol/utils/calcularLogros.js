@@ -98,9 +98,11 @@ const calcularLogrosUsuario = async (usuarioId, db, clubId = null) => {
     mesasJugadas.forEach(m => { if (m.sistema_nombre) sistemasUnicos.add(m.sistema_nombre.trim().toLowerCase()); });
     mesasDirigidas.forEach(m => { if (m.sistema_nombre) sistemasUnicos.add(m.sistema_nombre.trim().toLowerCase()); });
 
-    const fundadores = ['mati', 'martín', 'martin', 'delo', 'keith', 'guille', 'diny', 'sterbern'];
-    const esFundador = fundadores.includes((usuario.nombre || '').toLowerCase().trim());
-    const esAdmin = usuario.rol === 'admin';
+    const fundadores = ['mati', 'martín', 'martin', 'delo', 'keith', 'guille', 'diny', 'sterbern', 'victor', 'víctor'];
+    const nombreNormalizado = (usuario.nombre || '').toLowerCase().trim();
+    const emailNormalizado = (usuario.email || '').toLowerCase().trim();
+    const esFundador = fundadores.includes(nombreNormalizado) || emailNormalizado === 'rockzila2011@gmail.com';
+    const esAdmin = usuario.rol === 'admin' || usuario.rol === 'superadmin';
 
     const cantJugadas = mesasJugadas.length;
     const cantDirigidas = mesasDirigidas.length;

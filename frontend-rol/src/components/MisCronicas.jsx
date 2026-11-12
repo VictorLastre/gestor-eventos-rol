@@ -19,6 +19,9 @@ function MisCronicas({ alActualizarUsuario, clubActivo }) {
   
   const [peticionEnviada, setPeticionEnviada] = useState(usuarioGuardado?.solicitudDmPendiente || false);
   const esJugadorBase = usuarioGuardado?.rol === 'jugador';
+  const esDM = usuarioGuardado?.rol === 'dm' || usuarioGuardado?.rol === 'admin' || usuarioGuardado?.rol === 'superadmin';
+  const [bloqueados, setBloqueados] = useState([]);
+  const [cargandoBloqueados, setCargandoBloqueados] = useState(false);
   
   // ✨ Estado para mostrar el modal de Solicitud de DM
   const [mostrarSolicitudDM, setMostrarSolicitudDM] = useState(false);
@@ -50,6 +53,68 @@ function MisCronicas({ alActualizarUsuario, clubActivo }) {
     } catch (err) {
       if (err === 'Sesión expirada') return;
       console.error("Error cargando crónicas:", err);
+    }
+  };
+
+  const cargarBloqueos = async () => {
+    if (!esDM) return;
+    try {
+      setCargandoBloqueados(true);
+      const res = await fetchProtegido('/api/usuarios/bloqueos');
+      if (res.ok) {
+        const datos = await res.json();
+        setBloqueados(Array.isArray(datos) ? datos : []);
+      }
+    } catch (err) {
+      if (err !== 'Sesión expirada') console.error("Error cargando bloqueos:", err);
+    } finally {
+      setCargandoBloqueados(false);
+    }
+  };
+
+  const desbloquearAventurero = async (jugadorId, jugadorNombre) => {
+    const result = await Swal.fire({
+      title: '¿Desbloquear Aventurero?',
+      text: `¿Permitir que ${jugadorNombre} vuelva a postularse e inscribirse en tus mesas?`,
+      icon: 'question',
+      showCancelButton: true,
+      confirmButtonText: 'Sí, desbloquear',
+      cancelButtonText: 'Cancelar',
+      background: '#09090b',
+      color: '#fff',
+      confirmButtonColor: '#10b981',
+      cancelButtonColor: '#27272a',
+      customClass: { popup: 'border border-emerald-500/30 rounded-[2rem]' }
+    });
+
+    if (!result.isConfirmed) return;
+
+    try {
+      const res = await fetchProtegido(`/api/usuarios/bloqueos/${jugadorId}`, { method: 'DELETE' });
+      if (res.ok) {
+        setBloqueados(prev => prev.filter(b => b.id !== jugadorId));
+        Swal.fire({
+          title: 'Aventurero Desbloqueado',
+          text: `${jugadorNombre} ahora puede volver a unirse a tus mesas convocadas.`,
+          icon: 'success',
+          background: '#09090b',
+          color: '#fff',
+          confirmButtonColor: '#10b981',
+          customClass: { popup: 'border border-emerald-500/30 rounded-[2rem]' }
+        });
+      } else {
+        const errData = await res.json();
+        Swal.fire({
+          title: 'Error',
+          text: errData.error || 'No se pudo desbloquear al aventurero.',
+          icon: 'error',
+          background: '#09090b',
+          color: '#fff',
+          customClass: { popup: 'border border-red-500/30 rounded-[2rem]' }
+        });
+      }
+    } catch (err) {
+      if (err !== 'Sesión expirada') console.error(err);
     }
   };
 
@@ -130,6 +195,9 @@ function MisCronicas({ alActualizarUsuario, clubActivo }) {
 
   useEffect(() => {
     cargarCronicas();
+    if (esDM) {
+      cargarBloqueos();
+    }
 
     const socket = io('/', { path: '/api/socket.io' });
 
@@ -143,6 +211,7 @@ function MisCronicas({ alActualizarUsuario, clubActivo }) {
 
     socket.on('actualizacion-usuarios', () => {
       actualizarPerfilDesdeDB();
+      if (esDM) cargarBloqueos();
     });
 
     return () => {
@@ -662,6 +731,77 @@ function MisCronicas({ alActualizarUsuario, clubActivo }) {
           </div>
         </div>
       </div>
+
+      {/* 🛡️ PANEL DE AVENTUREROS RESTRINGIDOS DE MIS MESAS (Solo visible si es DM, Admin o Superadmin) */}
+      {esDM && (
+        <div className="mt-12 bg-zinc-950/60 border border-zinc-800/80 rounded-[2.5rem] p-6 sm:p-8 backdrop-blur-sm relative overflow-hidden shadow-2xl">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6 pb-4 border-b border-zinc-800/60">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-2xl bg-red-500/10 border border-red-500/20 flex items-center justify-center text-lg text-red-400">
+                🛡️
+              </div>
+              <div>
+                <h3 className="text-xl font-black text-white uppercase italic tracking-tight flex items-center gap-2">
+                  Aventureros Restringidos de mis Mesas
+                  <span className="text-xs not-italic bg-red-500/20 text-red-300 border border-red-500/30 px-2.5 py-0.5 rounded-full font-mono">
+                    {bloqueados.length}
+                  </span>
+                </h3>
+                <p className="text-[10px] text-zinc-400 font-bold uppercase tracking-widest">
+                  Jugadores a quienes has restringido el acceso a tus aventuras convocadas
+                </p>
+              </div>
+            </div>
+          </div>
+
+          {cargandoBloqueados ? (
+            <div className="py-8 text-center text-zinc-500 text-xs font-bold uppercase tracking-widest animate-pulse">
+              Consultando pergaminos de restricción...
+            </div>
+          ) : bloqueados.length === 0 ? (
+            <div className="py-8 text-center px-4 border border-dashed border-zinc-800/60 rounded-2xl bg-zinc-900/20">
+              <p className="text-zinc-500 text-xs italic font-bold">
+                ✨ No tienes aventureros restringidos. Cualquier aventurero del gremio puede solicitar unirse a tus mesas.
+              </p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+              {bloqueados.map(jugador => (
+                <div 
+                  key={jugador.id}
+                  className="flex items-center justify-between gap-3 p-3.5 bg-zinc-900/60 hover:bg-zinc-900 border border-zinc-800/80 hover:border-red-500/30 rounded-2xl transition-all group"
+                >
+                  <div className="flex items-center gap-3 min-w-0">
+                    <div className="w-10 h-10 rounded-full border border-zinc-700/60 bg-zinc-950 flex items-center justify-center overflow-hidden shrink-0">
+                      <AvatarUsuario nombre={jugador.nombre} avatar={jugador.avatar} tamaño={40} />
+                    </div>
+                    <div className="min-w-0">
+                      <p className="text-sm font-black text-white uppercase italic truncate group-hover:text-amber-400 transition-colors">
+                        {jugador.nombre}
+                      </p>
+                      {jugador.nombre_completo && jugador.nombre_completo !== jugador.nombre && (
+                        <p className="text-[10px] text-zinc-400 font-bold truncate">
+                          {jugador.nombre_completo}
+                        </p>
+                      )}
+                      <span className="text-[9px] text-red-400/80 font-black uppercase tracking-wider block">
+                        ⊘ Bloqueado de tus mesas
+                      </span>
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => desbloquearAventurero(jugador.id, jugador.nombre)}
+                    className="px-3 py-1.5 bg-zinc-800 hover:bg-emerald-600 text-zinc-300 hover:text-white rounded-xl text-[10px] font-black uppercase tracking-widest transition-all shrink-0 cursor-pointer border border-zinc-700 hover:border-emerald-500 shadow-sm"
+                    title="Desbloquear aventurero"
+                  >
+                    Desbloquear
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
 
       {/* ✨ Renderizamos el modal si se solicita el rango de DM */}
       {partidaEvaluar && ( <EvaluarMesaModal partida={partidaEvaluar} cerrar={() => setPartidaEvaluar(null)} usuarioActualId={usuarioGuardado.id} /> )} 

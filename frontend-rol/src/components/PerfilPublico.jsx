@@ -55,7 +55,7 @@ function PerfilPublico({ usuarioId, volver, clubActivo }) {
   );
 
   const rango = (perfil.rol === 'dm' || (perfil.rol === 'admin' || perfil.rol === 'superadmin')) ? obtenerRangoDM(perfil.dirigiendo ? perfil.dirigiendo.filter(p => p.evento_estado === 'Finalizado').length : 0) : null;
-  const fundadores = ['mati', 'martín', 'martin', 'delo', 'keith', 'guille', 'diny', 'sterbern'];
+  const fundadores = ['mati', 'martín', 'martin', 'delo', 'keith', 'guille', 'diny', 'sterbern', 'victor', 'víctor'];
 
   const parseJwt = (token) => { try { return JSON.parse(atob(token.split('.')[1])); } catch (e) { return null; } };
   const token = localStorage.getItem('token');
@@ -91,6 +91,16 @@ function PerfilPublico({ usuarioId, volver, clubActivo }) {
             color: '#fff',
             confirmButtonColor: '#10b981'
           });
+        } else {
+          const errData = await res.json();
+          Swal.fire({
+            title: 'Error',
+            text: errData.error || 'No se pudo desbloquear al aventurero.',
+            icon: 'error',
+            background: '#09090b',
+            color: '#fff',
+            confirmButtonColor: '#ef4444'
+          });
         }
       } else {
         const { value: nota, isConfirmed } = await Swal.fire({
@@ -125,13 +135,23 @@ function PerfilPublico({ usuarioId, volver, clubActivo }) {
             color: '#fff',
             confirmButtonColor: '#ef4444'
           });
+        } else {
+          const errData = await res.json();
+          Swal.fire({
+            title: 'Aviso',
+            text: errData.error || 'No se pudo restringir al aventurero.',
+            icon: 'warning',
+            background: '#09090b',
+            color: '#fff',
+            confirmButtonColor: '#f59e0b'
+          });
         }
       }
     } catch (err) {
-      console.error(err);
+      if (err !== 'Sesión expirada') console.error(err);
     }
   };
-  const esFundador = perfil.nombre ? fundadores.includes(perfil.nombre.toLowerCase()) : false;
+  const esFundador = perfil.nombre ? (fundadores.includes(perfil.nombre.toLowerCase().trim()) || (perfil.email && perfil.email.toLowerCase().includes('rockzila2011@gmail.com'))) : false;
 
   return (
     <div className="max-w-4xl mx-auto p-4 md:p-8 animate-in fade-in zoom-in-95 duration-500">

@@ -320,14 +320,21 @@ function GestionUsuarios({ setVista, clubActivo }) {
   const usuariosProcesados = todosLosUsuarios
     .filter(user => {
       const coincideRol = filtroRol === 'todos' || user.rol === filtroRol;
-      const busquedaMinus = busqueda.toLowerCase();
+      const busquedaMinus = busqueda.trim().toLowerCase();
+      if (!busquedaMinus) return coincideRol;
+      
+      const nombre = (user.nombre || '').toLowerCase();
+      const nombreCompleto = (user.nombre_completo || '').toLowerCase();
+      const email = (user.email || '').toLowerCase();
+
       const coincideBusqueda = 
-        user.nombre.toLowerCase().includes(busquedaMinus) || 
-        (user.nombre_completo && user.nombre_completo.toLowerCase().includes(busquedaMinus));
+        nombre.includes(busquedaMinus) || 
+        nombreCompleto.includes(busquedaMinus) ||
+        email.includes(busquedaMinus);
       
       return coincideRol && coincideBusqueda;
     })
-    .sort((a, b) => jerarquiaRoles[a.rol] - jerarquiaRoles[b.rol]);
+    .sort((a, b) => (jerarquiaRoles[a.rol] ?? 99) - (jerarquiaRoles[b.rol] ?? 99));
 
   const totalPaginas = Math.ceil(usuariosProcesados.length / usuariosPorPagina) || 1;
   const startIndex = (paginaCenso - 1) * usuariosPorPagina;

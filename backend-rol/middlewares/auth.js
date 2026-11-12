@@ -15,7 +15,7 @@ const verificarToken = (req, res, next) => {
 
   // 3. Si NO es una ruta pública, aplicamos la validación normal del Gremio
   const token = req.headers['authorization'];
-  if (!token) return res.status(403).json({ error: '¡Alto ahí! Necesitas estar logueado.' });
+  if (!token) return res.status(401).json({ error: '¡Alto ahí! Necesitas estar logueado.' });
 
   jwt.verify(token, JWT_SECRET, (err, decoded) => {
     if (err) return res.status(401).json({ error: 'Tu Pase VIP es inválido o ha caducado.' });
