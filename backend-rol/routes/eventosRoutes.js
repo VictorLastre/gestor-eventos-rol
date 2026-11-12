@@ -188,7 +188,7 @@ router.post('/:id/partidas', verificarToken, (req, res) => {
   const edadClasif = clasificacion_edad || (para_infancias ? 'menores' : 'todas');
 
   // ✨ VALIDACIÓN DEL TIPO DE MESA Y ROL ✨
-  const esOrganizadorValido = rolUsuario === 'dm' || rolUsuario === 'admin';
+  const esOrganizadorValido = rolUsuario === 'dm' || rolUsuario === 'admin' || rolUsuario === 'superadmin';
   const esMesaJuegoValida = (rolUsuario === 'jugador' || rolUsuario === 'aventurero') && etiqueta === 'Juegos de Mesa';
 
   if (!esOrganizadorValido && !esMesaJuegoValida) {
@@ -283,7 +283,7 @@ router.post('/:id/partidas', verificarToken, (req, res) => {
           if (err) console.error("Error al contar las mesas del DM:", err);
           
           if (countResult && countResult[0].total_mesas === 1) {
-            db.query("SELECT id FROM usuarios WHERE rol = 'admin'", (err, admins) => {
+            db.query("SELECT id FROM usuarios WHERE rol = 'admin' OR rol = 'superadmin'", (err, admins) => {
               if (err || admins.length === 0) return; 
               
               const mensajeNotif = `¡El Escriba announces que el DM ${req.usuario.nombre} ha convocado su primera mesa de ROL ("${titulo}")! Recuerda forjar su Certificado del Gremio en el Censo.`;

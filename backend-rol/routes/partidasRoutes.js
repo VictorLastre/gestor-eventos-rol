@@ -105,7 +105,7 @@ router.post('/', verificarToken, (req, res) => {
   const rolUsuario = req.usuario.rol;
   const { titulo, descripcion, requisitos, sistema, sistema_id, cupo, turno, etiqueta, apta_novatos, para_infancias, materiales_pedidos, evento_id, continuacion_de_id } = req.body;
 
-  const esOrganizadorValido = rolUsuario === 'dm' || rolUsuario === 'admin';
+  const esOrganizadorValido = rolUsuario === 'dm' || rolUsuario === 'admin' || rolUsuario === 'superadmin';
   const esMesaJuegoValida = (rolUsuario === 'jugador' || rolUsuario === 'aventurero') && etiqueta === 'Juegos de Mesa';
 
   if (!esOrganizadorValido && !esMesaJuegoValida) {
@@ -191,7 +191,7 @@ router.post('/', verificarToken, (req, res) => {
           if (err) console.error("Error al contar las mesas del DM:", err);
           
           if (countResult && countResult[0].total_mesas === 1) {
-            db.query("SELECT id FROM usuarios WHERE rol = 'admin'", (err, admins) => {
+            db.query("SELECT id FROM usuarios WHERE rol = 'admin' OR rol = 'superadmin'", (err, admins) => {
               if (err || admins.length === 0) return; 
               
               const mensajeNotif = `¡El Escriba announces que el DM ${req.usuario.nombre} ha convocado su primera mesa de ROL ("${titulo}")! Recuerda forjar su Certificado del Gremio en el Censo.`;
@@ -506,7 +506,7 @@ router.put('/:id/asistencia', verificarToken, async (req, res) => {
     }
 
     const { dungeon_master_id, evento_id, fecha, hora_inicio, hora_fin, evento_estado } = partidas[0];
-    if (dungeon_master_id !== solicitanteId && solicitanteRol !== 'admin') {
+    if (dungeon_master_id !== solicitanteId && solicitanteRol !== 'admin' && solicitanteRol !== 'superadmin') {
       return res.status(403).json({ error: 'Solo el Director de Juego de esta mesa o un Administrador pueden tomar asistencia.' });
     }
 
@@ -652,7 +652,7 @@ router.put('/:id', verificarToken, (req, res) => {
     const { titulo, descripcion, requisitos, sistema, sistema_id, cupo, turno, etiqueta, apta_novatos, para_infancias, clasificacion_edad, materiales_pedidos } = req.body;
     const edadClasif = clasificacion_edad || (para_infancias ? 'menores' : 'todas');
 
-    const esOrganizadorValido = rolUsuario === 'dm' || rolUsuario === 'admin';
+    const esOrganizadorValido = rolUsuario === 'dm' || rolUsuario === 'admin' || rolUsuario === 'superadmin';
     const esJugador = rolUsuario === 'jugador' || rolUsuario === 'aventurero';
 
     if (!esOrganizadorValido && !(esJugador && etiqueta === 'Juegos de Mesa')) {
@@ -697,7 +697,7 @@ router.post('/:id/notificar-jugadores', verificarToken, (req, res) => {
 
     const { dungeon_master_id, titulo, etiqueta } = resultados[0];
 
-    if (dungeon_master_id !== usuarioId) {
+    if (dungeon_master_id !== usuarioId && req.usuario.rol !== 'admin' && req.usuario.rol !== 'superadmin') {
       return res.status(403).json({ error: 'No tienes autorización para enviar mensajes a esta mesa.' });
     }
 
