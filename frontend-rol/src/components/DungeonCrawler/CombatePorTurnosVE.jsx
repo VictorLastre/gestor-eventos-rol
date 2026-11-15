@@ -8,14 +8,17 @@ import {
   calcularEstadisticasPersonaje,
   cargarPersonajeLocal
 } from './ViejaEscuelaEngine';
+import { escalarMonstruoSegunNivel } from './DungeonGenerator';
 
 export default function CombatePorTurnosVE({
   enemigo,
+  enemigos,
   personaje,
+  party = [],
   onFinalizarCombate,
   onHuir
 }) {
-  // Garantizar objeto de personaje válido con Vieja Escuela
+  // Garantizar objeto de personaje valido con Vieja Escuela
   const heroeSeguro = personaje || cargarPersonajeLocal() || {
     nombre: 'Aventurero',
     clase: 'guerrero',
@@ -37,39 +40,73 @@ export default function CombatePorTurnosVE({
   };
 
   const claseHeroe = (heroeSeguro.clase || 'guerrero').toLowerCase();
+  const nivelPromedioGrupo = Math.max(
+    1,
+    party.length > 0
+      ? Math.round(party.reduce((acc, p) => acc + (p.nivel || 1), 0) / party.length)
+      : (heroeSeguro.nivel || 1)
+  );
+
+  // Normalizar lista de enemigos en la sala (escalados segun nivel del grupo)
+  const listaInicialEnemigos = (() => {
+    let crudos = [];
+    if (Array.isArray(enemigos) && enemigos.length > 0) {
+      crudos = enemigos;
+    } else if (enemigo) {
+      crudos = Array.isArray(enemigo) ? enemigo : [enemigo];
+    } else {
+      crudos = [{ nombre: 'Esqueleto Guardián', hp: 8, maxHp: 8, defensa: 11, atqBono: 1, dano: 3 }];
+    }
+
+    return crudos.map((m, idx) => {
+      const escalado = escalarMonstruoSegunNivel(m, nivelPromedioGrupo);
+      return {
+        ...escalado,
+        idCombate: m.id || `enemigo_${idx}_${Date.now()}`,
+        nombreUnico: crudos.length > 1 ? `${escalado.nombre} #${idx + 1}` : escalado.nombre,
+        pvMaximo: escalado.maxHp || escalado.hp || 8,
+        pvActual: escalado.hp || escalado.maxHp || 8,
+        derrotado: false
+      };
+    });
+  })();
+
+  const [listaEnemigos, setListaEnemigos] = useState(listaInicialEnemigos);
+  const [enemigoObjetivoId, setEnemigoObjetivoId] = useState(listaInicialEnemigos[0]?.idCombate);
 
   // Estados del combate
-  const [fase, setFase] = useState('INICIATIVA'); // 'INICIATIVA', 'TURNO_JUGADOR', 'TURNO_ENEMIGO', 'VICTORIA', 'DERROTA'
+  const [fase, setFase] = useState('INICIATIVA'); // 'INICIATIVA', 'TURNO_JUGADOR', 'TURNO_ENEMIGO', 'TURNO_COMPANERO', 'VICTORIA', 'DERROTA'
   const [pvHeroe, setPvHeroe] = useState(heroeSeguro.pvActual || statsHeroe.pv || 16);
   const [maxPvHeroe] = useState(statsHeroe.pv || 16);
   const [podHeroe, setPodHeroe] = useState(heroeSeguro.podActual !== undefined ? heroeSeguro.podActual : (statsHeroe.pod || 0));
   const [maxPodHeroe] = useState(statsHeroe.pod || (claseHeroe === 'hechicero' || claseHeroe === 'clerigo' ? 5 : 0));
   const [pociones, setPociones] = useState(2);
 
-  const [pvEnemigo, setPvEnemigo] = useState(enemigo.hp || enemigo.pv_max || 12);
-  const [maxPvEnemigo] = useState(enemigo.maxHp || enemigo.pv_max || enemigo.hp || 12);
-
-  // Modificadores temporales y estado táctico
+  // Modificadores temporales y estado tactico
   const [defensaHeroeTemporal, setDefensaHeroeTemporal] = useState(0);
   const [bombaHumoActiva, setBombaHumoActiva] = useState(false);
-  const [penalizacionEnemigo, setPenalizacionEnemigo] = useState(0);
+  const [penalizacionesEnemigos, setPenalizacionesEnemigos] = useState({});
   const [segundoAlientoUsado, setSegundoAlientoUsado] = useState(false);
   const [bombaHumoUsada, setBombaHumoUsada] = useState(false);
   const [turnoNumero, setTurnoNumero] = useState(1);
 
-  // Sistema de retroalimentación visual y textos flotantes
+  // Sistema de Iniciativa Grupal (heroes + monstruos)
+  const [ordenIniciativa, setOrdenIniciativa] = useState([]);
+  const [indiceTurnoActual, setIndiceTurnoActual] = useState(0);
+
+  // Sistema de retroalimentacion visual y textos flotantes
   const [screenShake, setScreenShake] = useState(false);
   const [animImpactoHeroe, setAnimImpactoHeroe] = useState(false);
-  const [animImpactoEnemigo, setAnimImpactoEnemigo] = useState(false);
   const [animBloqueoHeroe, setAnimBloqueoHeroe] = useState(false);
-  const [animBloqueoEnemigo, setAnimBloqueoEnemigo] = useState(false);
+  const [impactosEnemigos, setImpactosEnemigos] = useState({});
+  const [bloqueosEnemigos, setBloqueosEnemigos] = useState({});
   const [floatingTexts, setFloatingTexts] = useState([]);
   const [ultimaAccion, setUltimaAccion] = useState(null);
   const [ejecutandoAccion, setEjecutandoAccion] = useState(false);
 
-  // Historial / Bitácora de combate
+  // Historial / Bitacora de combate
   const [log, setLog] = useState([
-    `⚔️ ¡Un ${enemigo.nombre} bloquea el paso! Prepara tu arma y tira iniciativa.`
+    `⚔️ ¡Encuentro en la sala! ${listaInicialEnemigos.length} criatura(s) bloquean el paso. Prepara tu estrategia.`
   ]);
   const logRef = useRef(null);
 
@@ -84,12 +121,12 @@ export default function CombatePorTurnosVE({
   };
 
   // Disparar texto flotante (Floating Combat Text)
-  const emitirTextoFlotante = (target, texto, tipo = 'dano') => {
+  const emitirTextoFlotante = (targetId, texto, tipo = 'dano') => {
     const id = Date.now() + Math.random();
-    setFloatingTexts(prev => [...prev, { id, target, texto, tipo }]);
+    setFloatingTexts(prev => [...prev, { id, targetId, texto, tipo }]);
     setTimeout(() => {
       setFloatingTexts(prev => prev.filter(item => item.id !== id));
-    }, 1100);
+    }, 1150);
   };
 
   const vibrarPantalla = () => {
@@ -97,71 +134,171 @@ export default function CombatePorTurnosVE({
     setTimeout(() => setScreenShake(false), 280);
   };
 
-  // Sprites
+  // Sprite del heroe
   const spriteHeroe = (() => {
     const gen = heroeSeguro.genero || 'm';
     const base = claseHeroe === 'guerrero' ? 'knight' : (claseHeroe === 'hechicero' ? 'wizzard' : 'elf');
     return `/assets/crawler/heroes/${base}_${gen}_idle_anim_f0.png`;
   })();
 
-  const spriteEnemigo = (() => {
-    const base = enemigo.tipo || enemigo.sprite_base || 'skelet';
-    return `/assets/crawler/enemies/${base}_idle_anim_f0.png`;
-  })();
-
-  // Modificadores de atributo del héroe
+  // Modificadores de atributo del heroe
   const modFue = getModificador(heroeSeguro.atributos?.fue || 10);
   const modDes = getModificador(heroeSeguro.atributos?.des || 10);
   const modInt = getModificador(heroeSeguro.atributos?.int || 10);
   const modSab = getModificador(heroeSeguro.atributos?.sab || 10);
   const bonoAtqClase = statsHeroe.atqBono || 0;
-  const caEnemigo = enemigo.defensa || 11;
   const caHeroeTotal = (statsHeroe.def || 12) + defensaHeroeTemporal;
 
+  // Obtener enemigo objetivo actual
+  const enemigoObjetivo = listaEnemigos.find(e => e.idCombate === enemigoObjetivoId && !e.derrotado)
+    || listaEnemigos.find(e => !e.derrotado)
+    || listaEnemigos[0];
+
+  // Actualizar objetivo si el actual murio
+  useEffect(() => {
+    if (enemigoObjetivo && enemigoObjetivo.idCombate !== enemigoObjetivoId) {
+      setEnemigoObjetivoId(enemigoObjetivo.idCombate);
+    }
+  }, [listaEnemigos, enemigoObjetivoId]);
+
   // -------------------------------------------------------------------
-  // 1. FASE DE INICIATIVA SILENCIOSA (1d20 + DES vs Monstruo)
+  // 1. FASE DE INICIATIVA GRUPAL (Todos los heroes y monstruos tiran d20)
   // -------------------------------------------------------------------
   const ejecutarIniciativa = () => {
     if (ejecutandoAccion) return;
     setEjecutandoAccion(true);
     sound.playSlash();
 
+    const turnos = [];
+
+    // Tirada del heroe principal
     const d20Heroe = Math.floor(Math.random() * 20) + 1;
     const totalHeroe = d20Heroe + modDes;
-    const bonoEnemigo = enemigo.atqBono !== undefined ? enemigo.atqBono : (enemigo.nivel || 1);
-    const d20Enemigo = Math.floor(Math.random() * 20) + 1;
-    const totalEnemigo = d20Enemigo + bonoEnemigo;
-
-    setUltimaAccion({
-      tipo: 'iniciativa',
-      heroe: { d20: d20Heroe, mod: modDes, total: totalHeroe },
-      enemigo: { d20: d20Enemigo, mod: bonoEnemigo, total: totalEnemigo }
+    turnos.push({
+      id: 'heroe_principal',
+      nombre: heroeSeguro.nombre,
+      esHeroe: true,
+      esJugadorPrincipal: true,
+      d20: d20Heroe,
+      mod: modDes,
+      iniciativa: totalHeroe
     });
 
-    if (totalHeroe >= totalEnemigo) {
-      agregarLog(`🎲 Iniciativa: Sacas ${d20Heroe} (${formatearMod(modDes)} DES = ${totalHeroe}) vs ${totalEnemigo} del ${enemigo.nombre}. ¡Tomas la iniciativa!`);
-      emitirTextoFlotante('heroe', '¡PRIMERO!', 'buff');
+    // Tirada de companeros en la party (si hay)
+    party.forEach((comp, idx) => {
+      if (comp.id !== heroeSeguro.id && comp.usuarioId !== heroeSeguro.usuarioId) {
+        const d20C = Math.floor(Math.random() * 20) + 1;
+        const modC = comp.clase === 'bribon' ? 2 : 1;
+        turnos.push({
+          id: `companero_${idx}`,
+          nombre: comp.nombre,
+          esHeroe: true,
+          esCompanero: true,
+          companeroData: comp,
+          d20: d20C,
+          mod: modC,
+          iniciativa: d20C + modC
+        });
+      }
+    });
+
+    // Tiradas de cada monstruo en la sala
+    listaEnemigos.forEach((enem) => {
+      const d20M = Math.floor(Math.random() * 20) + 1;
+      const bonoM = enem.atqBono !== undefined ? enem.atqBono : (enem.nivel || 1);
+      turnos.push({
+        id: enem.idCombate,
+        nombre: enem.nombreUnico || enem.nombre,
+        esHeroe: false,
+        enemigoRef: enem,
+        d20: d20M,
+        mod: bonoM,
+        iniciativa: d20M + bonoM
+      });
+    });
+
+    // Ordenar de mayor a menor iniciativa
+    turnos.sort((a, b) => b.iniciativa - a.iniciativa);
+    setOrdenIniciativa(turnos);
+    setIndiceTurnoActual(0);
+
+    const primero = turnos[0];
+    agregarLog(`🎲 ¡Tiradas de Iniciativa! ${turnos.map(t => `${t.nombre}: ${t.iniciativa}`).join(' | ')}.`);
+
+    if (primero.esJugadorPrincipal) {
+      emitirTextoFlotante('heroe_principal', '¡PRIMERO!', 'buff');
+      agregarLog(`🟢 ¡Tienes la iniciativa máxima (${primero.iniciativa})! Es tu turno.`);
       setFase('TURNO_JUGADOR');
       setEjecutandoAccion(false);
+    } else if (primero.esHeroe) {
+      agregarLog(`🛡️ Tu aliado ${primero.nombre} toma la delantera (${primero.iniciativa}).`);
+      setFase('TURNO_COMPANERO');
+      setTimeout(() => procesarTurnoCompanero(primero, turnos, 0), 650);
     } else {
-      agregarLog(`🎲 Iniciativa: El ${enemigo.nombre} reacciona con ${totalEnemigo} vs tus ${totalHeroe}. ¡El enemigo ataca primero!`);
-      emitirTextoFlotante('enemigo', '¡PRIMERO!', 'buff');
+      emitirTextoFlotante(primero.id, '¡PRIMERO!', 'buff');
+      agregarLog(`⚠️ ¡${primero.nombre} reacciona con rapidez salvaje (${primero.iniciativa}) y asalta primero!`);
       setFase('TURNO_ENEMIGO');
-      setTimeout(() => {
-        ejecutarTurnoEnemigo();
-        setEjecutandoAccion(false);
-      }, 700);
+      setTimeout(() => procesarTurnoEnemigo(primero, turnos, 0), 650);
     }
   };
 
   // -------------------------------------------------------------------
-  // 2. RESOLUCIÓN UNIVERSAL DE ATAQUES DEL JUGADOR (POR DETRÁS)
+  // AVANZAR AL SIGUIENTE COMBATIENTE EN EL ORDEN DE INICIATIVA
+  // -------------------------------------------------------------------
+  const pasarSiguienteTurno = (turnosActuales, indiceActual) => {
+    // Verificar si todos los monstruos murieron
+    const quedanEnemigosVivos = listaEnemigos.some(e => !e.derrotado);
+    if (!quedanEnemigosVivos) {
+      sound.playLevelUp();
+      agregarLog(`🏆 ¡Todos los monstruos de la sala han sido derrotados!`);
+      setFase('VICTORIA');
+      setEjecutandoAccion(false);
+      return;
+    }
+
+    // Verificar si el heroe murio
+    if (pvHeroe <= 0) {
+      setFase('DERROTA');
+      setEjecutandoAccion(false);
+      return;
+    }
+
+    const proxIndice = (indiceActual + 1) % turnosActuales.length;
+    if (proxIndice === 0) {
+      setTurnoNumero(prev => prev + 1);
+    }
+    setIndiceTurnoActual(proxIndice);
+
+    const siguiente = turnosActuales[proxIndice];
+
+    // Si el siguiente es un enemigo ya muerto, saltarlo
+    if (!siguiente.esHeroe) {
+      const monVivo = listaEnemigos.find(e => e.idCombate === siguiente.id && !e.derrotado);
+      if (!monVivo) {
+        pasarSiguienteTurno(turnosActuales, proxIndice);
+        return;
+      }
+    }
+
+    if (siguiente.esJugadorPrincipal) {
+      setFase('TURNO_JUGADOR');
+      setEjecutandoAccion(false);
+    } else if (siguiente.esHeroe) {
+      setFase('TURNO_COMPANERO');
+      setTimeout(() => procesarTurnoCompanero(siguiente, turnosActuales, proxIndice), 600);
+    } else {
+      setFase('TURNO_ENEMIGO');
+      setTimeout(() => procesarTurnoEnemigo(siguiente, turnosActuales, proxIndice), 600);
+    }
+  };
+
+  // -------------------------------------------------------------------
+  // 2. ACCIONES DEL JUGADOR PRINCIPAL
   // -------------------------------------------------------------------
   const ejecutarAccionJugador = (config) => {
-    if (fase !== 'TURNO_JUGADOR' || ejecutandoAccion) return;
+    if (fase !== 'TURNO_JUGADOR' || ejecutandoAccion || !enemigoObjetivo) return;
     setEjecutandoAccion(true);
 
-    // Verificar si cuesta POD
     if (config.costePod && podHeroe < config.costePod) {
       agregarLog(`⚠️ No tienes suficientes Puntos de Poder (${podHeroe}/${config.costePod} POD).`);
       setEjecutandoAccion(false);
@@ -172,54 +309,38 @@ export default function CombatePorTurnosVE({
       setPodHeroe(prev => Math.max(0, prev - config.costePod));
     }
 
-    // ACCIÓN: MISIL MÁGICO (Auto-acierto garantizado ineludible)
+    // ACCION: MISIL MAGICO (Auto-acierto certero)
     if (config.tipo === 'misil_magico') {
       sound.playMagic();
       vibrarPantalla();
-      setAnimImpactoEnemigo(true);
-      setTimeout(() => setAnimImpactoEnemigo(false), 300);
 
-      // 3 dardos de 1d4 + 1
-      const dardo1 = Math.floor(Math.random() * 4) + 2;
-      const dardo2 = Math.floor(Math.random() * 4) + 2;
-      const dardo3 = Math.floor(Math.random() * 4) + 2;
-      const danoTotal = dardo1 + dardo2 + dardo3;
+      const d1 = Math.floor(Math.random() * 4) + 2;
+      const d2 = Math.floor(Math.random() * 4) + 2;
+      const d3 = Math.floor(Math.random() * 4) + 2;
+      const danoTotal = d1 + d2 + d3;
 
-      const nuevoPvEnemigo = Math.max(0, pvEnemigo - danoTotal);
-      setPvEnemigo(nuevoPvEnemigo);
-
-      emitirTextoFlotante('enemigo', `-${danoTotal} ✨`, 'magia');
-      agregarLog(`✨ ¡Misil Mágico! 3 dardos de fuerza infalibles golpean al ${enemigo.nombre} infligiendo ${danoTotal} de daño arcano puro (Ignora CA).`);
+      aplicarDanoAEnemigo(enemigoObjetivo.idCombate, danoTotal, true, 'Misil Mágico', 'magia');
 
       setUltimaAccion({
         nombre: 'Misil Mágico',
         impacto: true,
         autoAcierto: true,
-        dano: danoTotal
+        dano: danoTotal,
+        objetivo: enemigoObjetivo.nombreUnico
       });
 
-      if (nuevoPvEnemigo <= 0) {
-        sound.playLevelUp();
-        agregarLog(`🏆 ¡El ${enemigo.nombre} cae pulverizado ante tu magia!`);
-        setFase('VICTORIA');
-        setEjecutandoAccion(false);
-        return;
-      }
-
-      setFase('TURNO_ENEMIGO');
       setTimeout(() => {
-        ejecutarTurnoEnemigo();
-        setEjecutandoAccion(false);
+        pasarSiguienteTurno(ordenIniciativa, indiceTurnoActual);
       }, 650);
       return;
     }
 
-    // ACCIÓN: ESCUDO ARCANO (Reacción de defensa)
+    // ACCION: ESCUDO ARCANO
     if (config.tipo === 'escudo_arcano') {
       sound.playMagic();
       setDefensaHeroeTemporal(prev => prev + 5);
-      emitirTextoFlotante('heroe', '+5 CA 🛡️', 'buff');
-      agregarLog(`🛡️ Escudo Arcano: Creas una barrera translúcida que eleva tu Defensa en +5 hasta tu siguiente turno.`);
+      emitirTextoFlotante('heroe_principal', '+5 CA 🛡️', 'buff');
+      agregarLog(`🛡️ Escudo Arcano: Creas una barrera mística (+5 CA temporal).`);
 
       setUltimaAccion({
         nombre: 'Escudo Arcano',
@@ -227,21 +348,19 @@ export default function CombatePorTurnosVE({
         buff: '+5 CA'
       });
 
-      setFase('TURNO_ENEMIGO');
       setTimeout(() => {
-        ejecutarTurnoEnemigo();
-        setEjecutandoAccion(false);
-      }, 650);
+        pasarSiguienteTurno(ordenIniciativa, indiceTurnoActual);
+      }, 600);
       return;
     }
 
-    // ACCIÓN: BOMBA DE HUMO (Pícaro - evasión garantizada)
+    // ACCION: BOMBA DE HUMO (Afecta a toda la sala)
     if (config.tipo === 'bomba_humo') {
       sound.playSlash();
       setBombaHumoActiva(true);
       setBombaHumoUsada(true);
-      emitirTextoFlotante('heroe', '¡EN HUMO! 💨', 'esquiva');
-      agregarLog(`💨 Bomba de Humo: Detonas una cápsula cegadora. ¡El próximo ataque del enemigo fallará automáticamente!`);
+      emitirTextoFlotante('heroe_principal', '¡EN HUMO! 💨', 'esquiva');
+      agregarLog(`💨 Bomba de Humo: Envuelves la sala en humo alquímico. ¡El próximo ataque enemigo fallará!`);
 
       setUltimaAccion({
         nombre: 'Bomba de Humo',
@@ -249,23 +368,21 @@ export default function CombatePorTurnosVE({
         buff: 'Evasión Total'
       });
 
-      setFase('TURNO_ENEMIGO');
       setTimeout(() => {
-        ejecutarTurnoEnemigo();
-        setEjecutandoAccion(false);
-      }, 650);
+        pasarSiguienteTurno(ordenIniciativa, indiceTurnoActual);
+      }, 600);
       return;
     }
 
-    // ACCIÓN: SEGUNDO ALIENTO (Guerrero)
+    // ACCION: SEGUNDO ALIENTO
     if (config.tipo === 'segundo_aliento') {
       sound.playHeal();
       setSegundoAlientoUsado(true);
       const curacion = Math.floor(Math.random() * 8) + 1 + (heroeSeguro.nivel || 1);
       const nuevoPv = Math.min(maxPvHeroe, pvHeroe + curacion);
       setPvHeroe(nuevoPv);
-      emitirTextoFlotante('heroe', `+${curacion} PV 💖`, 'cura');
-      agregarLog(`🩹 Segundo Aliento: Tomas una bocanada de aire y recuperas ${curacion} PV en pleno fragor marcial.`);
+      emitirTextoFlotante('heroe_principal', `+${curacion} PV 💖`, 'cura');
+      agregarLog(`🩹 Segundo Aliento: Recuperas ${curacion} PV en pleno combate.`);
 
       setUltimaAccion({
         nombre: 'Segundo Aliento',
@@ -273,22 +390,20 @@ export default function CombatePorTurnosVE({
         cura: curacion
       });
 
-      setFase('TURNO_ENEMIGO');
       setTimeout(() => {
-        ejecutarTurnoEnemigo();
-        setEjecutandoAccion(false);
-      }, 650);
+        pasarSiguienteTurno(ordenIniciativa, indiceTurnoActual);
+      }, 600);
       return;
     }
 
-    // ACCIÓN: PALABRA DE CURACIÓN (Clérigo)
+    // ACCION: CURACION CLERIGO
     if (config.tipo === 'palabra_curacion') {
       sound.playHeal();
       const curacion = Math.floor(Math.random() * 8) + 1 + modSab + 2;
       const nuevoPv = Math.min(maxPvHeroe, pvHeroe + curacion);
       setPvHeroe(nuevoPv);
-      emitirTextoFlotante('heroe', `+${curacion} PV ✨`, 'cura');
-      agregarLog(`💖 Palabra de Curación: Invocas la gracia celestial restaurando ${curacion} PV.`);
+      emitirTextoFlotante('heroe_principal', `+${curacion} PV ✨`, 'cura');
+      agregarLog(`💖 Palabra de Curación: La luz sagrada sana ${curacion} PV.`);
 
       setUltimaAccion({
         nombre: 'Palabra de Curación',
@@ -296,44 +411,40 @@ export default function CombatePorTurnosVE({
         cura: curacion
       });
 
-      setFase('TURNO_ENEMIGO');
       setTimeout(() => {
-        ejecutarTurnoEnemigo();
-        setEjecutandoAccion(false);
-      }, 650);
+        pasarSiguienteTurno(ordenIniciativa, indiceTurnoActual);
+      }, 600);
       return;
     }
 
-    // -----------------------------------------------------------------
-    // ATAQUES ESTÁNDAR O CONJUROS QUE REQUIEREN TIRADA VS CA
-    // -----------------------------------------------------------------
+    // ATAQUES ESTANDAR CONTRA EL OBJETIVO ENFOCADO
     if (config.sonido === 'magia') {
       sound.playMagic();
     } else {
       sound.playSlash();
     }
 
-    // Cálculo silencioso de la tirada
     const d20 = Math.floor(Math.random() * 20) + 1;
     const bonoAtaque = (config.modAtributo || 0) + bonoAtqClase + (config.bonoAtqExtra || 0);
     const totalAtaque = d20 + bonoAtaque;
     const esCritico = d20 === 20;
     const esPifia = d20 === 1;
-    const superaCA = !esPifia && (esCritico || totalAtaque >= caEnemigo);
+    const caTarget = enemigoObjetivo.defensa || 11;
+    const superaCA = !esPifia && (esCritico || totalAtaque >= caTarget);
 
     setUltimaAccion({
       nombre: config.nombre,
       d20,
       bono: bonoAtaque,
       total: totalAtaque,
-      caObjetivo: caEnemigo,
+      caObjetivo: caTarget,
       impacto: superaCA,
       critico: esCritico,
-      pifia: esPifia
+      pifia: esPifia,
+      objetivo: enemigoObjetivo.nombreUnico
     });
 
     if (superaCA) {
-      // IMPACTO EXITOSO
       if (esCritico) {
         sound.playCrit();
         vibrarPantalla();
@@ -341,10 +452,6 @@ export default function CombatePorTurnosVE({
         sound.playHit();
       }
 
-      setAnimImpactoEnemigo(true);
-      setTimeout(() => setAnimImpactoEnemigo(false), 300);
-
-      // Cálculo de daño
       let danoBase = config.danoCalculado ? config.danoCalculado(esCritico) : (
         calcularDanoMedioArma({
           arma: armaActiva,
@@ -352,135 +459,135 @@ export default function CombatePorTurnosVE({
           esCritico
         }).danoTotal + (config.bonoDanoExtra || 0)
       );
-
       danoBase = Math.max(1, danoBase);
-      const nuevoPvEnemigo = Math.max(0, pvEnemigo - danoBase);
-      setPvEnemigo(nuevoPvEnemigo);
 
-      // Efecto secundario (ej: Rayo de Escarcha entorpece al enemigo)
-      if (config.aplicaPenalizacionEnemigo) {
-        setPenalizacionEnemigo(config.aplicaPenalizacionEnemigo);
-      }
-
-      if (esCritico) {
-        emitirTextoFlotante('enemigo', `💥 -${danoBase} CRÍTICO!`, 'critico');
-        agregarLog(`💥 ¡GOLPE CRÍTICO (20 natural)! ${config.nombre} destroza la defensa del ${enemigo.nombre} causando ${danoBase} de daño devastador!`);
-      } else {
-        emitirTextoFlotante('enemigo', `-${danoBase}`, config.tipoColor || 'dano');
-        agregarLog(`🎯 ${config.nombre} [Tirada ${d20} + ${bonoAtaque} = ${totalAtaque} vs CA ${caEnemigo}]: ¡Impactas infligiendo ${danoBase} de daño!`);
-      }
-
-      if (nuevoPvEnemigo <= 0) {
-        sound.playLevelUp();
-        agregarLog(`🏆 ¡El ${enemigo.nombre} ha sido derrotado!`);
-        setFase('VICTORIA');
-        setEjecutandoAccion(false);
-        return;
-      }
+      aplicarDanoAEnemigo(enemigoObjetivo.idCombate, danoBase, esCritico, config.nombre, config.tipoColor || 'dano');
     } else {
-      // FALLO / BLOQUEO
       sound.playBlock();
-      setAnimBloqueoEnemigo(true);
-      setTimeout(() => setAnimBloqueoEnemigo(false), 350);
+      setBloqueosEnemigos(prev => ({ ...prev, [enemigoObjetivo.idCombate]: true }));
+      setTimeout(() => setBloqueosEnemigos(prev => ({ ...prev, [enemigoObjetivo.idCombate]: false })), 350);
 
       if (esPifia) {
-        emitirTextoFlotante('enemigo', '¡PIFIA! 💀', 'fallo');
-        agregarLog(`💀 ¡PIFIA (1 natural)! Tu ${config.nombre} tropieza y deja tu guardia completamente expuesta.`);
-      } else if (totalAtaque >= caEnemigo - 2) {
-        emitirTextoFlotante('enemigo', '¡BLOQUEADO! 🛡️', 'bloqueo');
-        agregarLog(`🛡️ Bloqueo [${totalAtaque} vs CA ${caEnemigo}]: La gruesa armadura del ${enemigo.nombre} absorbe el golpe sin recibir daño.`);
+        emitirTextoFlotante(enemigoObjetivo.idCombate, '¡PIFIA! 💀', 'fallo');
+        agregarLog(`💀 ¡PIFIA (1)! Tu ${config.nombre} falla estrepitosamente ante ${enemigoObjetivo.nombreUnico}.`);
+      } else if (totalAtaque >= caTarget - 2) {
+        emitirTextoFlotante(enemigoObjetivo.idCombate, '¡BLOQUEADO! 🛡️', 'bloqueo');
+        agregarLog(`🛡️ Bloqueo [${totalAtaque} vs CA ${caTarget}]: La armadura de ${enemigoObjetivo.nombreUnico} detiene tu golpe.`);
       } else {
-        emitirTextoFlotante('enemigo', '¡FALLO! 💨', 'fallo');
-        agregarLog(`💨 Fallo [${totalAtaque} vs CA ${caEnemigo}]: El ${enemigo.nombre} esquiva ágilmente tu ataque.`);
+        emitirTextoFlotante(enemigoObjetivo.idCombate, '¡FALLO! 💨', 'fallo');
+        agregarLog(`💨 Fallo [${totalAtaque} vs CA ${caTarget}]: ${enemigoObjetivo.nombreUnico} esquiva tu golpe.`);
       }
     }
 
-    // Transición fluida al turno enemigo
-    setFase('TURNO_ENEMIGO');
     setTimeout(() => {
-      ejecutarTurnoEnemigo();
-      setEjecutandoAccion(false);
+      pasarSiguienteTurno(ordenIniciativa, indiceTurnoActual);
     }, 650);
   };
 
-  // -------------------------------------------------------------------
-  // 3. DEFENDERSE / GUARDIA (+2 DEF)
-  // -------------------------------------------------------------------
-  const handleDefenderse = () => {
-    if (fase !== 'TURNO_JUGADOR' || ejecutandoAccion) return;
-    setEjecutandoAccion(true);
-    sound.playBlock();
-    setDefensaHeroeTemporal(prev => prev + 2);
-    emitirTextoFlotante('heroe', '+2 DEF 🛡️', 'buff');
-    agregarLog(`🛡️ Adoptas una guardia firme y cerrada (+2 a tu Defensa hasta tu próximo turno).`);
+  // Aplicar dano a un enemigo en el estado
+  const aplicarDanoAEnemigo = (enemigoId, dano, esCritico, nombreAtaque, tipoColor) => {
+    setImpactosEnemigos(prev => ({ ...prev, [enemigoId]: true }));
+    setTimeout(() => setImpactosEnemigos(prev => ({ ...prev, [enemigoId]: false })), 300);
 
-    setFase('TURNO_ENEMIGO');
-    setTimeout(() => {
-      ejecutarTurnoEnemigo();
-      setEjecutandoAccion(false);
-    }, 600);
+    setListaEnemigos(prev => {
+      return prev.map(mon => {
+        if (mon.idCombate !== enemigoId) return mon;
+        const nuevoPv = Math.max(0, mon.pvActual - dano);
+        const estaMuerto = nuevoPv <= 0;
+
+        if (esCritico) {
+          emitirTextoFlotante(enemigoId, `💥 -${dano} CRÍTICO!`, 'critico');
+          agregarLog(`💥 ¡CRÍTICO (20)! ${nombreAtaque} inflige ${dano} de daño fulminante a ${mon.nombreUnico}.`);
+        } else {
+          emitirTextoFlotante(enemigoId, `-${dano}`, tipoColor);
+          agregarLog(`🎯 ${nombreAtaque}: Aciertas a ${mon.nombreUnico} por ${dano} de daño.`);
+        }
+
+        if (estaMuerto) {
+          agregarLog(`💀 ¡${mon.nombreUnico} ha sucumbido en combate!`);
+        }
+
+        return {
+          ...mon,
+          pvActual: nuevoPv,
+          derrotado: estaMuerto
+        };
+      });
+    });
   };
 
   // -------------------------------------------------------------------
-  // 4. BEBER POCIÓN DE SALUD
+  // 3. TURNO DE UN COMPANERO DE LA PARTY
   // -------------------------------------------------------------------
-  const handleBeberPocion = () => {
-    if (fase !== 'TURNO_JUGADOR' || pociones <= 0 || ejecutandoAccion) return;
-    setEjecutandoAccion(true);
-    setPociones(prev => prev - 1);
-    sound.playHeal();
-    const curacion = 6;
-    const nuevoPv = Math.min(maxPvHeroe, pvHeroe + curacion);
-    setPvHeroe(nuevoPv);
-    emitirTextoFlotante('heroe', `+${curacion} PV 🧪`, 'cura');
-    agregarLog(`🧪 Bebes un trago vigorizante de poción (+${curacion} PV restaurados). Te quedan ${pociones - 1} frascos.`);
-
-    setFase('TURNO_ENEMIGO');
-    setTimeout(() => {
-      ejecutarTurnoEnemigo();
-      setEjecutandoAccion(false);
-    }, 600);
-  };
-
-  // -------------------------------------------------------------------
-  // 5. TURNO DEL ENEMIGO (CALCULADO POR DETRÁS CON FALLOS & BLOQUEOS)
-  // -------------------------------------------------------------------
-  const ejecutarTurnoEnemigo = () => {
-    // Si la bomba de humo está activa, fallo automático
-    if (bombaHumoActiva) {
-      setBombaHumoActiva(false);
-      sound.playMiss();
-      emitirTextoFlotante('heroe', '¡ESQUIVADO EN HUMO! 💨', 'esquiva');
-      agregarLog(`💨 ¡El ${enemigo.nombre} lanza un zarpazo a ciegas a través de la densa humareda y no encuentra nada!`);
-      setDefensaHeroeTemporal(0);
-      setTurnoNumero(prev => prev + 1);
-      setFase('TURNO_JUGADOR');
+  const procesarTurnoCompanero = (companero, turnos, idxActual) => {
+    const target = listaEnemigos.find(e => !e.derrotado);
+    if (!target) {
+      pasarSiguienteTurno(turnos, idxActual);
       return;
     }
 
     sound.playSlash();
-
     const d20 = Math.floor(Math.random() * 20) + 1;
-    const bonoEnemigoBase = enemigo.atqBono !== undefined ? enemigo.atqBono : (enemigo.nivel || 1);
-    const bonoFinalEnemigo = Math.max(0, bonoEnemigoBase - penalizacionEnemigo);
-    const totalAtaqueEnemigo = d20 + bonoFinalEnemigo;
-    const caHeroe = (statsHeroe.def || 12) + defensaHeroeTemporal;
+    const bono = companero.mod || 2;
+    const total = d20 + bono;
+    const acierta = total >= target.defensa;
 
-    // Resetear penalizaciones y buffs temporales de este turno
-    setPenalizacionEnemigo(0);
+    if (acierta) {
+      sound.playHit();
+      const danoC = Math.floor(Math.random() * 6) + 2;
+      aplicarDanoAEnemigo(target.idCombate, danoC, d20 === 20, `Tajo de ${companero.nombre}`, 'dano');
+      agregarLog(`🗡️ ${companero.nombre} asiste al grupo y golpea a ${target.nombreUnico} por ${danoC} de daño.`);
+    } else {
+      sound.playBlock();
+      emitirTextoFlotante(target.idCombate, '¡BLOQUEO!', 'bloqueo');
+      agregarLog(`🛡️ ${companero.nombre} ataca a ${target.nombreUnico} pero su golpe es desviado.`);
+    }
+
+    setTimeout(() => {
+      pasarSiguienteTurno(turnos, idxActual);
+    }, 650);
+  };
+
+  // -------------------------------------------------------------------
+  // 4. TURNO DE UN ENEMIGO
+  // -------------------------------------------------------------------
+  const procesarTurnoEnemigo = (enemigoTurno, turnos, idxActual) => {
+    const mon = listaEnemigos.find(e => e.idCombate === enemigoTurno.id && !e.derrotado);
+    if (!mon) {
+      pasarSiguienteTurno(turnos, idxActual);
+      return;
+    }
+
+    // Bomba de humo activa: esquiva automatica
+    if (bombaHumoActiva) {
+      setBombaHumoActiva(false);
+      sound.playMiss();
+      emitirTextoFlotante('heroe_principal', '¡ESQUIVADO EN HUMO! 💨', 'esquiva');
+      agregarLog(`💨 ¡${mon.nombreUnico} ataca a ciegas a través del humo denso y falla!`);
+      setDefensaHeroeTemporal(0);
+      setTimeout(() => pasarSiguienteTurno(turnos, idxActual), 650);
+      return;
+    }
+
+    sound.playSlash();
+    const d20 = Math.floor(Math.random() * 20) + 1;
+    const bonoAtq = mon.atqBono !== undefined ? mon.atqBono : (mon.nivel || 1);
+    const totalAtaque = d20 + bonoAtq;
+    const defJugador = caHeroeTotal;
     setDefensaHeroeTemporal(0);
 
     const esCritico = d20 === 20;
     const esPifia = d20 === 1;
-    const acierta = !esPifia && (esCritico || totalAtaqueEnemigo >= caHeroe);
+    const acierta = !esPifia && (esCritico || totalAtaque >= defJugador);
 
     setUltimaAccion({
       enemigoAtacando: true,
-      nombre: enemigo.ataque_nombre || 'Zarpazo Feroz',
+      nombre: mon.ataque_nombre || 'Zarpazo',
+      atacante: mon.nombreUnico,
       d20,
-      bono: bonoFinalEnemigo,
-      total: totalAtaqueEnemigo,
-      caObjetivo: caHeroe,
+      bono: bonoAtq,
+      total: totalAtaque,
+      caObjetivo: defJugador,
       impacto: acierta,
       critico: esCritico,
       pifia: esPifia
@@ -497,51 +604,77 @@ export default function CombatePorTurnosVE({
       setAnimImpactoHeroe(true);
       setTimeout(() => setAnimImpactoHeroe(false), 300);
 
-      const danoBase = esCritico
-        ? (enemigo.dano_medio || enemigo.dano || 3) * 2
-        : (enemigo.dano_medio || enemigo.dano || 3);
-
+      const danoBase = esCritico ? (mon.dano || 3) * 2 : (mon.dano || 3);
       const nuevoPv = Math.max(0, pvHeroe - danoBase);
       setPvHeroe(nuevoPv);
 
       if (esCritico) {
-        emitirTextoFlotante('heroe', `💥 -${danoBase} CRÍTICO!`, 'critico');
-        agregarLog(`⚠️ ¡GOLPE CRÍTICO DEL ENEMIGO! El ${enemigo.nombre} impacta con salvajismo infligiendo ${danoBase} de daño letal.`);
+        emitirTextoFlotante('heroe_principal', `💥 -${danoBase} CRÍTICO!`, 'critico');
+        agregarLog(`⚠️ ¡CRÍTICO DE ${mon.nombreUnico}! Golpea con furia causando ${danoBase} de daño.`);
       } else {
-        emitirTextoFlotante('heroe', `-${danoBase}`, 'dano');
-        agregarLog(`🩸 Ataque del ${enemigo.nombre} [${d20} + ${bonoFinalEnemigo} = ${totalAtaqueEnemigo} vs CA ${caHeroe}]: Acierta con ${enemigo.ataque_nombre || 'sus garras'} causando ${danoBase} de daño.`);
+        emitirTextoFlotante('heroe_principal', `-${danoBase}`, 'dano');
+        agregarLog(`🩸 ${mon.nombreUnico} [${d20}+${bonoAtq}=${totalAtaque} vs CA ${defJugador}]: Impacta por ${danoBase} de daño.`);
       }
 
       if (nuevoPv <= 0) {
-        agregarLog(`💀 ¡Has caído en combate ante el ${enemigo.nombre}!`);
+        agregarLog(`💀 ¡Has caído en combate ante ${mon.nombreUnico}!`);
         setFase('DERROTA');
         return;
       }
     } else {
-      // Bloqueo o esquiva del héroe
       sound.playBlock();
       setAnimBloqueoHeroe(true);
       setTimeout(() => setAnimBloqueoHeroe(false), 350);
 
       if (esPifia) {
-        emitirTextoFlotante('heroe', '¡PIFIA ENEMIGA! 💨', 'esquiva');
-        agregarLog(`🛡️ ¡Pifia del ${enemigo.nombre}! Su ataque choca torpemente contra las piedras del suelo.`);
-      } else if (totalAtaqueEnemigo >= caHeroe - 2) {
-        emitirTextoFlotante('heroe', '¡BLOQUEADO! 🛡️', 'bloqueo');
-        agregarLog(`🛡️ Bloqueo [${totalAtaqueEnemigo} vs CA ${caHeroe}]: Tu escudo y armadura rechazan limpiamente el golpe del ${enemigo.nombre}. ¡Cero daño!`);
+        emitirTextoFlotante('heroe_principal', '¡PIFIA ENEMIGA! 💨', 'esquiva');
+        agregarLog(`🛡️ ¡Pifia de ${mon.nombreUnico}! Tropieza en el asalto.`);
+      } else if (totalAtaque >= defJugador - 2) {
+        emitirTextoFlotante('heroe_principal', '¡BLOQUEADO! 🛡️', 'bloqueo');
+        agregarLog(`🛡️ Bloqueo [${totalAtaque} vs CA ${defJugador}]: Desvías el ataque de ${mon.nombreUnico}.`);
       } else {
-        emitirTextoFlotante('heroe', '¡ESQUIVASTE! 💨', 'esquiva');
-        agregarLog(`💨 Esquiva [${totalAtaqueEnemigo} vs CA ${caHeroe}]: Te mueves ágilmente y el asalto del ${enemigo.nombre} corta el aire en vano.`);
+        emitirTextoFlotante('heroe_principal', '¡ESQUIVASTE! 💨', 'esquiva');
+        agregarLog(`💨 Esquiva [${totalAtaque} vs CA ${defJugador}]: Esquivas el golpe de ${mon.nombreUnico}.`);
       }
     }
 
-    setTurnoNumero(prev => prev + 1);
-    setFase('TURNO_JUGADOR');
+    setTimeout(() => {
+      pasarSiguienteTurno(turnos, idxActual);
+    }, 650);
   };
 
   // -------------------------------------------------------------------
-  // 6. HUIR DEL COMBATE (Instintos DES 11+)
+  // 5. DEFENDERSE, BEBER POCION Y HUIR
   // -------------------------------------------------------------------
+  const handleDefenderse = () => {
+    if (fase !== 'TURNO_JUGADOR' || ejecutandoAccion) return;
+    setEjecutandoAccion(true);
+    sound.playBlock();
+    setDefensaHeroeTemporal(prev => prev + 2);
+    emitirTextoFlotante('heroe_principal', '+2 DEF 🛡️', 'buff');
+    agregarLog(`🛡️ Adoptas una postura defensiva cerrada (+2 DEF).`);
+
+    setTimeout(() => {
+      pasarSiguienteTurno(ordenIniciativa, indiceTurnoActual);
+    }, 600);
+  };
+
+  const handleBeberPocion = () => {
+    if (fase !== 'TURNO_JUGADOR' || pociones <= 0 || ejecutandoAccion) return;
+    setEjecutandoAccion(true);
+    setPociones(prev => prev - 1);
+    sound.playHeal();
+    const curacion = 6;
+    const nuevoPv = Math.min(maxPvHeroe, pvHeroe + curacion);
+    setPvHeroe(nuevoPv);
+    emitirTextoFlotante('heroe_principal', `+${curacion} PV 🧪`, 'cura');
+    agregarLog(`🧪 Bebes una poción (+${curacion} PV). Restan ${pociones - 1}.`);
+
+    setTimeout(() => {
+      pasarSiguienteTurno(ordenIniciativa, indiceTurnoActual);
+    }, 600);
+  };
+
   const handleIntentarHuir = () => {
     if (fase !== 'TURNO_JUGADOR' || ejecutandoAccion) return;
     setEjecutandoAccion(true);
@@ -551,30 +684,32 @@ export default function CombatePorTurnosVE({
     const total = d20 + modDes;
 
     if (total >= 11) {
-      emitirTextoFlotante('heroe', '¡HUIDA EXITOSA! 🏃', 'esquiva');
-      agregarLog(`🏃 ¡Tirada de Huida exitosa (${d20} + ${modDes} = ${total} vs dif 11+)! Logras zafarte del combate.`);
+      emitirTextoFlotante('heroe_principal', '¡HUIDA EXITOSA! 🏃', 'esquiva');
+      agregarLog(`🏃 ¡Tirada de Huida exitosa (${total} vs 11+)! Logras replegarte.`);
       setTimeout(() => {
         if (onHuir) onHuir();
       }, 700);
     } else {
-      emitirTextoFlotante('heroe', '¡TROPIEZO! ❌', 'fallo');
-      agregarLog(`❌ Fallas al huir (${total} vs dif 11+). ¡Tropiezas y el enemigo aprovecha la oportunidad!`);
-      setFase('TURNO_ENEMIGO');
+      emitirTextoFlotante('heroe_principal', '¡TROPIEZO! ❌', 'fallo');
+      agregarLog(`❌ Fallas al huir (${total} vs 11+). ¡Tropiezas y quedas expuesto!`);
       setTimeout(() => {
-        ejecutarTurnoEnemigo();
-        setEjecutandoAccion(false);
+        pasarSiguienteTurno(ordenIniciativa, indiceTurnoActual);
       }, 650);
     }
   };
 
   const handleCerrarVictoria = () => {
     sound.playCoin();
+    const oroTotal = listaEnemigos.reduce((acc, m) => acc + (m.oro || m.oro_recompensa || 4), 0);
+    const xpTotal = listaEnemigos.reduce((acc, m) => acc + (m.xp || m.xp_recompensa || 10), 0);
+
     onFinalizarCombate({
       victoria: true,
       pvRestante: pvHeroe,
       podRestante: podHeroe,
-      oroGanado: enemigo.oro_recompensa || enemigo.oro || 5,
-      xpGanada: enemigo.xp_recompensa || enemigo.xp || 15
+      oroGanado: oroTotal,
+      xpGanada: xpTotal,
+      enemigosDerrotados: listaEnemigos
     });
   };
 
@@ -587,10 +722,9 @@ export default function CombatePorTurnosVE({
   };
 
   // -------------------------------------------------------------------
-  // ARSENAL TÁCTICO SEGÚN LA CLASE DEL JUGADOR
+  // ARSENAL TACTICO SEGUN LA CLASE DEL JUGADOR
   // -------------------------------------------------------------------
   const obtenerAtaquesClase = () => {
-    // MAGO / HECHICERO
     if (claseHeroe === 'hechicero') {
       return [
         {
@@ -614,7 +748,7 @@ export default function CombatePorTurnosVE({
           id: 'proyectil_igneo',
           nombre: '🔥 Proyectil Ígneo',
           sub: 'Cantrip • 0 POD',
-          desc: 'Esfera ígnea de alto impacto (1d10 + INT).',
+          desc: 'Esfera ígnea pesada (1d10 + INT).',
           icono: '🔥',
           sonido: 'magia',
           costePod: 0,
@@ -629,30 +763,12 @@ export default function CombatePorTurnosVE({
         {
           id: 'misil_magico',
           nombre: '✨ Misil Mágico',
-          sub: '1 POD • Acierto Seguro',
-          desc: '3 dardos ineludibles. ¡Ignora la CA enemiga!',
+          sub: '1 POD • Ineludible',
+          desc: '3 dardos arcanos. ¡Ignora la CA enemiga!',
           icono: '✨',
           tipo: 'misil_magico',
           costePod: 1,
           estiloBoton: 'from-purple-700 to-indigo-600 hover:from-purple-600 hover:to-indigo-500 text-purple-100 border-purple-400/40'
-        },
-        {
-          id: 'rayo_escarcha',
-          nombre: '❄️ Ráfaga Helada',
-          sub: '1 POD • Ralentiza',
-          desc: '2d6 daño y entorpece (-2 al ataque enemigo).',
-          icono: '❄️',
-          sonido: 'magia',
-          costePod: 1,
-          esMagia: true,
-          modAtributo: modInt,
-          bonoAtqExtra: 1,
-          tipoColor: 'bloqueo',
-          aplicaPenalizacionEnemigo: 2,
-          danoCalculado: (crit) => {
-            const roll = Math.floor(Math.random() * 6) + Math.floor(Math.random() * 6) + 2 + Math.max(0, modInt);
-            return crit ? roll * 2 : roll;
-          }
         },
         {
           id: 'escudo_arcano',
@@ -667,13 +783,12 @@ export default function CombatePorTurnosVE({
       ];
     }
 
-    // CLÉRIGO
     if (claseHeroe === 'clerigo') {
       return [
         {
           id: 'maza_sagrada',
           nombre: '🔨 Maza Bendita',
-          sub: 'Ataque Físico/Radiante',
+          sub: 'Físico / Radiante',
           desc: 'Golpe contundente con bono sagrado (1d6 + FUE + 2).',
           icono: '🔨',
           sonido: 'corte',
@@ -687,7 +802,7 @@ export default function CombatePorTurnosVE({
         {
           id: 'llama_sagrada',
           nombre: '☀️ Llama Sagrada',
-          sub: 'Cantrip Divino • 0 POD',
+          sub: 'Cantrip • 0 POD',
           desc: 'Fuego purificador del cielo (1d8 + SAB).',
           icono: '☀️',
           sonido: 'magia',
@@ -709,21 +824,10 @@ export default function CombatePorTurnosVE({
           tipo: 'palabra_curacion',
           costePod: 1,
           estiloBoton: 'from-emerald-700 to-teal-600 hover:from-emerald-600 hover:to-teal-500 text-emerald-100 border-emerald-400/40'
-        },
-        {
-          id: 'escudo_fe',
-          nombre: '🛡️ Escudo de Fe',
-          sub: '1 POD • Protección',
-          desc: 'Aura protectora bendita (+4 CA temporal).',
-          icono: '🛡️',
-          tipo: 'escudo_arcano',
-          costePod: 1,
-          estiloBoton: 'from-amber-700 to-yellow-600 hover:from-amber-600 hover:to-yellow-500 text-amber-100 border-amber-400/40'
         }
       ];
     }
 
-    // PÍCARO / BRIBÓN
     if (claseHeroe === 'bribon' || claseHeroe === 'picaro') {
       return [
         {
@@ -760,7 +864,7 @@ export default function CombatePorTurnosVE({
           id: 'bomba_humo',
           nombre: '💨 Bomba de Humo',
           sub: bombaHumoUsada ? 'Agotada en combate' : 'Táctica Evasiva',
-          desc: 'El próximo ataque enemigo fallará automáticamente.',
+          desc: 'El próximo ataque enemigo en la sala fallará.',
           icono: '💨',
           tipo: 'bomba_humo',
           disabled: bombaHumoUsada,
@@ -769,7 +873,7 @@ export default function CombatePorTurnosVE({
       ];
     }
 
-    // GUERRERO / PALADÍN (Default marcial)
+    // GUERRERO (Default marcial)
     return [
       {
         id: 'tajo_rapido',
@@ -804,7 +908,7 @@ export default function CombatePorTurnosVE({
         id: 'embestida_escudo',
         nombre: '🛡️ Embestida de Escudo',
         sub: '+3 DEF Temporal',
-        desc: 'Impacto contundente con el broquel que afianza tu defensa.',
+        desc: 'Golpe con broquel que afianza tu defensa.',
         icono: '🛡️',
         sonido: 'corte',
         modAtributo: modFue,
@@ -818,7 +922,7 @@ export default function CombatePorTurnosVE({
       {
         id: 'segundo_aliento',
         nombre: '🩹 Segundo Aliento',
-        sub: segundoAlientoUsado ? 'Usado en combate' : 'Recupera PV',
+        sub: segundoAlientoUsado ? 'Usado' : 'Recupera PV',
         desc: 'Restaura vida marcial sin gastar pociones (1 uso).',
         icono: '🩹',
         tipo: 'segundo_aliento',
@@ -834,7 +938,6 @@ export default function CombatePorTurnosVE({
     <div className={`fixed inset-0 bg-black/85 backdrop-blur-md z-50 flex items-center justify-center p-2 sm:p-4 select-none animate-in fade-in zoom-in-95 duration-150 ${
       screenShake ? 'animate-combat-shake' : ''
     }`}>
-      {/* ESTILOS DE ANIMACIÓN COMBATE */}
       <style>{`
         @keyframes combatFloat {
           0% { opacity: 0; transform: translate(-50%, 15px) scale(0.8); }
@@ -866,20 +969,23 @@ export default function CombatePorTurnosVE({
         }
       `}</style>
 
-      <div className="bg-stone-950 border border-stone-800 max-w-4xl w-full rounded-3xl p-4 sm:p-6 shadow-2xl text-stone-200 relative overflow-hidden flex flex-col max-h-[94vh]">
-        {/* ENCABEZADO SUPERIOR TÁCTICO */}
-        <div className="flex justify-between items-center pb-3 border-b border-stone-800/80 mb-3">
+      <div className="bg-stone-950 border border-stone-800 max-w-5xl w-full rounded-3xl p-3 sm:p-5 shadow-2xl text-stone-200 relative overflow-hidden flex flex-col max-h-[96vh]">
+        {/* ENCABEZADO SUPERIOR TACTICO */}
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center pb-2.5 border-b border-stone-800/80 gap-2 mb-2.5">
           <div className="flex items-center gap-2">
             <span className="text-xl">⚔️</span>
             <div>
               <h3 className="text-xs sm:text-sm font-black text-amber-300 uppercase tracking-wider flex items-center gap-2">
-                Combate Táctico por Turnos
+                Combate Táctico • West Marches
                 <span className="text-[10px] text-stone-400 font-mono font-normal">
                   (Ronda {turnoNumero})
                 </span>
+                <span className="text-[10px] bg-purple-950/80 text-purple-300 px-2 py-0.5 rounded border border-purple-800">
+                  Desafío Nvl {nivelPromedioGrupo}
+                </span>
               </h3>
-              <p className="text-[11px] text-stone-400">
-                Tiradas automáticas bajo cuerda contra Clase de Armadura (CA/DEF).
+              <p className="text-[10px] text-stone-400">
+                Tiradas automáticas con iniciativa grupal contra CA/DEF.
               </p>
             </div>
           </div>
@@ -890,10 +996,13 @@ export default function CombatePorTurnosVE({
                 ? 'bg-emerald-950/80 text-emerald-300 border-emerald-500/60 shadow-[0_0_10px_rgba(16,185,129,0.3)] animate-pulse'
                 : fase === 'TURNO_ENEMIGO'
                 ? 'bg-red-950/80 text-red-300 border-red-500/60'
+                : fase === 'TURNO_COMPANERO'
+                ? 'bg-blue-950/80 text-blue-300 border-blue-500/60'
                 : 'bg-stone-900 text-stone-300 border-stone-800'
             }`}>
               {fase === 'TURNO_JUGADOR' && '🟢 Tu Turno'}
-              {fase === 'TURNO_ENEMIGO' && '🔴 Turno Rival'}
+              {fase === 'TURNO_ENEMIGO' && '🔴 Turno Enemigo'}
+              {fase === 'TURNO_COMPANERO' && '🔵 Turno Aliado'}
               {fase === 'INICIATIVA' && '🎲 Iniciativa'}
               {fase === 'VICTORIA' && '🏆 Victoria'}
               {fase === 'DERROTA' && '💀 Derrota'}
@@ -901,18 +1010,46 @@ export default function CombatePorTurnosVE({
           </div>
         </div>
 
-        {/* ARENA DE DUELO: HÉROE VS MONSTRUO CON FCT */}
-        <div className="grid grid-cols-1 md:grid-cols-12 gap-3 items-stretch mb-3">
-          {/* TARJETA DEL HÉROE (5 cols) */}
-          <div className={`md:col-span-5 bg-stone-900/95 border rounded-2xl p-3.5 transition-all duration-150 relative ${
+        {/* BARRA DE COLA DE INICIATIVA */}
+        {ordenIniciativa.length > 0 && fase !== 'VICTORIA' && fase !== 'DERROTA' && (
+          <div className="flex items-center gap-1.5 overflow-x-auto pb-2 mb-2 scrollbar-thin">
+            <span className="text-[9px] font-black uppercase text-stone-400 flex-shrink-0 tracking-wider">
+              Orden:
+            </span>
+            {ordenIniciativa.map((t, idx) => {
+              const esActual = idx === indiceTurnoActual;
+              return (
+                <div
+                  key={t.id}
+                  className={`px-2 py-0.5 rounded-lg text-[10px] font-bold border flex items-center gap-1 flex-shrink-0 transition-all ${
+                    esActual
+                      ? 'bg-amber-500 text-stone-950 border-amber-300 shadow-[0_0_8px_rgba(245,158,11,0.5)] scale-105 ring-1 ring-amber-400'
+                      : t.esHeroe
+                      ? 'bg-emerald-950/70 text-emerald-300 border-emerald-800/80 opacity-80'
+                      : 'bg-red-950/70 text-red-300 border-red-800/80 opacity-80'
+                  }`}
+                >
+                  <span>{t.esHeroe ? '🟢' : '🔴'}</span>
+                  <span className="truncate max-w-[90px]">{t.nombre}</span>
+                  <span className="text-[9px] opacity-75">({t.iniciativa})</span>
+                </div>
+              );
+            })}
+          </div>
+        )}
+
+        {/* ARENA DE DUELO: HEROES VS MULTI-MONSTRUOS */}
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-3 items-stretch mb-2.5">
+          {/* LADO DE LOS HEROES (4 cols) */}
+          <div className={`lg:col-span-4 bg-stone-900/95 border rounded-2xl p-3 transition-all duration-150 relative ${
             fase === 'TURNO_JUGADOR'
               ? 'border-emerald-500/80 shadow-[0_0_18px_rgba(16,185,129,0.25)] ring-1 ring-emerald-500/50'
-              : 'border-stone-800/80 opacity-90'
+              : 'border-stone-800/80'
           } ${animImpactoHeroe ? 'bg-red-950/60 border-red-500 scale-[0.98]' : ''} ${
             animBloqueoHeroe ? 'animate-shield-pulse border-cyan-400 bg-cyan-950/40' : ''
           }`}>
             {/* FLOATING COMBAT TEXT OVER HERO */}
-            {floatingTexts.filter(ft => ft.target === 'heroe').map(ft => (
+            {floatingTexts.filter(ft => ft.targetId === 'heroe_principal').map(ft => (
               <div
                 key={ft.id}
                 className={`absolute pointer-events-none z-30 font-black text-sm sm:text-base animate-combat-float ${
@@ -934,17 +1071,17 @@ export default function CombatePorTurnosVE({
               </div>
             ))}
 
-            <div className="flex items-center gap-3 mb-2.5">
-              <div className="w-13 h-13 sm:w-14 sm:h-14 bg-stone-950 rounded-xl border border-stone-800 flex items-center justify-center overflow-hidden shadow-inner flex-shrink-0 relative">
+            <div className="flex items-center gap-3 mb-2">
+              <div className="w-12 h-12 bg-stone-950 rounded-xl border border-stone-800 flex items-center justify-center overflow-hidden shadow-inner flex-shrink-0 relative">
                 <img
                   src={spriteHeroe}
                   alt={heroeSeguro.nombre}
-                  className="w-10 h-10 object-contain"
+                  className="w-9 h-9 object-contain"
                   style={{ imageRendering: 'pixelated' }}
                   onError={(e) => { e.target.src = '/assets/crawler/heroes/knight_m_idle_anim_f0.png'; }}
                 />
                 {defensaHeroeTemporal > 0 && (
-                  <span className="absolute bottom-0 right-0 bg-blue-600 text-[9px] font-black px-1 rounded text-white">
+                  <span className="absolute bottom-0 right-0 bg-blue-600 text-[8px] font-black px-1 rounded text-white">
                     +{defensaHeroeTemporal}
                   </span>
                 )}
@@ -952,32 +1089,32 @@ export default function CombatePorTurnosVE({
 
               <div className="flex-1 min-w-0">
                 <div className="flex items-center justify-between">
-                  <h4 className="text-sm font-black text-amber-200 truncate">{heroeSeguro.nombre}</h4>
-                  <span className="text-[10px] uppercase font-bold text-stone-400 bg-stone-950 px-1.5 py-0.5 rounded border border-stone-800">
+                  <h4 className="text-xs sm:text-sm font-black text-amber-200 truncate">{heroeSeguro.nombre}</h4>
+                  <span className="text-[9px] uppercase font-bold text-stone-400 bg-stone-950 px-1.5 py-0.5 rounded border border-stone-800">
                     Nvl {heroeSeguro.nivel || 1}
                   </span>
                 </div>
-                <p className="text-[11px] text-stone-400 capitalize">
+                <p className="text-[10px] text-stone-400 capitalize">
                   {heroeSeguro.raza || 'Humano'} {claseHeroe}
                 </p>
-                <div className="flex items-center gap-2 mt-1 text-[10px] text-stone-300 font-bold">
-                  <span className="bg-stone-950 px-2 py-0.5 rounded border border-stone-800 text-cyan-300 flex items-center gap-1">
+                <div className="flex items-center gap-2 mt-1 text-[9px] text-stone-300 font-bold">
+                  <span className="bg-stone-950 px-1.5 py-0.5 rounded border border-stone-800 text-cyan-300">
                     🛡️ CA: <strong>{caHeroeTotal}</strong>
                   </span>
-                  <span className="bg-stone-950 px-2 py-0.5 rounded border border-stone-800 text-amber-300">
-                    🗡️ ATQ: +{modFue + bonoAtqClase}
+                  <span className="bg-stone-950 px-1.5 py-0.5 rounded border border-stone-800 text-amber-300">
+                    🗡️ +{modFue + bonoAtqClase}
                   </span>
                 </div>
               </div>
             </div>
 
-            {/* Barra de PV Héroe */}
-            <div className="space-y-1 mb-2">
-              <div className="flex justify-between text-[11px] font-bold">
-                <span className="text-red-400 flex items-center gap-1">❤️ Puntos de Vida</span>
+            {/* Barra de PV Heroe */}
+            <div className="space-y-0.5 mb-1.5">
+              <div className="flex justify-between text-[10px] font-bold">
+                <span className="text-red-400">❤️ PV</span>
                 <span className="font-mono">{pvHeroe} / {maxPvHeroe}</span>
               </div>
-              <div className="w-full h-2.5 bg-stone-950 rounded-full overflow-hidden border border-stone-800">
+              <div className="w-full h-2 bg-stone-950 rounded-full overflow-hidden border border-stone-800">
                 <div
                   className="h-full bg-gradient-to-r from-red-600 to-amber-500 transition-all duration-200"
                   style={{ width: `${Math.max(0, (pvHeroe / maxPvHeroe) * 100)}%` }}
@@ -985,11 +1122,11 @@ export default function CombatePorTurnosVE({
               </div>
             </div>
 
-            {/* Barra de POD (Puntos de Poder si la clase usa magia) */}
+            {/* Barra de POD */}
             {(claseHeroe === 'hechicero' || claseHeroe === 'clerigo' || maxPodHeroe > 0) && (
-              <div className="space-y-1">
-                <div className="flex justify-between text-[10px] font-bold">
-                  <span className="text-purple-400 flex items-center gap-1">✨ Puntos de Poder (POD)</span>
+              <div className="space-y-0.5 mb-1.5">
+                <div className="flex justify-between text-[9px] font-bold">
+                  <span className="text-purple-400">✨ POD</span>
                   <span className="font-mono text-purple-300">{podHeroe} / {maxPodHeroe}</span>
                 </div>
                 <div className="w-full h-1.5 bg-stone-950 rounded-full overflow-hidden border border-stone-800">
@@ -1000,16 +1137,37 @@ export default function CombatePorTurnosVE({
                 </div>
               </div>
             )}
+
+            {/* Companeros de la party si existen */}
+            {party.length > 1 && (
+              <div className="border-t border-stone-800/60 pt-1.5 mt-1">
+                <span className="text-[9px] font-bold text-stone-400 uppercase tracking-wider block mb-1">
+                  Compañía Aventurera ({party.length})
+                </span>
+                <div className="space-y-1">
+                  {party.filter(p => p.id !== heroeSeguro.id).map((comp, idx) => (
+                    <div key={idx} className="bg-stone-950/60 border border-stone-800/80 rounded-lg p-1.5 flex items-center justify-between text-[10px]">
+                      <div className="flex items-center gap-1.5">
+                        <span className="text-blue-400">🛡️</span>
+                        <span className="font-bold text-stone-200">{comp.nombre}</span>
+                        <span className="text-[9px] text-stone-400">({comp.clase})</span>
+                      </div>
+                      <span className="text-emerald-400 font-mono text-[9px]">Listo</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
 
-          {/* INDICADOR CENTRAL VS / ESTADO TÁCTICO (2 cols) */}
-          <div className="md:col-span-2 flex flex-col items-center justify-center p-2 text-center bg-stone-950/60 border border-stone-800/80 rounded-2xl min-h-[90px]">
-            <div className="text-xl font-black text-amber-400 tracking-widest mb-1">
+          {/* INDICADOR CENTRAL VS / ESTADO TACTICO (2 cols) */}
+          <div className="lg:col-span-2 flex flex-col items-center justify-center p-2 text-center bg-stone-950/60 border border-stone-800/80 rounded-2xl min-h-[80px]">
+            <div className="text-lg font-black text-amber-400 tracking-widest mb-1">
               VS
             </div>
 
             {ultimaAccion ? (
-              <div className="text-[10px] font-mono text-stone-300 bg-stone-900 border border-stone-800 p-1.5 rounded-lg w-full">
+              <div className="text-[9px] font-mono text-stone-300 bg-stone-900 border border-stone-800 p-1.5 rounded-lg w-full">
                 {ultimaAccion.autoAcierto ? (
                   <div className="text-purple-300 font-bold">
                     ✨ Ineludible ({ultimaAccion.dano} DMG)
@@ -1019,108 +1177,143 @@ export default function CombatePorTurnosVE({
                     <span className={ultimaAccion.impacto ? 'text-emerald-400 font-bold' : 'text-stone-400'}>
                       {ultimaAccion.impacto ? '🎯 Impacto' : '🛡️ Fallo'}
                     </span>
-                    <div className="text-[9px] text-stone-400">
-                      Tirada: {ultimaAccion.d20} + {ultimaAccion.bono} = <strong className="text-stone-200">{ultimaAccion.total}</strong> vs CA {ultimaAccion.caObjetivo}
+                    <div className="text-[8px] text-stone-400 mt-0.5">
+                      {ultimaAccion.d20}+{ultimaAccion.bono}=<strong className="text-stone-200">{ultimaAccion.total}</strong> vs CA {ultimaAccion.caObjetivo}
                     </div>
                   </div>
                 ) : (
-                  <div className="text-stone-400 text-[10px]">
+                  <div className="text-stone-400 text-[9px]">
                     {ultimaAccion.buff || ultimaAccion.nombre}
                   </div>
                 )}
               </div>
             ) : (
-              <span className="text-[10px] text-stone-500 font-bold uppercase">
-                Duelo OSR
+              <span className="text-[9px] text-stone-500 font-bold uppercase tracking-wider">
+                West Marches
               </span>
             )}
           </div>
 
-          {/* TARJETA DEL MONSTRUO (5 cols) */}
-          <div className={`md:col-span-5 bg-stone-900/95 border rounded-2xl p-3.5 transition-all duration-150 relative ${
-            fase === 'TURNO_ENEMIGO'
-              ? 'border-red-500/80 shadow-[0_0_18px_rgba(239,68,68,0.25)] ring-1 ring-red-500/50'
-              : 'border-stone-800/80 opacity-90'
-          } ${animImpactoEnemigo ? 'bg-red-950/60 border-red-500 scale-[0.98]' : ''} ${
-            animBloqueoEnemigo ? 'animate-shield-pulse border-cyan-400 bg-cyan-950/40' : ''
-          }`}>
-            {/* FLOATING COMBAT TEXT OVER ENEMY */}
-            {floatingTexts.filter(ft => ft.target === 'enemigo').map(ft => (
-              <div
-                key={ft.id}
-                className={`absolute pointer-events-none z-30 font-black text-sm sm:text-base animate-combat-float ${
-                  ft.tipo === 'critico'
-                    ? 'text-amber-300 drop-shadow-[0_0_12px_rgba(245,158,11,1)] text-lg scale-110'
-                    : ft.tipo === 'dano'
-                    ? 'text-red-400 drop-shadow-[0_0_8px_rgba(239,68,68,0.9)]'
-                    : ft.tipo === 'magia'
-                    ? 'text-purple-300 drop-shadow-[0_0_10px_rgba(168,85,247,0.9)] text-base'
-                    : ft.tipo === 'bloqueo'
-                    ? 'text-cyan-300 bg-cyan-950/90 border border-cyan-400/60 px-2 py-0.5 rounded-lg shadow-lg'
-                    : ft.tipo === 'esquiva'
-                    ? 'text-emerald-300 bg-emerald-950/90 border border-emerald-400/60 px-2 py-0.5 rounded-lg shadow-lg'
-                    : 'text-stone-300 bg-stone-900/90 border border-stone-700 px-2 py-0.5 rounded-lg'
-                }`}
-                style={{ top: '25%', left: '50%', transform: 'translate(-50%, -50%)' }}
-              >
-                {ft.texto}
-              </div>
-            ))}
-
-            <div className="flex items-center gap-3 mb-2.5">
-              <div className="w-13 h-13 sm:w-14 sm:h-14 bg-stone-950 rounded-xl border border-stone-800 flex items-center justify-center overflow-hidden shadow-inner flex-shrink-0">
-                <img
-                  src={spriteEnemigo}
-                  alt={enemigo.nombre}
-                  className="w-10 h-10 object-contain"
-                  style={{ imageRendering: 'pixelated' }}
-                  onError={(e) => { e.target.src = '/assets/crawler/enemies/skelet_idle_anim_f0.png'; }}
-                />
-              </div>
-
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center justify-between">
-                  <h4 className="text-sm font-black text-red-300 truncate">
-                    {enemigo.esJefe && '👑 '} {enemigo.nombre}
-                  </h4>
-                  <span className="text-[10px] uppercase font-bold text-stone-400 bg-stone-950 px-1.5 py-0.5 rounded border border-stone-800">
-                    Nvl {enemigo.nivel || 1}
-                  </span>
-                </div>
-                <p className="text-[11px] text-stone-400 capitalize">
-                  {enemigo.tipo || 'Monstruo de Cripta'}
-                </p>
-                <div className="flex items-center gap-2 mt-1 text-[10px] text-stone-300 font-bold">
-                  <span className="bg-stone-950 px-2 py-0.5 rounded border border-stone-800 text-cyan-300 flex items-center gap-1">
-                    🛡️ CA: <strong>{caEnemigo}</strong>
-                  </span>
-                  <span className="bg-stone-950 px-2 py-0.5 rounded border border-stone-800 text-rose-300">
-                    💥 Daño: ~{enemigo.dano_medio || enemigo.dano || 3}
-                  </span>
-                </div>
-              </div>
+          {/* LADO DE LOS MONSTRUOS (6 cols - SOPORTE MULTI-MONSTRUO) */}
+          <div className="lg:col-span-6 flex flex-col gap-2">
+            <div className="flex items-center justify-between px-1">
+              <span className="text-[10px] font-bold text-red-400 uppercase tracking-wider flex items-center gap-1">
+                👹 Enemigos en la Sala ({listaEnemigos.filter(e => !e.derrotado).length})
+              </span>
+              <span className="text-[9px] text-stone-400">
+                Haz clic en un monstruo para enfocarlo 🎯
+              </span>
             </div>
 
-            {/* Barra de PV Enemigo */}
-            <div className="space-y-1">
-              <div className="flex justify-between text-[11px] font-bold">
-                <span className="text-red-400 flex items-center gap-1">❤️ Salud del Monstruo</span>
-                <span className="font-mono">{pvEnemigo} / {maxPvEnemigo}</span>
-              </div>
-              <div className="w-full h-2.5 bg-stone-950 rounded-full overflow-hidden border border-stone-800">
-                <div
-                  className="h-full bg-gradient-to-r from-red-600 to-rose-700 transition-all duration-200"
-                  style={{ width: `${Math.max(0, (pvEnemigo / maxPvEnemigo) * 100)}%` }}
-                />
-              </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 flex-1">
+              {listaEnemigos.map((mon) => {
+                const esObjetivo = mon.idCombate === enemigoObjetivoId && !mon.derrotado;
+                const estaMuerto = mon.derrotado;
+
+                const spriteM = (() => {
+                  const base = mon.tipo || mon.sprite_base || 'skelet';
+                  return `/assets/crawler/enemies/${base}_idle_anim_f0.png`;
+                })();
+
+                return (
+                  <div
+                    key={mon.idCombate}
+                    onClick={() => {
+                      if (!estaMuerto) setEnemigoObjetivoId(mon.idCombate);
+                    }}
+                    className={`bg-stone-900/95 border rounded-2xl p-2.5 transition-all duration-150 relative cursor-pointer ${
+                      estaMuerto
+                        ? 'border-stone-800/40 bg-stone-950/40 opacity-40 cursor-not-allowed'
+                        : esObjetivo
+                        ? 'border-amber-400/90 shadow-[0_0_14px_rgba(245,158,11,0.3)] ring-2 ring-amber-400/60 bg-amber-950/20'
+                        : 'border-stone-800/80 hover:border-red-500/50'
+                    } ${impactosEnemigos[mon.idCombate] ? 'bg-red-950/70 border-red-500 scale-[0.98]' : ''} ${
+                      bloqueosEnemigos[mon.idCombate] ? 'animate-shield-pulse border-cyan-400 bg-cyan-950/40' : ''
+                    }`}
+                  >
+                    {/* FLOATING TEXT OVER THIS MONSTER */}
+                    {floatingTexts.filter(ft => ft.targetId === mon.idCombate).map(ft => (
+                      <div
+                        key={ft.id}
+                        className={`absolute pointer-events-none z-30 font-black text-xs sm:text-sm animate-combat-float ${
+                          ft.tipo === 'critico'
+                            ? 'text-amber-300 drop-shadow-[0_0_12px_rgba(245,158,11,1)] text-base scale-110'
+                            : ft.tipo === 'dano'
+                            ? 'text-red-400 drop-shadow-[0_0_8px_rgba(239,68,68,0.9)]'
+                            : ft.tipo === 'magia'
+                            ? 'text-purple-300 drop-shadow-[0_0_10px_rgba(168,85,247,0.9)]'
+                            : ft.tipo === 'bloqueo'
+                            ? 'text-cyan-300 bg-cyan-950/90 border border-cyan-400/60 px-1.5 py-0.5 rounded shadow'
+                            : 'text-stone-300 bg-stone-900/90 border border-stone-700 px-1.5 py-0.5 rounded'
+                        }`}
+                        style={{ top: '20%', left: '50%', transform: 'translate(-50%, -50%)' }}
+                      >
+                        {ft.texto}
+                      </div>
+                    ))}
+
+                    {/* BADGE DE OBJETIVO SELECCIONADO */}
+                    {esObjetivo && (
+                      <span className="absolute -top-2 left-3 bg-amber-500 text-stone-950 text-[9px] font-black uppercase px-2 py-0.5 rounded-full shadow-md flex items-center gap-1">
+                        🎯 Objetivo
+                      </span>
+                    )}
+
+                    <div className="flex items-center gap-2 mb-1.5">
+                      <div className="w-10 h-10 bg-stone-950 rounded-xl border border-stone-800 flex items-center justify-center overflow-hidden shadow-inner flex-shrink-0">
+                        <img
+                          src={spriteM}
+                          alt={mon.nombreUnico}
+                          className="w-8 h-8 object-contain"
+                          style={{ imageRendering: 'pixelated' }}
+                          onError={(e) => { e.target.src = '/assets/crawler/enemies/skelet_idle_anim_f0.png'; }}
+                        />
+                      </div>
+
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center justify-between">
+                          <h4 className="text-xs font-black text-red-300 truncate">
+                            {mon.esJefe && '👑 '} {mon.nombreUnico}
+                          </h4>
+                          <span className="text-[8px] uppercase font-bold text-stone-400 bg-stone-950 px-1 rounded border border-stone-800">
+                            Nvl {mon.nivel || 1}
+                          </span>
+                        </div>
+                        <div className="flex items-center gap-2 mt-0.5 text-[9px] text-stone-300 font-bold">
+                          <span className="bg-stone-950 px-1 rounded border border-stone-800 text-cyan-300">
+                            🛡️ CA: {mon.defensa || 11}
+                          </span>
+                          <span className="bg-stone-950 px-1 rounded border border-stone-800 text-rose-300">
+                            💥 ~{mon.dano || 3}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Barra de PV de este monstruo */}
+                    <div className="space-y-0.5">
+                      <div className="flex justify-between text-[9px] font-bold">
+                        <span className="text-red-400">❤️ Salud</span>
+                        <span className="font-mono">{mon.pvActual} / {mon.pvMaximo}</span>
+                      </div>
+                      <div className="w-full h-1.5 bg-stone-950 rounded-full overflow-hidden border border-stone-800">
+                        <div
+                          className="h-full bg-gradient-to-r from-red-600 to-rose-700 transition-all duration-200"
+                          style={{ width: `${Math.max(0, (mon.pvActual / mon.pvMaximo) * 100)}%` }}
+                        />
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
             </div>
           </div>
         </div>
 
-        {/* BITÁCORA DE COMBATE ÁGIL CON SCROLL */}
+        {/* BITACORA DE COMBATE AGIL */}
         <div
           ref={logRef}
-          className="flex-1 bg-stone-950/90 border border-stone-800/80 rounded-2xl p-2.5 sm:p-3 text-[11px] font-mono space-y-1 overflow-y-auto mb-3 min-h-[75px] max-h-[110px] shadow-inner"
+          className="bg-stone-950/90 border border-stone-800/80 rounded-2xl p-2.5 text-[11px] font-mono space-y-1 overflow-y-auto mb-2.5 min-h-[65px] max-h-[95px] shadow-inner"
         >
           {log.map((linea, idx) => (
             <div key={idx} className="text-stone-300 leading-snug">
@@ -1129,23 +1322,22 @@ export default function CombatePorTurnosVE({
           ))}
         </div>
 
-        {/* PANEL DE ACCIONES TÁCTICAS DEL JUGADOR */}
-        <div className="border-t border-stone-800/90 pt-2.5">
+        {/* PANEL DE ACCIONES TACTICAS */}
+        <div className="border-t border-stone-800/90 pt-2">
           {fase === 'INICIATIVA' && (
             <button
               onClick={ejecutarIniciativa}
               disabled={ejecutandoAccion}
-              className="w-full py-3.5 bg-gradient-to-r from-amber-600 to-amber-500 hover:from-amber-500 hover:to-amber-400 text-stone-950 font-black uppercase tracking-wider text-xs rounded-2xl shadow-lg transition active:scale-[0.99] flex items-center justify-center gap-2"
+              className="w-full py-3 bg-gradient-to-r from-amber-600 to-amber-500 hover:from-amber-500 hover:to-amber-400 text-stone-950 font-black uppercase tracking-wider text-xs rounded-2xl shadow-lg transition active:scale-[0.99] flex items-center justify-center gap-2"
             >
               <span className="text-base">🎲</span>
-              <span>Comenzar Asalto (Iniciativa Automática con DES)</span>
+              <span>Tirar Iniciativa Grupal (Héroes vs Monstruos)</span>
             </button>
           )}
 
           {fase === 'TURNO_JUGADOR' && (
-            <div className="space-y-2">
-              {/* ACCIONES Y CONJUROS SEGÚN LA CLASE */}
-              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2">
+            <div className="space-y-1.5">
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
                 {listaAtaques.map((atq) => {
                   const sinPod = atq.costePod && podHeroe < atq.costePod;
                   const bloqueado = atq.disabled || sinPod || ejecutandoAccion;
@@ -1155,7 +1347,7 @@ export default function CombatePorTurnosVE({
                       key={atq.id}
                       onClick={() => ejecutarAccionJugador(atq)}
                       disabled={bloqueado}
-                      className={`p-2.5 rounded-xl border text-left transition flex flex-col justify-between relative overflow-hidden group ${
+                      className={`p-2 rounded-xl border text-left transition flex flex-col justify-between relative overflow-hidden group ${
                         bloqueado
                           ? 'bg-stone-900/60 border-stone-800/60 text-stone-600 cursor-not-allowed opacity-60'
                           : atq.estiloBoton
@@ -1163,28 +1355,26 @@ export default function CombatePorTurnosVE({
                           : 'bg-stone-900 hover:bg-stone-800/90 border-stone-700/80 hover:border-amber-500/50 text-stone-100 shadow active:scale-[0.98]'
                       }`}
                     >
-                      <div className="flex items-center justify-between w-full mb-1">
+                      <div className="flex items-center justify-between w-full mb-0.5">
                         <span className="text-xs font-black truncate">{atq.nombre}</span>
                         {atq.costePod > 0 && (
-                          <span className="text-[10px] bg-purple-950 text-purple-300 font-bold px-1 rounded border border-purple-800 flex-shrink-0">
+                          <span className="text-[9px] bg-purple-950 text-purple-300 font-bold px-1 rounded border border-purple-800 flex-shrink-0">
                             {atq.costePod} POD
                           </span>
                         )}
                       </div>
-                      <div className="flex justify-between items-center text-[10px] text-stone-400 group-hover:text-stone-300">
-                        <span className="truncate">{atq.sub}</span>
-                      </div>
+                      <span className="text-[9px] text-stone-400 truncate">{atq.sub}</span>
                     </button>
                   );
                 })}
               </div>
 
-              {/* UTILIDADES COMUNES (DEFENSA, POCIÓN, HUIR) */}
+              {/* UTILIDADES COMUNES */}
               <div className="grid grid-cols-3 gap-2 pt-1 border-t border-stone-800/50">
                 <button
                   onClick={handleDefenderse}
                   disabled={ejecutandoAccion}
-                  className="py-2.5 px-2 bg-stone-900 hover:bg-stone-800 text-stone-200 font-bold text-xs uppercase rounded-xl transition flex items-center justify-center gap-1.5 border border-stone-700 active:scale-[0.98]"
+                  className="py-2 px-2 bg-stone-900 hover:bg-stone-800 text-stone-200 font-bold text-xs uppercase rounded-xl transition flex items-center justify-center gap-1 border border-stone-700 active:scale-[0.98]"
                 >
                   <span>🛡️</span>
                   <span className="truncate">Guardia (+2 DEF)</span>
@@ -1193,7 +1383,7 @@ export default function CombatePorTurnosVE({
                 <button
                   onClick={handleBeberPocion}
                   disabled={pociones <= 0 || ejecutandoAccion}
-                  className={`py-2.5 px-2 font-bold text-xs uppercase rounded-xl transition flex items-center justify-center gap-1.5 border active:scale-[0.98] ${
+                  className={`py-2 px-2 font-bold text-xs uppercase rounded-xl transition flex items-center justify-center gap-1 border active:scale-[0.98] ${
                     pociones > 0
                       ? 'bg-emerald-950/80 hover:bg-emerald-900 border-emerald-600/50 text-emerald-200'
                       : 'bg-stone-900/60 border-stone-800 text-stone-600 cursor-not-allowed'
@@ -1206,7 +1396,7 @@ export default function CombatePorTurnosVE({
                 <button
                   onClick={handleIntentarHuir}
                   disabled={ejecutandoAccion}
-                  className="py-2.5 px-2 bg-stone-900 hover:bg-stone-800 text-stone-400 hover:text-stone-200 font-bold text-xs uppercase rounded-xl transition flex items-center justify-center gap-1.5 border border-stone-800 active:scale-[0.98]"
+                  className="py-2 px-2 bg-stone-900 hover:bg-stone-800 text-stone-400 hover:text-stone-200 font-bold text-xs uppercase rounded-xl transition flex items-center justify-center gap-1 border border-stone-800 active:scale-[0.98]"
                 >
                   <span>🏃</span>
                   <span className="truncate">Huir (Instintos)</span>
@@ -1215,26 +1405,30 @@ export default function CombatePorTurnosVE({
             </div>
           )}
 
-          {fase === 'TURNO_ENEMIGO' && (
-            <div className="w-full py-3 bg-red-950/40 border border-red-500/40 rounded-2xl text-center text-xs text-red-300 font-bold flex items-center justify-center gap-2 animate-pulse">
-              <span>⚠️</span>
-              <span>El {enemigo.nombre} prepara su zarpazo...</span>
+          {(fase === 'TURNO_ENEMIGO' || fase === 'TURNO_COMPANERO') && (
+            <div className="w-full py-2.5 bg-stone-900/80 border border-stone-800 rounded-2xl text-center text-xs text-amber-300 font-bold flex items-center justify-center gap-2 animate-pulse">
+              <span>⚔️</span>
+              <span>
+                {fase === 'TURNO_ENEMIGO' ? 'Los monstruos de la sala ejecutan su ofensiva...' : 'Un camarada de la Compañía apoya el ataque...'}
+              </span>
             </div>
           )}
 
           {fase === 'VICTORIA' && (
-            <div className="bg-emerald-950/50 border border-emerald-500/60 p-3.5 rounded-2xl flex flex-col sm:flex-row items-center justify-between gap-3 animate-in fade-in">
+            <div className="bg-emerald-950/50 border border-emerald-500/60 p-3 rounded-2xl flex flex-col sm:flex-row items-center justify-between gap-3 animate-in fade-in">
               <div>
                 <h4 className="text-sm font-black text-emerald-300 uppercase tracking-wide flex items-center gap-1.5">
-                  🎉 ¡Victoria Gloriosa!
+                  🎉 ¡Victoria Gloriosa en la Sala!
                 </h4>
                 <p className="text-xs text-stone-300 mt-0.5">
-                  Recompensa: <strong>+{enemigo.oro_recompensa || enemigo.oro || 5} MO</strong> y <strong>+{enemigo.xp_recompensa || enemigo.xp || 15} PX</strong>.
+                  Recompensa del botín:{' '}
+                  <strong>+{listaEnemigos.reduce((acc, m) => acc + (m.oro || m.oro_recompensa || 4), 0)} MO</strong> y{' '}
+                  <strong>+{listaEnemigos.reduce((acc, m) => acc + (m.xp || m.xp_recompensa || 10), 0)} PX</strong>.
                 </p>
               </div>
               <button
                 onClick={handleCerrarVictoria}
-                className="px-6 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-stone-950 font-black uppercase text-xs rounded-xl shadow-lg transition active:scale-[0.98]"
+                className="px-5 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-stone-950 font-black uppercase text-xs rounded-xl shadow-lg transition active:scale-[0.98]"
               >
                 Continuar Exploración
               </button>
@@ -1242,20 +1436,20 @@ export default function CombatePorTurnosVE({
           )}
 
           {fase === 'DERROTA' && (
-            <div className="bg-red-950/50 border border-red-500/60 p-3.5 rounded-2xl flex flex-col sm:flex-row items-center justify-between gap-3 animate-in fade-in">
+            <div className="bg-red-950/50 border border-red-500/60 p-3 rounded-2xl flex flex-col sm:flex-row items-center justify-between gap-3 animate-in fade-in">
               <div>
                 <h4 className="text-sm font-black text-red-300 uppercase tracking-wide flex items-center gap-1.5">
                   💀 Has Caído en Combate
                 </h4>
                 <p className="text-xs text-stone-300 mt-0.5">
-                  El Ángel Guardián Martín te aguarda en las puertas del juicio.
+                  El Guardián del Umbral vela tu descanso en el Santuario de Resurrección.
                 </p>
               </div>
               <button
                 onClick={handleCerrarDerrota}
-                className="px-6 py-2.5 bg-red-600 hover:bg-red-500 text-white font-black uppercase text-xs rounded-xl shadow-lg transition active:scale-[0.98]"
+                className="px-5 py-2.5 bg-red-600 hover:bg-red-500 text-white font-black uppercase text-xs rounded-xl shadow-lg transition active:scale-[0.98]"
               >
-                Comparecer ante Martín
+                Regresar al Santuario
               </button>
             </div>
           )}

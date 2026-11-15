@@ -1,3 +1,30 @@
+
+export function escalarMonstruoSegunNivel(monstruoBase, nivelJugador = 1) {
+  const n = Math.max(1, Number(nivelJugador) || 1);
+  const factor = 1 + (n - 1) * 0.22;
+  const hpEscalado = Math.max(4, Math.round((monstruoBase.hp || 5) * factor));
+  const defEscalada = (monstruoBase.defensa || 11) + Math.floor((n - 1) / 2);
+  const atqEscalado = (monstruoBase.atqBono || 1) + Math.floor((n - 1) / 2);
+  const danoEscalado = (monstruoBase.dano || monstruoBase.dano_medio || 3) + Math.floor((n - 1) / 2);
+  const oroEscalado = Math.round((monstruoBase.oro || 4) * factor);
+  const xpEscalado = Math.round((monstruoBase.xp || 10) * (1 + (n - 1) * 0.3));
+
+  return {
+    ...monstruoBase,
+    nivel: Math.max(monstruoBase.nivel || 1, n),
+    hp: hpEscalado,
+    maxHp: hpEscalado,
+    defensa: defEscalada,
+    atqBono: atqEscalado,
+    dano: danoEscalado,
+    dano_medio: danoEscalado,
+    oro: oroEscalado,
+    oro_recompensa: oroEscalado,
+    xp: xpEscalado,
+    xp_recompensa: xpEscalado
+  };
+}
+
 // Generador Procedural de Mazmorras de la Cripta v2.1
 // Crea niveles crecientes con biomas diferenciados, zona segura, sala del Jefe y sellado de arena anti-exploit.
 

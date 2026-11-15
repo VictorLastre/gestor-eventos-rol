@@ -44,6 +44,15 @@ app.set('io', io);
 io.on('connection', (socket) => {
 
   // 🏛️ Gestión de salas por sede (Multi-Tenancy Socket Rooms)
+  // 🧭 Salas de la Mega-Dungeon West Marches
+  socket.on('dungeon:unirse', (datos) => {
+    socket.join('dungeon_exploradores');
+  });
+
+  socket.on('dungeon:salir', () => {
+    socket.leave('dungeon_exploradores');
+  });
+
   socket.on('unirse-club', (clubId) => {
     try {
       for (const room of socket.rooms) {

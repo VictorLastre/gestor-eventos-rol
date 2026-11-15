@@ -9,7 +9,7 @@ import { PERSONALIDADES_NPC } from './PersonalidadesNPC';
 import HojaPersonajeVE from './HojaPersonajeVE';
 import CreacionPersonajeVE from './CreacionPersonajeVE';
 import CombatePorTurnosVE from './CombatePorTurnosVE';
-import { cargarPersonajeLocal, guardarPersonajeLocal } from './ViejaEscuelaEngine';
+import { cargarPersonajeLocal, guardarPersonajeLocal, MIEMBROS_ASOCIACION_VE } from './ViejaEscuelaEngine';
 
 export default function CriptaJuego({ usuarioLogueado, alActualizarUsuario, volver }) {
   const canvasRef = useRef(null);
@@ -28,6 +28,22 @@ export default function CriptaJuego({ usuarioLogueado, alActualizarUsuario, volv
   const [npcDialogoActivo, setNpcDialogoActivo] = useState(null);
   const [encuentroCombate, setEncuentroCombate] = useState(null);
   const [personajeVE, setPersonajeVE] = useState(null);
+
+  // Estados de presencia y Compañía Aventurera (Party)
+  const [exploradoresOnline, setExploradoresOnline] = useState([]);
+  const [panelExploradores, setPanelExploradores] = useState(false);
+  const [panelParty, setPanelParty] = useState(false);
+  const [party, setParty] = useState([
+    {
+      id: usuarioLogueado?.id || 'lider',
+      nombre: usuarioLogueado?.nombre || 'Tú',
+      clase: localStorage.getItem('crawler_clase') || 'guerrero',
+      nivel: 1,
+      pv: 16,
+      maxPv: 16,
+      esLider: true
+    }
+  ]);
 
   // Clase y Avatar
   const [claseSeleccionada, setClaseSeleccionada] = useState(
@@ -65,6 +81,136 @@ export default function CriptaJuego({ usuarioLogueado, alActualizarUsuario, volv
   });
 
   const [mensajeAlerta, setMensajeAlerta] = useState(null);
+
+  // Sincronización de presencia en la Gran Cripta West Marches
+  useEffect(() => {
+    let intervalo = null;
+
+    const reportarPresencia = async () => {
+      try {
+        const res = await fetchProtegido('/api/crawler/presencia', {
+          method: 'POST',
+          body: JSON.stringify({
+            nombre: personajeVE?.nombre || usuarioLogueado?.nombre || 'Aventurero',
+            clase: personajeVE?.clase || claseSeleccionada,
+            nivel: personajeVE?.nivel || stats.nivel || 1,
+            pvActual: stats.hp,
+            maxPv: stats.maxHp,
+            sector: stats.piso,
+            avatar: usuarioLogueado?.avatar || null
+          })
+        });
+        if (res.ok) {
+          const data = await res.json();
+          if (data.exploradores) {
+            setExploradoresOnline(data.exploradores);
+          }
+        }
+      } catch (e) {
+        // Silencioso
+      }
+    };
+
+    reportarPresencia();
+    intervalo = setInterval(reportarPresencia, 15000);
+
+    return () => {
+      if (intervalo) clearInterval(intervalo);
+      fetchProtegido('/api/crawler/salir-presencia', { method: 'POST' }).catch(() => {});
+    };
+  }, [personajeVE, claseSeleccionada, stats.hp, stats.maxHp, stats.piso, stats.nivel]);
+
+  const invitarAventurero = async (exp) => {
+    try {
+      const res = await fetchProtegido('/api/crawler/party/invitar', {
+        method: 'POST',
+        body: JSON.stringify({
+          invitadoId: exp.usuarioId,
+          nombreAnfitrion: personajeVE?.nombre || usuarioLogueado?.nombre,
+          claseAnfitrion: personajeVE?.clase || claseSeleccionada,
+          nivelAnfitrion: personajeVE?.nivel || stats.nivel
+        })
+      });
+      if (res.ok) {
+        Swal.fire({
+          toast: true,
+          position: 'top-end',
+          icon: 'success',
+          title: `Invitación enviada a ${exp.nombre}`,
+          showConfirmButton: false,
+          timer: 2500,
+          background: '#09090b',
+          color: '#ffffff'
+        });
+      }
+    } catch (e) {
+      console.warn('Error al invitar a party:', e);
+    }
+  };
+
+  const reclutarCompaneroNPC = (clave) => {
+    const ficha = MIEMBROS_ASOCIACION_VE[clave];
+    if (!ficha) return;
+
+    if (party.some(p => p.claveNPC === clave)) {
+      Swal.fire({
+        toast: true,
+        position: 'top-end',
+        icon: 'info',
+        title: `${ficha.nombre} ya marcha en tu Compañía`,
+        showConfirmButton: false,
+        timer: 2000,
+        background: '#09090b',
+        color: '#ffffff'
+      });
+      return;
+    }
+
+    if (party.length >= 4) {
+      Swal.fire({
+        toast: true,
+        position: 'top-end',
+        icon: 'warning',
+        title: 'Tu Compañía Aventurera está completa (Máximo 4)',
+        showConfirmButton: false,
+        timer: 2000,
+        background: '#09090b',
+        color: '#ffffff'
+      });
+      return;
+    }
+
+    sound.playLevelUp();
+    setParty(prev => [
+      ...prev,
+      {
+        id: `npc_${clave}`,
+        claveNPC: clave,
+        nombre: ficha.nombre,
+        clase: (ficha.clase || 'Guerrero').toLowerCase(),
+        nivel: stats.nivel || 1,
+        pv: 16,
+        maxPv: 16,
+        esNPC: true,
+        rol: ficha.rol
+      }
+    ]);
+
+    Swal.fire({
+      toast: true,
+      position: 'top-end',
+      icon: 'success',
+      title: `¡${ficha.nombre} se unió a tu Compañía Aventurera!`,
+      showConfirmButton: false,
+      timer: 2500,
+      background: '#09090b',
+      color: '#ffffff'
+    });
+  };
+
+  const expulsarDeParty = (idMiembro) => {
+    setParty(prev => prev.filter(p => p.id !== idMiembro));
+  };
 
   // 1. Detectar si es pantalla táctil/móvil
   useEffect(() => {
@@ -193,17 +339,18 @@ export default function CriptaJuego({ usuarioLogueado, alActualizarUsuario, volv
         }
       },
       onMuerte: (data) => {
-        const juicio = PERSONALIDADES_NPC.martin.generarJuicioMuerte(data.armaQuebrada, data.oroPerdido, data.expulsado, data.piso);
+        const fichaMuerte = PERSONALIDADES_NPC.guardian_umbral || PERSONALIDADES_NPC.martin;
+        const juicio = fichaMuerte.generarJuicioMuerte(data.armaQuebrada, data.oroPerdido, data.expulsado, data.piso);
         Swal.fire({
           title: juicio.titulo,
           text: juicio.mensaje,
           imageUrl: '/assets/crawler/portraits/npc_angel_portrait.png',
           imageWidth: 96,
           imageHeight: 96,
-          imageAlt: 'Martín el Ángel Fiscal',
+          imageAlt: 'El Guardián del Umbral',
           background: '#09090b',
           color: '#ffffff',
-          confirmButtonText: 'Firmar Acta y Continuar',
+          confirmButtonText: 'Regresar al Santuario',
           confirmButtonColor: '#fbbf24',
           customClass: {
             image: 'rounded-xl border-2 border-amber-400 shadow-lg'
@@ -224,9 +371,10 @@ export default function CriptaJuego({ usuarioLogueado, alActualizarUsuario, volv
       onCambioPiso: (nuevoPiso) => {
         localStorage.setItem('crawler_piso', nuevoPiso);
       },
-      onIniciarCombatePorTurnos: (enemigo) => {
+      onIniciarCombatePorTurnos: (enemigosGrupo) => {
         const pj = cargarPersonajeLocal() || personajeVE;
-        setEncuentroCombate({ enemigo, personaje: pj });
+        const lista = Array.isArray(enemigosGrupo) ? enemigosGrupo : [enemigosGrupo];
+        setEncuentroCombate({ enemigos: lista, enemigo: lista[0], personaje: pj });
       }
     });
 
@@ -299,14 +447,15 @@ export default function CriptaJuego({ usuarioLogueado, alActualizarUsuario, volv
             if (ficha) setNpcDialogoActivo(ficha);
           },
           onMuerte: (data) => {
-            const juicio = PERSONALIDADES_NPC.martin.generarJuicioMuerte(data.armaQuebrada, data.oroPerdido, data.expulsado, data.piso);
+            const fichaMuerte = PERSONALIDADES_NPC.guardian_umbral || PERSONALIDADES_NPC.martin;
+        const juicio = fichaMuerte.generarJuicioMuerte(data.armaQuebrada, data.oroPerdido, data.expulsado, data.piso);
             Swal.fire({
               title: juicio.titulo,
               text: juicio.mensaje,
               imageUrl: '/assets/crawler/portraits/npc_angel_portrait.png',
               imageWidth: 96,
               imageHeight: 96,
-              imageAlt: 'Martín el Ángel Fiscal',
+              imageAlt: 'El Guardián del Umbral',
               background: '#09090b',
               color: '#f4f4f5',
               confirmButtonText: 'Reaparecer en la Hoguera',
@@ -318,9 +467,10 @@ export default function CriptaJuego({ usuarioLogueado, alActualizarUsuario, volv
           onCambioPiso: (nuevoPiso) => {
             localStorage.setItem('crawler_piso', nuevoPiso);
           },
-          onIniciarCombatePorTurnos: (enemigo) => {
+          onIniciarCombatePorTurnos: (enemigosGrupo) => {
             const pj = cargarPersonajeLocal() || nuevoPj;
-            setEncuentroCombate({ enemigo, personaje: pj });
+            const lista = Array.isArray(enemigosGrupo) ? enemigosGrupo : [enemigosGrupo];
+            setEncuentroCombate({ enemigos: lista, enemigo: lista[0], personaje: pj });
           }
         });
         nuevoEngine.start();
@@ -375,13 +525,18 @@ export default function CriptaJuego({ usuarioLogueado, alActualizarUsuario, volv
   // -------------------------------------------------------------------
   const handleFinalizarCombate = (resultado) => {
     if (!encuentroCombate) return;
-    const { enemigo } = encuentroCombate;
+    const { enemigo, enemigos } = encuentroCombate;
+    const listaEnemigos = enemigos || (Array.isArray(enemigo) ? enemigo : [enemigo]);
     const engine = engineRef.current;
 
     if (resultado.victoria) {
       if (engine) {
-        enemigo.hp = 0;
-        engine.procesarMuerteEnemigo(enemigo);
+        listaEnemigos.forEach(e => {
+          if (e) {
+            e.hp = 0;
+            engine.procesarMuerteEnemigo(e);
+          }
+        });
         const pj = cargarPersonajeLocal() || personajeVE;
         if (pj) {
           pj.pvActual = resultado.pvRestante;
@@ -394,7 +549,7 @@ export default function CriptaJuego({ usuarioLogueado, alActualizarUsuario, volv
     } else {
       if (engine) {
         engine.pausado = false;
-        engine.infligirDanoJugador(9999, enemigo.nombre);
+        engine.infligirDanoJugador(9999, listaEnemigos[0]?.nombre || 'Monstruo');
       }
     }
     setEncuentroCombate(null);
@@ -402,17 +557,23 @@ export default function CriptaJuego({ usuarioLogueado, alActualizarUsuario, volv
 
   const handleHuirCombate = () => {
     if (!encuentroCombate) return;
-    const { enemigo } = encuentroCombate;
+    const { enemigo, enemigos } = encuentroCombate;
+    const listaEnemigos = enemigos || (Array.isArray(enemigo) ? enemigo : [enemigo]);
     const engine = engineRef.current;
     if (engine) {
-      enemigo.cooldownAtaque = 3.5;
-      const angulo = Math.atan2(engine.player.y - enemigo.y, engine.player.x - enemigo.x);
-      const pushDist = 36;
-      const nx = engine.player.x + Math.cos(angulo) * pushDist;
-      const ny = engine.player.y + Math.sin(angulo) * pushDist;
-      if (!engine.colisionaConMuro(nx, ny, engine.player.radio)) {
-        engine.player.x = nx;
-        engine.player.y = ny;
+      listaEnemigos.forEach(e => {
+        if (e) e.cooldownAtaque = 3.5;
+      });
+      const primerEnemigo = listaEnemigos[0];
+      if (primerEnemigo) {
+        const angulo = Math.atan2(engine.player.y - primerEnemigo.y, engine.player.x - primerEnemigo.x);
+        const pushDist = 36;
+        const nx = engine.player.x + Math.cos(angulo) * pushDist;
+        const ny = engine.player.y + Math.sin(angulo) * pushDist;
+        if (!engine.colisionaConMuro(nx, ny, engine.player.radio)) {
+          engine.player.x = nx;
+          engine.player.y = ny;
+        }
       }
       engine.pausado = false;
     }
@@ -610,7 +771,7 @@ export default function CriptaJuego({ usuarioLogueado, alActualizarUsuario, volv
             <div>
               <div className="flex items-center gap-1.5 sm:gap-2">
                 <span className="text-[10px] sm:text-xs font-black uppercase tracking-[0.2em] bg-purple-500/10 text-purple-400 px-2.5 py-0.5 rounded-full border border-purple-500/20">
-                  Piso {stats.piso} / 100
+                  Sector {stats.piso} • Cripta Ancestral
                 </span>
                 {stats.enSantuario && (
                   <span className="text-[9px] sm:text-[10px] font-black uppercase tracking-widest bg-emerald-500/10 text-emerald-400 px-2 py-0.5 rounded-full border border-emerald-500/30 flex items-center gap-1 animate-pulse">
@@ -647,6 +808,25 @@ export default function CriptaJuego({ usuarioLogueado, alActualizarUsuario, volv
 
           {/* ACCIONES SUPERIORES */}
           <div className="flex items-center gap-1.5 sm:gap-2">
+            <button
+              onClick={() => setPanelExploradores(true)}
+              className="text-xs font-bold text-emerald-300 hover:text-white bg-emerald-950/70 hover:bg-emerald-900/80 px-2.5 py-1.5 rounded-xl border border-emerald-600/50 transition-all flex items-center gap-1.5 shadow"
+              title="Aventureros explorando la Cripta ahora"
+            >
+              <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping"></span>
+              <span>🧭</span>
+              <span className="hidden sm:inline">Exploradores ({exploradoresOnline.length})</span>
+            </button>
+
+            <button
+              onClick={() => setPanelParty(true)}
+              className="text-xs font-bold text-blue-300 hover:text-white bg-blue-950/70 hover:bg-blue-900/80 px-2.5 py-1.5 rounded-xl border border-blue-600/50 transition-all flex items-center gap-1.5 shadow"
+              title="Compañía Aventurera (Party)"
+            >
+              <span>🛡️</span>
+              <span className="hidden sm:inline">Compañía ({party.length}/4)</span>
+            </button>
+
             <button
               onClick={() => setModalHojaVE(true)}
               className="text-xs font-bold text-amber-300 hover:text-white bg-amber-950/70 hover:bg-amber-900/80 px-2.5 py-1.5 rounded-xl border border-amber-600/50 transition-all flex items-center gap-1.5 shadow"
@@ -1047,6 +1227,208 @@ export default function CriptaJuego({ usuarioLogueado, alActualizarUsuario, volv
         />
       )}
 
+      {/* MODAL: AVENTUREROS CONECTADOS EN LA CRIPTA */}
+      {panelExploradores && (
+        <div className="fixed inset-0 bg-black/85 backdrop-blur-md z-50 flex items-center justify-center p-3 animate-in fade-in">
+          <div className="bg-stone-950 border border-stone-800 max-w-lg w-full rounded-3xl p-5 shadow-2xl text-stone-200">
+            <div className="flex justify-between items-center pb-3 border-b border-stone-800 mb-4">
+              <div className="flex items-center gap-2">
+                <span className="text-xl">🧭</span>
+                <div>
+                  <h3 className="text-sm font-black text-emerald-400 uppercase tracking-wider">
+                    Aventureros en la Mazmorra ({exploradoresOnline.length})
+                  </h3>
+                  <p className="text-[11px] text-stone-400">
+                    Jugadores explorando en tiempo real la Gran Cripta.
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={() => setPanelExploradores(false)}
+                className="w-8 h-8 rounded-full bg-stone-900 border border-stone-800 text-stone-400 hover:text-white flex items-center justify-center text-sm font-bold"
+              >
+                ✕
+              </button>
+            </div>
+
+            <div className="space-y-2 max-h-[350px] overflow-y-auto mb-4 scrollbar-thin">
+              {exploradoresOnline.length === 0 ? (
+                <div className="text-center py-6 text-xs text-stone-500">
+                  No hay otros aventureros conectados en este momento.
+                </div>
+              ) : (
+                exploradoresOnline.map((exp) => {
+                  const esYo = exp.usuarioId === usuarioLogueado?.id;
+                  const enParty = party.some(p => p.id === exp.usuarioId);
+
+                  return (
+                    <div
+                      key={exp.usuarioId}
+                      className="bg-stone-900/90 border border-stone-800 rounded-2xl p-3 flex items-center justify-between gap-3"
+                    >
+                      <div className="flex items-center gap-2.5">
+                        <div className="w-10 h-10 rounded-xl bg-stone-950 border border-stone-800 flex items-center justify-center text-sm font-bold text-amber-300">
+                          {exp.avatar ? (
+                            <img src={exp.avatar} alt={exp.nombre} className="w-full h-full object-cover rounded-xl" />
+                          ) : (
+                            exp.nombre?.charAt(0).toUpperCase() || 'A'
+                          )}
+                        </div>
+                        <div>
+                          <div className="flex items-center gap-1.5">
+                            <span className="text-xs font-bold text-stone-100">{exp.nombre}</span>
+                            {esYo && (
+                              <span className="text-[9px] bg-emerald-950 text-emerald-400 px-1.5 py-0.2 rounded border border-emerald-800">
+                                Vos
+                              </span>
+                            )}
+                          </div>
+                          <p className="text-[10px] text-stone-400 capitalize">
+                            {exp.clase} • Nivel {exp.nivel || 1} • Sector {exp.sector || 1}
+                          </p>
+                        </div>
+                      </div>
+
+                      {!esYo && (
+                        <button
+                          onClick={() => invitarAventurero(exp)}
+                          disabled={enParty}
+                          className={`text-xs font-bold px-3 py-1.5 rounded-xl border transition ${
+                            enParty
+                              ? 'bg-stone-800 text-stone-500 border-stone-700 cursor-not-allowed'
+                              : 'bg-emerald-900/60 hover:bg-emerald-800 text-emerald-200 border-emerald-600/50'
+                          }`}
+                        >
+                          {enParty ? 'En Grupo' : '➕ Invitar'}
+                        </button>
+                      )}
+                    </div>
+                  );
+                })
+              )}
+            </div>
+
+            <button
+              onClick={() => setPanelExploradores(false)}
+              className="w-full py-2.5 bg-stone-900 hover:bg-stone-800 text-stone-300 font-bold text-xs uppercase rounded-xl border border-stone-800 transition"
+            >
+              Cerrar
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL: GESTIÓN DE COMPAÑÍA AVENTURERA (PARTY) */}
+      {panelParty && (
+        <div className="fixed inset-0 bg-black/85 backdrop-blur-md z-50 flex items-center justify-center p-3 animate-in fade-in">
+          <div className="bg-stone-950 border border-stone-800 max-w-lg w-full rounded-3xl p-5 shadow-2xl text-stone-200">
+            <div className="flex justify-between items-center pb-3 border-b border-stone-800 mb-4">
+              <div className="flex items-center gap-2">
+                <span className="text-xl">🛡️</span>
+                <div>
+                  <h3 className="text-sm font-black text-blue-400 uppercase tracking-wider">
+                    Compañía Aventurera ({party.length}/4)
+                  </h3>
+                  <p className="text-[11px] text-stone-400">
+                    Tu grupo de exploración táctica estilo West Marches.
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={() => setPanelParty(false)}
+                className="w-8 h-8 rounded-full bg-stone-900 border border-stone-800 text-stone-400 hover:text-white flex items-center justify-center text-sm font-bold"
+              >
+                ✕
+              </button>
+            </div>
+
+            {/* MIEMBROS ACTUALES */}
+            <div className="space-y-2 mb-4">
+              <span className="text-[10px] font-black uppercase text-stone-400 tracking-wider block">
+                Miembros del Grupo:
+              </span>
+              {party.map((m) => (
+                <div
+                  key={m.id}
+                  className="bg-stone-900/90 border border-stone-800 rounded-2xl p-2.5 flex items-center justify-between"
+                >
+                  <div className="flex items-center gap-2">
+                    <span className="text-base">{m.esLider ? '👑' : '🛡️'}</span>
+                    <div>
+                      <div className="flex items-center gap-1.5">
+                        <span className="text-xs font-bold text-stone-100">{m.nombre}</span>
+                        {m.esNPC && (
+                          <span className="text-[9px] bg-amber-950 text-amber-300 px-1.5 py-0.2 rounded border border-amber-800">
+                            Asociación
+                          </span>
+                        )}
+                      </div>
+                      <p className="text-[10px] text-stone-400 capitalize">
+                        {m.clase} • Nivel {m.nivel || 1} {m.rol ? `• ${m.rol}` : ''}
+                      </p>
+                    </div>
+                  </div>
+
+                  {!m.esLider && (
+                    <button
+                      onClick={() => expulsarDeParty(m.id)}
+                      className="text-[10px] text-red-400 hover:text-red-300 bg-red-950/40 hover:bg-red-950/80 px-2 py-1 rounded-lg border border-red-800 transition"
+                    >
+                      Expulsar
+                    </button>
+                  )}
+                </div>
+              ))}
+            </div>
+
+            {/* RECLUTAR MIEMBROS DE LA ASOCIACIÓN */}
+            <div className="border-t border-stone-800/80 pt-3 mb-4">
+              <span className="text-[10px] font-black uppercase text-stone-400 tracking-wider block mb-2">
+                Reclutar Aliados de la Asociación de Rol:
+              </span>
+              <div className="grid grid-cols-2 gap-2">
+                <button
+                  onClick={() => reclutarCompaneroNPC('martin')}
+                  className="p-2 bg-stone-900/80 hover:bg-stone-800 border border-stone-800 hover:border-blue-500/50 rounded-xl text-left transition"
+                >
+                  <div className="text-xs font-bold text-blue-300">⚔️ Martín</div>
+                  <div className="text-[9px] text-stone-400">Guerrero de Vanguardia</div>
+                </button>
+                <button
+                  onClick={() => reclutarCompaneroNPC('ayrton')}
+                  className="p-2 bg-stone-900/80 hover:bg-stone-800 border border-stone-800 hover:border-red-500/50 rounded-xl text-left transition"
+                >
+                  <div className="text-xs font-bold text-red-300">🪓 Ayrton</div>
+                  <div className="text-[9px] text-stone-400">Bárbaro Mercenario</div>
+                </button>
+                <button
+                  onClick={() => reclutarCompaneroNPC('delo')}
+                  className="p-2 bg-stone-900/80 hover:bg-stone-800 border border-stone-800 hover:border-emerald-500/50 rounded-xl text-left transition"
+                >
+                  <div className="text-xs font-bold text-emerald-300">🧪 Delo</div>
+                  <div className="text-[9px] text-stone-400">Alquimista Halfling</div>
+                </button>
+                <button
+                  onClick={() => reclutarCompaneroNPC('diny')}
+                  className="p-2 bg-stone-900/80 hover:bg-stone-800 border border-stone-800 hover:border-amber-500/50 rounded-xl text-left transition"
+                >
+                  <div className="text-xs font-bold text-amber-300">🗺️ Diny</div>
+                  <div className="text-[9px] text-stone-400">Cartógrafa Enana</div>
+                </button>
+              </div>
+            </div>
+
+            <button
+              onClick={() => setPanelParty(false)}
+              className="w-full py-2.5 bg-stone-900 hover:bg-stone-800 text-stone-300 font-bold text-xs uppercase rounded-xl border border-stone-800 transition"
+            >
+              Confirmar Formación
+            </button>
+          </div>
+        </div>
+      )}
+
+
       {/* Modal Pantalla Completa: Creación de Personaje Vieja Escuela */}
       {modalCreacionVE && (
         <div className="fixed inset-0 bg-black/90 backdrop-blur-md z-50 overflow-y-auto animate-in fade-in duration-200 flex items-center justify-center p-3 sm:p-6">
@@ -1062,7 +1444,9 @@ export default function CriptaJuego({ usuarioLogueado, alActualizarUsuario, volv
       {encuentroCombate && (
         <CombatePorTurnosVE
           enemigo={encuentroCombate.enemigo}
+          enemigos={encuentroCombate.enemigos}
           personaje={encuentroCombate.personaje || personajeVE}
+          party={party}
           onFinalizarCombate={handleFinalizarCombate}
           onHuir={handleHuirCombate}
         />

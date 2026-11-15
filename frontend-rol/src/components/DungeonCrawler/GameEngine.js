@@ -312,9 +312,9 @@ export class GameEngine {
         y: (this.dungeon.martinPoint.y + 0.5) * this.tileSize,
         radio: 16,
         nombre: 'Martín',
-        cargo: 'Ángel Fiscal',
+        cargo: 'Guerrero de Vanguardia',
         spriteKey: 'npc_angel',
-        colorTema: '#fbbf24',
+        colorTema: '#3b82f6',
         animFrame: 0,
         animTimer: 0,
         totalFrames: 5
@@ -646,13 +646,56 @@ export class GameEngine {
         if (diff <= arco / 1.7) {
           if (this.onIniciarCombatePorTurnos) {
             this.pausado = true;
-            this.onIniciarCombatePorTurnos(e);
+            this.onIniciarCombatePorTurnos(this.obtenerEnemigosEnMismaSala(e));
             return;
           }
           this.infligirDanoEnemigo(e, dano, esCrit);
         }
       }
     }
+  }
+
+
+  obtenerEnemigosEnMismaSala(enemigoPrincipal) {
+    if (!enemigoPrincipal) return [];
+    if (!this.enemigos || this.enemigos.length === 0) return [enemigoPrincipal];
+
+    // Detectar si está en la habitación del jefe
+    if (enemigoPrincipal.esJefe) {
+      return [enemigoPrincipal];
+    }
+
+    // Buscar la habitación del enemigo
+    const hab = this.dungeon?.habitaciones?.find(h =>
+      enemigoPrincipal.x >= h.x * this.tileSize &&
+      enemigoPrincipal.x <= (h.x + h.ancho) * this.tileSize &&
+      enemigoPrincipal.y >= h.y * this.tileSize &&
+      enemigoPrincipal.y <= (h.y + h.alto) * this.tileSize
+    );
+
+    if (hab) {
+      const enMismaHab = this.enemigos.filter(otro =>
+        otro.hp > 0 &&
+        otro.x >= hab.x * this.tileSize &&
+        otro.x <= (hab.x + hab.ancho) * this.tileSize &&
+        otro.y >= hab.y * this.tileSize &&
+        otro.y <= (hab.y + hab.alto) * this.tileSize
+      );
+      if (enMismaHab.length > 0) {
+        // Asegurar que el enemigo principal esté primero
+        const resto = enMismaHab.filter(e => e !== enemigoPrincipal);
+        return [enemigoPrincipal, ...resto];
+      }
+    }
+
+    // Proximidad (radio de 180 píxeles)
+    const cercanos = this.enemigos.filter(otro =>
+      otro.hp > 0 &&
+      otro !== enemigoPrincipal &&
+      Math.hypot(otro.x - enemigoPrincipal.x, otro.y - enemigoPrincipal.y) <= 180
+    );
+
+    return [enemigoPrincipal, ...cercanos];
   }
 
   infligirDanoEnemigo(e, dano, esCrit = false) {
@@ -1049,7 +1092,7 @@ export class GameEngine {
           if (this.hayLineaDeVision(e.x, e.y, this.player.x, this.player.y)) {
             if (this.onIniciarCombatePorTurnos) {
               this.pausado = true;
-              this.onIniciarCombatePorTurnos(e);
+              this.onIniciarCombatePorTurnos(this.obtenerEnemigosEnMismaSala(e));
               return;
             }
             e.cooldownAtaque = e.esJefe ? 1.1 : 0.95;
@@ -1094,7 +1137,7 @@ export class GameEngine {
           if (Math.hypot(e.x - p.x, e.y - p.y) < e.radio + p.radio) {
             if (this.onIniciarCombatePorTurnos) {
               this.pausado = true;
-              this.onIniciarCombatePorTurnos(e);
+              this.onIniciarCombatePorTurnos(this.obtenerEnemigosEnMismaSala(e));
               impacto = true;
               break;
             }

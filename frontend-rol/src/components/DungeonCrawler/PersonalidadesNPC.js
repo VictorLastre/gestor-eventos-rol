@@ -12,7 +12,7 @@ export const PERSONALIDADES_NPC = {
     pitchVoz: 530,
     colorTema: '#38bdf8', // Celeste cartografía
     badgeColor: 'bg-sky-500/20 text-sky-300 border-sky-500/40',
-    descripcion: 'Dibuja con precisión milimétrica los 100 niveles de la cripta. Cuida sus pergaminos y su café por encima de todas las cosas.',
+    descripcion: 'Dibuja con precisión milimétrica la inmensa mega-dungeon West Marches de la Cripta. Cuida sus pergaminos y su café por encima de todas las cosas.',
     respuestasOriginales: {
       saludo: 'Buenasssssss',
       muerteAbsurda: '¿Quién lo habría dicho? A NADIE SE LE OCURRIÓ que eso podría salir mal...',
@@ -135,64 +135,88 @@ export const PERSONALIDADES_NPC = {
   martin: {
     id: 'martin',
     nombre: 'Martín',
-    cargo: 'El Ángel Fiscal de la Muerte',
-    subtitulo: 'Secretaría de Actas & Registro de Bajas',
+    cargo: 'Guerrero de Vanguardia',
+    subtitulo: 'Líder Táctico & Compañero de Batalla',
     gremio: 'Asociación de Rol La Pampa',
-    spritePrefijo: 'npc_angel',
-    pitchVoz: 410,
-    colorTema: '#fbbf24', // Dorado celestial
-    badgeColor: 'bg-amber-500/20 text-amber-300 border-amber-500/40',
-    descripcion: 'Aparece en un destello celestial con una pluma y un libro de actas cada vez que un aventurero cae en combate.',
+    spritePrefijo: 'knight',
+    pitchVoz: 390,
+    colorTema: '#3b82f6',
+    badgeColor: 'bg-blue-500/20 text-blue-300 border-blue-500/40',
+    descripcion: 'Veterano marcial de la Asociación. Empuña espada larga y escudo en la vanguardia protegiendo a la Compañía.',
     respuestasOriginales: {
       saludo: 'Vamos a empezar...',
-      muerteAbsurda: '*Lo mira con desaprobacion mientras niega con la cabeza*',
+      muerteAbsurda: '*Mira el terreno táctico y evalúa el peligro*',
       regateo: 'A ver, convenceme...',
-      muletilla: '*Grito agudo al cielo*',
-      problema: 'Lo podemos solucionar asi...',
-      consejo: '¿Estas seguro?...'
+      muletilla: '*Afirma el agarre en su escudo de batalla*',
+      problema: 'Lo podemos solucionar asi: formación cerrada y cubrir la retaguardia.',
+      consejo: '¿Estas seguro?... Mantén la distancia y protege a los lanzadores de conjuros.'
     },
-    dialogoInicial: 'Vamos a empezar... Respira hondo y dime qué asunto administrativo te trae a mi presencia celestial.',
+    dialogoInicial: '¡Vamos a empezar! Mantén la guardia alta y no te separes de la formación. ¿Listo para explorar este sector?',
     opciones: [
       {
+        id: 'unirse',
+        texto: '¿Te unirías a mi Compañía Aventurera para explorar?',
+        accion: 'unirse_party',
+        respuesta: '¡Por supuesto! Cuento con mi espada y mi escudo. En grupo somos invencibles.'
+      },
+      {
         id: 'consejo',
-        texto: '¿Qué consejo me das antes de descender al siguiente nivel?',
+        texto: '¿Qué consejo táctico recomiendas para este sector?',
         accion: 'dialogo_consejo',
-        respuesta: '¿Estas seguro?... Recuerda afilar el arma en la forja y no entrar a ciegas a las salas del jefe.'
-      },
-      {
-        id: 'regatear',
-        texto: '¿Podrías perdonarme la multa de resurrección la próxima vez?',
-        accion: 'dialogo_regateo',
-        respuesta: 'A ver, convenceme... Porque en el libro de actas quedó muy claro el protocolo de multas para los caídos.'
-      },
-      {
-        id: 'solucion',
-        texto: '¿Cómo resolvemos el problema de los monstruos que bloquean el camino?',
-        accion: 'dialogo_solucion',
-        respuesta: 'Lo podemos solucionar asi: un buen posicionamiento táctico, esquivar sus proyectiles y golpear en el momento justo.'
+        respuesta: '¿Estas seguro?... Recuerda afilar tus armas en la forja y coordinar los ataques concentrándose en un solo enemigo a la vez.'
       },
       {
         id: 'salir',
-        texto: 'Retomar la misión',
+        texto: 'Retomar la marcha',
         accion: 'cerrar'
       }
     ],
-    generarJuicioMuerte: (armaRota, oroPerdido, expulsado, piso) => {
+    generarJuicioMuerte: (armaRota, oroPerdido, expulsado, sector) => {
+      return PERSONALIDADES_NPC.guardian_umbral.generarJuicioMuerte(armaRota, oroPerdido, expulsado, sector);
+    }
+  },
+
+  guardian_umbral: {
+    id: 'guardian_umbral',
+    nombre: 'El Guardián del Umbral',
+    cargo: 'Centinela del Santuario de Resurrección',
+    subtitulo: 'Custodio de las Almas de la Gran Cripta',
+    gremio: 'Entidad Mística de la Mazmorra',
+    spritePrefijo: 'npc_angel',
+    pitchVoz: 260,
+    colorTema: '#8b5cf6',
+    badgeColor: 'bg-purple-500/20 text-purple-300 border-purple-500/40',
+    descripcion: 'Entidad espectral antigua que resguarda a los héroes caídos antes de que la Cripta consuma sus espíritus.',
+    dialogoInicial: 'Las sombras de la cripta son implacables... Descansa junto al fuego sagrado y recupera tus fuerzas.',
+    opciones: [
+      {
+        id: 'bendicion',
+        texto: 'Pido una bendición para el próximo combate',
+        accion: 'dialogo_consejo',
+        respuesta: 'El fuego sagrado reconforta tu espíritu. Mantén la calma cuando los monstruos te rodeen en grupo.'
+      },
+      {
+        id: 'salir',
+        texto: 'Volver a levantarse',
+        accion: 'cerrar'
+      }
+    ],
+    generarJuicioMuerte: (armaRota, oroPerdido, expulsado, sector) => {
       if (armaRota) {
         return {
-          titulo: '⚖️ ¡ACTA DISCIPLINARIA DEL SECRETARIO MARTÍN!',
-          mensaje: '*Lo mira con desaprobación mientras niega con la cabeza* ¡Otra vez atacando con la espada partida! *Grito agudo al cielo* En el acta quedó claro que las armas se afilan antes de pelear. Vuelve a levantarte.'
+          titulo: '🕯️ ¡RESGUARDADO POR EL GUARDIÁN DEL UMBRAL!',
+          mensaje: 'Tu arma quedó mellada y tus fuerzas flaquearon en la penumbra. El Guardián te ha arrastrado de regreso a la hoguera del Santuario.'
         };
       }
       if (expulsado) {
         return {
-          titulo: '⚠️ ¡EXPULSIÓN POR FALTA DE REGISTRO!',
-          mensaje: `*Niega con la cabeza* Caíste en combate sin descubrir el Santuario del Piso ${piso}. Por normativa, eres devuelto al Piso ${piso - 1}. Lo podemos solucionar así: la próxima busca primero la hoguera.`
+          titulo: '⚠️ ¡RETIRADA AL SANTUARIO SEGURO!',
+          mensaje: `Caíste en combate antes de asegurar la hoguera del Sector ${sector}. El Guardián te resguarda en el Sector ${Math.max(1, sector - 1)}.`
         };
       }
       return {
-        titulo: '📜 ¡JUICIO ADMINISTRATIVO DEL GREMIO!',
-        mensaje: `*Lo mira con desaprobación mientras niega con la cabeza* ¿Estas seguro de lo que hiciste? La Asociación retiene ${oroPerdido} monedas para el fondo de rescates. Vamos a empezar de nuevo.`
+        titulo: '🕯️ ¡DESPERTAR EN EL SANTUARIO!',
+        mensaje: `Has caído en combate en las profundidades. El Guardián del Umbral te ha devuelto al santuario de resurrección para que continúes la gesta.`
       };
     }
   },
@@ -303,7 +327,7 @@ export const PERSONALIDADES_NPC = {
     pitchVoz: 360,
     colorTema: '#8b5cf6',
     badgeColor: 'bg-purple-600/20 text-purple-300 border-purple-600/40',
-    descripcion: 'El líder máximo que aguarda en lo más profundo de los 100 niveles y vela por el gremio en el santuario. Pragmático, estratega y maestro de las tiradas decisivas.',
+    descripcion: 'El líder máximo que aguarda en lo más profundo de la Cripta West Marches y vela por el gremio en el santuario. Pragmático, estratega y maestro de las tiradas decisivas.',
     respuestasOriginales: {
       saludo: 'Cómo dice que le va a la gente , buenasss',
       muerteAbsurda: 'Buenas decisiones...',

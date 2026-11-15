@@ -642,4 +642,144 @@ router.get('/bestiario/piso/:piso', async (req, res) => {
   }
 });
 
+
+// =====================================================================
+// 🧭 PRESENCIA Y COMPAÑÍAS AVENTURERAS (WEST MARCHES MULTIPLAYER)
+// =====================================================================
+const exploradoresConectados = new Map();
+const invitacionesParty = new Map();
+const parties = new Map();
+
+// Limpieza de exploradores inactivos (> 2 minutos sin pulso)
+setInterval(() => {
+  const ahora = Date.now();
+  for (const [id, exp] of exploradoresConectados.entries()) {
+    if (ahora - exp.ultimoPulso > 120000) {
+      exploradoresConectados.delete(id);
+    }
+  }
+  for (const [id, inv] of invitacionesParty.entries()) {
+    if (ahora - inv.timestamp > 60000) {
+      invitacionesParty.delete(id);
+    }
+  }
+}, 30000);
+
+// 1. Reportar presencia y obtener exploradores online
+router.post('/presencia', verificarToken, async (req, res) => {
+  const usuarioId = req.usuario.id;
+  const { nombre, clase, nivel, pvActual, maxPv, sector, avatar } = req.body;
+
+  exploradoresConectados.set(usuarioId, {
+    usuarioId,
+    nombre: nombre || req.usuario.nombre || 'Aventurero',
+    clase: clase || 'guerrero',
+    nivel: nivel || 1,
+    pvActual: pvActual || 16,
+    maxPv: maxPv || 16,
+    sector: sector || 1,
+    avatar: avatar || req.usuario.avatar || null,
+    ultimoPulso: Date.now()
+  });
+
+  const io = req.app.get('io');
+  const lista = Array.from(exploradoresConectados.values());
+  if (io) {
+    io.emit('dungeon:exploradores', lista);
+  }
+
+  res.json({ ok: true, exploradores: lista });
+});
+
+// 2. Obtener lista de exploradores conectados
+router.get('/exploradores', async (req, res) => {
+  const ahora = Date.now();
+  const lista = Array.from(exploradoresConectados.values()).filter(e => ahora - e.ultimoPulso <= 120000);
+  res.json(lista);
+});
+
+// 3. Salir de la mazmorra (desconectar presencia)
+router.post('/salir-presencia', verificarToken, async (req, res) => {
+  const usuarioId = req.usuario.id;
+  exploradoresConectados.delete(usuarioId);
+  const io = req.app.get('io');
+  if (io) {
+    io.emit('dungeon:exploradores', Array.from(exploradoresConectados.values()));
+  }
+  res.json({ ok: true });
+});
+
+// 4. Invitar a formar Compañía Aventurera (Party)
+router.post('/party/invitar', verificarToken, async (req, res) => {
+  const anfitrionId = req.usuario.id;
+  const { invitadoId, nombreAnfitrion, claseAnfitrion, nivelAnfitrion } = req.body;
+
+  if (!invitadoId) return res.status(400).json({ error: 'Se requiere ID del aventurero invitado.' });
+  if (anfitrionId === parseInt(invitadoId, 10)) return res.status(400).json({ error: 'No puedes invitarte a ti mismo.' });
+
+  invitacionesParty.set(parseInt(invitadoId, 10), {
+    anfitrionId,
+    nombreAnfitrion: nombreAnfitrion || req.usuario.nombre || 'Aventurero',
+    claseAnfitrion: claseAnfitrion || 'guerrero',
+    nivelAnfitrion: nivelAnfitrion || 1,
+    timestamp: Date.now()
+  });
+
+  const io = req.app.get('io');
+  if (io) {
+    io.emit(`dungeon:invitacion:${invitadoId}`, {
+      anfitrionId,
+      nombreAnfitrion: nombreAnfitrion || req.usuario.nombre,
+      claseAnfitrion,
+      nivelAnfitrion
+    });
+  }
+
+  res.json({ ok: true, mensaje: 'Invitación enviada al aventurero.' });
+});
+
+// 5. Responder invitación de Compañía Aventurera
+router.post('/party/responder', verificarToken, async (req, res) => {
+  const usuarioId = req.usuario.id;
+  const { anfitrionId, aceptar } = req.body;
+
+  invitacionesParty.delete(usuarioId);
+
+  const io = req.app.get('io');
+  if (!aceptar) {
+    if (io) {
+      io.emit(`dungeon:party_rechazada:${anfitrionId}`, { invitadoId: usuarioId });
+    }
+    return res.json({ ok: true, mensaje: 'Invitación rechazada.' });
+  }
+
+  let partyEncontrada = null;
+  for (const [pId, miembros] of parties.entries()) {
+    if (miembros.has(anfitrionId)) {
+      partyEncontrada = pId;
+      miembros.add(usuarioId);
+      break;
+    }
+  }
+
+  if (!partyEncontrada) {
+    partyEncontrada = `party_${Date.now()}_${anfitrionId}`;
+    parties.set(partyEncontrada, new Set([anfitrionId, usuarioId]));
+  }
+
+  const miembrosArray = Array.from(parties.get(partyEncontrada));
+  const datosMiembros = miembrosArray.map(id => exploradoresConectados.get(id)).filter(Boolean);
+
+  if (io) {
+    miembrosArray.forEach(mId => {
+      io.emit(`dungeon:party_actualizada:${mId}`, {
+        partyId: partyEncontrada,
+        miembros: datosMiembros
+      });
+    });
+  }
+
+  res.json({ ok: true, partyId: partyEncontrada, miembros: datosMiembros });
+});
+
 module.exports = router;
