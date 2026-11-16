@@ -2110,18 +2110,29 @@ export class GameEngine {
 
   dibujarBurbujaAccion(ctx, titulo, subtitulo) {
     const cx = this.canvas.width / 2;
-    const cy = this.canvas.height - 70;
+    // Elevar la burbuja para evitar cualquier superposición con las ayudas de teclas o controles inferiores
+    const cy = this.canvas.height - 115;
 
     ctx.save();
-    ctx.fillStyle = 'rgba(9, 9, 11, 0.9)';
+    ctx.font = 'bold 12px sans-serif';
+    const subW = ctx.measureText(subtitulo).width;
+    const boxW = Math.max(380, subW + 40);
+    const boxH = 48;
+
+    ctx.fillStyle = 'rgba(9, 9, 11, 0.94)';
     ctx.strokeStyle = '#10b981';
     ctx.lineWidth = 2;
+    ctx.shadowColor = 'rgba(16, 185, 129, 0.4)';
+    ctx.shadowBlur = 14;
+
     ctx.beginPath();
-    ctx.roundRect(cx - 190, cy, 380, 48, 12);
+    ctx.roundRect(cx - boxW / 2, cy, boxW, boxH, 12);
     ctx.fill();
     ctx.stroke();
 
-    ctx.fillStyle = '#10b981';
+    ctx.shadowBlur = 0;
+
+    ctx.fillStyle = '#34d399';
     ctx.font = '900 11px monospace';
     ctx.textAlign = 'center';
     ctx.fillText(titulo.toUpperCase(), cx, cy + 18);

@@ -1072,12 +1072,12 @@ export default function CriptaJuego({ usuarioLogueado, alActualizarUsuario, volv
 
           {/* CONTROLES / AYUDA TECLADO (PC) */}
           {!esDispositivoTactil && (
-            <div className="absolute bottom-3 left-3 bg-zinc-950/85 backdrop-blur-md border border-zinc-800 px-3 py-1.5 rounded-xl text-[10px] text-zinc-400 font-bold uppercase tracking-wider pointer-events-none hidden sm:flex items-center gap-3 z-10">
-              <span>⌨️ [WASD] Mover</span>
-              <span>🖱️ [Clic] Atacar</span>
-              <span>⚡ [Espacio] Esquiva</span>
-              <span>🚪 [E] Abrir/Puerta</span>
-              <span>🎒 [I] Mochila/Tienda</span>
+            <div className="absolute bottom-2 left-3 bg-zinc-950/80 backdrop-blur-md border border-zinc-800/80 px-2.5 py-1 rounded-xl text-[9px] text-zinc-400 font-bold uppercase tracking-wider pointer-events-none hidden sm:flex items-center gap-2.5 z-10 shadow-lg">
+              <span>⌨️ WASD</span>
+              <span>🖱️ Clic</span>
+              <span>⚡ Espacio</span>
+              <span>🚪 [E] Abrir</span>
+              <span>🎒 [I] Mochila</span>
             </div>
           )}
         </div>
