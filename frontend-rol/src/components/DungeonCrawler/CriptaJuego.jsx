@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useMemo } from 'react';
 import Swal from 'sweetalert2';
 import { GameEngine, CLASES } from './GameEngine';
 import { assets } from './AssetManager';
