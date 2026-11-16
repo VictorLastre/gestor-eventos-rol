@@ -13,19 +13,7 @@ import InventarioVE from './InventarioVE';
 import { cargarPersonajeLocal, guardarPersonajeLocal, MIEMBROS_ASOCIACION_VE } from './ViejaEscuelaEngine';
 
 
-  // Atajo de teclado: 'I' para abrir o cerrar el inventario OSR
-  useEffect(() => {
-    const handleKeyI = (e) => {
-      if (e.target && (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA')) return;
-      if (e.key === 'i' || e.key === 'I') {
-        e.preventDefault();
-        setSubpestanaInventario('inventario');
-        setModalInventarioVE(prev => !prev);
-      }
-    };
-    window.addEventListener('keydown', handleKeyI);
-    return () => window.removeEventListener('keydown', handleKeyI);
-  }, []);
+
 
 export default function CriptaJuego({ usuarioLogueado, alActualizarUsuario, volver }) {
   const canvasRef = useRef(null);
@@ -99,6 +87,20 @@ export default function CriptaJuego({ usuarioLogueado, alActualizarUsuario, volv
   });
 
   const [mensajeAlerta, setMensajeAlerta] = useState(null);
+
+  // Atajo de teclado: 'I' para abrir o cerrar el inventario OSR
+  useEffect(() => {
+    const handleKeyI = (e) => {
+      if (e.target && (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA')) return;
+      if (e.key === 'i' || e.key === 'I') {
+        e.preventDefault();
+        setSubpestanaInventario('inventario');
+        setModalInventarioVE(prev => !prev);
+      }
+    };
+    window.addEventListener('keydown', handleKeyI);
+    return () => window.removeEventListener('keydown', handleKeyI);
+  }, []);
 
   // Sincronización de presencia en la Gran Cripta West Marches
   useEffect(() => {
