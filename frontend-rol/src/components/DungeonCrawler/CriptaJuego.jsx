@@ -562,7 +562,7 @@ export default function CriptaJuego({ usuarioLogueado, alActualizarUsuario, volv
     const engine = engineRef.current;
     if (engine) {
       listaEnemigos.forEach(e => {
-        if (e) e.cooldownAtaque = 3.5;
+        if (e) e.cooldownAtaque = 5.5; // Margen amplio para escapar y recorrer
       });
       const primerEnemigo = listaEnemigos[0];
       if (primerEnemigo) {

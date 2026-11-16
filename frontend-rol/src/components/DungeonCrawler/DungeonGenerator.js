@@ -389,25 +389,33 @@ export class DungeonGenerator {
       if (h.tipo === 'spawn' || h.tipo === 'santuario') continue;
 
       if (h.tipo === 'normal') {
-        const cantidad = Math.floor(Math.random() * 2) + 1 + Math.min(this.piso, 2);
-        const poolEnemigos = BESTIARIO_PISOS[this.piso] || BESTIARIO_PISOS[1];
+        // Equilibrado para exploración de un solo jugador:
+        // ~40% de las salas son libres de monstruos para poder explorar y recorrer la cripta
+        const tieneMonstruos = Math.random() < 0.60;
 
-        for (let i = 0; i < cantidad; i++) {
-          const ex = Math.floor(Math.random() * (h.ancho - 2)) + h.x + 1;
-          const ey = Math.floor(Math.random() * (h.alto - 2)) + h.y + 1;
-          const plantilla = poolEnemigos[Math.floor(Math.random() * poolEnemigos.length)];
+        if (tieneMonstruos) {
+          // 80% de probabilidad de 1 solo monstruo solitario, 20% patrulla de 2
+          const cantidad = Math.random() < 0.80 ? 1 : 2;
+          const poolEnemigos = BESTIARIO_PISOS[this.piso] || BESTIARIO_PISOS[1];
 
-          this.spawnsEnemigos.push({
-            x: ex,
-            y: ey,
-            ...plantilla,
-            hp: plantilla.hp,
-            maxHp: plantilla.maxHp,
-            materiales: Math.floor(Math.random() * 2) + 1
-          });
+          for (let i = 0; i < cantidad; i++) {
+            const ex = Math.floor(Math.random() * (h.ancho - 2)) + h.x + 1;
+            const ey = Math.floor(Math.random() * (h.alto - 2)) + h.y + 1;
+            const plantilla = poolEnemigos[Math.floor(Math.random() * poolEnemigos.length)];
+
+            this.spawnsEnemigos.push({
+              x: ex,
+              y: ey,
+              ...plantilla,
+              hp: plantilla.hp,
+              maxHp: plantilla.maxHp,
+              materiales: Math.floor(Math.random() * 2) + 1
+            });
+          }
         }
 
-        if (Math.random() < 0.7) {
+        // Cofres y secretos en las salas exploradas
+        if (Math.random() < 0.55) {
           const cx = Math.floor(Math.random() * (h.ancho - 2)) + h.x + 1;
           const cy = Math.floor(Math.random() * (h.alto - 2)) + h.y + 1;
           this.cofres.push({

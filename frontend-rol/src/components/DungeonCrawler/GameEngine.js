@@ -673,29 +673,17 @@ export class GameEngine {
       enemigoPrincipal.y <= (h.y + h.alto) * this.tileSize
     );
 
-    if (hab) {
-      const enMismaHab = this.enemigos.filter(otro =>
-        otro.hp > 0 &&
-        otro.x >= hab.x * this.tileSize &&
-        otro.x <= (hab.x + hab.ancho) * this.tileSize &&
-        otro.y >= hab.y * this.tileSize &&
-        otro.y <= (hab.y + hab.alto) * this.tileSize
-      );
-      if (enMismaHab.length > 0) {
-        // Asegurar que el enemigo principal esté primero
-        const resto = enMismaHab.filter(e => e !== enemigoPrincipal);
-        return [enemigoPrincipal, ...resto];
-      }
-    }
-
-    // Proximidad (radio de 180 píxeles)
+    // Alerta por cercanía directa (solo si están muy cerca, a menos de 105px ~ 3 casillas)
+    // Para que un jugador solo no se vea sobrepasado si los monstruos están en lados opuestos de la sala
     const cercanos = this.enemigos.filter(otro =>
       otro.hp > 0 &&
       otro !== enemigoPrincipal &&
-      Math.hypot(otro.x - enemigoPrincipal.x, otro.y - enemigoPrincipal.y) <= 180
+      Math.hypot(otro.x - enemigoPrincipal.x, otro.y - enemigoPrincipal.y) <= 105
     );
 
-    return [enemigoPrincipal, ...cercanos];
+    // Máximo 2 monstruos a la vez para un jugador en exploración solo
+    const grupo = [enemigoPrincipal, ...cercanos].slice(0, 2);
+    return grupo;
   }
 
   infligirDanoEnemigo(e, dano, esCrit = false) {
@@ -1047,7 +1035,7 @@ export class GameEngine {
       }
 
       const distAlJugador = Math.hypot(this.player.x - e.x, this.player.y - e.y);
-      const radioVision = e.esJefe ? 450 : 230;
+      const radioVision = e.esJefe ? 320 : 135;
 
       // El jefe solo persigue dentro de su combate activo o si está dentro de su radio
       const puedePerseguir = e.esJefe ? (this.combateJefeActivo || distAlJugador < 200) : (distAlJugador < radioVision && !this.player.enSantuario);
