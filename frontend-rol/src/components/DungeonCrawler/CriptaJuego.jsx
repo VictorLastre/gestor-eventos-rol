@@ -10,7 +10,7 @@ import HojaPersonajeVE from './HojaPersonajeVE';
 import CreacionPersonajeVE from './CreacionPersonajeVE';
 import CombatePorTurnosVE from './CombatePorTurnosVE';
 import InventarioVE from './InventarioVE';
-import { cargarPersonajeLocal, guardarPersonajeLocal, MIEMBROS_ASOCIACION_VE } from './ViejaEscuelaEngine';
+import { cargarPersonajeLocal, guardarPersonajeLocal, calcularEstadisticasPersonaje, MIEMBROS_ASOCIACION_VE } from './ViejaEscuelaEngine';
 
 
 
@@ -67,17 +67,19 @@ export default function CriptaJuego({ usuarioLogueado, alActualizarUsuario, volv
     clase: 'guerrero',
     nivel: 1,
     xp: 0,
-    xpSiguiente: 100,
-    hp: 160,
-    maxHp: 160,
-    recurso: 50,
-    maxRecurso: 50,
+    xpSiguiente: 2000,
+    hp: 8,
+    maxHp: 8,
+    recurso: 0,
+    maxRecurso: 0,
     durabilidad: 70,
     maxDurabilidad: 70,
     armaRota: false,
-    oro: 0,
+    oro: 30,
     materiales: 8,
     llaves: 0,
+    def: 13,
+    mov: 12,
     enSantuario: false,
     santuarioDescubierto: false,
     cercaHoguera: false,
@@ -353,6 +355,7 @@ export default function CriptaJuego({ usuarioLogueado, alActualizarUsuario, volv
       oroInicial: oroGuardado,
       claseId: claseSeleccionada,
       genero: generoSeleccionado,
+      personaje: personajeVE || cargarPersonajeLocal(),
       party: party,
       onActualizarStats: (nuevasStats) => {
         setStats(nuevasStats);
@@ -774,8 +777,28 @@ export default function CriptaJuego({ usuarioLogueado, alActualizarUsuario, volv
     }
   };
 
-  const hpPorcentaje = Math.max(0, Math.min(100, (stats.hp / stats.maxHp) * 100));
-  const recursoPorcentaje = Math.max(0, Math.min(100, (stats.recurso / stats.maxRecurso) * 100));
+  const statsVE = useMemo(() => {
+    if (!personajeVE) return null;
+    return calcularEstadisticasPersonaje(personajeVE);
+  }, [personajeVE]);
+
+  const esCaster = (personajeVE?.clase || claseSeleccionada) === 'hechicero' || (personajeVE?.clase || claseSeleccionada) === 'clerigo';
+  const pvMaxCalculado = statsVE?.pvMax || statsVE?.pv || stats.maxHp || 8;
+  const pvActualCalculado = stats.hp !== undefined ? Math.round(stats.hp) : (personajeVE?.pvActual || pvMaxCalculado);
+  const hpPorcentaje = Math.max(0, Math.min(100, (pvActualCalculado / pvMaxCalculado) * 100));
+
+  const pxObjetivo = (personajeVE?.clase || claseSeleccionada) === 'bribon' ? 1500 : ((personajeVE?.clase || claseSeleccionada) === 'hechicero' ? 2500 : ((personajeVE?.clase || claseSeleccionada) === 'clerigo' ? 1500 : 2000));
+  const pxActual = personajeVE?.px || stats.xp || 0;
+  const pxPorcentaje = Math.min(100, Math.round((pxActual / pxObjetivo) * 100));
+
+  const podMax = statsVE?.pod || stats.maxRecurso || 1;
+  const podActual = stats.recurso !== undefined ? stats.recurso : (personajeVE?.podActual || podMax);
+  const podPorcentaje = Math.min(100, Math.round((podActual / Math.max(1, podMax)) * 100));
+
+  const armaActiva = useMemo(() => {
+    return personajeVE?.armas?.[0] || { nombre: 'Espada Larga', dado: '1d8', tipo: 'CaC' };
+  }, [personajeVE]);
+
   const durabilidadPorcentaje = Math.max(0, Math.min(100, (stats.durabilidad / stats.maxDurabilidad) * 100));
   const datosClaseActual = CLASES[claseSeleccionada] || CLASES.guerrero;
 
@@ -1052,14 +1075,14 @@ export default function CriptaJuego({ usuarioLogueado, alActualizarUsuario, volv
             <div className="absolute bottom-3 left-3 bg-zinc-950/85 backdrop-blur-md border border-zinc-800 px-3 py-1.5 rounded-xl text-[10px] text-zinc-400 font-bold uppercase tracking-wider pointer-events-none hidden sm:flex items-center gap-3 z-10">
               <span>⌨️ [WASD] Mover</span>
               <span>🖱️ [Clic] Atacar</span>
-              <span>⚡ [Espacio] Dash</span>
-              <span>🔥 [E] Hoguera/Bajar</span>
-              <span>🔨 [F] Forja</span>
+              <span>⚡ [Espacio] Esquiva</span>
+              <span>🚪 [E] Abrir/Puerta</span>
+              <span>🎒 [I] Mochila/Tienda</span>
             </div>
           )}
         </div>
 
-        {/* HUD INFERIOR: ESTADÍSTICAS DEL HÉROE, ARMA Y MATERIALES */}
+        {/* HUD INFERIOR: ESTADÍSTICAS OFICIALES VIEJA ESCUELA OSR */}
         <div className="bg-zinc-900/95 backdrop-blur-md px-3 sm:px-4 py-2.5 border-t border-zinc-800/80 flex flex-wrap items-center justify-between gap-3 z-10">
           
           {/* IDENTIDAD DEL HÉROE */}
@@ -1067,7 +1090,7 @@ export default function CriptaJuego({ usuarioLogueado, alActualizarUsuario, volv
             <div className="w-10 h-10 sm:w-11 sm:h-11 bg-zinc-950 rounded-2xl border-2 border-emerald-500/50 flex items-center justify-center overflow-hidden shadow-inner relative shrink-0">
               <img
                 src={`/assets/crawler/heroes/${
-                  claseSeleccionada === 'guerrero' ? 'knight' : claseSeleccionada === 'mago' ? 'wizzard' : 'elf'
+                  (personajeVE?.clase || claseSeleccionada) === 'guerrero' ? 'knight' : (personajeVE?.clase || claseSeleccionada) === 'hechicero' || (personajeVE?.clase || claseSeleccionada) === 'mago' ? 'wizzard' : 'elf'
                 }_${generoSeleccionado}_idle_anim_f0.png`}
                 alt="Avatar"
                 className="w-8 h-8 sm:w-9 sm:h-9 object-contain"
@@ -1080,21 +1103,22 @@ export default function CriptaJuego({ usuarioLogueado, alActualizarUsuario, volv
                   {personajeVE?.nombre || usuarioLogueado?.nombre}
                 </span>
                 <span className="text-[9px] sm:text-[10px] font-black uppercase tracking-widest text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded-full border border-emerald-500/20">
-                  Nvl {stats.nivel}
+                  Nvl {personajeVE?.nivel || stats.nivel || 1}
                 </span>
               </div>
               <p className="text-[9px] sm:text-[10px] text-zinc-400 font-bold uppercase tracking-wider">
-                {datosClaseActual.nombre}
+                {personajeVE?.raza?.toUpperCase() || ''} {personajeVE?.clase?.toUpperCase() || datosClaseActual.nombre}
               </p>
             </div>
           </div>
 
-          {/* BARRAS DE VIDA Y RECURSO */}
+          {/* BARRAS OFICIALES VIEJA ESCUELA: PV Y POD/PX */}
           <div className="flex-1 max-w-xs sm:max-w-sm flex flex-col gap-1">
+            {/* PUNTOS DE VIDA (PV) */}
             <div className="flex flex-col">
               <div className="flex justify-between text-[9px] sm:text-[10px] font-black uppercase tracking-wider text-red-400 mb-0.5">
-                <span>❤️ Salud</span>
-                <span>{Math.round(stats.hp)} / {stats.maxHp}</span>
+                <span>❤️ Puntos de Vida (PV)</span>
+                <span>{pvActualCalculado} / {pvMaxCalculado}</span>
               </div>
               <div className="w-full h-2.5 sm:h-3 bg-zinc-950 border border-zinc-800 rounded-full overflow-hidden">
                 <div
@@ -1104,64 +1128,61 @@ export default function CriptaJuego({ usuarioLogueado, alActualizarUsuario, volv
               </div>
             </div>
 
-            <div className="flex flex-col">
-              <div className="flex justify-between text-[9px] sm:text-[10px] font-black uppercase tracking-wider text-indigo-400 mb-0.5">
-                <span>{claseSeleccionada === 'mago' ? '🔮 Maná' : '⚡ Estamina'}</span>
-                <span>{stats.recurso} / {stats.maxRecurso}</span>
+            {/* SEGUNDA BARRA: POD PARA HECHICEROS/CLÉRIGOS O PX PARA GUERRERO/BRIBÓN */}
+            {esCaster ? (
+              <div className="flex flex-col">
+                <div className="flex justify-between text-[9px] sm:text-[10px] font-black uppercase tracking-wider text-indigo-400 mb-0.5">
+                  <span>🔮 Puntos de Poder (POD)</span>
+                  <span>{podActual} / {podMax}</span>
+                </div>
+                <div className="w-full h-2 bg-zinc-950 border border-zinc-800 rounded-full overflow-hidden">
+                  <div
+                    className="h-full bg-indigo-500 transition-all duration-150"
+                    style={{ width: `${podPorcentaje}%` }}
+                  ></div>
+                </div>
               </div>
-              <div className="w-full h-2 bg-zinc-950 border border-zinc-800 rounded-full overflow-hidden">
-                <div
-                  className={`h-full ${claseSeleccionada === 'mago' ? 'bg-indigo-500' : 'bg-amber-500'} transition-all duration-150`}
-                  style={{ width: `${recursoPorcentaje}%` }}
-                ></div>
+            ) : (
+              <div className="flex flex-col">
+                <div className="flex justify-between text-[9px] sm:text-[10px] font-black uppercase tracking-wider text-amber-400 mb-0.5">
+                  <span>✨ Experiencia (PX)</span>
+                  <span>{pxActual} / {pxObjetivo} PX</span>
+                </div>
+                <div className="w-full h-2 bg-zinc-950 border border-zinc-800 rounded-full overflow-hidden">
+                  <div
+                    className="h-full bg-amber-500 transition-all duration-150"
+                    style={{ width: `${pxPorcentaje}%` }}
+                  ></div>
+                </div>
               </div>
-            </div>
+            )}
           </div>
 
-          {/* DURABILIDAD DEL ARMA (CON ÍCONO CORRECTO RESUELTO) */}
+          {/* EQUIPO TÁCTICO: DEFENSA (CA), ARMA ACTIVA Y MOVIMIENTO */}
           <div className="flex items-center gap-2.5 bg-zinc-950 px-3 py-1.5 rounded-2xl border border-zinc-800">
-            <div className="w-8 h-8 rounded-xl bg-zinc-900 border border-zinc-800 flex items-center justify-center shrink-0">
-              <img
-                src={`/assets/crawler/items/${datosClaseActual.iconoArma}.png`}
-                alt="Arma"
-                className="w-5 h-5 object-contain"
-                style={{ imageRendering: 'pixelated' }}
-                onError={(e) => {
-                  e.target.style.display = 'none';
-                }}
-              />
+            <div className="w-8 h-8 rounded-xl bg-zinc-900 border border-zinc-800 flex items-center justify-center shrink-0 text-base">
+              🛡️
             </div>
-            <div className="flex flex-col min-w-[95px]">
-              <div className="flex justify-between text-[9px] font-black uppercase tracking-wider text-zinc-400 mb-0.5">
-                <span>Durabilidad</span>
-                <span className={stats.armaRota ? 'text-red-500 font-black animate-pulse' : 'text-zinc-300'}>
-                  {stats.armaRota ? '¡ROTA!' : `${stats.durabilidad}/${stats.maxDurabilidad}`}
-                </span>
+            <div className="flex flex-col min-w-[105px]">
+              <div className="flex justify-between text-[9px] font-black uppercase tracking-wider text-amber-300 mb-0.5">
+                <span>CA: {stats.def || statsVE?.def || 13}</span>
+                <span className="text-zinc-400">Mov: {stats.mov || statsVE?.mov || 12}m</span>
               </div>
-              <div className="w-full h-2 bg-zinc-900 rounded-full overflow-hidden border border-zinc-800">
-                <div
-                  className={`h-full transition-all duration-150 ${
-                    stats.armaRota
-                      ? 'bg-red-600'
-                      : durabilidadPorcentaje < 30
-                      ? 'bg-amber-500'
-                      : 'bg-emerald-500'
-                  }`}
-                  style={{ width: `${durabilidadPorcentaje}%` }}
-                ></div>
+              <div className="text-[10px] text-zinc-300 font-bold truncate max-w-[130px]" title={armaActiva.nombre}>
+                ⚔️ {armaActiva.nombre} ({armaActiva.dado})
               </div>
             </div>
           </div>
 
-          {/* BOTÍN, MATERIALES Y ORO */}
+          {/* MONEDAS Y MOCHILA */}
           <div className="flex items-center gap-2 text-xs font-black">
-            <div className="flex items-center gap-1.5 bg-zinc-950 px-2.5 py-1.5 rounded-xl border border-zinc-800 text-zinc-300" title={datosClaseActual.nombreMaterial}>
-              <span>🧱</span>
-              <span>{stats.materiales}</span>
-            </div>
-            <div className="flex items-center gap-1.5 bg-amber-500/10 px-2.5 py-1.5 rounded-xl border border-amber-500/20 text-amber-400" title="Oro">
+            <div className="flex items-center gap-1.5 bg-amber-500/10 px-2.5 py-1.5 rounded-xl border border-amber-500/20 text-amber-400" title="Monedas de Oro">
               <span>🪙</span>
-              <span>{stats.oro}</span>
+              <span>{personajeVE?.monedas?.mo ?? stats.oro ?? 30} <span className="text-[9px] text-amber-500/70">MO</span></span>
+            </div>
+            <div className="flex items-center gap-1.5 bg-zinc-950 px-2.5 py-1.5 rounded-xl border border-zinc-800 text-stone-300" title="Monedas de Plata">
+              <span>⚪</span>
+              <span>{personajeVE?.monedas?.mp ?? 15} <span className="text-[9px] text-stone-500">MP</span></span>
             </div>
           </div>
 
@@ -1580,9 +1601,8 @@ export default function CriptaJuego({ usuarioLogueado, alActualizarUsuario, volv
           personaje={personajeVE || cargarPersonajeLocal()}
           alActualizarPersonaje={(nuevoPj) => {
             setPersonajeVE({ ...nuevoPj });
-            if (engineRef.current && nuevoPj.monedas?.mo !== undefined) {
-              engineRef.current.oro = nuevoPj.monedas.mo;
-              setStats(prev => ({ ...prev, oro: nuevoPj.monedas.mo }));
+            if (engineRef.current) {
+              engineRef.current.sincronizarConPersonajeVE(nuevoPj);
             }
           }}
           alCerrar={() => setModalInventarioVE(false)}
@@ -1600,14 +1620,12 @@ export default function CriptaJuego({ usuarioLogueado, alActualizarUsuario, volv
               usuarioLogueado={usuarioLogueado}
               alCerrar={() => setModalHojaVE(false)}
               alVincularConJuego={(pjVE) => {
+                setPersonajeVE({ ...pjVE });
                 if (pjVE.clase) {
                   seleccionarClaseYGenero(pjVE.clase, generoSeleccionado);
                 }
-                if (engineRef.current && pjVE.monedas?.mo !== undefined) {
-                  const nuevoOro = parseInt(pjVE.monedas.mo, 10) || 0;
-                  engineRef.current.oro = nuevoOro;
-                  setStats(prev => ({ ...prev, oro: nuevoOro }));
-                  localStorage.setItem('crawler_oro', nuevoOro);
+                if (engineRef.current) {
+                  engineRef.current.sincronizarConPersonajeVE(pjVE);
                 }
               }}
             />

@@ -865,7 +865,13 @@ export default function HojaPersonajeVE({ usuarioLogueado, alCerrar, alVincularC
               <div className="flex justify-between items-center">
                 <span className="text-[11px] font-fraktur text-stone-800">armadura:</span>
                 <select
-                  value={pj.armadura || 'cuero'}
+                  value={
+                    pj.armadura?.toLowerCase().includes('placa') ? 'placas' :
+                    pj.armadura?.toLowerCase().includes('malla') ? 'mallas' :
+                    pj.armadura?.toLowerCase().includes('anillo') ? 'anillos' :
+                    pj.armadura?.toLowerCase().includes('cuero') ? 'cuero' :
+                    (pj.armadura || 'cuero')
+                  }
                   onChange={(e) => actualizarCampo('armadura', e.target.value)}
                   className="bg-transparent text-right text-stone-900 font-medium outline-none text-xs cursor-pointer max-w-[140px]"
                 >

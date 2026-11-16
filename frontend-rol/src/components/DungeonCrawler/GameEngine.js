@@ -3,7 +3,7 @@
 // Santuario descubierto y Sellado de Arena de Jefes (Anti-Exploit / Niebla de Jefe).
 
 import { TILE_VOID, TILE_FLOOR, TILE_WALL, TILE_SANCTUARY, TILE_WATER_MOSS, TILE_STAIRS, TILE_BOSS_GATE, DungeonGenerator } from './DungeonGenerator';
-import { cargarPersonajeLocal, guardarPersonajeLocal } from './ViejaEscuelaEngine';
+import { cargarPersonajeLocal, guardarPersonajeLocal, calcularEstadisticasPersonaje } from './ViejaEscuelaEngine';
 import { sound } from './SoundEngine';
 import { assets } from './AssetManager';
 
@@ -70,9 +70,29 @@ export class GameEngine {
     this.oro = config.oroInicial || 0;
     this.materiales = config.materialesInicial || 8;
     this.llaves = 0;
-    this.claseId = config.claseId || 'guerrero';
+
+    // Cargar personaje oficial de Vieja Escuela OSR
+    this.personajeVE = config.personaje || cargarPersonajeLocal();
+    let statsVE = null;
+    if (this.personajeVE) {
+      statsVE = calcularEstadisticasPersonaje(this.personajeVE);
+      if (this.personajeVE.clase) {
+        this.claseId = this.personajeVE.clase;
+      }
+    }
+    this.claseId = this.claseId || config.claseId || 'guerrero';
     this.genero = config.genero || 'm';
     this.datosClase = CLASES[this.claseId] || CLASES.guerrero;
+
+    const maxHpVE = statsVE ? (statsVE.pvMax || statsVE.pv) : (this.datosClase.maxHp || 8);
+    const hpVE = (this.personajeVE && this.personajeVE.pvActual !== undefined && this.personajeVE.pvActual !== null)
+      ? Math.min(maxHpVE, this.personajeVE.pvActual)
+      : maxHpVE;
+
+    const esCaster = this.personajeVE?.clase === 'hechicero' || this.personajeVE?.clase === 'clerigo';
+    const maxRecursoVE = esCaster ? (statsVE?.pod || 1) : 0;
+    const recursoVE = esCaster ? (this.personajeVE.podActual !== undefined ? this.personajeVE.podActual : maxRecursoVE) : 0;
+    const tipoRecursoVE = esCaster ? 'pod' : 'ninguno';
 
     this.santuarioDescubierto = false;
     this.combateJefeActivo = false;
@@ -83,13 +103,14 @@ export class GameEngine {
       vx: 0,
       vy: 0,
       radio: 10,
-      nivel: config.nivelInicial || 1,
-      xp: 0,
+      nivel: this.personajeVE?.nivel || config.nivelInicial || 1,
+      xp: this.personajeVE?.px || 0,
       xpSiguiente: 100,
-      hp: this.datosClase.maxHp,
-      maxHp: this.datosClase.maxHp,
-      recurso: this.datosClase.maxRecurso,
-      maxRecurso: this.datosClase.maxRecurso,
+      hp: hpVE,
+      maxHp: maxHpVE,
+      recurso: recursoVE,
+      maxRecurso: maxRecursoVE,
+      tipoRecurso: tipoRecursoVE,
       durabilidad: this.datosClase.durabilidadMax,
       maxDurabilidad: this.datosClase.durabilidadMax,
       direccionX: 1,
@@ -613,8 +634,7 @@ export class GameEngine {
   }
 
   ejecutarDash() {
-    if (this.player.dashCooldown > 0 || this.player.recurso < 20) return;
-    this.player.recurso -= 20;
+    if (this.player.dashCooldown > 0) return;
     this.player.estaDasheando = true;
     this.player.tiempoInvulnerable = 0.35;
     this.player.dashCooldown = 0.9;
@@ -925,26 +945,50 @@ export class GameEngine {
     });
   }
 
+  sincronizarConPersonajeVE(nuevoPj) {
+    if (!nuevoPj) return;
+    this.personajeVE = nuevoPj;
+    const statsVE = calcularEstadisticasPersonaje(nuevoPj);
+    this.player.maxHp = statsVE.pvMax || statsVE.pv || 8;
+    if (nuevoPj.pvActual !== undefined && nuevoPj.pvActual !== null) {
+      this.player.hp = Math.min(this.player.maxHp, nuevoPj.pvActual);
+    }
+    const esCaster = nuevoPj.clase === 'hechicero' || nuevoPj.clase === 'clerigo';
+    this.player.tipoRecurso = esCaster ? 'pod' : 'ninguno';
+    this.player.maxRecurso = esCaster ? (statsVE.pod || 1) : 0;
+    if (esCaster && nuevoPj.podActual !== undefined) {
+      this.player.recurso = Math.min(this.player.maxRecurso, nuevoPj.podActual);
+    }
+    if (nuevoPj.monedas?.mo !== undefined) {
+      this.oro = nuevoPj.monedas.mo;
+    }
+    this.notificarStats();
+  }
+
   notificarStats(guardarEnDB = false) {
     const mostrarBarraJefe = this.combateJefeActivo || (this.jefeActual && this.jefeActual.hp < this.jefeActual.maxHp && this.jefeActual.hp > 0);
+    const statsVE = this.personajeVE ? calcularEstadisticasPersonaje(this.personajeVE) : null;
 
     this.onActualizarStats({
       piso: this.piso,
       clase: this.claseId,
       genero: this.genero,
-      nivel: this.player.nivel,
-      xp: this.player.xp,
+      nivel: this.personajeVE?.nivel || this.player.nivel || 1,
+      xp: this.personajeVE?.px || this.player.xp || 0,
       xpSiguiente: this.player.xpSiguiente,
-      hp: this.player.hp,
+      hp: Math.round(this.player.hp),
       maxHp: this.player.maxHp,
       recurso: Math.round(this.player.recurso),
       maxRecurso: this.player.maxRecurso,
+      tipoRecurso: this.player.tipoRecurso,
       durabilidad: this.player.durabilidad,
       maxDurabilidad: this.player.maxDurabilidad,
       armaRota: this.player.durabilidad <= 0,
       oro: this.oro,
       materiales: this.materiales,
       llaves: this.llaves,
+      def: statsVE ? statsVE.def : 10,
+      mov: statsVE ? statsVE.mov : 12,
       enSantuario: this.player.enSantuario,
       santuarioDescubierto: this.santuarioDescubierto,
       cercaHoguera: this.player.cercaHoguera,
@@ -1013,10 +1057,6 @@ export class GameEngine {
     if (this.player.tiempoInvulnerable > 0) this.player.tiempoInvulnerable -= dt;
     if (this.player.dashCooldown > 0) this.player.dashCooldown -= dt;
 
-    if (this.player.recurso < this.player.maxRecurso) {
-      this.player.recurso = Math.min(this.player.maxRecurso, this.player.recurso + dt * 10);
-    }
-
     this.moverConColision(this.player, dt);
 
     // 2. Detección de Santuario, Hoguera y Forja
@@ -1050,10 +1090,16 @@ export class GameEngine {
 
     if (this.player.cercaHoguera) {
       if (this.player.hp < this.player.maxHp) {
-        this.player.hp = Math.min(this.player.maxHp, this.player.hp + dt * 25);
+        this.player.hp = Math.min(this.player.maxHp, this.player.hp + dt * 2);
+        if (this.personajeVE) {
+          this.personajeVE.pvActual = Math.round(this.player.hp);
+        }
       }
-      if (this.player.recurso < this.player.maxRecurso) {
-        this.player.recurso = Math.min(this.player.maxRecurso, this.player.recurso + dt * 30);
+      if (this.player.tipoRecurso === 'pod' && this.player.recurso < this.player.maxRecurso) {
+        this.player.recurso = Math.min(this.player.maxRecurso, this.player.recurso + dt * 1);
+        if (this.personajeVE) {
+          this.personajeVE.podActual = Math.round(this.player.recurso);
+        }
       }
     }
 

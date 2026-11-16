@@ -224,6 +224,18 @@ export const TIENDA_DINY = [
   }
 ];
 
+export function normalizarIdArmadura(itemOId) {
+  if (!itemOId) return 'sin_armadura';
+  let s = typeof itemOId === 'object' ? (itemOId.idBase || itemOId.id || itemOId.nombre || '') : String(itemOId);
+  s = s.toLowerCase();
+  if (s.includes('placa')) return 'placas';
+  if (s.includes('malla')) return 'mallas';
+  if (s.includes('anillo')) return 'anillos';
+  if (s.includes('cuero')) return 'cuero';
+  if (s.includes('sin_armadura') || s.includes('ropa')) return 'sin_armadura';
+  return s.split('_')[0];
+}
+
 export default function InventarioVE({
   personaje,
   alActualizarPersonaje,
@@ -248,6 +260,7 @@ export default function InventarioVE({
       if (typeof item === 'object' && item !== null) {
         return {
           id: item.id || `item_${idx}`,
+          idBase: item.idBase || (typeof item.id === 'string' ? item.id.split('_')[0] : null),
           nombre: item.nombre || 'Objeto misterioso',
           tipo: item.tipo || 'Varios',
           icono: item.icono || '🎒',
@@ -264,6 +277,7 @@ export default function InventarioVE({
       let tipo = 'Varios';
       let icono = '🎒';
       let efecto = null;
+      let defBono = undefined;
       let valorMo = 1;
 
       if (str.toLowerCase().includes('poción') || str.toLowerCase().includes('pocion')) {
@@ -280,6 +294,26 @@ export default function InventarioVE({
         tipo = 'Utilidad';
         icono = '🔥';
         valorMo = 1;
+      } else if (str.toLowerCase().includes('anillo')) {
+        tipo = 'Armadura';
+        icono = '🛡️';
+        defBono = 3;
+        valorMo = 15;
+      } else if (str.toLowerCase().includes('malla')) {
+        tipo = 'Armadura';
+        icono = '🛡️';
+        defBono = 4;
+        valorMo = 35;
+      } else if (str.toLowerCase().includes('placa')) {
+        tipo = 'Armadura';
+        icono = '🛡️';
+        defBono = 6;
+        valorMo = 50;
+      } else if (str.toLowerCase().includes('cuero')) {
+        tipo = 'Armadura';
+        icono = '🛡️';
+        defBono = 2;
+        valorMo = 2;
       } else if (str.toLowerCase().includes('daga') || str.toLowerCase().includes('espada') || str.toLowerCase().includes('hacha')) {
         tipo = 'Arma';
         icono = '🗡️';
@@ -288,11 +322,13 @@ export default function InventarioVE({
 
       return {
         id: `legacy_${idx}_${str.slice(0, 8)}`,
+        idBase: normalizarIdArmadura(str),
         nombre: str,
         tipo,
         icono,
         desc: str,
         efecto,
+        defBono,
         valorMo,
         esLegendario: false
       };
@@ -374,28 +410,44 @@ export default function InventarioVE({
     sound.playSlash();
     const nuevoPj = { ...personaje };
     const armaAEquipar = {
-      id: item.id,
+      id: item.idBase || item.id,
       nombre: item.nombre,
       dado: item.dado || '1d6',
       danoMedio: item.danoMedio || 3,
       tipo: item.tipoAtaque || 'CaC'
     };
 
-    const armasActuales = (nuevoPj.armas || []).filter(a => a.id !== item.id);
+    const armasActuales = (nuevoPj.armas || []).filter(a => a.id !== item.id && a.nombre !== item.nombre);
     nuevoPj.armas = [armaAEquipar, ...armasActuales];
 
     guardarPersonajeLocal(nuevoPj);
     alActualizarPersonaje(nuevoPj);
+    if (engine && engine.sincronizarConPersonajeVE) {
+      engine.sincronizarConPersonajeVE(nuevoPj);
+    }
     notificar(`⚔️ Has equipado "${item.nombre}" como tu arma principal.`);
   };
 
-  const handleEquiparArmadura = (armaduraId) => {
+  const handleEquiparArmadura = (item) => {
     sound.playBlock();
-    const nuevoPj = { ...personaje, armadura: armaduraId };
+    const idCanonico = normalizarIdArmadura(item);
+    const armaduraActual = normalizarIdArmadura(personaje.armadura);
+    
+    // Si ya la tiene equipada, alternar a desequipar (volver a ropa)
+    const nuevaArmadura = (armaduraActual === idCanonico) ? 'sin_armadura' : idCanonico;
+
+    const nuevoPj = { ...personaje, armadura: nuevaArmadura };
     guardarPersonajeLocal(nuevoPj);
     alActualizarPersonaje(nuevoPj);
-    const armObj = CATALOGO_ARMADURAS_VE.find(a => a.id === armaduraId);
-    notificar(`🛡️ Te has puesto: "${armObj?.nombre || armaduraId}".`);
+    if (engine && engine.sincronizarConPersonajeVE) {
+      engine.sincronizarConPersonajeVE(nuevoPj);
+    }
+    const armObj = CATALOGO_ARMADURAS_VE.find(a => a.id === nuevaArmadura) || CATALOGO_ARMADURAS_VE[0];
+    if (nuevaArmadura === 'sin_armadura') {
+      notificar('🛡️ Te has quitado la armadura. Ahora vas con ropa común (10 + DES).');
+    } else {
+      notificar(`🛡️ Te has equipado: "${armObj.nombre}" (+${armObj.defBono} DEF).`);
+    }
   };
 
   const handleToggleEscudo = () => {
@@ -403,6 +455,9 @@ export default function InventarioVE({
     const nuevoPj = { ...personaje, escudo: !personaje.escudo };
     guardarPersonajeLocal(nuevoPj);
     alActualizarPersonaje(nuevoPj);
+    if (engine && engine.sincronizarConPersonajeVE) {
+      engine.sincronizarConPersonajeVE(nuevoPj);
+    }
     notificar(nuevoPj.escudo ? '🛡️ Has empuñado el Escudo (+1 DEF).' : '🛡️ Has guardado el escudo a la espalda.');
   };
 
@@ -445,6 +500,7 @@ export default function InventarioVE({
         ...(personaje.equipo || []),
         {
           id: `${item.id}_${Date.now()}`,
+          idBase: item.id,
           nombre: item.nombre,
           tipo: item.tipo,
           icono: item.icono,
@@ -539,7 +595,7 @@ export default function InventarioVE({
   });
 
   const armaEquipada = personaje.armas?.[0] || { nombre: 'Espada Básica', dado: '1d6', tipo: 'CaC' };
-  const armaduraEquipadaObj = CATALOGO_ARMADURAS_VE.find(a => a.id === personaje.armadura) || CATALOGO_ARMADURAS_VE[0];
+  const armaduraEquipadaObj = CATALOGO_ARMADURAS_VE.find(a => a.id === normalizarIdArmadura(personaje.armadura)) || CATALOGO_ARMADURAS_VE[0];
 
   return (
     <div className="fixed inset-0 bg-black/90 backdrop-blur-md z-50 flex items-center justify-center p-2 sm:p-4 animate-in fade-in select-none">
@@ -818,20 +874,32 @@ export default function InventarioVE({
                           {esArma && (
                             <button
                               onClick={() => handleEquiparArma(item)}
-                              className="px-2.5 py-1 bg-amber-700 hover:bg-amber-600 text-stone-100 font-bold text-[11px] rounded-lg shadow transition active:scale-95"
+                              className={`px-2.5 py-1 font-bold text-[11px] rounded-lg shadow transition active:scale-95 ${
+                                (armaEquipada.nombre === item.nombre || armaEquipada.id === item.id)
+                                  ? 'bg-amber-500 text-stone-950 font-black border border-amber-300'
+                                  : 'bg-amber-700 hover:bg-amber-600 text-stone-100'
+                              }`}
                               title="Equipar como arma principal"
                             >
-                              Equipar
+                              {(armaEquipada.nombre === item.nombre || armaEquipada.id === item.id) ? '✅ Empuñada' : 'Equipar'}
                             </button>
                           )}
 
-                          {esArmadura && item.id && (
+                          {esArmadura && (
                             <button
-                              onClick={() => handleEquiparArmadura(item.id)}
-                              className="px-2.5 py-1 bg-blue-700 hover:bg-blue-600 text-stone-100 font-bold text-[11px] rounded-lg shadow transition active:scale-95"
-                              title="Ponerse esta armadura"
+                              onClick={() => handleEquiparArmadura(item)}
+                              className={`px-2.5 py-1 font-bold text-[11px] rounded-lg shadow transition active:scale-95 ${
+                                normalizarIdArmadura(personaje.armadura) === normalizarIdArmadura(item)
+                                  ? 'bg-emerald-600 hover:bg-emerald-500 text-white border border-emerald-400'
+                                  : 'bg-blue-700 hover:bg-blue-600 text-stone-100'
+                              }`}
+                              title={
+                                normalizarIdArmadura(personaje.armadura) === normalizarIdArmadura(item)
+                                  ? 'Armadura puesta actualmente. Clic para desvestir.'
+                                  : 'Ponerse esta armadura'
+                              }
                             >
-                              Vestir
+                              {normalizarIdArmadura(personaje.armadura) === normalizarIdArmadura(item) ? '✅ Puesta' : 'Vestir'}
                             </button>
                           )}
 

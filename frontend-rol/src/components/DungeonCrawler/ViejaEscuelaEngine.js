@@ -630,7 +630,18 @@ export function calcularEstadisticasPersonaje(pj) {
 
   // 2. DEFENSA (DEF)
   // Base 10 + mod DES + Armadura (+1 Escudo)
-  const armaduraObj = CATALOGO_ARMADURAS_VE.find(a => a.id === pj.armadura) || CATALOGO_ARMADURAS_VE[0];
+  const normalizarIdArmadura = (raw) => {
+    if (!raw) return 'sin_armadura';
+    const s = String(raw).toLowerCase();
+    if (s.includes('placa')) return 'placas';
+    if (s.includes('malla')) return 'mallas';
+    if (s.includes('anillo')) return 'anillos';
+    if (s.includes('cuero')) return 'cuero';
+    if (s.includes('sin_armadura') || s.includes('ropa')) return 'sin_armadura';
+    return s.split('_')[0];
+  };
+  const idArmaduraNormalizado = normalizarIdArmadura(pj.armadura);
+  const armaduraObj = CATALOGO_ARMADURAS_VE.find(a => a.id === idArmaduraNormalizado) || CATALOGO_ARMADURAS_VE[0];
   const bonoArmadura = armaduraObj.defBono || 0;
   const bonoEscudo = pj.escudo ? 1 : 0;
   const def = 10 + modDes + bonoArmadura + bonoEscudo;
@@ -638,7 +649,7 @@ export function calcularEstadisticasPersonaje(pj) {
   // 3. MOVIMIENTO (MOV)
   // Raza base: 12m humano/elfo, 9m enano/mediano. Placas reduce a 6m.
   let mov = raza.mov;
-  if (pj.armadura === 'placas') mov = 6;
+  if (idArmaduraNormalizado === 'placas') mov = 6;
 
   // 4. ATAQUE (ATQ)
   // Base por tabla + mod FUE (cuerpo a cuerpo) o mod DES (proyectiles)
