@@ -1,4 +1,3 @@
-
 export function escalarMonstruoSegunNivel(monstruoBase, nivelJugador = 1) {
   const n = Math.max(1, Number(nivelJugador) || 1);
   const factor = 1 + (n - 1) * 0.22;
@@ -25,8 +24,10 @@ export function escalarMonstruoSegunNivel(monstruoBase, nivelJugador = 1) {
   };
 }
 
-// Generador Procedural de Mazmorras de la Cripta v2.1
-// Crea niveles crecientes con biomas diferenciados, zona segura, sala del Jefe y sellado de arena anti-exploit.
+// =====================================================================
+// GENERADOR PROCEDURAL DE MEGA-DUNGEON: GRAN CRIPTA WEST MARCHES
+// Mapa ultra-gigante continuo (110x110 tiles), 36 salas, puertas y cerraduras.
+// =====================================================================
 
 export const TILE_VOID = 0;
 export const TILE_FLOOR = 1;
@@ -34,102 +35,49 @@ export const TILE_WALL = 2;
 export const TILE_SANCTUARY = 3;
 export const TILE_WATER_MOSS = 4;
 export const TILE_STAIRS = 5;
-export const TILE_BOSS_GATE = 6; // Barrera mágica que sella la arena del jefe
+export const TILE_BOSS_GATE = 6;
 
 export const BESTIARIO_PISOS = {
   1: [
     { nombre: 'Esqueleto Centinela', tipo: 'skelet', nivel: 1, hp: 5, maxHp: 5, defensa: 11, atqBono: 1, dano: 3, oro: 4, xp: 10, ataque_nombre: 'Espada herrumbrosa' },
     { nombre: 'Trasgo Explorador', tipo: 'chort', nivel: 1, hp: 5, maxHp: 5, defensa: 12, atqBono: 1, dano: 3, oro: 3, xp: 10, ataque_nombre: 'Daga serrada' },
     { nombre: 'Zombi Errante', tipo: 'zombie', nivel: 2, hp: 10, maxHp: 10, defensa: 11, atqBono: 2, dano: 3, oro: 5, xp: 15, ataque_nombre: 'Garras cadavéricas' },
-    { nombre: 'Rata Gigante', tipo: 'imp', nivel: 0, hp: 4, maxHp: 4, defensa: 10, atqBono: 0, dano: 2, oro: 2, xp: 5, ataque_nombre: 'Mordisco infecto' }
-  ],
-  2: [
-    { nombre: 'Diablillo Ígneo (Imp)', tipo: 'imp', nivel: 2, hp: 9, maxHp: 9, defensa: 13, atqBono: 2, dano: 3, oro: 7, xp: 20, ataque_nombre: 'Aguijón ardiente' },
-    { nombre: 'Guardia Esqueleto', tipo: 'skelet', nivel: 2, hp: 10, maxHp: 10, defensa: 13, atqBono: 2, dano: 3, oro: 8, xp: 22, ataque_nombre: 'Lanza y escudo' },
-    { nombre: 'Chort del Abismo', tipo: 'chort', nivel: 3, hp: 15, maxHp: 15, defensa: 13, atqBono: 3, dano: 3, oro: 12, xp: 30, ataque_nombre: 'Tridente runoso' },
-    { nombre: 'Zombi Colosal', tipo: 'big_zombie', nivel: 4, hp: 20, maxHp: 20, defensa: 12, atqBono: 4, dano: 5, oro: 16, xp: 45, ataque_nombre: 'Golpe demoledor' }
-  ],
-  3: [
-    { nombre: 'Espora Viviente Menor', tipo: 'chort', nivel: 1, hp: 6, maxHp: 6, defensa: 11, atqBono: 1, dano: 2, oro: 6, xp: 15, ataque_nombre: 'Nube de esporas' },
-    { nombre: 'Zombi Infestado de Hongos', tipo: 'zombie', nivel: 3, hp: 14, maxHp: 14, defensa: 12, atqBono: 3, dano: 4, oro: 14, xp: 35, ataque_nombre: 'Zarcillos venenosos' }
+    { nombre: 'Rata Gigante', tipo: 'imp', nivel: 0, hp: 4, maxHp: 4, defensa: 10, atqBono: 0, dano: 2, oro: 2, xp: 5, ataque_nombre: 'Mordisco infecto' },
+    { nombre: 'Guardia de la Cripta', tipo: 'skelet', nivel: 2, hp: 8, maxHp: 8, defensa: 12, atqBono: 2, dano: 4, oro: 6, xp: 15, ataque_nombre: 'Lanza de hueso' },
+    { nombre: 'Espora Tóxica', tipo: 'mushroom', nivel: 2, hp: 7, maxHp: 7, defensa: 11, atqBono: 1, dano: 3, oro: 4, xp: 12, ataque_nombre: 'Micelio cáustico' }
   ]
 };
 
 export const JEFES_PISOS = {
-  1: { nombre: 'Ogro Rompehuesos', tipo: 'ogre', nivel: 4, hp: 24, maxHp: 24, defensa: 14, atqBono: 4, dano: 5, esJefe: true, oro: 35, xp: 60, ataque_nombre: 'Gran Garrote de Asedio' },
-  2: { nombre: 'Nigromante de la Torre Oscura', tipo: 'necromancer', nivel: 4, hp: 22, maxHp: 22, defensa: 13, atqBono: 4, dano: 7, esJefe: true, oro: 55, xp: 90, ataque_nombre: 'Rayo de Muerte Arcana' },
-  3: { nombre: 'Gran Abominación Fúngica', tipo: 'big_zombie', nivel: 5, hp: 32, maxHp: 32, defensa: 14, atqBono: 5, dano: 8, esJefe: true, oro: 80, xp: 130, ataque_nombre: 'Brazos descomunales de micelio' }
+  1: { nombre: 'El Custodio Ancestral de la Cripta', tipo: 'ogre', nivel: 5, hp: 38, maxHp: 38, defensa: 14, atqBono: 4, dano: 7, esJefe: true, oro: 70, xp: 120, ataque_nombre: 'Maza de piedra titánica' }
 };
 
 export const BIOMAS = {
   1: {
-    nombre: 'Catacumbas Ancestrales',
-    subtitulo: 'Piedra Antigua & Huesos Olvidados',
+    nombre: 'Gran Cripta Ancestral West Marches',
+    subtitulo: 'Laberinto Profundo de la Asociación de Rol La Pampa',
     tipo: 'piedra',
     colorAmbiente: 'rgba(10, 10, 16, 0.85)',
     luzAntorcha: '#fbbf24',
     murosColor: '#3f3f46',
     sueloColor: '#18181b',
     sueloDetalle: '#27272a',
-    mobTipos: ['skelet'],
-    bossNombre: 'Esqueleto Campeón',
-    bossTipo: 'chort',
-    bossHP: 520, // Calibrado para Desafío de Party (4 héroes)
-    bossDano: 24
-  },
-  2: {
-    nombre: 'Cripta de la Espora',
-    subtitulo: 'Hongos Tóxicos & Musgo Rastreador',
-    tipo: 'espora',
-    colorAmbiente: 'rgba(8, 20, 14, 0.85)',
-    luzAntorcha: '#34d399',
-    murosColor: '#1e293b',
-    sueloColor: '#0f172a',
-    sueloDetalle: '#064e3b',
-    mobTipos: ['mushroom', 'skelet'],
-    bossNombre: 'Espora Ancestral Primigenia',
-    bossTipo: 'big_mushroom',
-    bossHP: 780, // Calibrado para Desafío de Party (4 héroes)
-    bossDano: 32
-  },
-  3: {
-    nombre: 'Bóvedas Inundadas',
-    subtitulo: 'Canales Sumergidos & Sombras del Nigromante',
-    tipo: 'agua',
-    colorAmbiente: 'rgba(6, 14, 28, 0.86)',
-    luzAntorcha: '#60a5fa',
-    murosColor: '#1e1b4b',
-    sueloColor: '#0c1322',
-    sueloDetalle: '#1e3a8a',
-    mobTipos: ['zombie', 'skelet'],
-    bossNombre: 'El Custodio Nigromante',
-    bossTipo: 'necromancer',
-    bossHP: 1150, // Calibrado para Desafío de Party (4 héroes)
-    bossDano: 34
-  },
-  100: {
-    nombre: 'El Trono del Presidente Supremo',
-    subtitulo: 'Asociación de Rol La Pampa - Desafío Definitivo',
-    tipo: 'trono',
-    colorAmbiente: 'rgba(25, 10, 35, 0.90)',
-    luzAntorcha: '#a855f7',
-    murosColor: '#581c87',
-    sueloColor: '#1e102d',
-    sueloDetalle: '#3b0764',
-    mobTipos: ['zombie', 'mushroom', 'skelet'],
-    bossNombre: 'Matías - Presidente Supremo',
-    bossTipo: 'mati',
-    bossHP: 4500, // Desafío supremo para party completa
-    bossDano: 45
+    mobTipos: ['skelet', 'zombie', 'mushroom'],
+    bossNombre: 'El Custodio Ancestral',
+    bossTipo: 'ogre',
+    bossHP: 600,
+    bossDano: 26
   }
 };
 
 export class DungeonGenerator {
   constructor(piso = 1) {
     this.piso = piso;
-    this.tamano = 36 + (piso - 1) * 10;
+    // Mapa ULTRA GIGANTE para exploración West Marches continúa
+    this.tamano = 110; 
     this.grid = [];
     this.habitaciones = [];
+    this.puertas = [];
     this.spawnPoint = { x: 0, y: 0 };
     this.hogueraPoint = { x: 0, y: 0 };
     this.forjaPoint = { x: 0, y: 0 };
@@ -143,12 +91,12 @@ export class DungeonGenerator {
     this.matiPoint = { x: 0, y: 0 };
     this.strerbernPoint = { x: 0, y: 0 };
     this.bossPoint = { x: 0, y: 0 };
-    this.stairsPoint = { x: 0, y: 0 };
+    this.stairsPoint = null; // Eliminadas las escaleras para evitar bajar de piso
     this.entradasJefe = [];
     this.habJefe = null;
     this.spawnsEnemigos = [];
     this.cofres = [];
-    this.bioma = BIOMAS[piso] || BIOMAS[1];
+    this.bioma = BIOMAS[1];
   }
 
   generar() {
@@ -156,27 +104,20 @@ export class DungeonGenerator {
       Array(this.tamano).fill(TILE_VOID)
     );
 
-    const numHabitaciones = 5 + (this.piso - 1) * 3;
+    // 36 salas distribuidas a lo largo del mapa ultra gigante
+    const numHabitaciones = 36;
     const minTam = 7;
-    const maxTam = 11 + Math.min(this.piso, 4);
+    const maxTam = 13;
 
     this.habitaciones = [];
 
     let intentos = 0;
-    while (this.habitaciones.length < numHabitaciones && intentos < 250) {
+    while (this.habitaciones.length < numHabitaciones && intentos < 3000) {
       intentos++;
       const ancho = Math.floor(Math.random() * (maxTam - minTam + 1)) + minTam;
       const alto = Math.floor(Math.random() * (maxTam - minTam + 1)) + minTam;
-      const x = Math.floor(Math.random() * (this.tamano - ancho - 4)) + 2;
-      const y = Math.floor(Math.random() * (this.tamano - alto - 4)) + 2;
-
-      const nuevaHab = {
-        x, y, ancho, alto,
-        centroX: Math.floor(x + ancho / 2),
-        centroY: Math.floor(y + alto / 2),
-        tipo: 'normal',
-        descubierta: false
-      };
+      const x = Math.floor(Math.random() * (this.tamano - ancho - 6)) + 3;
+      const y = Math.floor(Math.random() * (this.tamano - alto - 6)) + 3;
 
       let solapa = false;
       for (const h of this.habitaciones) {
@@ -192,38 +133,32 @@ export class DungeonGenerator {
       }
 
       if (!solapa) {
-        this.habitaciones.push(nuevaHab);
+        this.habitaciones.push({
+          x, y, ancho, alto,
+          centroX: Math.floor(x + ancho / 2),
+          centroY: Math.floor(y + alto / 2),
+          tipo: 'normal',
+          descubierta: false
+        });
       }
     }
 
-    if (this.habitaciones.length < 3) {
-      this.habitaciones.push({
-        x: 3, y: 3, ancho: 7, alto: 7,
-        centroX: 6, centroY: 6, tipo: 'normal', descubierta: false
-      });
-      this.habitaciones.push({
-        x: this.tamano - 11, y: this.tamano - 11, ancho: 8, alto: 8,
-        centroX: this.tamano - 7, centroY: this.tamano - 7, tipo: 'normal', descubierta: false
-      });
-    }
-
-    // 3. Asignar roles especiales
+    // 1. Asignar sala de inicio (Spawn)
     this.habitaciones[0].tipo = 'spawn';
     this.habitaciones[0].descubierta = true;
     this.spawnPoint = { x: this.habitaciones[0].centroX, y: this.habitaciones[0].centroY };
 
+    // 2. Gran Santuario de la Asociación (Campamento central espacioso)
     const santuario = this.habitaciones[1];
     santuario.tipo = 'santuario';
     santuario.descubierta = false;
-
-    // Asegurar tamaño cómodo de santuario (mínimo 11x11) para toda la Asociación
-    if (santuario.ancho < 11) santuario.ancho = 11;
-    if (santuario.alto < 11) santuario.alto = 11;
-    if (santuario.x + santuario.ancho >= this.tamano - 2) {
-      santuario.x = Math.max(2, this.tamano - santuario.ancho - 2);
+    if (santuario.ancho < 13) santuario.ancho = 13;
+    if (santuario.alto < 13) santuario.alto = 13;
+    if (santuario.x + santuario.ancho >= this.tamano - 3) {
+      santuario.x = Math.max(3, this.tamano - santuario.ancho - 3);
     }
-    if (santuario.y + santuario.alto >= this.tamano - 2) {
-      santuario.y = Math.max(2, this.tamano - santuario.alto - 2);
+    if (santuario.y + santuario.alto >= this.tamano - 3) {
+      santuario.y = Math.max(3, this.tamano - santuario.alto - 3);
     }
     santuario.centroX = Math.floor(santuario.x + santuario.ancho / 2);
     santuario.centroY = Math.floor(santuario.y + santuario.alto / 2);
@@ -231,62 +166,73 @@ export class DungeonGenerator {
     const scx = santuario.centroX;
     const scy = santuario.centroY;
 
-    // Distribución armónica y espaciosa de la mesa directiva alrededor de la hoguera
     this.hogueraPoint = { x: scx, y: scy };
-    this.matiPoint = { x: scx, y: scy - 4 };         // Norte (Presidente)
-    this.martinPoint = { x: scx - 2, y: scy - 3 };    // Nor-Oeste (Ángel Fiscal)
-    this.guillePoint = { x: scx + 2, y: scy - 3 };    // Nor-Este (Tesorero)
-    this.deloPoint = { x: scx - 4, y: scy - 1 };      // Oeste superior (Alquimista)
-    this.dinyPoint = { x: scx - 4, y: scy + 2 };      // Oeste inferior (Cartógrafa)
-    this.forjaPoint = { x: scx + 4, y: scy - 1 };     // Este superior (Forja)
-    this.strerbernPoint = { x: scx + 4, y: scy + 2 }; // Este inferior (Archmago / DM)
-    this.keithPoint = { x: scx - 2, y: scy + 4 };     // Sur-Oeste (Jueza de Dados)
-    this.ayrtonPoint = { x: scx, y: scy + 4 };        // Sur (Bárbaro)
-    this.javiPoint = { x: scx + 2, y: scy + 4 };        // Sur-Este (Táctico)
+    this.matiPoint = { x: scx, y: scy - 4 };
+    this.martinPoint = { x: scx - 2, y: scy - 3 };
+    this.guillePoint = { x: scx + 2, y: scy - 3 };
+    this.deloPoint = { x: scx - 4, y: scy - 1 };
+    this.dinyPoint = { x: scx - 4, y: scy + 2 };
+    this.forjaPoint = { x: scx + 4, y: scy - 1 };
+    this.strerbernPoint = { x: scx + 4, y: scy + 2 };
+    this.keithPoint = { x: scx - 2, y: scy + 4 };
+    this.ayrtonPoint = { x: scx, y: scy + 4 };
+    this.javiPoint = { x: scx + 2, y: scy + 4 };
 
+    // 3. Sala del Gran Custodio (última sala)
     const habJefe = this.habitaciones[this.habitaciones.length - 1];
     habJefe.tipo = 'jefe';
     habJefe.descubierta = false;
     this.habJefe = habJefe;
     this.bossPoint = { x: habJefe.centroX, y: habJefe.centroY };
-    this.stairsPoint = { x: habJefe.x + 2, y: habJefe.y + 2 };
 
-    // 4. Tallar habitaciones
+    // 4. Tallar baldosas de habitaciones
     for (const h of this.habitaciones) {
       const tileTipo = h.tipo === 'santuario' ? TILE_SANCTUARY : TILE_FLOOR;
       for (let cy = h.y; cy < h.y + h.alto; cy++) {
         for (let cx = h.x; cx < h.x + h.ancho; cx++) {
-          if (tileTipo === TILE_FLOOR && (this.piso === 2 || this.piso === 3)) {
-            const esBorde = (cx === h.x || cx === h.x + h.ancho - 1 || cy === h.y || cy === h.y + h.alto - 1);
-            if (!esBorde && Math.random() < 0.2) {
-              this.grid[cy][cx] = TILE_WATER_MOSS;
-              continue;
-            }
+          if (tileTipo === TILE_FLOOR && Math.random() < 0.12) {
+            this.grid[cy][cx] = TILE_WATER_MOSS;
+          } else {
+            this.grid[cy][cx] = tileTipo;
           }
-          this.grid[cy][cx] = tileTipo;
         }
       }
     }
 
-    // 5. Conectar pasillos
+    // 5. Interconectar la red de pasillos
     for (let i = 0; i < this.habitaciones.length - 1; i++) {
       const hA = this.habitaciones[i];
       const hB = this.habitaciones[i + 1];
       this.conectarHabitaciones(hA.centroX, hA.centroY, hB.centroX, hB.centroY);
     }
-    if (this.habitaciones.length > 3) {
-      const hA = this.habitaciones[1];
-      const hB = this.habitaciones[this.habitaciones.length - 2];
-      this.conectarHabitaciones(hA.centroX, hA.centroY, hB.centroX, hB.centroY);
+
+    // Conectar cada sala a su vecina más próxima para crear un laberinto con rutas alternativas
+    for (let i = 0; i < this.habitaciones.length; i++) {
+      const h = this.habitaciones[i];
+      const otros = this.habitaciones.filter((_, idx) => idx !== i);
+      otros.sort((a, b) => 
+        Math.hypot(a.centroX - h.centroX, a.centroY - h.centroY) - 
+        Math.hypot(b.centroX - h.centroX, b.centroY - h.centroY)
+      );
+      if (otros.length > 0) {
+        this.conectarHabitaciones(h.centroX, h.centroY, otros[0].centroX, otros[0].centroY);
+      }
     }
 
-    // 6. Baldosa de escaleras
-    this.grid[this.stairsPoint.y][this.stairsPoint.x] = TILE_STAIRS;
+    // Conexiones cardinales desde el Santuario para que sea un nexo central
+    const sant = this.habitaciones[1];
+    if (this.habitaciones.length > 8) {
+      this.conectarHabitaciones(sant.centroX, sant.centroY, this.habitaciones[4].centroX, this.habitaciones[4].centroY);
+      this.conectarHabitaciones(sant.centroX, sant.centroY, this.habitaciones[8].centroX, this.habitaciones[8].centroY);
+    }
 
-    // 7. Muros perimetrales
+    // 6. Construir Muros perimetrales
     this.construirMuros();
 
-    // 8. Identificar accesos a la sala del jefe para sellado de arena
+    // 7. Generar PUERTAS en los accesos de las salas (con cerraduras trancadas y normales)
+    this.generarPuertas();
+
+    // 8. Entradas de la arena del jefe
     this.entradasJefe = [];
     for (let cy = habJefe.y - 1; cy <= habJefe.y + habJefe.alto; cy++) {
       for (let cx = habJefe.x - 1; cx <= habJefe.x + habJefe.ancho; cx++) {
@@ -299,7 +245,7 @@ export class DungeonGenerator {
       }
     }
 
-    // 9. Distribuir enemigos y cofres
+    // 9. Distribuir enemigos y cofres con llaves
     this.distribuirContenido();
 
     return {
@@ -319,11 +265,12 @@ export class DungeonGenerator {
       matiPoint: this.matiPoint,
       strerbernPoint: this.strerbernPoint,
       bossPoint: this.bossPoint,
-      stairsPoint: this.stairsPoint,
+      stairsPoint: null, // NO hay escaleras para descender
       habJefe: this.habJefe,
       entradasJefe: this.entradasJefe,
       spawnsEnemigos: this.spawnsEnemigos,
       cofres: this.cofres,
+      puertas: this.puertas,
       bioma: this.bioma
     };
   }
@@ -365,7 +312,7 @@ export class DungeonGenerator {
               const nx = x + dx;
               if (ny >= 0 && ny < this.tamano && nx >= 0 && nx < this.tamano) {
                 const tipo = this.grid[ny][nx];
-                if (tipo === TILE_FLOOR || tipo === TILE_SANCTUARY || tipo === TILE_WATER_MOSS || tipo === TILE_STAIRS) {
+                if (tipo === TILE_FLOOR || tipo === TILE_SANCTUARY || tipo === TILE_WATER_MOSS) {
                   tocaSuelo = true;
                   break;
                 }
@@ -381,22 +328,86 @@ export class DungeonGenerator {
     }
   }
 
+  generarPuertas() {
+    this.puertas = [];
+    const tileSize = 32;
+
+    // Colocar puertas en los vanos que entran a las salas (excepto spawn y santuario)
+    for (let i = 2; i < this.habitaciones.length; i++) {
+      const h = this.habitaciones[i];
+
+      // Perímetro Superior e Inferior
+      for (let px = h.x; px < h.x + h.ancho; px++) {
+        for (const py of [h.y - 1, h.y + h.alto]) {
+          if (py >= 0 && py < this.tamano && this.grid[py][px] === TILE_FLOOR) {
+            if (px > 0 && px < this.tamano - 1 && this.grid[py][px - 1] === TILE_WALL && this.grid[py][px + 1] === TILE_WALL) {
+              const muyCerca = this.puertas.some(d => Math.hypot(d.x - px, d.y - py) <= 2.2);
+              if (!muyCerca && Math.random() < 0.75) {
+                const esTrancada = Math.random() < 0.42; // 42% trancadas con cerradura
+                this.puertas.push({
+                  id: `puerta_${px}_${py}`,
+                  x: px,
+                  y: py,
+                  pixelX: (px + 0.5) * tileSize,
+                  pixelY: (py + 0.5) * tileSize,
+                  orientacion: 'h',
+                  estado: esTrancada ? 'trancada' : 'cerrada',
+                  requiereLlave: esTrancada,
+                  hp: esTrancada ? 45 : 30,
+                  maxHp: esTrancada ? 45 : 30,
+                  nombre: esTrancada ? 'Puerta Trancada con Cerradura de Hierro' : 'Puerta de Madera Maciza'
+                });
+              }
+            }
+          }
+        }
+      }
+
+      // Perímetro Izquierdo y Derecho
+      for (let py = h.y; py < h.y + h.alto; py++) {
+        for (const px of [h.x - 1, h.x + h.ancho]) {
+          if (px >= 0 && px < this.tamano && this.grid[py][px] === TILE_FLOOR) {
+            if (py > 0 && py < this.tamano - 1 && this.grid[py - 1][px] === TILE_WALL && this.grid[py + 1][px] === TILE_WALL) {
+              const muyCerca = this.puertas.some(d => Math.hypot(d.x - px, d.y - py) <= 2.2);
+              if (!muyCerca && Math.random() < 0.75) {
+                const esTrancada = Math.random() < 0.42;
+                this.puertas.push({
+                  id: `puerta_${px}_${py}`,
+                  x: px,
+                  y: py,
+                  pixelX: (px + 0.5) * tileSize,
+                  pixelY: (py + 0.5) * tileSize,
+                  orientacion: 'v',
+                  estado: esTrancada ? 'trancada' : 'cerrada',
+                  requiereLlave: esTrancada,
+                  hp: esTrancada ? 45 : 30,
+                  maxHp: esTrancada ? 45 : 30,
+                  nombre: esTrancada ? 'Puerta Trancada con Cerradura de Hierro' : 'Puerta de Madera Maciza'
+                });
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+
   distribuirContenido() {
     this.spawnsEnemigos = [];
     this.cofres = [];
+
+    let llavesRestantes = 9; // Cantidad de llaves antiguas ocultas en cofres
 
     for (const h of this.habitaciones) {
       if (h.tipo === 'spawn' || h.tipo === 'santuario') continue;
 
       if (h.tipo === 'normal') {
-        // Equilibrado para exploración de un solo jugador:
-        // ~40% de las salas son libres de monstruos para poder explorar y recorrer la cripta
-        const tieneMonstruos = Math.random() < 0.60;
+        // En una super dungeon West Marches, ~45% de salas son de exploración y secretos
+        const tieneMonstruos = Math.random() < 0.55;
 
         if (tieneMonstruos) {
-          // 80% de probabilidad de 1 solo monstruo solitario, 20% patrulla de 2
-          const cantidad = Math.random() < 0.80 ? 1 : 2;
-          const poolEnemigos = BESTIARIO_PISOS[this.piso] || BESTIARIO_PISOS[1];
+          const cantidad = Math.random() < 0.85 ? 1 : 2;
+          const poolEnemigos = BESTIARIO_PISOS[1];
 
           for (let i = 0; i < cantidad; i++) {
             const ex = Math.floor(Math.random() * (h.ancho - 2)) + h.x + 1;
@@ -414,30 +425,35 @@ export class DungeonGenerator {
           }
         }
 
-        // Cofres y secretos en las salas exploradas
-        if (Math.random() < 0.55) {
+        // Cofres en las salas (algunos contienen Llaves Antiguas para abrir las puertas trancadas)
+        if (Math.random() < 0.60) {
           const cx = Math.floor(Math.random() * (h.ancho - 2)) + h.x + 1;
           const cy = Math.floor(Math.random() * (h.alto - 2)) + h.y + 1;
+          const tieneLlave = llavesRestantes > 0 && Math.random() < 0.45;
+          if (tieneLlave) llavesRestantes--;
+
           this.cofres.push({
             x: cx,
             y: cy,
             abierto: false,
-            oro: 10 + this.piso * 5,
+            oro: 15 + Math.floor(Math.random() * 20),
             materiales: Math.floor(Math.random() * 3) + 2,
-            pocion: Math.random() < 0.5 ? 'vida' : 'durabilidad'
+            pocion: Math.random() < 0.5 ? 'vida' : 'durabilidad',
+            tieneLlave: tieneLlave
           });
         }
       }
     }
 
+    // Jefe Custodio en la sala final
     const habJefe = this.habitaciones[this.habitaciones.length - 1];
-    const jefePlantilla = JEFES_PISOS[this.piso] || JEFES_PISOS[1];
+    const jefePlantilla = JEFES_PISOS[1];
 
     this.spawnsEnemigos.push({
       x: habJefe.centroX,
       y: habJefe.centroY,
       ...jefePlantilla,
-      materiales: 10 * this.piso
+      materiales: 15
     });
   }
 }

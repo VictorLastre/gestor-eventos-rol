@@ -88,6 +88,14 @@ export default function CriptaJuego({ usuarioLogueado, alActualizarUsuario, volv
 
   const [mensajeAlerta, setMensajeAlerta] = useState(null);
 
+
+  // Sincronizar cambios de la Party con el motor del juego
+  useEffect(() => {
+    if (engineRef.current) {
+      engineRef.current.party = party;
+    }
+  }, [party]);
+
   // Atajo de teclado: 'I' para abrir o cerrar el inventario OSR
   useEffect(() => {
     const handleKeyI = (e) => {
@@ -343,6 +351,7 @@ export default function CriptaJuego({ usuarioLogueado, alActualizarUsuario, volv
       oroInicial: oroGuardado,
       claseId: claseSeleccionada,
       genero: generoSeleccionado,
+      party: party,
       onActualizarStats: (nuevasStats) => {
         setStats(nuevasStats);
         if (nuevasStats.guardarEnDB) {
@@ -839,21 +848,16 @@ export default function CriptaJuego({ usuarioLogueado, alActualizarUsuario, volv
             <div>
               <div className="flex items-center gap-1.5 sm:gap-2">
                 <span className="text-[10px] sm:text-xs font-black uppercase tracking-[0.2em] bg-purple-500/10 text-purple-400 px-2.5 py-0.5 rounded-full border border-purple-500/20">
-                  Sector {stats.piso} • Cripta Ancestral
+                  Gran Cripta West Marches
                 </span>
                 {stats.enSantuario && (
                   <span className="text-[9px] sm:text-[10px] font-black uppercase tracking-widest bg-emerald-500/10 text-emerald-400 px-2 py-0.5 rounded-full border border-emerald-500/30 flex items-center gap-1 animate-pulse">
-                    🔥 Zona Segura
-                  </span>
-                )}
-                {stats.escaleraAbierta && (
-                  <span className="text-[9px] sm:text-[10px] font-black uppercase tracking-widest bg-amber-500/10 text-amber-400 px-2 py-0.5 rounded-full border border-amber-500/30 animate-pulse">
-                    🗝️ Escalera Abierta
+                    🔥 Campamento de la Asociación
                   </span>
                 )}
               </div>
               <p className="text-[10px] sm:text-xs text-zinc-400 font-bold mt-0.5">
-                {stats.piso === 1 ? 'Catacumbas de Piedra' : stats.piso === 2 ? 'Cripta de la Espora & Hongos' : 'Bóvedas Sumergidas'}
+                Mega-Dungeon Contínua • Asociación de Rol La Pampa
               </p>
             </div>
           </div>

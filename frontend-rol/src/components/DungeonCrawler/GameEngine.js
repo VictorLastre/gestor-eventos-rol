@@ -3,6 +3,7 @@
 // Santuario descubierto y Sellado de Arena de Jefes (Anti-Exploit / Niebla de Jefe).
 
 import { TILE_VOID, TILE_FLOOR, TILE_WALL, TILE_SANCTUARY, TILE_WATER_MOSS, TILE_STAIRS, TILE_BOSS_GATE, DungeonGenerator } from './DungeonGenerator';
+import { cargarPersonajeLocal, guardarPersonajeLocal } from './ViejaEscuelaEngine';
 import { sound } from './SoundEngine';
 import { assets } from './AssetManager';
 
@@ -110,6 +111,8 @@ export class GameEngine {
     this.textosFlotantes = [];
     this.particulas = [];
     this.cofres = [];
+    this.puertas = [];
+    this.party = config.party || [];
     this.jefeActual = null;
     this.escaleraDesbloqueada = false;
 
@@ -196,14 +199,21 @@ export class GameEngine {
 
     this.jefeActual = this.enemigos.find(e => e.esJefe) || null;
 
-    this.cofres = this.dungeon.cofres.map((c, idx) => ({
+    this.puertas = (this.dungeon.puertas || []).map(p => ({
+      ...p,
+      pixelX: (p.x + 0.5) * this.tileSize,
+      pixelY: (p.y + 0.5) * this.tileSize
+    }));
+
+    this.cofres = (this.dungeon.cofres || []).map((c, idx) => ({
       id: idx,
       x: (c.x + 0.5) * this.tileSize,
       y: (c.y + 0.5) * this.tileSize,
       abierto: false,
       oro: c.oro,
       materiales: c.materiales,
-      pocion: c.pocion
+      pocion: c.pocion,
+      tieneLlave: !!c.tieneLlave
     }));
 
     // NPCs presentes en la mazmorra (Santuario de la Asociación de Rol La Pampa)
@@ -439,6 +449,14 @@ export class GameEngine {
       if (tile === TILE_WALL || tile === TILE_VOID || tile === TILE_BOSS_GATE) {
         return false;
       }
+      if (this.puertas && this.puertas.length > 0) {
+        for (let j = 0; j < this.puertas.length; j++) {
+          const p = this.puertas[j];
+          if ((p.estado === 'cerrada' || p.estado === 'trancada') && p.x === tx && p.y === ty) {
+            return false;
+          }
+        }
+      }
     }
     return true;
   }
@@ -452,23 +470,55 @@ export class GameEngine {
       return;
     }
 
-    const distEscalera = Math.hypot(
-      this.player.x - (this.dungeon.stairsPoint.x + 0.5) * this.tileSize,
-      this.player.y - (this.dungeon.stairsPoint.y + 0.5) * this.tileSize
-    );
+    // 2. Interacción con Puertas (abrir normales, usar llave, forzar con pícaro)
+    if (this.puertas && this.puertas.length > 0) {
+      const puertaCercana = this.puertas.find(p =>
+        p.estado !== 'abierta' &&
+        p.estado !== 'destruida' &&
+        Math.hypot(this.player.x - p.pixelX, this.player.y - p.pixelY) < 55
+      );
 
-    if (distEscalera < 45) {
-      if (this.escaleraDesbloqueada || !this.jefeActual || this.jefeActual.hp <= 0) {
-        sound.playLevelUp();
-        this.onCambioPiso(this.piso + 1);
-        this.iniciarPiso(this.piso + 1);
-      } else {
-        sound.playHit();
-        this.crearTextoFlotante(this.player.x, this.player.y - 20, '¡El Sello del Jefe bloquea la escalera!', '#ef4444');
+      if (puertaCercana) {
+        if (puertaCercana.estado === 'cerrada') {
+          puertaCercana.estado = 'abierta';
+          sound.playSlash();
+          this.crearTextoFlotante(puertaCercana.pixelX, puertaCercana.pixelY - 20, '🚪 ¡Puerta Abierta!', '#e2e8f0', 14);
+          this.crearAstillas(puertaCercana.pixelX, puertaCercana.pixelY, 6);
+          return;
+        }
+
+        if (puertaCercana.estado === 'trancada') {
+          const tieneLlave = this.llaves > 0 || this.tieneLlaveEnInventario();
+          if (tieneLlave) {
+            if (this.llaves > 0) this.llaves--;
+            else this.consumirLlaveDeInventario();
+
+            puertaCercana.estado = 'abierta';
+            puertaCercana.requiereLlave = false;
+            sound.playCoin();
+            this.crearTextoFlotante(puertaCercana.pixelX, puertaCercana.pixelY - 25, '🗝️ ¡Cerradura Abierta con Llave!', '#fbbf24', 15);
+            this.crearAstillas(puertaCercana.pixelX, puertaCercana.pixelY, 8);
+            this.notificarStats();
+            return;
+          }
+
+          if (this.tienePicaro()) {
+            puertaCercana.estado = 'abierta';
+            puertaCercana.requiereLlave = false;
+            sound.playShopBuy();
+            this.crearTextoFlotante(puertaCercana.pixelX, puertaCercana.pixelY - 25, '🗝️ ¡Ganzúa de Pícaro: Cerradura Forzada!', '#34d399', 15);
+            this.crearAstillas(puertaCercana.pixelX, puertaCercana.pixelY, 8);
+            return;
+          }
+
+          sound.playBlock();
+          this.crearTextoFlotante(puertaCercana.pixelX, puertaCercana.pixelY - 25, '🔒 ¡Trancada! Busca una Llave, trae un Pícaro o golpéala', '#ef4444', 13);
+          return;
+        }
       }
-      return;
     }
 
+    // 3. Cofres y hallazgo de Llaves Antiguas
     for (const c of this.cofres) {
       if (!c.abierto && Math.hypot(this.player.x - c.x, this.player.y - c.y) < 40) {
         c.abierto = true;
@@ -476,9 +526,30 @@ export class GameEngine {
         this.materiales += c.materiales;
         sound.playCoin();
         this.crearTextoFlotante(c.x, c.y - 15, `+${c.oro} Oro  +${c.materiales} Materiales`, '#fbbf24');
+
+        if (c.tieneLlave) {
+          this.llaves += 1;
+          this.crearTextoFlotante(c.x, c.y - 32, '🗝️ ¡Llave Antigua Encontrada!', '#38bdf8', 15);
+          try {
+            const pj = cargarPersonajeLocal();
+            if (pj) {
+              pj.equipo = pj.equipo || [];
+              pj.equipo.push({
+                id: 'llave_antigua_' + Date.now(),
+                nombre: 'Llave Antigua de Hierro',
+                tipo: 'Utilidad',
+                icono: '🗝️',
+                desc: 'Llave pesada que abre puertas trancadas con cerradura en la Cripta.',
+                valorMo: 10
+              });
+              guardarPersonajeLocal(pj);
+            }
+          } catch {}
+        }
+
         if (c.pocion === 'vida') {
           this.player.hp = Math.min(this.player.maxHp, this.player.hp + 40);
-          this.crearTextoFlotante(this.player.x, this.player.y - 30, '+40 Vida (Poción)', '#10b981');
+          this.crearTextoFlotante(this.player.x, this.player.y - 45, '+40 Vida (Poción)', '#10b981');
         }
         this.notificarStats();
         break;
@@ -650,6 +721,28 @@ export class GameEngine {
             return;
           }
           this.infligirDanoEnemigo(e, dano, esCrit);
+        }
+      }
+    }
+
+    // Ataque para derribar puertas cerradas o trancadas
+    if (this.puertas && this.puertas.length > 0) {
+      for (const p of this.puertas) {
+        if (p.estado === 'cerrada' || p.estado === 'trancada') {
+          const distP = Math.hypot(p.pixelX - this.player.x, p.pixelY - this.player.y);
+          if (distP <= alcance + this.tileSize * 0.6) {
+            p.hp -= dano;
+            sound.playHit();
+            this.crearAstillas(p.pixelX, p.pixelY, 10);
+            if (p.hp <= 0) {
+              p.estado = 'destruida';
+              sound.playCrit();
+              this.crearAstillas(p.pixelX, p.pixelY, 25);
+              this.crearTextoFlotante(p.pixelX, p.pixelY - 25, '💥 ¡PUERTA DESTRUIDA!', '#f59e0b', 16);
+            } else {
+              this.crearTextoFlotante(p.pixelX, p.pixelY - 15, `-${dano} (${p.hp}/${p.maxHp} HP)`, '#facc15', 12);
+            }
+          }
         }
       }
     }
@@ -1117,6 +1210,33 @@ export class GameEngine {
         continue;
       }
 
+      // Proyectil del jugador impacta a puertas
+      if (p.esJugador && this.puertas) {
+        let golpeoPuerta = false;
+        for (const puerta of this.puertas) {
+          if ((puerta.estado === 'cerrada' || puerta.estado === 'trancada') &&
+              Math.hypot(puerta.pixelX - p.x, puerta.pixelY - p.y) < this.tileSize * 0.6) {
+            puerta.hp -= p.dano;
+            sound.playHit();
+            this.crearAstillas(puerta.pixelX, puerta.pixelY, 8);
+            if (puerta.hp <= 0) {
+              puerta.estado = 'destruida';
+              sound.playCrit();
+              this.crearAstillas(puerta.pixelX, puerta.pixelY, 20);
+              this.crearTextoFlotante(puerta.pixelX, puerta.pixelY - 25, '💥 ¡PUERTA DESTRUIDA!', '#f59e0b', 16);
+            } else {
+              this.crearTextoFlotante(puerta.pixelX, puerta.pixelY - 15, `-${p.dano} HP`, '#facc15', 12);
+            }
+            golpeoPuerta = true;
+            break;
+          }
+        }
+        if (golpeoPuerta) {
+          this.proyectiles.splice(i, 1);
+          continue;
+        }
+      }
+
       // Proyectil del jugador impacta a enemigos
       if (p.esJugador) {
         let impacto = false;
@@ -1254,6 +1374,66 @@ export class GameEngine {
     }
   }
 
+
+  tienePicaro() {
+    if (this.player.clase === 'bribon') return true;
+    if (this.party && Array.isArray(this.party)) {
+      return this.party.some(m =>
+        (m.clase && m.clase.toLowerCase() === 'bribon') ||
+        m.id === 'delo' ||
+        m.nombre?.toLowerCase().includes('delo') ||
+        m.rol?.toLowerCase().includes('bribón') ||
+        m.rol?.toLowerCase().includes('bribon')
+      );
+    }
+    return false;
+  }
+
+  tieneLlaveEnInventario() {
+    try {
+      const pj = cargarPersonajeLocal();
+      if (!pj || !pj.equipo) return false;
+      return pj.equipo.some(item => {
+        if (typeof item === 'string') return item.toLowerCase().includes('llave');
+        return item.id?.includes('llave') || item.nombre?.toLowerCase().includes('llave');
+      });
+    } catch {
+      return false;
+    }
+  }
+
+  consumirLlaveDeInventario() {
+    try {
+      const pj = cargarPersonajeLocal();
+      if (!pj || !pj.equipo) return;
+      const idx = pj.equipo.findIndex(item => {
+        if (typeof item === 'string') return item.toLowerCase().includes('llave');
+        return item.id?.includes('llave') || item.nombre?.toLowerCase().includes('llave');
+      });
+      if (idx !== -1) {
+        pj.equipo.splice(idx, 1);
+        guardarPersonajeLocal(pj);
+      }
+    } catch (e) {
+      console.warn('Error consumiendo llave de inventario', e);
+    }
+  }
+
+  crearAstillas(x, y, cantidad = 10) {
+    for (let k = 0; k < cantidad; k++) {
+      this.particulas.push({
+        x: x + (Math.random() - 0.5) * 16,
+        y: y + (Math.random() - 0.5) * 16,
+        vx: (Math.random() - 0.5) * 90,
+        vy: (Math.random() - 0.5) * 90,
+        vida: 0.45,
+        maxVida: 0.45,
+        color: Math.random() < 0.5 ? '#78350f' : '#b45309',
+        radio: Math.random() * 2.5 + 1.5
+      });
+    }
+  }
+
   colisionaConMuro(x, y, radio) {
     const minTileX = Math.floor((x - radio) / this.tileSize);
     const maxTileX = Math.floor((x + radio) / this.tileSize);
@@ -1268,6 +1448,22 @@ export class GameEngine {
         }
       }
     }
+
+    // Colisión física con puertas cerradas o trancadas
+    if (this.puertas && this.puertas.length > 0) {
+      for (let i = 0; i < this.puertas.length; i++) {
+        const p = this.puertas[i];
+        if (p.estado === 'cerrada' || p.estado === 'trancada') {
+          if (
+            Math.abs(x - p.pixelX) < radio + this.tileSize * 0.44 &&
+            Math.abs(y - p.pixelY) < radio + this.tileSize * 0.44
+          ) {
+            return true;
+          }
+        }
+      }
+    }
+
     return false;
   }
 
@@ -1302,6 +1498,104 @@ export class GameEngine {
     ctx.restore();
 
     this.renderHUDContextual(ctx);
+  }
+
+
+  renderPuertas(ctx) {
+    if (!this.puertas) return;
+    const ts = this.tileSize;
+
+    for (const p of this.puertas) {
+      const pantallaX = p.pixelX - this.camera.x + this.canvas.width / 2;
+      const pantallaY = p.pixelY - this.camera.y + this.canvas.height / 2;
+      if (
+        pantallaX < -60 || pantallaX > this.canvas.width + 60 ||
+        pantallaY < -60 || pantallaY > this.canvas.height + 60
+      ) {
+        continue;
+      }
+
+      ctx.save();
+      ctx.translate(p.pixelX, p.pixelY);
+
+      if (p.estado === 'cerrada' || p.estado === 'trancada') {
+        const esV = p.orientacion === 'v';
+
+        // Marco y hojas de madera
+        ctx.fillStyle = '#451a03';
+        ctx.fillRect(-ts / 2, -ts / 2, ts, ts);
+
+        ctx.fillStyle = '#78350f';
+        ctx.fillRect(-ts / 2 + 2, -ts / 2 + 2, ts - 4, ts - 4);
+
+        // Tablones
+        ctx.strokeStyle = '#291004';
+        ctx.lineWidth = 1.5;
+        if (esV) {
+          ctx.beginPath();
+          ctx.moveTo(-ts / 2 + 2, 0);
+          ctx.lineTo(ts / 2 - 2, 0);
+          ctx.stroke();
+        } else {
+          ctx.beginPath();
+          ctx.moveTo(0, -ts / 2 + 2);
+          ctx.lineTo(0, ts / 2 - 2);
+          ctx.stroke();
+        }
+
+        // Bisagras y herrajes
+        ctx.fillStyle = '#27272a';
+        if (esV) {
+          ctx.fillRect(-ts / 2 + 3, -ts / 2 + 4, ts - 6, 3);
+          ctx.fillRect(-ts / 2 + 3, ts / 2 - 7, ts - 6, 3);
+        } else {
+          ctx.fillRect(-ts / 2 + 4, -ts / 2 + 3, 3, ts - 6);
+          ctx.fillRect(ts / 2 - 7, -ts / 2 + 3, 3, ts - 6);
+        }
+
+        // Si está trancada: dibujar cerradura de hierro / candado
+        if (p.estado === 'trancada') {
+          ctx.fillStyle = '#eab308';
+          ctx.beginPath();
+          ctx.arc(0, 0, 5.5, 0, Math.PI * 2);
+          ctx.fill();
+
+          ctx.fillStyle = '#09090b';
+          ctx.beginPath();
+          ctx.arc(0, -1, 1.8, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.fillRect(-1, -1, 2, 4);
+        } else {
+          ctx.fillStyle = '#d4d4d8';
+          ctx.beginPath();
+          ctx.arc(esV ? 0 : 4, esV ? 4 : 0, 2.5, 0, Math.PI * 2);
+          ctx.fill();
+        }
+
+        // Si la puerta está dañada: barra de vida
+        if (p.hp < p.maxHp) {
+          const wBar = 24;
+          const hBar = 4;
+          ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
+          ctx.fillRect(-wBar / 2, -ts / 2 - 6, wBar, hBar);
+
+          const hpPct = Math.max(0, p.hp / p.maxHp);
+          ctx.fillStyle = hpPct > 0.5 ? '#10b981' : hpPct > 0.25 ? '#f59e0b' : '#ef4444';
+          ctx.fillRect(-wBar / 2, -ts / 2 - 6, wBar * hpPct, hBar);
+        }
+
+      } else if (p.estado === 'abierta') {
+        ctx.fillStyle = 'rgba(69, 26, 3, 0.8)';
+        ctx.fillRect(-ts / 2 + 2, -ts / 2 + 2, 5, ts - 4);
+      } else if (p.estado === 'destruida') {
+        ctx.fillStyle = '#713f12';
+        ctx.fillRect(-8, -4, 16, 3);
+        ctx.fillRect(-4, 2, 10, 2.5);
+        ctx.fillRect(2, -8, 8, 3);
+      }
+
+      ctx.restore();
+    }
   }
 
   renderTilemap(ctx) {
@@ -1738,16 +2032,32 @@ export class GameEngine {
       return;
     }
 
-    const distEscalera = Math.hypot(
-      this.player.x - (this.dungeon.stairsPoint.x + 0.5) * this.tileSize,
-      this.player.y - (this.dungeon.stairsPoint.y + 0.5) * this.tileSize
-    );
+    // Puertas cercanas
+    if (this.puertas && this.puertas.length > 0) {
+      const puertaCercana = this.puertas.find(p =>
+        p.estado !== 'abierta' &&
+        p.estado !== 'destruida' &&
+        Math.hypot(this.player.x - p.pixelX, this.player.y - p.pixelY) < 55
+      );
 
-    if (distEscalera < 45) {
-      if (this.escaleraDesbloqueada || !this.jefeActual || this.jefeActual.hp <= 0) {
-        this.dibujarBurbujaAccion(ctx, 'Escaleras Abiertas', '[E] Descender al Siguiente Piso');
-      } else {
-        this.dibujarBurbujaAccion(ctx, 'Sello del Jefe', 'Vence al Custodio para desbloquear el paso');
+      if (puertaCercana) {
+        if (puertaCercana.estado === 'cerrada') {
+          this.dibujarBurbujaAccion(ctx, 'Puerta de Madera Maciza', '[E] Abrir Puerta  •  [Ataque] Derribar');
+          return;
+        }
+        if (puertaCercana.estado === 'trancada') {
+          const tieneLlave = this.llaves > 0 || this.tieneLlaveEnInventario();
+          const tienePicaro = this.tienePicaro();
+
+          if (tieneLlave) {
+            this.dibujarBurbujaAccion(ctx, 'Puerta con Cerradura de Hierro', '[E] Usar Llave Antigua  •  [Ataque] Derribar');
+          } else if (tienePicaro) {
+            this.dibujarBurbujaAccion(ctx, 'Puerta Trancada (Cerradura)', '[E] Forzar Cerradura (Pícaro)  •  [Ataque] Derribar');
+          } else {
+            this.dibujarBurbujaAccion(ctx, 'Puerta Trancada (Cerradura)', '🔒 Requiere Llave Antigua o Pícaro  •  [Ataque] Derribar');
+          }
+          return;
+        }
       }
     }
   }
