@@ -28,6 +28,8 @@ export default function CriptaJuego({ usuarioLogueado, alActualizarUsuario, volv
   const [modalCreacionVE, setModalCreacionVE] = useState(false);
   const [modalInventarioVE, setModalInventarioVE] = useState(false);
   const [subpestanaInventario, setSubpestanaInventario] = useState('inventario');
+  const [modalMuerte, setModalMuerte] = useState(null);
+  const [modalJefeDerrotado, setModalJefeDerrotado] = useState(null);
   const [sonidoSilenciado, setSonidoSilenciado] = useState(false);
   const [esFullscreen, setEsFullscreen] = useState(false);
   const [esDispositivoTactil, setEsDispositivoTactil] = useState(false);
@@ -370,32 +372,10 @@ export default function CriptaJuego({ usuarioLogueado, alActualizarUsuario, volv
       onMuerte: (data) => {
         const fichaMuerte = PERSONALIDADES_NPC.guardian_umbral || PERSONALIDADES_NPC.martin;
         const juicio = fichaMuerte.generarJuicioMuerte(data.armaQuebrada, data.oroPerdido, data.expulsado, data.piso);
-        Swal.fire({
-          title: juicio.titulo,
-          text: juicio.mensaje,
-          imageUrl: '/assets/crawler/portraits/npc_angel_portrait.png',
-          imageWidth: 96,
-          imageHeight: 96,
-          imageAlt: 'El Guardián del Umbral',
-          background: '#09090b',
-          color: '#ffffff',
-          confirmButtonText: 'Regresar al Santuario',
-          confirmButtonColor: '#fbbf24',
-          customClass: {
-            image: 'rounded-xl border-2 border-amber-400 shadow-lg'
-          }
-        });
+        setModalMuerte(juicio);
       },
       onJefeDerrotado: (data) => {
-        Swal.fire({
-          title: '👑 ¡JEFE DERROTADO!',
-          text: `Has vencido a ${data.nombre}. El Sello Mágico se ha disipado y la escalera está libre.`,
-          icon: 'success',
-          background: '#09090b',
-          color: '#ffffff',
-          confirmButtonText: '¡Descender!',
-          confirmButtonColor: '#10b981'
-        });
+        setModalJefeDerrotado(data);
       },
       onCambioPiso: (nuevoPiso) => {
         localStorage.setItem('crawler_piso', nuevoPiso);
@@ -477,21 +457,8 @@ export default function CriptaJuego({ usuarioLogueado, alActualizarUsuario, volv
           },
           onMuerte: (data) => {
             const fichaMuerte = PERSONALIDADES_NPC.guardian_umbral || PERSONALIDADES_NPC.martin;
-        const juicio = fichaMuerte.generarJuicioMuerte(data.armaQuebrada, data.oroPerdido, data.expulsado, data.piso);
-            Swal.fire({
-              title: juicio.titulo,
-              text: juicio.mensaje,
-              imageUrl: '/assets/crawler/portraits/npc_angel_portrait.png',
-              imageWidth: 96,
-              imageHeight: 96,
-              imageAlt: 'El Guardián del Umbral',
-              background: '#09090b',
-              color: '#f4f4f5',
-              confirmButtonText: 'Reaparecer en la Hoguera',
-              confirmButtonColor: '#10b981'
-            }).then(() => {
-              nuevoEngine.renacerEnHoguera();
-            });
+            const juicio = fichaMuerte.generarJuicioMuerte(data.armaQuebrada, data.oroPerdido, data.expulsado, data.piso);
+            setModalMuerte(juicio);
           },
           onCambioPiso: (nuevoPiso) => {
             localStorage.setItem('crawler_piso', nuevoPiso);
@@ -1552,6 +1519,59 @@ export default function CriptaJuego({ usuarioLogueado, alActualizarUsuario, volv
           onFinalizarCombate={handleFinalizarCombate}
           onHuir={handleHuirCombate}
         />
+      )}
+
+      {/* MODAL NATIVO DE MUERTE: SIEMPRE VISIBLE EN PANTALLA COMPLETA */}
+      {modalMuerte && (
+        <div className="fixed inset-0 bg-black/85 backdrop-blur-md z-50 flex items-center justify-center p-4 animate-in fade-in duration-200 select-none">
+          <div className="bg-stone-950 border-2 border-amber-600/70 rounded-3xl max-w-md w-full p-6 shadow-2xl flex flex-col items-center text-center text-stone-200">
+            <div className="w-24 h-24 rounded-2xl overflow-hidden border-2 border-amber-500 shadow-[0_0_20px_rgba(245,158,11,0.3)] mb-4 bg-stone-900 p-1">
+              <img
+                src="/assets/crawler/portraits/npc_angel_portrait.png"
+                alt="El Guardián del Umbral"
+                className="w-full h-full object-cover rounded-xl"
+              />
+            </div>
+            <h3 className="text-base font-black text-amber-300 uppercase tracking-widest mb-2 flex items-center justify-center gap-2">
+              <span>🕯️</span> {modalMuerte.titulo || '¡RESGUARDADO POR EL GUARDIÁN!'}
+            </h3>
+            <p className="text-xs text-stone-300 mb-6 leading-relaxed">
+              {modalMuerte.mensaje}
+            </p>
+            <button
+              onClick={() => {
+                setModalMuerte(null);
+                if (engineRef.current) {
+                  engineRef.current.pausado = false;
+                }
+              }}
+              className="w-full py-3 bg-gradient-to-r from-amber-600 to-amber-500 hover:from-amber-500 hover:to-amber-400 text-stone-950 font-black text-xs uppercase tracking-widest rounded-xl shadow-lg transition active:scale-95"
+            >
+              Regresar al Santuario
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL NATIVO DE JEFE DERROTADO: SIEMPRE VISIBLE EN PANTALLA COMPLETA */}
+      {modalJefeDerrotado && (
+        <div className="fixed inset-0 bg-black/85 backdrop-blur-md z-50 flex items-center justify-center p-4 animate-in fade-in duration-200 select-none">
+          <div className="bg-stone-950 border-2 border-emerald-500/70 rounded-3xl max-w-md w-full p-6 shadow-2xl flex flex-col items-center text-center text-stone-200">
+            <span className="text-4xl mb-3">👑</span>
+            <h3 className="text-base font-black text-emerald-300 uppercase tracking-widest mb-2">
+              ¡CUSTODIO DERROTADO!
+            </h3>
+            <p className="text-xs text-stone-300 mb-6 leading-relaxed">
+              Has vencido a <strong>{modalJefeDerrotado.nombre}</strong>. El Sello Mágico se ha disipado y la gran Cripta reconoce tu valentía.
+            </p>
+            <button
+              onClick={() => setModalJefeDerrotado(null)}
+              className="w-full py-3 bg-gradient-to-r from-emerald-600 to-emerald-500 hover:from-emerald-500 hover:to-emerald-400 text-stone-950 font-black text-xs uppercase tracking-widest rounded-xl shadow-lg transition active:scale-95"
+            >
+              Continuar Exploración
+            </button>
+          </div>
+        </div>
       )}
 
       {/* MODAL DE INVENTARIO Y TIENDA OFICIAL VIEJA ESCUELA */}
