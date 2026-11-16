@@ -24,6 +24,12 @@ export const PERSONALIDADES_NPC = {
     dialogoInicial: 'Buenasssssss... *sopla suavemente una taza de café caliente*. ¿Vienes por un mapa o a distraerme de mis trazos?',
     opciones: [
       {
+        id: 'abrir_tienda_diny',
+        texto: '🗺️ Abrir Tienda de Cartografía & Herramientas de Diny',
+        accion: 'abrir_tienda_diny',
+        respuesta: '¡Tengo pergaminos para revelar todo el plano, cuerdas y ganzúas de precisión!'
+      },
+      {
         id: 'mapa_seguridad',
         texto: 'Trazar Hoguera y Escalera en el Mapa (25 Oro)',
         costoOro: 25,
@@ -85,6 +91,12 @@ export const PERSONALIDADES_NPC = {
     },
     dialogoInicial: '¡Alo Alo pips! ¿Qué se cuentan? 😂 *sacando morfi de la mochila* ¿Vienen a equiparse para no morir en el primer pasillo?',
     opciones: [
+      {
+        id: 'abrir_tienda_delo',
+        texto: '🛒 Abrir Tienda de Pociones & Alquimia de Delo',
+        accion: 'abrir_tienda_delo',
+        respuesta: '¡Alo alo! Mirá todo lo que tengo en la manta: pociones curativas, de POD y raciones recién preparadas.'
+      },
       {
         id: 'comprar_pocion',
         texto: 'Poción Mayor de Salud (+80 HP) - 30 Oro',
@@ -242,6 +254,12 @@ export const PERSONALIDADES_NPC = {
     },
     dialogoInicial: 'Perdón por la tardanza, estaba contando los fondos de la Asociación. ¿Vienes a aportar al gremio o a buscar problemas?',
     opciones: [
+      {
+        id: 'abrir_tienda_guillermo',
+        texto: '⚔️ Abrir Forja & Armería de Guillermo y Javier',
+        accion: 'abrir_tienda_guillermo',
+        respuesta: '¡Acá tenés el arsenal oficial! Espadas, cotas de mallas, armaduras de placas y hachas afiladas.'
+      },
       {
         id: 'donar',
         texto: 'Aportar 20 Monedas de Oro al Fondo Común',

@@ -9,7 +9,23 @@ import { PERSONALIDADES_NPC } from './PersonalidadesNPC';
 import HojaPersonajeVE from './HojaPersonajeVE';
 import CreacionPersonajeVE from './CreacionPersonajeVE';
 import CombatePorTurnosVE from './CombatePorTurnosVE';
+import InventarioVE from './InventarioVE';
 import { cargarPersonajeLocal, guardarPersonajeLocal, MIEMBROS_ASOCIACION_VE } from './ViejaEscuelaEngine';
+
+
+  // Atajo de teclado: 'I' para abrir o cerrar el inventario OSR
+  useEffect(() => {
+    const handleKeyI = (e) => {
+      if (e.target && (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA')) return;
+      if (e.key === 'i' || e.key === 'I') {
+        e.preventDefault();
+        setSubpestanaInventario('inventario');
+        setModalInventarioVE(prev => !prev);
+      }
+    };
+    window.addEventListener('keydown', handleKeyI);
+    return () => window.removeEventListener('keydown', handleKeyI);
+  }, []);
 
 export default function CriptaJuego({ usuarioLogueado, alActualizarUsuario, volver }) {
   const canvasRef = useRef(null);
@@ -22,6 +38,8 @@ export default function CriptaJuego({ usuarioLogueado, alActualizarUsuario, volv
   const [modalPersonaje, setModalPersonaje] = useState(false);
   const [modalHojaVE, setModalHojaVE] = useState(false);
   const [modalCreacionVE, setModalCreacionVE] = useState(false);
+  const [modalInventarioVE, setModalInventarioVE] = useState(false);
+  const [subpestanaInventario, setSubpestanaInventario] = useState('inventario');
   const [sonidoSilenciado, setSonidoSilenciado] = useState(false);
   const [esFullscreen, setEsFullscreen] = useState(false);
   const [esDispositivoTactil, setEsDispositivoTactil] = useState(false);
@@ -531,16 +549,49 @@ export default function CriptaJuego({ usuarioLogueado, alActualizarUsuario, volv
 
     if (resultado.victoria) {
       if (engine) {
+        const derrotados = resultado.enemigosDerrotados || listaEnemigos;
+        derrotados.forEach(e => {
+          if (e) {
+            const refOriginal = e.originalRef || e;
+            refOriginal.hp = 0;
+            refOriginal.derrotado = true;
+            engine.procesarMuerteEnemigo(refOriginal);
+          }
+        });
         listaEnemigos.forEach(e => {
           if (e) {
             e.hp = 0;
-            engine.procesarMuerteEnemigo(e);
+            e.derrotado = true;
           }
         });
+
+        // FILTRADO ESTRICTO: Eliminar criaturas muertas del array del motor para que jamás re-activen combate
+        engine.enemigos = engine.enemigos.filter(e => e.hp > 0 && !e.derrotado);
+
         const pj = cargarPersonajeLocal() || personajeVE;
         if (pj) {
           pj.pvActual = resultado.pvRestante;
           if (resultado.podRestante !== undefined) pj.podActual = resultado.podRestante;
+
+          // Integrar botín soltado por las criaturas (pociones, armas, trofeos)
+          if (resultado.botin && Array.isArray(resultado.botin)) {
+            const equipoActual = pj.equipo || [];
+            pj.equipo = [...equipoActual, ...resultado.botin];
+          }
+
+          // Sumar monedas de recompensa
+          if (resultado.oroGanado) {
+            pj.monedas = pj.monedas || { mo: 30, mp: 15, mc: 40 };
+            pj.monedas.mo = (pj.monedas.mo || 0) + resultado.oroGanado;
+            if (resultado.plataGanada) pj.monedas.mp = (pj.monedas.mp || 0) + resultado.plataGanada;
+            engine.oro = pj.monedas.mo;
+            setStats(prev => ({ ...prev, oro: pj.monedas.mo }));
+          }
+
+          if (resultado.xpGanada) {
+            pj.px = (pj.px || 0) + resultado.xpGanada;
+          }
+
           guardarPersonajeLocal(pj);
           setPersonajeVE({ ...pj });
         }
@@ -562,12 +613,21 @@ export default function CriptaJuego({ usuarioLogueado, alActualizarUsuario, volv
     const engine = engineRef.current;
     if (engine) {
       listaEnemigos.forEach(e => {
-        if (e) e.cooldownAtaque = 5.5; // Margen amplio para escapar y recorrer
+        if (e) {
+          if (e.hp <= 0 || e.derrotado) {
+            e.hp = 0;
+            engine.procesarMuerteEnemigo(e);
+          } else {
+            e.cooldownAtaque = 8.0; // Margen muy amplio para escapar
+          }
+        }
       });
+      engine.enemigos = engine.enemigos.filter(e => e.hp > 0 && !e.derrotado);
+
       const primerEnemigo = listaEnemigos[0];
       if (primerEnemigo) {
         const angulo = Math.atan2(engine.player.y - primerEnemigo.y, engine.player.x - primerEnemigo.x);
-        const pushDist = 36;
+        const pushDist = 48;
         const nx = engine.player.x + Math.cos(angulo) * pushDist;
         const ny = engine.player.y + Math.sin(angulo) * pushDist;
         if (!engine.colisionaConMuro(nx, ny, engine.player.radio)) {
@@ -650,6 +710,12 @@ export default function CriptaJuego({ usuarioLogueado, alActualizarUsuario, volv
     }
     if (accion === 'aportar_gremio') {
       return { mensaje: '¡Oro transferido al fondo de reserva de la Asociación!' };
+    }
+    if (accion && accion.startsWith('abrir_tienda')) {
+      setNpcDialogoActivo(null);
+      setSubpestanaInventario('tienda');
+      setModalInventarioVE(true);
+      return { mensaje: 'Abriendo tienda de suministros del gremio...' };
     }
 
     return null;
@@ -808,6 +874,36 @@ export default function CriptaJuego({ usuarioLogueado, alActualizarUsuario, volv
 
           {/* ACCIONES SUPERIORES */}
           <div className="flex items-center gap-1.5 sm:gap-2">
+            <button
+              onClick={() => {
+                setSubpestanaInventario('inventario');
+                setModalInventarioVE(true);
+              }}
+              className="text-xs font-bold text-amber-200 hover:text-white bg-amber-950/80 hover:bg-amber-900 px-2.5 py-1.5 rounded-xl border border-amber-600/60 transition-all flex items-center gap-1.5 shadow"
+              title="Abrir Inventario & Mochila de Aventurero (I)"
+            >
+              <span>🎒</span>
+              <span className="hidden sm:inline">
+                Inventario ({(personajeVE?.equipo?.length || 0)}/{(personajeVE?.atributos?.fue || 10)})
+              </span>
+            </button>
+
+            <button
+              onClick={() => {
+                setSubpestanaInventario('tienda');
+                setModalInventarioVE(true);
+              }}
+              className={`text-xs font-bold px-2.5 py-1.5 rounded-xl border transition-all flex items-center gap-1.5 shadow ${
+                stats.enSantuario
+                  ? 'bg-emerald-950 text-emerald-300 hover:bg-emerald-900 border-emerald-500 animate-pulse'
+                  : 'bg-stone-900 text-stone-300 hover:bg-stone-800 border-stone-700'
+              }`}
+              title="Comprar pociones, armas y armaduras a miembros de la Asociación"
+            >
+              <span>🛒</span>
+              <span className="hidden sm:inline">Tienda</span>
+            </button>
+
             <button
               onClick={() => setPanelExploradores(true)}
               className="text-xs font-bold text-emerald-300 hover:text-white bg-emerald-950/70 hover:bg-emerald-900/80 px-2.5 py-1.5 rounded-xl border border-emerald-600/50 transition-all flex items-center gap-1.5 shadow"
@@ -1449,6 +1545,24 @@ export default function CriptaJuego({ usuarioLogueado, alActualizarUsuario, volv
           party={party}
           onFinalizarCombate={handleFinalizarCombate}
           onHuir={handleHuirCombate}
+        />
+      )}
+
+      {/* MODAL DE INVENTARIO Y TIENDA OFICIAL VIEJA ESCUELA */}
+      {modalInventarioVE && (
+        <InventarioVE
+          personaje={personajeVE || cargarPersonajeLocal()}
+          alActualizarPersonaje={(nuevoPj) => {
+            setPersonajeVE({ ...nuevoPj });
+            if (engineRef.current && nuevoPj.monedas?.mo !== undefined) {
+              engineRef.current.oro = nuevoPj.monedas.mo;
+              setStats(prev => ({ ...prev, oro: nuevoPj.monedas.mo }));
+            }
+          }}
+          alCerrar={() => setModalInventarioVE(false)}
+          engine={engineRef.current}
+          modoInicial={subpestanaInventario}
+          onMostrarMensaje={(msg) => mostrarNotificacionToast(msg)}
         />
       )}
 

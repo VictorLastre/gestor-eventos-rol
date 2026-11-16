@@ -10,6 +10,128 @@ import {
 } from './ViejaEscuelaEngine';
 import { escalarMonstruoSegunNivel } from './DungeonGenerator';
 
+
+// =====================================================================
+// GENERADOR DE BOTÍN (LOOT) OFICIAL VIEJA ESCUELA
+// =====================================================================
+export function generarBotinEncuentro(listaMonstruos, nivelGrupo = 1) {
+  const oroBase = listaMonstruos.reduce((acc, m) => acc + (m.oro || m.oro_recompensa || Math.floor(Math.random() * 5) + 3), 0);
+  const plataBase = Math.floor(Math.random() * 10) + 5;
+  const xpTotal = listaMonstruos.reduce((acc, m) => acc + (m.xp || m.xp_recompensa || 15), 0);
+  const items = [];
+
+  // Probabilidad de 0.00000001 de equipo legendario (1 en 100 millones)
+  const rollLegendario = Math.random();
+  if (rollLegendario < 0.00000001) {
+    items.push({
+      id: 'legendario_arma_' + Date.now(),
+      nombre: '⭐ Hoja Solar Ancestral (LEGENDARIA)',
+      tipo: 'Arma',
+      icono: '⚔️',
+      dado: '2d10',
+      danoMedio: 11,
+      desc: '¡GOTA LEGENDARIA! Forjada con luz pura (2d10 de daño ígneo).',
+      valorMo: 500,
+      rareza: 'legendaria'
+    });
+  } else if (rollLegendario < 0.00000002) {
+    items.push({
+      id: 'legendario_armadura_' + Date.now(),
+      nombre: '⭐ Cota de Malla Astral (LEGENDARIA)',
+      tipo: 'Armadura',
+      icono: '🛡️',
+      defBono: 7,
+      desc: '¡GOTA LEGENDARIA! Cota tejida con hilos de estrellas (+7 a la DEF).',
+      valorMo: 500,
+      rareza: 'legendaria'
+    });
+  }
+
+  // Tirar botín por cada monstruo vencido (45% chance de soltar objeto en vez de solo monedas)
+  listaMonstruos.forEach((mon) => {
+    const roll = Math.random();
+    if (roll < 0.45) {
+      const subRoll = Math.random();
+      if (subRoll < 0.35) {
+        items.push({
+          id: 'pocion_curacion_' + Math.random().toString(36).substr(2, 6),
+          nombre: 'Poción de Curación VE',
+          tipo: 'Consumible',
+          icono: '🧪',
+          efecto: 'curar_6',
+          desc: 'Restaura +6 PV al consumirse.',
+          valorMo: 25,
+          cantidad: 1
+        });
+      } else if (subRoll < 0.50) {
+        items.push({
+          id: 'pocion_pod_' + Math.random().toString(36).substr(2, 6),
+          nombre: 'Poción de Concentración (POD)',
+          tipo: 'Consumible',
+          icono: '🔮',
+          efecto: 'pod_3',
+          desc: 'Restaura +3 Puntos de Poder.',
+          valorMo: 30,
+          cantidad: 1
+        });
+      } else if (subRoll < 0.70) {
+        const trofeos = [
+          { nombre: 'Gema de Cuarzo Rúnico', desc: 'Cristal brillante de la cripta.', valorMo: 15, icono: '💎' },
+          { nombre: 'Colmillo Afilado de Bestia', desc: 'Trofeo vendible a los forjadores.', valorMo: 8, icono: '🦷' },
+          { nombre: 'Fragmento de Ágata Antigua', desc: 'Piedra semipreciosa intacta.', valorMo: 20, icono: '💎' },
+          { nombre: 'Retal de Cota Herrumbrada', desc: 'Restos de metal de aventureros caídos.', valorMo: 6, icono: '🛡️' }
+        ];
+        const t = trofeos[Math.floor(Math.random() * trofeos.length)];
+        items.push({
+          id: 'trofeo_' + Math.random().toString(36).substr(2, 6),
+          nombre: t.nombre,
+          tipo: 'Valioso',
+          icono: t.icono,
+          desc: t.desc,
+          valorMo: t.valorMo,
+          cantidad: 1
+        });
+      } else if (subRoll < 0.85) {
+        const armasDrop = [
+          { nombre: 'Daga Mellada de Goblin', dado: '1d4', danoMedio: 2, valorMo: 3, icono: '🗡️' },
+          { nombre: 'Hacha de Mano de Esqueleto', dado: '1d6', danoMedio: 3, valorMo: 5, icono: '🪓' },
+          { nombre: 'Maza de Hueso Tallada', dado: '1d6', danoMedio: 3, valorMo: 6, icono: '🔨' }
+        ];
+        const a = armasDrop[Math.floor(Math.random() * armasDrop.length)];
+        items.push({
+          id: 'arma_drop_' + Math.random().toString(36).substr(2, 6),
+          nombre: a.nombre,
+          tipo: 'Arma',
+          icono: a.icono,
+          dado: a.dado,
+          danoMedio: a.danoMedio,
+          desc: `Arma capturada en combate (${a.dado} daño).`,
+          valorMo: a.valorMo,
+          cantidad: 1
+        });
+      } else {
+        items.push({
+          id: 'pergamino_mapa_' + Math.random().toString(36).substr(2, 6),
+          nombre: 'Pergamino de Revelación de Sector',
+          tipo: 'Consumible',
+          icono: '📜',
+          efecto: 'revelar_mapa',
+          desc: 'Pergamino que desvela habitaciones en la cripta.',
+          valorMo: 20,
+          cantidad: 1
+        });
+      }
+    }
+  });
+
+  return {
+    oro: oroBase,
+    plata: plataBase,
+    xp: xpTotal,
+    items
+  };
+}
+
 export default function CombatePorTurnosVE({
   enemigo,
   enemigos,
@@ -66,7 +188,8 @@ export default function CombatePorTurnosVE({
         nombreUnico: crudos.length > 1 ? `${escalado.nombre} #${idx + 1}` : escalado.nombre,
         pvMaximo: escalado.maxHp || escalado.hp || 8,
         pvActual: escalado.hp || escalado.maxHp || 8,
-        derrotado: false
+        derrotado: false,
+        originalRef: m
       };
     });
   })();
@@ -89,6 +212,7 @@ export default function CombatePorTurnosVE({
   const [segundoAlientoUsado, setSegundoAlientoUsado] = useState(false);
   const [bombaHumoUsada, setBombaHumoUsada] = useState(false);
   const [turnoNumero, setTurnoNumero] = useState(1);
+  const [botinGenerado, setBotinGenerado] = useState(null);
 
   // Sistema de Iniciativa Grupal (heroes + monstruos)
   const [ordenIniciativa, setOrdenIniciativa] = useState([]);
@@ -247,10 +371,13 @@ export default function CombatePorTurnosVE({
   // -------------------------------------------------------------------
   const pasarSiguienteTurno = (turnosActuales, indiceActual) => {
     // Verificar si todos los monstruos murieron
-    const quedanEnemigosVivos = listaEnemigos.some(e => !e.derrotado);
+    const quedanEnemigosVivos = listaEnemigos.some(e => !e.derrotado && e.pvActual > 0);
     if (!quedanEnemigosVivos) {
       sound.playLevelUp();
       agregarLog(`🏆 ¡Todos los monstruos de la sala han sido derrotados!`);
+      if (!botinGenerado) {
+        setBotinGenerado(generarBotinEncuentro(listaEnemigos, heroeSeguro.nivel || 1));
+      }
       setFase('VICTORIA');
       setEjecutandoAccion(false);
       return;
@@ -505,6 +632,10 @@ export default function CombatePorTurnosVE({
 
         if (estaMuerto) {
           agregarLog(`💀 ¡${mon.nombreUnico} ha sucumbido en combate!`);
+          if (mon.originalRef) {
+            mon.originalRef.hp = 0;
+            mon.originalRef.derrotado = true;
+          }
         }
 
         return {
@@ -552,7 +683,7 @@ export default function CombatePorTurnosVE({
   // 4. TURNO DE UN ENEMIGO
   // -------------------------------------------------------------------
   const procesarTurnoEnemigo = (enemigoTurno, turnos, idxActual) => {
-    const mon = listaEnemigos.find(e => e.idCombate === enemigoTurno.id && !e.derrotado);
+    const mon = listaEnemigos.find(e => e.idCombate === enemigoTurno.id && !e.derrotado && e.pvActual > 0);
     if (!mon) {
       pasarSiguienteTurno(turnos, idxActual);
       return;
@@ -700,15 +831,16 @@ export default function CombatePorTurnosVE({
 
   const handleCerrarVictoria = () => {
     sound.playCoin();
-    const oroTotal = listaEnemigos.reduce((acc, m) => acc + (m.oro || m.oro_recompensa || 4), 0);
-    const xpTotal = listaEnemigos.reduce((acc, m) => acc + (m.xp || m.xp_recompensa || 10), 0);
+    const botin = botinGenerado || generarBotinEncuentro(listaEnemigos, heroeSeguro.nivel || 1);
 
     onFinalizarCombate({
       victoria: true,
       pvRestante: pvHeroe,
       podRestante: podHeroe,
-      oroGanado: oroTotal,
-      xpGanada: xpTotal,
+      oroGanado: botin.oro,
+      plataGanada: botin.plata,
+      xpGanada: botin.xp,
+      botin: botin.items,
       enemigosDerrotados: listaEnemigos
     });
   };
@@ -1415,23 +1547,66 @@ export default function CombatePorTurnosVE({
           )}
 
           {fase === 'VICTORIA' && (
-            <div className="bg-emerald-950/50 border border-emerald-500/60 p-3 rounded-2xl flex flex-col sm:flex-row items-center justify-between gap-3 animate-in fade-in">
-              <div>
-                <h4 className="text-sm font-black text-emerald-300 uppercase tracking-wide flex items-center gap-1.5">
-                  🎉 ¡Victoria Gloriosa en la Sala!
-                </h4>
-                <p className="text-xs text-stone-300 mt-0.5">
-                  Recompensa del botín:{' '}
-                  <strong>+{listaEnemigos.reduce((acc, m) => acc + (m.oro || m.oro_recompensa || 4), 0)} MO</strong> y{' '}
-                  <strong>+{listaEnemigos.reduce((acc, m) => acc + (m.xp || m.xp_recompensa || 10), 0)} PX</strong>.
-                </p>
+            <div className="bg-emerald-950/70 border-2 border-emerald-500/80 p-4 rounded-2xl flex flex-col gap-3 animate-in fade-in shadow-2xl">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-emerald-800/60 pb-2">
+                <div>
+                  <h4 className="text-sm font-black text-emerald-300 uppercase tracking-wider flex items-center gap-2">
+                    <span>🏆</span> ¡Victoria Táctica en la Sala!
+                  </h4>
+                  <p className="text-xs text-stone-300 mt-0.5">
+                    Has derrotado a todas las criaturas del sector. Recompensas:
+                    <strong className="text-amber-300 ml-1">+{botinGenerado?.oro || 8} MO</strong>,{' '}
+                    <strong className="text-stone-300">+{botinGenerado?.plata || 12} MP</strong> y{' '}
+                    <strong className="text-blue-300">+{botinGenerado?.xp || 25} PX</strong>.
+                  </p>
+                </div>
+                <button
+                  onClick={handleCerrarVictoria}
+                  className="px-6 py-2.5 bg-emerald-500 hover:bg-emerald-400 text-stone-950 font-black uppercase text-xs rounded-xl shadow-lg transition active:scale-[0.98] flex-shrink-0"
+                >
+                  Reclamar Botín y Continuar
+                </button>
               </div>
-              <button
-                onClick={handleCerrarVictoria}
-                className="px-5 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-stone-950 font-black uppercase text-xs rounded-xl shadow-lg transition active:scale-[0.98]"
-              >
-                Continuar Exploración
-              </button>
+
+              {/* LISTA DE OBJETOS SOLTADOS POR LOS MONSTRUOS */}
+              <div className="space-y-1.5">
+                <span className="text-[11px] font-bold text-emerald-400 uppercase tracking-wider">
+                  🎒 Botín obtenido de las criaturas ({botinGenerado?.items?.length || 0} objetos):
+                </span>
+                {botinGenerado?.items?.length > 0 ? (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 max-h-36 overflow-y-auto pr-1">
+                    {botinGenerado.items.map((item, i) => (
+                      <div
+                        key={i}
+                        className={`p-2 rounded-xl border flex items-center justify-between gap-2 ${
+                          item.rareza === 'legendaria'
+                            ? 'bg-amber-950/70 border-amber-500 animate-pulse'
+                            : 'bg-stone-900/90 border-emerald-700/50'
+                        }`}
+                      >
+                        <div className="flex items-center gap-2 min-w-0">
+                          <span className="text-lg">{item.icono || '🎁'}</span>
+                          <div className="min-w-0">
+                            <span className="text-xs font-bold text-stone-200 block truncate">
+                              {item.nombre}
+                            </span>
+                            <span className="text-[10px] text-stone-400 block truncate">
+                              {item.desc || `${item.tipo} • Valor: ${item.valorMo} mo`}
+                            </span>
+                          </div>
+                        </div>
+                        <span className="text-[10px] font-black text-amber-400 bg-amber-950/80 px-1.5 py-0.5 rounded border border-amber-800 flex-shrink-0">
+                          {item.valorMo} mo
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-xs text-stone-400 italic">
+                    Las criaturas no portaban equipo aprovechable esta vez; recuperaste monedas y experiencia.
+                  </p>
+                )}
+              </div>
             </div>
           )}
 
