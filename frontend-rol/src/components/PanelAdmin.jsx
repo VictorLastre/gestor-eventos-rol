@@ -4,6 +4,7 @@ import GestionUsuarios from './GestionUsuarios';
 import GestionSanciones from './GestionSanciones';
 import Estadisticas from './Estadisticas';
 import GestionClubes from './GestionClubes';
+import GestionTalleres from './GestionTalleres';
 
 function PanelAdmin({ setVista, clubActivo, clubes }) {
   const [pestanaAdmin, setPestanaAdmin] = useState('eventos');
@@ -11,8 +12,8 @@ function PanelAdmin({ setVista, clubActivo, clubes }) {
   const esSuperAdmin = usuarioGuardado?.rol === 'superadmin';
 
   const pestanasDisponibles = esSuperAdmin 
-    ? ['eventos', 'usuarios', 'sanciones', 'clubes', 'stats']
-    : ['eventos', 'usuarios', 'sanciones', 'stats'];
+    ? ['eventos', 'talleres', 'usuarios', 'sanciones', 'clubes', 'stats']
+    : ['eventos', 'talleres', 'usuarios', 'sanciones', 'stats'];
 
   return (
     <div className="max-w-7xl mx-auto p-4 sm:p-6 md:p-12 animate-in fade-in slide-in-from-bottom-4 duration-700">
@@ -47,9 +48,9 @@ function PanelAdmin({ setVista, clubActivo, clubes }) {
                 ? 'bg-purple-600 text-white shadow-lg shadow-purple-900/40' 
                 : 'text-zinc-500 hover:text-zinc-300 hover:bg-zinc-800/50'
               }`}
-              title={tab === 'eventos' ? 'Gestor de Jornadas' : tab === 'usuarios' ? 'Alistamiento' : tab === 'sanciones' ? 'Tribunal de Sanciones y Asistencias' : tab === 'clubes' ? 'Alianza de Comunidades y Clubes' : 'Oráculo de Datos'}
+              title={tab === 'eventos' ? 'Gestor de Jornadas' : tab === 'talleres' ? 'Academia de Talleres y Cursos' : tab === 'usuarios' ? 'Alistamiento' : tab === 'sanciones' ? 'Tribunal de Sanciones y Asistencias' : tab === 'clubes' ? 'Alianza de Comunidades y Clubes' : 'Oráculo de Datos'}
             >
-              {tab === 'eventos' ? '⚔️ Gestor de Jornadas' : tab === 'usuarios' ? '🛡️ Alistamiento' : tab === 'sanciones' ? '⚠️ Asistencias y Sanciones' : tab === 'clubes' ? '🏛️ Clubes y Espacios' : '📊 Oráculo de Datos'}
+              {tab === 'eventos' ? '⚔️ Gestor de Jornadas' : tab === 'talleres' ? '🎓 Talleres y Cursos' : tab === 'usuarios' ? '🛡️ Alistamiento' : tab === 'sanciones' ? '⚠️ Asistencias y Sanciones' : tab === 'clubes' ? '🏛️ Clubes y Espacios' : '📊 Oráculo de Datos'}
             </button>
           ))}
         </nav>
@@ -57,6 +58,7 @@ function PanelAdmin({ setVista, clubActivo, clubes }) {
         {/* overflow-x-hidden añadido por seguridad para evitar el scroll horizontal interno */}
         <div className="p-4 sm:p-6 md:p-12 w-full overflow-x-hidden">
           {pestanaAdmin === 'eventos' && <CrearEvento alCrearEvento={() => {}} clubActivo={clubActivo} clubes={clubes} />}
+          {pestanaAdmin === 'talleres' && <GestionTalleres clubActivo={clubActivo} clubes={clubes} />}
           {pestanaAdmin === 'usuarios' && <GestionUsuarios setVista={setVista} clubActivo={clubActivo} />}
           {pestanaAdmin === 'sanciones' && <GestionSanciones setVista={setVista} clubActivo={clubActivo} />}
           {pestanaAdmin === 'clubes' && <GestionClubes />}

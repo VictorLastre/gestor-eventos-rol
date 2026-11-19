@@ -6,6 +6,7 @@ import CrearMesa from './CrearMesa';
 import CrearMesaJuego from './CrearMesaJuego'; // ✨ IMPORTAMOS EL NUEVO FORMULARIO
 import FormularioEscape from './FormularioEscape'; 
 import TarjetaEscape from './TarjetaEscape'; 
+import TarjetaTaller from './TarjetaTaller'; // ✨ IMPORTAMOS TARJETA DE TALLERES Y CURSOS
 import { fetchProtegido } from '../utils/api'; 
 import { io } from 'socket.io-client';
 import * as XLSX from 'xlsx';
@@ -18,6 +19,7 @@ function Eventos({ setVista, mesaActivaId, setMesaActivaId, clubActivo, setClubA
   
   const [vistaActiva, setVistaActiva] = useState('rol'); 
   const [escapesDelEvento, setEscapesDelEvento] = useState([]);
+  const [talleres, setTalleres] = useState([]); // ✨ TALLERES Y CURSOS (CON O SIN JORNADA)
   
   const [mostrarFormularioMesa, setMostrarFormularioMesa] = useState(false);
   const [mostrarFormularioEscape, setMostrarFormularioEscape] = useState(false);
@@ -31,6 +33,8 @@ function Eventos({ setVista, mesaActivaId, setMesaActivaId, clubActivo, setClubA
   const carruselPartidasRef = useRef(null); 
   const carruselJuegosRef = useRef(null); // ✨ REF PARA EL CARRUSEL DE JUEGOS
   const carruselEscapesRef = useRef(null); // ✨ REF PARA EL CARRUSEL DE ESCAPES
+  const carruselTalleresRef = useRef(null); // ✨ REF PARA EL CARRUSEL DE TALLERES EN EVENTO
+  const carruselTalleresTablonRef = useRef(null); // ✨ REF PARA TALLERES EN TABLÓN
 
   const usuarioGuardado = JSON.parse(localStorage.getItem('usuario'));
   // Los DMs y Admins pueden crear mesas de rol.
@@ -73,13 +77,95 @@ function Eventos({ setVista, mesaActivaId, setMesaActivaId, clubActivo, setClubA
       .catch(err => { if (err !== 'Sesión expirada') console.error(err); });
   };
 
-  // Recargar eventos cuando cambie la sede activa
+  const cargarTalleres = () => {
+    let url = '/api/talleres';
+    if (clubActivo?.id === 'todos') {
+      url = '/api/talleres?club_id=todos';
+    } else if (clubActivo?.id) {
+      url = `/api/talleres?club_id=${clubActivo.id}`;
+    }
+    fetchProtegido(url)
+      .then(res => res.json())
+      .then(datos => setTalleres(Array.isArray(datos) ? datos : []))
+      .catch(err => { if (err !== 'Sesión expirada') console.error("Error cargando talleres:", err); });
+  };
+
+  const inscribirseTaller = async (idTaller) => {
+    if (!usuarioGuardado) {
+      Swal.fire({
+        title: 'Atención',
+        text: 'Debes iniciar sesión con tu cuenta para inscribirte a un taller.',
+        icon: 'warning',
+        background: '#09090b', color: '#fff'
+      });
+      return;
+    }
+    try {
+      const res = await fetchProtegido(`/api/talleres/${idTaller}/inscribirse`, { method: 'POST' });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'No se pudo completar la inscripción');
+      
+      Swal.fire({
+        title: '¡Inscripción Exitosa!',
+        text: data.mensaje || 'Tu lugar en el taller ha sido reservado.',
+        icon: 'success',
+        background: '#09090b', color: '#fff',
+        customClass: { popup: 'border border-emerald-500/30 rounded-[2rem]' }
+      });
+      cargarTalleres();
+    } catch (e) {
+      Swal.fire({
+        title: 'Aviso del Gremio',
+        text: e.message,
+        icon: 'info',
+        background: '#09090b', color: '#fff'
+      });
+    }
+  };
+
+  const desinscribirseTaller = async (idTaller) => {
+    const result = await Swal.fire({
+      title: '¿Liberar tu lugar?',
+      text: '¿Deseas cancelar tu inscripción a este taller?',
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonText: 'Sí, liberar lugar',
+      cancelButtonText: 'Permanecer inscripto',
+      confirmButtonColor: '#ef4444',
+      cancelButtonColor: '#3f3f46',
+      background: '#09090b', color: '#fff',
+      customClass: { popup: 'border border-red-500/30 rounded-[2rem]' }
+    });
+
+    if (result.isConfirmed) {
+      try {
+        const res = await fetchProtegido(`/api/talleres/${idTaller}/inscribirse`, { method: 'DELETE' });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || 'Error al cancelar inscripción');
+
+        Swal.fire({
+          title: 'Lugar Liberado',
+          text: data.mensaje || 'Has cancelado tu inscripción.',
+          icon: 'success',
+          background: '#09090b', color: '#fff',
+          customClass: { popup: 'border border-emerald-500/30 rounded-[2rem]' }
+        });
+        cargarTalleres();
+      } catch (e) {
+        Swal.fire({ title: 'Error', text: e.message, icon: 'error', background: '#09090b', color: '#fff' });
+      }
+    }
+  };
+
+  // Recargar eventos y talleres cuando cambie la sede activa
   useEffect(() => {
     cargarEventos();
+    cargarTalleres();
   }, [clubActivo?.id]);
 
   useEffect(() => { 
     cargarEventos(); 
+    cargarTalleres();
 
     const socket = io('/', {
       path: '/api/socket.io',
@@ -91,6 +177,10 @@ function Eventos({ setVista, mesaActivaId, setMesaActivaId, clubActivo, setClubA
 
     socket.on('actualizacion-eventos', () => {
       cargarEventos();
+    });
+
+    socket.on('actualizacion-talleres', () => {
+      cargarTalleres();
     });
 
     socket.on('actualizacion-clubes', () => {
@@ -143,12 +233,16 @@ function Eventos({ setVista, mesaActivaId, setMesaActivaId, clubActivo, setClubA
     let cleanupPartidas = attachWheelEvent(carruselPartidasRef);
     let cleanupJuegos = attachWheelEvent(carruselJuegosRef);
     let cleanupEscapes = attachWheelEvent(carruselEscapesRef);
+    let cleanupTalleres = attachWheelEvent(carruselTalleresRef);
+    let cleanupTalleresTablon = attachWheelEvent(carruselTalleresTablonRef);
 
     return () => {
       if (cleanupEventos) cleanupEventos();
       if (cleanupPartidas) cleanupPartidas();
       if (cleanupJuegos) cleanupJuegos();
       if (cleanupEscapes) cleanupEscapes();
+      if (cleanupTalleres) cleanupTalleres();
+      if (cleanupTalleresTablon) cleanupTalleresTablon();
     };
   }, [eventoSeleccionado, vistaActiva]);
 
@@ -601,6 +695,8 @@ function Eventos({ setVista, mesaActivaId, setMesaActivaId, clubActivo, setClubA
 
   const scrollEventosIzq = () => carruselEventosRef.current?.scrollBy({ left: -400, behavior: 'smooth' });
   const scrollEventosDer = () => carruselEventosRef.current?.scrollBy({ left: 400, behavior: 'smooth' });
+  const scrollTalleresTablonIzq = () => carruselTalleresTablonRef.current?.scrollBy({ left: -380, behavior: 'smooth' });
+  const scrollTalleresTablonDer = () => carruselTalleresTablonRef.current?.scrollBy({ left: 380, behavior: 'smooth' });
 
   if (eventoSeleccionado) {
     // Si ya está en alguna mesa de Rol o Juegos de Mesa como creador o jugador
@@ -643,6 +739,7 @@ function Eventos({ setVista, mesaActivaId, setMesaActivaId, clubActivo, setClubA
     const cupoRolLleno = eventoSeleccionado.cupo_rol !== null && mesasRol.length >= eventoSeleccionado.cupo_rol;
     const cupoJuegosLleno = eventoSeleccionado.cupo_juegos_mesa !== null && juegosMesa.length >= eventoSeleccionado.cupo_juegos_mesa;
     const cupoEscapeLleno = eventoSeleccionado.cupo_escape_room !== null && escapesDelEvento.length >= eventoSeleccionado.cupo_escape_room;
+    const talleresDelEvento = talleres.filter(t => t.evento_id === eventoSeleccionado.id);
 
     return (
       <div className="min-h-screen bg-black font-sans pb-32 overflow-x-hidden">
@@ -719,6 +816,16 @@ function Eventos({ setVista, mesaActivaId, setMesaActivaId, clubActivo, setClubA
               }`}
             >
               🔐 Escape Rooms ({escapesDelEvento.length}{eventoSeleccionado.cupo_escape_room !== null ? `/${eventoSeleccionado.cupo_escape_room}` : ''})
+            </button>
+            <button 
+              onClick={() => setVistaActiva('talleres')}
+              className={`snap-start whitespace-nowrap flex-1 py-4 px-6 rounded-2xl font-black uppercase tracking-widest text-xs transition-all duration-300 border ${
+                vistaActiva === 'talleres' 
+                  ? 'bg-purple-600 text-white border-purple-400 shadow-lg shadow-purple-900/40' 
+                  : 'bg-zinc-900 text-zinc-500 border-zinc-800 hover:text-zinc-300 hover:bg-zinc-800'
+              }`}
+            >
+              🎓 Talleres ({talleresDelEvento.length})
             </button>
           </div>
 
@@ -1001,6 +1108,60 @@ function Eventos({ setVista, mesaActivaId, setMesaActivaId, clubActivo, setClubA
             </div>
           )}
 
+          {/* ========================================= */}
+          {/* 🎓 VISTA: TALLERES Y CURSOS               */}
+          {/* ========================================= */}
+          {vistaActiva === 'talleres' && (
+            <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
+                <div>
+                  <h3 className="text-2xl font-black text-white uppercase tracking-tighter italic">
+                    Talleres y Cursos de la Jornada
+                  </h3>
+                  <p className="text-xs text-zinc-500 font-bold uppercase tracking-wider mt-1">
+                    Espacios formativos, clínicas y masterclasses programados
+                  </p>
+                </div>
+
+                {esAdmin && (
+                  <button
+                    onClick={() => setVista('admin')}
+                    className="px-4 py-2.5 bg-purple-600/20 hover:bg-purple-600/30 text-purple-300 border border-purple-500/40 rounded-xl font-black text-[10px] uppercase tracking-widest transition-all cursor-pointer flex items-center gap-2 shrink-0"
+                  >
+                    <span>✨</span> Administrar Academia
+                  </button>
+                )}
+              </div>
+
+              {talleresDelEvento.length > 0 ? (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                  {talleresDelEvento.map(t => (
+                    <TarjetaTaller
+                      key={t.id}
+                      taller={t}
+                      usuarioGuardado={usuarioGuardado}
+                      esAdmin={esAdmin}
+                      onInscribirse={inscribirseTaller}
+                      onDesinscribirse={desinscribirseTaller}
+                    />
+                  ))}
+                </div>
+              ) : (
+                <div className="text-center py-24 bg-zinc-900/30 border-2 border-dashed border-zinc-800 rounded-[2.5rem]">
+                  <span className="text-4xl block mb-3 opacity-30">📚</span>
+                  <p className="text-zinc-500 font-black uppercase tracking-widest text-xs">
+                    No hay talleres convocados para esta jornada
+                  </p>
+                  {esAdmin && (
+                    <p className="text-purple-400 text-xs mt-2 font-bold">
+                      Puedes convocar uno desde Mesa de Comando → Talleres y Cursos vinculándolo a esta jornada.
+                    </p>
+                  )}
+                </div>
+              )}
+            </div>
+          )}
+
         </main>
         {renderModalLogistica()}
       </div>
@@ -1208,6 +1369,64 @@ function Eventos({ setVista, mesaActivaId, setMesaActivaId, clubActivo, setClubA
         )}
       </section>
 
+      {/* 🎓 SECCIÓN: ACADEMIA Y TALLERES FORMATIVOS (CON O SIN JORNADA) */}
+      <section className="mb-20 relative">
+        <div className="absolute inset-0 bg-gradient-to-r from-purple-500/5 via-transparent to-emerald-500/5 blur-3xl pointer-events-none -z-10 rounded-[3rem]"></div>
+
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
+          <div>
+            <div className="flex items-center gap-2 mb-1">
+              <span className="text-[10px] font-black uppercase tracking-[0.25em] text-purple-400">Formación y Comunidad</span>
+              <span className="text-[8px] font-black bg-purple-500/20 text-purple-300 border border-purple-500/30 px-2 py-0.5 rounded-full">
+                TALLERES Y CURSOS
+              </span>
+            </div>
+            <h2 className="text-3xl md:text-5xl font-black text-white italic uppercase tracking-tighter">
+              Academia <span className="text-purple-400">del Gremio</span>
+            </h2>
+          </div>
+
+          <div className="flex items-center gap-2">
+            {esAdmin && (
+              <button
+                onClick={() => setVista('admin')}
+                className="px-4 py-2.5 bg-purple-600/20 hover:bg-purple-600/30 text-purple-300 border border-purple-500/40 rounded-xl font-black text-[10px] uppercase tracking-widest transition-all cursor-pointer flex items-center gap-1.5"
+                title="Ir al gestor de talleres en Mesa de Comando"
+              >
+                <span>✨</span> Convocar Taller
+              </button>
+            )}
+            {talleres.filter(t => t.estado !== 'Cancelado').length > 2 && (
+              <div className="flex gap-2">
+                <button onClick={scrollTalleresTablonIzq} className="w-10 h-10 bg-zinc-900 border border-zinc-800 rounded-full flex items-center justify-center hover:bg-zinc-800 text-zinc-500 transition-colors">‹</button>
+                <button onClick={scrollTalleresTablonDer} className="w-10 h-10 bg-zinc-900 border border-zinc-800 rounded-full flex items-center justify-center hover:bg-zinc-800 text-zinc-500 transition-colors">›</button>
+              </div>
+            )}
+          </div>
+        </div>
+
+        {talleres.filter(t => t.estado !== 'Cancelado').length > 0 ? (
+          <div ref={carruselTalleresTablonRef} className="flex gap-6 overflow-x-auto pb-6 scrollbar-hide snap-x" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
+            {talleres.filter(t => t.estado !== 'Cancelado').map(t => (
+              <div key={t.id} className="min-w-[85vw] sm:min-w-[360px] max-w-[420px] snap-start">
+                <TarjetaTaller
+                  taller={t}
+                  usuarioGuardado={usuarioGuardado}
+                  esAdmin={esAdmin}
+                  onInscribirse={inscribirseTaller}
+                  onDesinscribirse={desinscribirseTaller}
+                />
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div className="text-center py-20 bg-zinc-950/40 border-2 border-dashed border-zinc-900 rounded-[2.5rem] p-6">
+            <span className="text-4xl mb-3 block opacity-30">📚</span>
+            <p className="text-zinc-500 font-black uppercase tracking-widest text-xs">No hay talleres activos en este momento</p>
+            <p className="text-zinc-600 text-[11px] mt-1 italic">Los próximos talleres y cursos anunciados por el Alto Mando aparecerán aquí.</p>
+          </div>
+        )}
+      </section>
 
       <section className="opacity-70 grayscale hover:grayscale-0 hover:opacity-100 transition-all duration-700">
         <h2 className="text-3xl md:text-4xl font-black text-zinc-700 italic uppercase tracking-tighter mb-10 pl-2 border-l-4 border-zinc-800">

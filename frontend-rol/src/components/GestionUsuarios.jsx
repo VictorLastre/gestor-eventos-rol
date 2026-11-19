@@ -143,7 +143,7 @@ function GestionUsuarios({ setVista, clubActivo }) {
       text: `¿Ascender a ${nombre.toUpperCase()} al rango de Dungeon Master?`,
       icon: 'warning',
       showCancelButton: true,
-      confirmButtonText: '🛡️ Ascender',
+      confirmButtonText: '⚔️ Ascender',
       cancelButtonText: 'Cancelar',
       confirmButtonColor: '#f59e0b',
       cancelButtonColor: '#3f3f46',
@@ -303,7 +303,7 @@ function GestionUsuarios({ setVista, clubActivo }) {
       
       <div className="flex flex-wrap gap-2 md:gap-4 mb-8 border-b border-zinc-800 pb-4">
         <button onClick={() => setPestanaActiva('peticiones')} className={`flex items-center gap-2 px-4 md:px-6 py-3 font-black text-[9px] md:text-[10px] uppercase tracking-[0.2em] transition-all rounded-xl ${pestanaActiva === 'peticiones' ? 'bg-purple-600 text-white shadow-lg shadow-purple-900/40' : 'text-zinc-500 hover:bg-zinc-900'}`}>
-          🛡️ Peticiones DM {solicitudes.length > 0 && <span className="bg-white text-purple-600 px-2 py-0.5 rounded-full text-[9px]">{solicitudes.length}</span>}
+          🎲 Peticiones DM {solicitudes.length > 0 && <span className="bg-white text-purple-600 px-2 py-0.5 rounded-full text-[9px]">{solicitudes.length}</span>}
         </button>
         <button onClick={() => setPestanaActiva('censo')} className={`flex items-center gap-2 px-4 md:px-6 py-3 font-black text-[9px] md:text-[10px] uppercase tracking-[0.2em] transition-all rounded-xl ${pestanaActiva === 'censo' ? 'bg-emerald-600 text-white shadow-lg shadow-emerald-900/40' : 'text-zinc-500 hover:bg-zinc-900'}`}>
           📜 Registro Gremial
@@ -316,7 +316,7 @@ function GestionUsuarios({ setVista, clubActivo }) {
       {pestanaActiva === 'peticiones' && (
         <div className="animate-in fade-in zoom-in-95 duration-500">
            <div className="flex items-center gap-3 mb-8">
-             <div className="w-12 h-12 bg-purple-500/10 text-purple-400 flex items-center justify-center rounded-2xl border border-purple-500/20 text-xl">🛡️</div>
+             <div className="w-12 h-12 bg-purple-500/10 text-purple-400 flex items-center justify-center rounded-2xl border border-purple-500/20 text-xl">🎲</div>
              <h3 className="text-2xl font-black text-white uppercase tracking-tighter">Aspirantes a Director</h3>
            </div>
            {solicitudes.length === 0 ? (
@@ -337,7 +337,7 @@ function GestionUsuarios({ setVista, clubActivo }) {
                     </div>
                     <div className="flex gap-2 w-full sm:w-auto mt-2 sm:mt-0">
                       <button onClick={() => rechazarUsuario(user.id, user.nombre)} className="flex-1 sm:flex-none bg-zinc-800 text-zinc-400 py-3 px-4 rounded-xl text-[9px] font-black uppercase tracking-widest hover:bg-red-500/10 hover:text-red-500 transition-all whitespace-nowrap cursor-pointer">✕ Denegar</button>
-                      <button onClick={() => promoverUsuario(user.id, user.nombre)} className="flex-1 sm:flex-none bg-amber-500 text-black py-3 px-4 md:px-6 rounded-xl text-[9px] font-black uppercase tracking-widest hover:scale-105 transition-all whitespace-nowrap cursor-pointer shadow-lg shadow-amber-500/20">🛡️ Ascender</button>
+                      <button onClick={() => promoverUsuario(user.id, user.nombre)} className="flex-1 sm:flex-none bg-amber-500 text-black py-3 px-4 md:px-6 rounded-xl text-[9px] font-black uppercase tracking-widest hover:scale-105 transition-all whitespace-nowrap cursor-pointer shadow-lg shadow-amber-500/20">⚔️ Ascender</button>
                     </div>
                  </div>
                ))}
@@ -362,7 +362,7 @@ function GestionUsuarios({ setVista, clubActivo }) {
                     onClick={() => setFiltroRol(rol)} 
                     className={`px-4 py-2 text-[9px] font-black uppercase tracking-widest rounded-xl transition-all whitespace-nowrap ${filtroRol === rol ? 'bg-zinc-800 text-emerald-400 shadow-md' : 'text-zinc-500 hover:text-zinc-300'}`}
                   >
-                    {rol === 'todos' ? 'Todos' : rol === 'superadmin' ? '⚡ Superadmin' : rol === 'admin' ? '👑 Admins' : rol === 'dm' ? '🛡️ DMs' : '⚔️ Jugadores'}
+                    {rol === 'todos' ? 'Todos' : rol === 'superadmin' ? '⚡ Superadmin' : rol === 'admin' ? '👑 Admins' : rol === 'dm' ? '🎲 DMs' : '⚔️ Jugadores'}
                   </button>
                 ))}
               </div>
@@ -407,14 +407,14 @@ function GestionUsuarios({ setVista, clubActivo }) {
                             <p className="text-[9px] md:text-[10px] text-zinc-600 font-mono lowercase truncate">{user.email}</p>
                             {/* Mostrar rango en móviles si se oculta la columna */}
                             <span className={`sm:hidden mt-1 inline-block text-[8px] font-black uppercase tracking-widest px-2 py-0.5 rounded-md border whitespace-nowrap ${user.rol === 'superadmin' ? 'bg-purple-600/20 text-purple-300 border-purple-500/40 shadow-[0_0_10px_rgba(168,85,247,0.2)]' : user.rol === 'admin' ? 'bg-amber-500/10 text-amber-500 border-amber-500/20' : user.rol === 'dm' ? 'bg-purple-500/10 text-purple-400 border-purple-500/20' : 'bg-zinc-800/50 text-zinc-500 border-zinc-700/50'}`}>
-                              {user.rol === 'superadmin' ? '⚡ Superadmin' : user.rol === 'admin' ? '👑 Admin' : user.rol === 'dm' ? '🛡️ DM' : '⚔️ Jugador'}
+                              {user.rol === 'superadmin' ? '⚡ Superadmin' : user.rol === 'admin' ? '👑 Admin' : user.rol === 'dm' ? '🎲 DM' : '⚔️ Jugador'}
                             </span>
                           </div>
                         </td>
                         <td className="p-4 md:p-6 hidden sm:table-cell">
                           {/* ✨ ESTA ES LA ETIQUETA CORREGIDA PARA QUE NO SALTE DE LÍNEA */}
                           <span className={`text-[9px] font-black uppercase tracking-widest px-4 py-1.5 rounded-full border whitespace-nowrap ${user.rol === 'superadmin' ? 'bg-gradient-to-r from-purple-900/60 to-indigo-900/60 text-purple-200 border-purple-500/60 shadow-[0_0_15px_rgba(168,85,247,0.35)]' : user.rol === 'admin' ? 'bg-amber-500/10 text-amber-500 border-amber-500/20' : user.rol === 'dm' ? 'bg-purple-500/10 text-purple-400 border-purple-500/20' : 'bg-zinc-800/50 text-zinc-500 border-zinc-700/50'}`}>
-                            {user.rol === 'superadmin' ? '⚡ Superadmin' : user.rol === 'admin' ? '👑 Administrador' : user.rol === 'dm' ? '🛡️ Dungeon Master' : '⚔️ Aventurero'}
+                            {user.rol === 'superadmin' ? '⚡ Superadmin' : user.rol === 'admin' ? '👑 Administrador' : user.rol === 'dm' ? '🎲 Dungeon Master' : '⚔️ Aventurero'}
                           </span>
                         </td>
                         <td className="p-4 md:p-6">
@@ -431,7 +431,7 @@ function GestionUsuarios({ setVista, clubActivo }) {
                             ) : (
                               <>
                                 {user.rol !== 'admin' && <button onClick={() => proponerAdmin(user.id, user.nombre)} className="w-8 h-8 md:w-10 md:h-10 bg-zinc-950 border border-zinc-800 rounded-xl hover:border-amber-500 hover:text-amber-500 transition-all text-sm" title="Proponer al Senado">👑</button>}
-                                {user.rol !== 'dm' && user.rol !== 'admin' && <button onClick={() => cambiarRolDirecto(user.id, user.nombre, 'dm')} className="w-8 h-8 md:w-10 md:h-10 bg-zinc-950 border border-zinc-800 rounded-xl hover:border-purple-500 hover:text-purple-400 transition-all text-sm" title="Ascender a DM">🛡️</button>}
+                                {user.rol !== 'dm' && user.rol !== 'admin' && <button onClick={() => cambiarRolDirecto(user.id, user.nombre, 'dm')} className="w-8 h-8 md:w-10 md:h-10 bg-zinc-950 border border-zinc-800 rounded-xl hover:border-purple-500 hover:text-purple-400 transition-all text-sm" title="Ascender a DM">🎲</button>}
                                 {user.rol !== 'jugador' && <button onClick={() => cambiarRolDirecto(user.id, user.nombre, 'jugador')} className="w-8 h-8 md:w-10 md:h-10 bg-zinc-950 border border-zinc-800 rounded-xl hover:border-red-500 hover:text-red-500 transition-all text-sm" title="Revocar Rango">✕</button>}
                               </>
                             )}
